@@ -35,5 +35,14 @@ class AppServiceProvider extends ServiceProvider
                 Limit::perMinute(20)->by($request->ip()),
             ];
         });
+
+        RateLimiter::for('password-recovery', function (Request $request) {
+            $email = Str::lower((string) $request->input('email'));
+
+            return [
+                Limit::perMinute(5)->by(hash('sha256', $email.'|'.$request->ip())),
+                Limit::perMinute(20)->by($request->ip()),
+            ];
+        });
     }
 }

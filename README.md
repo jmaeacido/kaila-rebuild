@@ -61,6 +61,7 @@ Pop-Location
 - Login, current-user, logout, logout-all, session listing, and individual session revocation endpoints
 - Short-lived Android access tokens with hashed, rotating single-use refresh sessions
 - Refresh-token replay detection with device-session family revocation
+- Enumeration-safe, rate-limited password recovery with single-use expiring tokens and session revocation
 - Laravel-issued, session-bound Ed25519 realtime connection tickets
 - Socket.IO ticket signature, issuer, audience, expiry, and single-use validation with server-derived user rooms
 - Login and registration rate limits
@@ -68,6 +69,6 @@ Pop-Location
 - Cross-user session authorization tests
 - Stable JSON error envelopes for validation, authentication, and CSRF failures
 
-Password recovery remains in the next authentication increment. Transactional outbox delivery, multi-node Redis realtime coordination, observability, and foundational accessible components also remain within Phase 1.
+Transactional outbox delivery, multi-node Redis realtime coordination, observability, and foundational accessible components remain within Phase 1.
 
 Phase 1 is not complete until the acceptance criteria in `docs/architecture/rebuild-roadmap.md` pass in CI and a disposable environment.

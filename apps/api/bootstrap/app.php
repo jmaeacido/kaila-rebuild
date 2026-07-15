@@ -38,6 +38,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->validateCsrfTokens(except: [
             'api/v1/auth/mobile/*',
+            'api/v1/auth/password/*',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
