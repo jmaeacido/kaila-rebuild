@@ -1,6 +1,15 @@
 # KAILA
 
-KAILA is a mobile-first local services marketplace. Phase 1 establishes the secure platform foundation described in the accepted architecture records.
+KAILA is a mobile-first local services marketplace connecting clients with trusted local independent service providers.
+
+## Project status
+
+Phase 1 — repository and secure platform foundation — is complete as of July 16, 2026.
+
+- All acceptance criteria passed locally and in the disposable development environment.
+- The final [GitHub Actions workflow](https://github.com/jmaeacido/kaila-rebuild/actions/runs/29452651122) passed on commit `bf999c4`.
+- Detailed evidence is recorded in the [Phase 1 acceptance report](docs/architecture/phase-1-acceptance-report.md).
+- Phase 2 is next: marketplace reference data and profiles, as defined in the [rebuild roadmap](docs/architecture/rebuild-roadmap.md#phase-2-marketplace-reference-data-and-profiles).
 
 ## Applications
 
@@ -86,6 +95,6 @@ Pop-Location
 - Cross-user session authorization tests
 - Stable JSON error envelopes for validation, authentication, and CSRF failures
 
-Phase 1 acceptance evidence is recorded in `docs/architecture/phase-1-acceptance-report.md`. Feature implementation begins in Phase 2 only after the Phase 1 branch workflow is green.
+## Next phase
 
-Phase 1 is not complete until the acceptance criteria in `docs/architecture/rebuild-roadmap.md` pass in CI and a disposable environment.
+Phase 2 implements service taxonomy, geographic hierarchy and service areas, client and provider profiles, availability, portfolios, credential review state, and the separate administrative workflows for taxonomy and verification. Its privacy, authorization, deterministic matching, private-upload, responsive-design, and accessibility requirements remain release gates rather than follow-up work.
