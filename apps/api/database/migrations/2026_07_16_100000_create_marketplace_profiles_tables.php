@@ -71,7 +71,7 @@ return new class extends Migration
             $table->time('starts_at');
             $table->time('ends_at');
             $table->boolean('is_available')->default(true);
-            $table->unique(['provider_profile_id', 'day_of_week', 'starts_at']);
+            $table->unique(['provider_profile_id', 'day_of_week', 'starts_at'], 'provider_availability_slot_unique');
         });
         Schema::create('profile_assets', function (Blueprint $table): void {
             $table->uuid('id')->primary();
