@@ -3,10 +3,11 @@
 /.env
 /.env.*
 !/.env.example
-/node_modules/
+node_modules/
+vendor/
+.next/
 /.pnpm-store/
 /.turbo/
 coverage/
 dist/
 *.log
-
