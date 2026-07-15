@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Model;
 #[Fillable([
     'actor_user_id',
     'event_type',
+    'request_id',
+    'trace_id',
     'subject_type',
     'subject_id',
     'ip_hash',

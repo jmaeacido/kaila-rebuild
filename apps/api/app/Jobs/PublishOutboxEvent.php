@@ -8,6 +8,7 @@ use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Throwable;
 
 class PublishOutboxEvent implements ShouldBeUnique, ShouldQueue
@@ -33,6 +34,7 @@ class PublishOutboxEvent implements ShouldBeUnique, ShouldQueue
 
     public function handle(OutboxTransport $transport): void
     {
+        Log::withContext(['event_id' => $this->eventId, 'queue' => 'outbox']);
         $event = $this->claim();
         if (! $event) {
             return;

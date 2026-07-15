@@ -3,7 +3,7 @@ name: Quality
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: ["**"]
 
 permissions:
   contents: read
@@ -11,6 +11,18 @@ permissions:
 jobs:
   javascript:
     runs-on: ubuntu-latest
+    services:
+      redis:
+        image: redis:7.4-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      REDIS_URL: redis://127.0.0.1:6379
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -25,9 +37,48 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm build
+      - run: pnpm security:audit
+      - run: pnpm security:secrets
 
   php:
     runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_DATABASE: kaila_test
+          MYSQL_USER: kaila
+          MYSQL_PASSWORD: kaila-ci-password
+          MYSQL_ROOT_PASSWORD: kaila-ci-root-password
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd "mysqladmin ping -h localhost -pkaila-ci-root-password"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+      redis:
+        image: redis:7.4-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      APP_ENV: local
+      DB_CONNECTION: mysql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_DATABASE: kaila_test
+      DB_USERNAME: kaila
+      DB_PASSWORD: kaila-ci-password
+      REDIS_CLIENT: predis
+      REDIS_HOST: 127.0.0.1
+      REDIS_PORT: 6379
+      QUEUE_CONNECTION: redis
+      OUTBOX_TRANSPORT: log
     defaults:
       run:
         working-directory: apps/api
@@ -40,6 +91,10 @@ jobs:
       - run: composer install --no-interaction --prefer-dist
       - run: cp .env.example .env
       - run: php artisan key:generate
+      - run: php artisan migrate --force
+      - run: php artisan migrate:rollback --force
+      - run: php artisan migrate --force
       - run: vendor/bin/pint --test
       - run: composer analyse
       - run: php artisan test
+      - run: composer audit --locked --no-interaction

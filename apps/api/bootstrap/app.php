@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\AssignRequestContext;
 use App\Http\Middleware\AuthenticateMobileAccessToken;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
@@ -29,6 +30,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         $middleware->api(prepend: [
+            AssignRequestContext::class,
             EncryptCookies::class,
             AddQueuedCookiesToResponse::class,
             StartSession::class,

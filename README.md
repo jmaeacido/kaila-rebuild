@@ -10,6 +10,7 @@ KAILA is a mobile-first local services marketplace. Phase 1 establishes the secu
 - `apps/realtime` — authenticated Socket.IO delivery service
 - `packages/contracts` — runtime-validated TypeScript transport contracts
 - `packages/design-tokens` — shared semantic KAILA design tokens
+- `packages/ui` — reusable accessible consumer component foundations
 
 ## Workstation requirements
 
@@ -73,11 +74,18 @@ Pop-Location
 - Socket.IO ticket signature, issuer, audience, expiry, and single-use validation with server-derived user rooms
 - Transactional outbox envelopes with stable event IDs, server timestamps, resource versions, and rollback safety
 - Redis-backed outbox publication with idempotent claims, bounded retry backoff, stale-claim recovery, and failed-job visibility
+- Redis-coordinated Socket.IO rooms, replay protection, validated realtime publications, and cross-node tests
+- Correlated structured logs, W3C trace context, metrics, and recursive sensitive-data redaction
+- Durable notification preferences and auditable location-retention scheduling
+- Private S3-compatible storage adapter with disposable MinIO verification
+- Provider-neutral maps contract with a deterministic non-production fake
+- Semantic design tokens and axe-tested accessible controls, feedback, and loading states
+- CI MySQL/Redis acceptance services, dependency audits, and committed-secret scanning
 - Login and registration rate limits
 - Append-only authentication audit events with hashed request fingerprints
 - Cross-user session authorization tests
 - Stable JSON error envelopes for validation, authentication, and CSRF failures
 
-Socket.IO/FCM outbox transports, multi-node Redis realtime coordination, observability, and foundational accessible components remain within Phase 1.
+Phase 1 acceptance evidence is recorded in `docs/architecture/phase-1-acceptance-report.md`. Feature implementation begins in Phase 2 only after the Phase 1 branch workflow is green.
 
 Phase 1 is not complete until the acceptance criteria in `docs/architecture/rebuild-roadmap.md` pass in CI and a disposable environment.

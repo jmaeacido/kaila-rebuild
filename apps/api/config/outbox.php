@@ -2,6 +2,7 @@
 
 return [
     'transport' => env('OUTBOX_TRANSPORT', 'log'),
+    'realtime_channel' => env('OUTBOX_REALTIME_CHANNEL', 'kaila:realtime:events'),
     'dispatch_batch_size' => (int) env('OUTBOX_DISPATCH_BATCH_SIZE', 100),
     'processing_timeout_seconds' => (int) env('OUTBOX_PROCESSING_TIMEOUT_SECONDS', 300),
 ];

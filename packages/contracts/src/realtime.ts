@@ -13,6 +13,13 @@ export type RealtimeEventEnvelope = z.infer<
   typeof realtimeEventEnvelopeSchema
 >;
 
+export const realtimePublicationSchema = z.object({
+  event: realtimeEventEnvelopeSchema,
+  recipientUserIds: z.array(z.string().min(1)).min(1).max(100),
+});
+
+export type RealtimePublication = z.infer<typeof realtimePublicationSchema>;
+
 export const connectionTicketClaimsSchema = z.object({
   sub: z.string().min(1),
   sessionId: z.string().min(1),

@@ -2,8 +2,13 @@
 
 namespace App\Providers;
 
+use App\Contracts\MapsProvider;
+use App\Contracts\MetricsRecorder;
 use App\Contracts\OutboxTransport;
+use App\Support\DeterministicFakeMapsProvider;
 use App\Support\LogOutboxTransport;
+use App\Support\RedisRealtimeOutboxTransport;
+use App\Support\StructuredLogMetricsRecorder;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -18,15 +23,26 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        if (config('outbox.transport') !== 'log') {
-            throw new LogicException('The configured outbox transport is not supported.');
-        }
-
-        if ($this->app->environment('production')) {
+        $transport = (string) config('outbox.transport');
+        if ($transport === 'log' && $this->app->environment('production')) {
             throw new LogicException('The local log outbox transport must not be used in production.');
         }
 
-        $this->app->bind(OutboxTransport::class, LogOutboxTransport::class);
+        $implementation = match ($transport) {
+            'log' => LogOutboxTransport::class,
+            'redis-realtime' => RedisRealtimeOutboxTransport::class,
+            default => throw new LogicException('The configured outbox transport is not supported.'),
+        };
+        $this->app->bind(OutboxTransport::class, $implementation);
+
+        if (config('maps.provider') !== 'fake') {
+            throw new LogicException('The configured maps provider is not supported.');
+        }
+        if ($this->app->environment('production')) {
+            throw new LogicException('The deterministic fake maps provider must not be used in production.');
+        }
+        $this->app->bind(MapsProvider::class, DeterministicFakeMapsProvider::class);
+        $this->app->bind(MetricsRecorder::class, StructuredLogMetricsRecorder::class);
     }
 
     /**

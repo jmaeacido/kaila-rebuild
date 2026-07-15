@@ -1,4 +1,4 @@
-@import "@kaila/design-tokens/tokens.css";
+@import "@kaila/ui/styles.css";
 
 * {
   box-sizing: border-box;

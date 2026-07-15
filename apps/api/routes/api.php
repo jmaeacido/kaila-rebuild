@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\MobileSessionController;
 use App\Http\Controllers\Auth\PasswordRecoveryController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\CurrentUserController;
+use App\Http\Controllers\NotificationPreferenceController;
 use App\Http\Controllers\RealtimeTicketController;
 use App\Http\Controllers\UserSessionController;
 use Illuminate\Http\Request;
@@ -27,6 +28,8 @@ Route::middleware('mobile.auth')->group(function (): void {
     Route::get('/auth/mobile/sessions', [MobileSessionController::class, 'index']);
     Route::delete('/auth/mobile/sessions/{sessionId}', [MobileSessionController::class, 'destroy']);
     Route::post('/auth/mobile/realtime-ticket', [RealtimeTicketController::class, 'mobile']);
+    Route::get('/auth/mobile/notification-preferences', [NotificationPreferenceController::class, 'show']);
+    Route::put('/auth/mobile/notification-preferences', [NotificationPreferenceController::class, 'update']);
 });
 
 Route::middleware('auth')->group(function (): void {
@@ -36,6 +39,8 @@ Route::middleware('auth')->group(function (): void {
     Route::get('/me/sessions', [UserSessionController::class, 'index']);
     Route::delete('/me/sessions/{sessionId}', [UserSessionController::class, 'destroy']);
     Route::post('/realtime/ticket', [RealtimeTicketController::class, 'browser']);
+    Route::get('/me/notification-preferences', [NotificationPreferenceController::class, 'show']);
+    Route::put('/me/notification-preferences', [NotificationPreferenceController::class, 'update']);
 });
 
 Route::fallback(function (Request $request) {

@@ -1,5 +1,6 @@
 <?php
 
+use App\Jobs\PurgeExpiredLocationSamples;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
@@ -10,4 +11,8 @@ Artisan::command('inspire', function () {
 
 Schedule::command('outbox:dispatch')
     ->everyMinute()
+    ->withoutOverlapping();
+
+Schedule::job(new PurgeExpiredLocationSamples, 'maintenance')
+    ->hourly()
     ->withoutOverlapping();

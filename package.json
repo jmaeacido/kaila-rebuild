@@ -11,6 +11,8 @@
     "dev": "pnpm --parallel --filter @kaila/web --filter @kaila/admin --filter @kaila/realtime dev",
     "format:check": "pnpm --recursive --if-present format:check",
     "lint": "pnpm --recursive --if-present lint",
+    "security:audit": "pnpm audit --audit-level high",
+    "security:secrets": "node scripts/check-secrets.mjs",
     "test": "pnpm --recursive --if-present test",
     "typecheck": "pnpm --recursive --if-present typecheck"
   }
