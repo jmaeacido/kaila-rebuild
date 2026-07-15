@@ -1,0 +1,28 @@
+import { z } from "zod";
+
+export const realtimeEventEnvelopeSchema = z.object({
+  eventId: z.uuid(),
+  occurredAt: z.iso.datetime({ offset: true }),
+  resourceType: z.string().min(1),
+  resourceId: z.string().min(1),
+  version: z.int().nonnegative(),
+  data: z.record(z.string(), z.unknown()),
+});
+
+export type RealtimeEventEnvelope = z.infer<
+  typeof realtimeEventEnvelopeSchema
+>;
+
+export const connectionTicketClaimsSchema = z.object({
+  sub: z.string().min(1),
+  sessionId: z.string().min(1),
+  audience: z.literal("kaila-realtime"),
+  issuer: z.literal("kaila-api"),
+  exp: z.number().int().positive(),
+  iat: z.number().int().positive(),
+  jti: z.string().min(1),
+});
+
+export type ConnectionTicketClaims = z.infer<
+  typeof connectionTicketClaimsSchema
+>;

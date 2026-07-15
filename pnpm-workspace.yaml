@@ -1,0 +1,17 @@
+packages:
+  - "apps/web"
+  - "apps/admin"
+  - "apps/realtime"
+  - "packages/*"
+
+overrides:
+  electron-to-chromium: 1.5.389
+  postcss: 8.5.10
+  socket.io-parser: 4.2.6
+
+allowBuilds:
+  esbuild: true
+  sharp: true
+  unrs-resolver: true
+
+minimumReleaseAgeStrict: true

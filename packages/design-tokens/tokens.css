@@ -1,0 +1,48 @@
+:root {
+  --color-primary: #1463ff;
+  --color-accent: #27b7ff;
+  --color-ink: #0a1220;
+  --color-text: #344054;
+  --color-text-secondary: #667085;
+  --color-border: #e6eaf0;
+  --color-background: #f7f9fc;
+  --color-surface: #ffffff;
+  --color-success: #16a36a;
+  --color-warning: #f59e0b;
+  --color-danger: #dc3545;
+  --gradient-primary: linear-gradient(135deg, #1463ff, #27b7ff);
+  --gradient-hero: linear-gradient(135deg, #0f4bff, #3cc8ff);
+  --spacing-4: 0.25rem;
+  --spacing-8: 0.5rem;
+  --spacing-12: 0.75rem;
+  --spacing-16: 1rem;
+  --spacing-24: 1.5rem;
+  --spacing-32: 2rem;
+  --spacing-48: 3rem;
+  --radius-input: 0.75rem;
+  --radius-button: 0.875rem;
+  --radius-card: 1rem;
+  --radius-dialog: 1.5rem;
+  --radius-sheet: 1.75rem;
+  --radius-pill: 999px;
+  --shadow-card: 0 2px 8px rgb(10 18 32 / 8%);
+  --shadow-floating: 0 8px 24px rgb(10 18 32 / 14%);
+  --shadow-sheet: 0 -10px 40px rgb(10 18 32 / 12%);
+  --duration-fast: 150ms;
+  --duration-normal: 200ms;
+  --duration-slow: 250ms;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-ink: #f7f9fc;
+    --color-text: #e6eaf0;
+    --color-text-secondary: #98a2b3;
+    --color-border: #263244;
+    --color-background: #08111f;
+    --color-surface: #111c2c;
+    --shadow-card: 0 2px 8px rgb(0 0 0 / 28%);
+    --shadow-floating: 0 8px 24px rgb(0 0 0 / 34%);
+    --shadow-sheet: 0 -10px 40px rgb(0 0 0 / 32%);
+  }
+}
