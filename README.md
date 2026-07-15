@@ -31,8 +31,11 @@ Push-Location apps/api
 Copy-Item .env.example .env
 composer install
 php artisan key:generate
+php artisan realtime:key
 Pop-Location
 ```
+
+Copy the generated signing seed only to `apps/api/.env`. Copy the matching public key to the realtime service environment. Never place the signing seed in a browser, Android bundle, or Socket.IO environment.
 
 Never reuse the example passwords outside local development.
 
@@ -56,11 +59,15 @@ Pop-Location
 - Database-backed, secure browser sessions with CSRF protection
 - Registration with frozen policy-version consent capture
 - Login, current-user, logout, logout-all, session listing, and individual session revocation endpoints
+- Short-lived Android access tokens with hashed, rotating single-use refresh sessions
+- Refresh-token replay detection with device-session family revocation
+- Laravel-issued, session-bound Ed25519 realtime connection tickets
+- Socket.IO ticket signature, issuer, audience, expiry, and single-use validation with server-derived user rooms
 - Login and registration rate limits
 - Append-only authentication audit events with hashed request fingerprints
 - Cross-user session authorization tests
 - Stable JSON error envelopes for validation, authentication, and CSRF failures
 
-Android access tokens, rotating refresh families, password recovery, and Laravel-issued realtime connection tickets remain in the next authentication increment.
+Password recovery remains in the next authentication increment. Transactional outbox delivery, multi-node Redis realtime coordination, observability, and foundational accessible components also remain within Phase 1.
 
 Phase 1 is not complete until the acceptance criteria in `docs/architecture/rebuild-roadmap.md` pass in CI and a disposable environment.

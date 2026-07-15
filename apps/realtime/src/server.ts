@@ -1,16 +1,28 @@
 import { createServer } from "node:http";
 
-import { connectionTicketClaimsSchema } from "@kaila/contracts";
-import { importSPKI, jwtVerify } from "jose";
+import { importSPKI } from "jose";
 import { Server } from "socket.io";
 
 import { loadConfig } from "./config.js";
+import { authenticateConnectionTicket } from "./authenticate.js";
 
 const config = loadConfig(process.env);
 const publicKey = await importSPKI(
   config.REALTIME_TICKET_PUBLIC_KEY_PEM.replaceAll("\\n", "\n"),
   "EdDSA",
 );
+const consumedTickets = new Set<string>();
+
+const consumeTicket = (jti: string, expiresAt: number) => {
+  if (consumedTickets.has(jti)) {
+    return false;
+  }
+
+  consumedTickets.add(jti);
+  const remainingLifetime = Math.max(0, expiresAt * 1000 - Date.now());
+  setTimeout(() => consumedTickets.delete(jti), remainingLifetime).unref();
+  return true;
+};
 
 const httpServer = createServer((request, response) => {
   if (request.url === "/health" && request.method === "GET") {
@@ -39,12 +51,7 @@ io.use(async (socket, next) => {
   }
 
   try {
-    const result = await jwtVerify(ticket, publicKey, {
-      algorithms: ["EdDSA"],
-      audience: "kaila-realtime",
-      issuer: "kaila-api",
-    });
-    const claims = connectionTicketClaimsSchema.parse(result.payload);
+    const claims = await authenticateConnectionTicket(ticket, publicKey, consumeTicket);
 
     socket.data.userId = claims.sub;
     socket.data.sessionId = claims.sessionId;
@@ -55,6 +62,8 @@ io.use(async (socket, next) => {
 });
 
 io.on("connection", (socket) => {
+  // Authorization context comes only from verified claims. Handshake payloads
+  // and client events are never accepted as room identifiers.
   void socket.join(`user:${socket.data.userId as string}`);
 });
 

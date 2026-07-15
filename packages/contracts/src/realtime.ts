@@ -16,8 +16,8 @@ export type RealtimeEventEnvelope = z.infer<
 export const connectionTicketClaimsSchema = z.object({
   sub: z.string().min(1),
   sessionId: z.string().min(1),
-  audience: z.literal("kaila-realtime"),
-  issuer: z.literal("kaila-api"),
+  aud: z.literal("kaila-realtime"),
+  iss: z.literal("kaila-api"),
   exp: z.number().int().positive(),
   iat: z.number().int().positive(),
   jti: z.string().min(1),

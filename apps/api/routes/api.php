@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\MobileSessionController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\CurrentUserController;
+use App\Http\Controllers\RealtimeTicketController;
 use App\Http\Controllers\UserSessionController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -20,6 +21,7 @@ Route::middleware('mobile.auth')->group(function (): void {
     Route::post('/auth/mobile/logout', [MobileSessionController::class, 'destroyCurrent']);
     Route::get('/auth/mobile/sessions', [MobileSessionController::class, 'index']);
     Route::delete('/auth/mobile/sessions/{sessionId}', [MobileSessionController::class, 'destroy']);
+    Route::post('/auth/mobile/realtime-ticket', [RealtimeTicketController::class, 'mobile']);
 });
 
 Route::middleware('auth')->group(function (): void {
@@ -28,6 +30,7 @@ Route::middleware('auth')->group(function (): void {
     Route::post('/auth/logout-all', [AuthenticatedSessionController::class, 'destroyAll']);
     Route::get('/me/sessions', [UserSessionController::class, 'index']);
     Route::delete('/me/sessions/{sessionId}', [UserSessionController::class, 'destroy']);
+    Route::post('/realtime/ticket', [RealtimeTicketController::class, 'browser']);
 });
 
 Route::fallback(function (Request $request) {
