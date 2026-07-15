@@ -4,12 +4,13 @@ KAILA is a mobile-first local services marketplace connecting clients with trust
 
 ## Project status
 
-Phase 1 — repository and secure platform foundation — is complete as of July 16, 2026.
+Phase 2 — marketplace reference data and profiles — is complete as of July 16, 2026.
 
 - All acceptance criteria passed locally and in the disposable development environment.
 - The final [GitHub Actions workflow](https://github.com/jmaeacido/kaila-rebuild/actions/runs/29452651122) passed on commit `bf999c4`.
 - Detailed evidence is recorded in the [Phase 1 acceptance report](docs/architecture/phase-1-acceptance-report.md).
-- Phase 2 is next: marketplace reference data and profiles, as defined in the [rebuild roadmap](docs/architecture/rebuild-roadmap.md#phase-2-marketplace-reference-data-and-profiles).
+- Phase 2 acceptance evidence is recorded in the [Phase 2 acceptance report](docs/architecture/phase-2-acceptance-report.md).
+- Phase 3 is next: job posting and provider opportunities, as defined in the [rebuild roadmap](docs/architecture/rebuild-roadmap.md#phase-3-job-posting-and-provider-opportunities).
 
 ## Applications
 
@@ -95,6 +96,10 @@ Pop-Location
 - Cross-user session authorization tests
 - Stable JSON error envelopes for validation, authentication, and CSRF failures
 
+## Completed Phase 2
+
+Phase 2 implements service taxonomy, geographic hierarchy and service areas, client and provider profiles, availability, private portfolio and credential assets, credential review state, deterministic eligible-provider discovery, privacy-safe public profiles, and separate administrative workflows for taxonomy and verification.
+
 ## Next phase
 
-Phase 2 implements service taxonomy, geographic hierarchy and service areas, client and provider profiles, availability, portfolios, credential review state, and the separate administrative workflows for taxonomy and verification. Its privacy, authorization, deterministic matching, private-upload, responsive-design, and accessibility requirements remain release gates rather than follow-up work.
+Phase 3 implements the 60-second job-posting flow, privacy-minimized provider opportunities, deterministic matching from the Phase 2 reference data, durable Socket.IO/FCM notifications, and an immutable job timeline.

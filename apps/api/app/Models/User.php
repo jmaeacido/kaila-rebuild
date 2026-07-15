@@ -17,6 +17,8 @@ use Illuminate\Notifications\Notifiable;
     'terms_accepted_version',
     'privacy_accepted_version',
     'provider_intent',
+    'active_mode',
+    'is_admin',
 ])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
@@ -35,6 +37,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'provider_intent' => 'boolean',
+            'is_admin' => 'boolean',
         ];
     }
 }

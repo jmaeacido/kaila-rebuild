@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\AssignRequestContext;
 use App\Http\Middleware\AuthenticateMobileAccessToken;
+use App\Http\Middleware\EnsureAdministrator;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
@@ -27,6 +28,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'mobile.auth' => AuthenticateMobileAccessToken::class,
+            'admin' => EnsureAdministrator::class,
         ]);
 
         $middleware->api(prepend: [

@@ -1,12 +1,17 @@
 <?php
 
+use App\Http\Controllers\AdminMarketplaceController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\MobileSessionController;
 use App\Http\Controllers\Auth\PasswordRecoveryController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\CurrentUserController;
+use App\Http\Controllers\MarketplaceProfileController;
 use App\Http\Controllers\NotificationPreferenceController;
+use App\Http\Controllers\ProfileAssetController;
+use App\Http\Controllers\ProviderCredentialController;
 use App\Http\Controllers\RealtimeTicketController;
+use App\Http\Controllers\ReferenceDataController;
 use App\Http\Controllers\UserSessionController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -14,6 +19,10 @@ use Illuminate\Support\Facades\Route;
 Route::get('/auth/csrf', fn () => response()->noContent());
 
 Route::middleware('throttle:registration')->post('/auth/register', RegisteredUserController::class);
+Route::get('/marketplace/reference-data', ReferenceDataController::class);
+Route::get('/providers', [MarketplaceProfileController::class, 'discover']);
+Route::get('/providers/{providerProfile}', [MarketplaceProfileController::class, 'publicProfile']);
+Route::get('/profile-assets/{profileAsset}', [ProfileAssetController::class, 'show']);
 Route::middleware('throttle:login')->post('/auth/login', [AuthenticatedSessionController::class, 'store']);
 Route::middleware('throttle:login')->post('/auth/mobile/login', [MobileSessionController::class, 'store']);
 Route::middleware('throttle:login')->post('/auth/mobile/refresh', [MobileSessionController::class, 'refresh']);
@@ -30,6 +39,12 @@ Route::middleware('mobile.auth')->group(function (): void {
     Route::post('/auth/mobile/realtime-ticket', [RealtimeTicketController::class, 'mobile']);
     Route::get('/auth/mobile/notification-preferences', [NotificationPreferenceController::class, 'show']);
     Route::put('/auth/mobile/notification-preferences', [NotificationPreferenceController::class, 'update']);
+    Route::get('/auth/mobile/marketplace-profile', [MarketplaceProfileController::class, 'show']);
+    Route::put('/auth/mobile/active-mode', [MarketplaceProfileController::class, 'mode']);
+    Route::put('/auth/mobile/client-profile', [MarketplaceProfileController::class, 'client']);
+    Route::put('/auth/mobile/provider-profile', [MarketplaceProfileController::class, 'provider']);
+    Route::post('/auth/mobile/profile-assets', [ProfileAssetController::class, 'store']);
+    Route::post('/auth/mobile/provider-credentials', [ProviderCredentialController::class, 'store']);
 });
 
 Route::middleware('auth')->group(function (): void {
@@ -41,6 +56,22 @@ Route::middleware('auth')->group(function (): void {
     Route::post('/realtime/ticket', [RealtimeTicketController::class, 'browser']);
     Route::get('/me/notification-preferences', [NotificationPreferenceController::class, 'show']);
     Route::put('/me/notification-preferences', [NotificationPreferenceController::class, 'update']);
+    Route::get('/me/marketplace-profile', [MarketplaceProfileController::class, 'show']);
+    Route::put('/me/active-mode', [MarketplaceProfileController::class, 'mode']);
+    Route::put('/me/client-profile', [MarketplaceProfileController::class, 'client']);
+    Route::put('/me/provider-profile', [MarketplaceProfileController::class, 'provider']);
+    Route::post('/me/profile-assets', [ProfileAssetController::class, 'store']);
+    Route::post('/me/provider-credentials', [ProviderCredentialController::class, 'store']);
+    Route::middleware('admin')->prefix('admin/marketplace')->group(function (): void {
+        Route::get('/review-queue', [AdminMarketplaceController::class, 'queue']);
+        Route::post('/categories', [AdminMarketplaceController::class, 'category']);
+        Route::put('/categories/{serviceCategory}', [AdminMarketplaceController::class, 'category']);
+        Route::post('/areas', [AdminMarketplaceController::class, 'area']);
+        Route::put('/areas/{area}', [AdminMarketplaceController::class, 'area']);
+        Route::put('/providers/{providerProfile}/status', [AdminMarketplaceController::class, 'provider']);
+        Route::put('/assets/{profileAsset}/scan', [AdminMarketplaceController::class, 'asset']);
+        Route::put('/credentials/{providerCredential}/review', [AdminMarketplaceController::class, 'credential']);
+    });
 });
 
 Route::fallback(function (Request $request) {

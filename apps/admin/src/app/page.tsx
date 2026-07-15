@@ -1,20 +1,16 @@
-import styles from "./page.module.css";
+"use client";
 
+import { useEffect, useState } from "react";
+import { Check, RefreshCw, ShieldCheck, Tags, X } from "lucide-react";
+import styles from "./page.module.css";
+type Provider = { id: number; display_name: string; bio: string }; type Credential = { id: number; label: string; type: string }; type Asset = { id: string; original_name: string; mime_type: string };
 export default function AdminHome() {
-  return (
-    <main className={styles.page}>
-      <section
-        aria-labelledby="admin-foundation-title"
-        className={styles.card}
-      >
-        <p className={styles.eyebrow}>KAILA ADMINISTRATION</p>
-        <h1 id="admin-foundation-title" className={styles.title}>
-          Separate administration boundary
-        </h1>
-        <p className={styles.copy}>
-          Administrative capabilities remain isolated from the consumer product.
-        </p>
-      </section>
-    </main>
-  );
+  const [providers, setProviders] = useState<Provider[]>([]); const [credentials, setCredentials] = useState<Credential[]>([]); const [assets, setAssets] = useState<Asset[]>([]); const [state, setState] = useState<"loading" | "ready" | "error">("loading");
+  function applyQueue(body: { data: { providers: Provider[]; credentials: Credential[]; assets: Asset[] } }) { setProviders(body.data.providers); setCredentials(body.data.credentials); setAssets(body.data.assets); setState("ready"); }
+  async function load() { setState("loading"); try { const response = await fetch("/api/v1/admin/marketplace/review-queue", { credentials: "include" }); if (!response.ok) throw new Error(); applyQueue(await response.json() as { data: { providers: Provider[]; credentials: Credential[]; assets: Asset[] } }); } catch { setState("error"); } }
+  useEffect(() => { void fetch("/api/v1/admin/marketplace/review-queue", { credentials: "include" }).then(async (response) => { if (!response.ok) throw new Error(); applyQueue(await response.json() as { data: { providers: Provider[]; credentials: Credential[]; assets: Asset[] } }); }).catch(() => setState("error")); }, []);
+  async function review(kind: "providers" | "credentials" | "assets", id: number | string, approve: boolean) { await fetch("/api/v1/auth/csrf", { credentials: "include" }); const token = document.cookie.split("; ").find((part) => part.startsWith("XSRF-TOKEN="))?.split("=")[1]; const url = kind === "providers" ? `/api/v1/admin/marketplace/providers/${id}/status` : kind === "credentials" ? `/api/v1/admin/marketplace/credentials/${id}/review` : `/api/v1/admin/marketplace/assets/${id}/scan`; const body = kind === "providers" ? { status: approve ? "active" : "rejected" } : kind === "credentials" ? { reviewStatus: approve ? "approved" : "rejected" } : { scanStatus: approve ? "clean" : "rejected" }; await fetch(url, { method: "PUT", credentials: "include", headers: { "Content-Type": "application/json", Accept: "application/json", ...(token ? { "X-XSRF-TOKEN": decodeURIComponent(token) } : {}) }, body: JSON.stringify(body) }); await load(); }
+  return <main className={styles.page}><header><div><p>KAILA ADMINISTRATION</p><h1>Marketplace review</h1></div><button onClick={() => void load()}><RefreshCw aria-hidden="true" /> Refresh</button></header>{state === "error" && <div className={styles.error} role="alert">The review queue could not be loaded.</div>}{state === "loading" && <div className={styles.loading} aria-live="polite">Loading review queue…</div>}{state === "ready" && <div className={styles.columns}><Queue title="Safety scans" icon={<ShieldCheck />} empty="No files need scan review.">{assets.map((item) => <article key={item.id}><h3>{item.original_name}</h3><p>{item.mime_type}</p><Actions onChoose={(choice) => void review("assets", item.id, choice)} /></article>)}</Queue><Queue title="Provider profiles" icon={<ShieldCheck />} empty="No provider profiles need review.">{providers.map((item) => <article key={item.id}><h3>{item.display_name}</h3><p>{item.bio}</p><Actions onChoose={(choice) => void review("providers", item.id, choice)} /></article>)}</Queue><Queue title="Credentials" icon={<Tags />} empty="No credentials need review.">{credentials.map((item) => <article key={item.id}><h3>{item.label}</h3><p>{item.type}</p><Actions onChoose={(choice) => void review("credentials", item.id, choice)} /></article>)}</Queue></div>}</main>;
 }
+function Queue({ title, icon, empty, children }: { title: string; icon: React.ReactNode; empty: string; children: React.ReactNode }) { return <section><h2>{icon}{title}</h2>{Array.isArray(children) && children.length === 0 ? <p className={styles.empty}>{empty}</p> : children}</section>; }
+function Actions({ onChoose }: { onChoose: (approve: boolean) => void }) { return <div className={styles.actions}><button className={styles.approve} onClick={() => onChoose(true)}><Check aria-hidden="true" /> Approve</button><button className={styles.reject} onClick={() => onChoose(false)}><X aria-hidden="true" /> Reject</button></div>; }
