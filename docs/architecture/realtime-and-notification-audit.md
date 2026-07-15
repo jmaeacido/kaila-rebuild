@@ -158,14 +158,13 @@ Inbound Socket.IO should be limited to latency-sensitive ephemeral commands: typ
 - Location is visible only during the approved window to approved participants and is deleted/aggregated per policy.
 - Push content respects lock-screen privacy and user preferences.
 - Multi-instance Socket.IO/presence works through an approved adapter or documented sticky-session constraint.
-- Calls work across representative mobile networks with TURN and record correct missed/ended outcomes.
+- Calls remain deferred; a later reintroduction must pass representative mobile-network and TURN validation.
 - Automated contract, authorization, reconnect, notification, and Android lifecycle tests pass.
 
-## Owner decisions
+## Resolved Phase 0 decisions
 
-- Whether travel is foreground-only or supports background location, and retention duration.
-- Which events warrant push, sounds, persistent alerts, and full-screen call UI.
-- Whether direct messages/calls are allowed before hire.
-- Whether social-feed notifications are launch scope.
-- Notification quiet hours/preferences and staff escalation rules.
-- Infrastructure choice for queues, Socket.IO adapter, TURN, FCM credential custody, and observability.
+- Travel is foreground-only under ADR-0007; ADR-0011 sets visibility, consent, and retention.
+- ADR-0011 limits push events and prohibits persistent alarms and full-screen call UI in the pilot.
+- Direct messages and calls before hire, plus social-feed notifications, are deferred.
+- ADR-0011 defines notification preferences and quiet-hour behavior.
+- ADR-0012 selects queues, the Socket.IO adapter, TURN boundary, FCM custody, and observability architecture.

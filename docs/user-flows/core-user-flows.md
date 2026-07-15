@@ -64,7 +64,7 @@ Target acceptance: selection is authorized, idempotent, race-safe, and preserves
 
 Legacy evidence: `/api/requests/:id/messages`, `/typing`, `/presence`, reaction route, direct-conversation routes, `job_messages`, `direct_messages`, `kaila.call.signal`, `recordCallLogMessage()`, `conversation_access_audit`.
 
-Rebuild requirements: authenticated conversation membership, paginated history, object-authorized media, encryption key rotation, durable delivery/read semantics, TURN for production reliability, and audited support access.
+Rebuild requirements: authenticated conversation membership, paginated history, object-authorized media, encryption key rotation, durable delivery/read semantics, and audited support access. Voice/video calls and TURN are deferred under ADR-0008 and ADR-0012.
 
 ## 6. Provider travels to the job
 
@@ -76,7 +76,7 @@ Rebuild requirements: authenticated conversation membership, paginated history, 
 
 Legacy evidence: socket handlers `kaila.navigation.start/location/stop`, `job_navigation_states`, `saveNavigationLocation()`, thresholds at `server.js:104-110`, map rendering in `app.js:12106-12283`.
 
-Conflict: legacy travel is side-state while target PDD includes `Provider Traveling`. Owner must approve whether travel is a primary job stage or a concurrent sub-state. Consent, background tracking, and retention are unresolved.
+Rebuild decision: `PROVIDER_TRAVELING` is a canonical stage when travel is required. Sharing is foreground-only under ADR-0007, with consent, visibility, and retention governed by ADR-0011.
 
 ## 7. Work, completion, revision, and auto-confirm
 
@@ -91,7 +91,7 @@ Conflict: legacy travel is side-state while target PDD includes `Provider Travel
 
 Legacy evidence: actions `start`, `provider_complete`, `client_complete`, `request_revision`; `autoConfirmExpiredJobs()`; completion-stage `request_attachments`.
 
-Critical ambiguity: no payment processor/ledger exists. “Payment Released” is a label only. The rebuild must use `Completed` unless real payment requirements are approved and implemented. Auto-confirm duration and legal effect require approval.
+Rebuild decision: no payment processor/ledger exists and ADR-0002 excludes KAILA-processed pilot payments. Use `COMPLETED`; ADR-0005 replaces the legacy timer with a 72-hour auto-confirm policy and explicit holds.
 
 ## 8. Ratings and reviews
 
@@ -122,7 +122,7 @@ Legacy evidence: action `cancel` (`server.js:5214-5219`). No provider cancellati
 
 Legacy evidence: action `dispute` and `support_*`/`resolve_dispute`, `supportCanViewRequestConversation()`, `conversation_access_audit`, `/api/reports/:id/action`.
 
-Rebuild changes: dedicated case aggregate, assignment, evidence timeline, decision reason, notifications, SLA, appeal/reopen policy, and immutable audit. Owner must approve staff authority, especially any financial outcome.
+Rebuild changes: dedicated case aggregate, assignment, evidence timeline, decision reason, notifications, SLA, appeal/reopen policy, and immutable audit. Staff authority is bounded by ADR-0011 and includes no financial outcome authority.
 
 ## 11. Account safety and deletion
 

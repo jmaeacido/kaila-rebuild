@@ -15,25 +15,25 @@ The classification applies to product behavior, not legacy code reuse. No legacy
 | --- | --- | --- | --- |
 | Client/provider registration and login | Improve | `/api/register`, `/api/login`, `createAccount()` | Preserve outcome; add real sessions, recovery, throttling, consent versions |
 | Google/Facebook sign-in | Defer | `/api/auth/social*`, verification functions | Add after core auth; confirm providers and account-link policy |
-| Dual client/provider capability | Needs clarification | admin-added provider profile; `canUseMarketplaceRole()` | Decide switchable modes vs exclusive roles |
+| Dual client/provider capability | Improve | admin-added provider profile; `canUseMarketplaceRole()` | Use switchable modes under ADR-0001; authorize from eligibility/policy |
 | Provider profile, services, coverage, availability | Improve | `providers`, `saveProviderProfileForUser()` | Normalize taxonomy/service areas, portfolio, credentials |
 | Trust level and verification display | Needs clarification | `providers.trust_level`, no evidence workflow | Define verified claims and review process before display |
 | Post/edit a pinned job | Preserve | `/api/requests`, `/api/requests/:id` | Core; structured brief, private location, asset uploads |
 | Provider category/city matching | Improve | `providerMatchesRequestRow()` | Replace string matching with taxonomy and service-area model |
 | Opportunity pass/dismiss | Preserve | `request_passes`, `/pass` | Keep per-provider dismissal |
 | Provider offer | Preserve | `offers`, `/offers` | Immutable amounts/currency/schedule and authorization |
-| Counteroffer type | Needs clarification | `offers.type`, prior offer deleted | Decide two-sided negotiation and expiry |
+| Counteroffer type | Improve | `offers.type`, prior offer deleted | Use immutable two-sided revisions and terminal outcomes under ADR-0004 |
 | Offer comparison and provider selection | Preserve | `/confirm`, `mapOffer()` | Atomic selection and accepted commercial snapshot |
 | Seven-stage visual job lifecycle | Preserve | PDD; legacy `/action` | Implement canonical state machine, not legacy labels |
 | Revision loop | Improve | `request_revision`, `Revision Requested` | Model transitions/history and evidence clearly |
 | Client cancellation | Improve | action `cancel` | Add reasons, provider/no-show/reschedule/fee policy |
-| Provider cancellation/no-show | Needs clarification | no verified route | Define operational policy |
+| Provider cancellation/no-show | Improve | no verified route | Implement the participant request and dispute policy in ADR-0011 |
 | Provider completion evidence | Preserve | `request_attachments.stage=completion`, `provider_complete` | Private object storage, scan, audit |
-| 48-hour auto-confirm | Needs clarification | `autoConfirmExpiredJobs()` | Confirm timing, legal meaning, reminders, exceptions |
+| 48-hour auto-confirm | Improve | `autoConfirmExpiredJobs()` | Replace with the 72-hour completion policy and holds in ADR-0005 |
 | “Payment Released” state | Remove | request status/timestamps; no gateway/ledger | Remove wording unless payment system is approved |
-| Integrated payments/escrow | Needs clarification | not implemented | Product, legal, provider, fees/refunds decision |
+| Integrated payments/escrow | Defer | not implemented | Pilot excludes KAILA-processed payments under ADR-0002 |
 | Bilateral ratings | Preserve | client/provider rating fields, action `rate` | Dedicated reviews, visibility/moderation/fraud rules |
-| Seven-day rating window | Needs clarification | `closeExpiredRatingWindows()` | Confirm window and blind/mutual publication rules |
+| Seven-day rating window | Improve | `closeExpiredRatingWindows()` | Use bilateral blind publication under ADR-0006 |
 | Disputes | Improve | `Disputed`, support actions, note field | Dedicated case/evidence/decision/audit workflow |
 | User/job reporting | Preserve | `moderation_reports`, report routes | Generalize target types and case management |
 | User blocking | Preserve | `user_blocks`, block routes | Enforce consistently across discovery/chat/calls |
@@ -47,10 +47,10 @@ The classification applies to product behavior, not legacy code reuse. No legacy
 | Missed/completed call logs | Merge | `missed_calls` plus call-kind messages | Model calls once, render into conversation/notifications |
 | Live provider travel tracking | Preserve | `job_navigation_states`, navigation events | Core PDD feature; privacy and lifecycle improvements |
 | OSRM route/ETA | Improve | `lookupRouteDistanceKm()`, app route calls | Provider abstraction, caching, quotas, failure states |
-| Background location | Needs clarification | Android location permissions but no verified background service | Decide consent, policy, technical scope |
+| Background location | Defer | Android location permissions but no verified background service | Pilot is foreground-only under ADR-0007 and ADR-0011 |
 | Realtime marketplace updates | Preserve | Socket.IO domain events | Authenticated minimal events plus REST reconciliation/outbox |
 | FCM push notifications | Preserve | push token/send functions, Android receiver | Durable notification model, preferences, delivery logs |
-| Persistent job-request alert | Needs clarification | FCM `persistent`, Android job channel | Confirm UX, opt-out, expiry, Play policy |
+| Persistent job-request alert | Remove | FCM `persistent`, Android job channel | ADR-0011 prohibits persistent/repeating alert behavior in the pilot |
 | Incoming full-screen call notification | Defer | `KailaNativePlugin.showIncomingCall()` | Reassess Android eligibility and abuse controls |
 | PWA/offline app shell | Improve | `sw.js`, manifest | Define safe caching/offline recovery; never cache private data loosely |
 | Capacitor Android packaging | Preserve | root package scripts, `android/` | Recreate after web/API foundation; extract custom native requirements |
@@ -63,7 +63,7 @@ The classification applies to product behavior, not legacy code reuse. No legacy
 | AI admin analytics | Defer | `/api/analytics/insights` | Start with verified metrics; AI later |
 | Ops surveys/provider interviews | Defer | `validation_entries`, `/api/validation*` | Separate internal module if still operationally needed |
 | Customer-service role | Preserve | report/dispute/support conversation logic | Separate admin/support UI and granular permissions |
-| Ops role | Needs clarification | validation-only state branch | Confirm continued organizational role |
+| Ops role | Defer | validation-only state branch | Operations research tooling is outside pilot scope under ADR-0011 |
 | Admin account management | Improve | `/api/admin/users*` | Separate admin app, granular permissions, MFA/audit |
 | Hardcoded super-admin username | Remove | `SUPER_ADMIN_USERNAME`, `ensureSuperAdminAccount()` | Provision roles securely; no identity-by-username |
 | Admin database truncate | Remove | `/api/admin/truncate` | Never expose destructive production wipe endpoint |
@@ -81,4 +81,4 @@ The classification applies to product behavior, not legacy code reuse. No legacy
 
 ## Recommended launch boundary
 
-Launch foundation should include secure identity, profiles/modes, service taxonomy/areas, jobs, opportunities, offers/selection, hired-job chat, live travel, work/completion, reviews, basic safety/reporting, durable notifications, and separate minimal support tooling. Defer feed, AI, calls, validation suite, analytics enhancements, and public sharing. Payments and ambiguous policy items remain blocked on owner approval.
+Launch foundation should include secure identity, profiles/modes, service taxonomy/areas, jobs, opportunities, offers/selection, hired-job chat, foreground live travel, work/completion, reviews, basic safety/reporting, durable notifications, and separate minimal support tooling. Defer feed, AI, calls, validation suite, analytics enhancements, public sharing, integrated payments, and background location. Accepted Phase 0 ADRs resolve the former policy blockers.

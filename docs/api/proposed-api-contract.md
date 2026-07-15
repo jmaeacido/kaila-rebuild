@@ -63,7 +63,7 @@ This replaces legacy string matching in `normalizeCategories()` and `providerMat
 | POST | `/provider-profile/credentials` | Submit verification evidence | Provider |
 | PATCH | `/provider-profile/availability` | Update working availability | Provider |
 
-Owner approval is required on dual client/provider accounts. Legacy admins can add a provider profile to a client (`/api/admin/users/:id/provider-profile`), so the data model should support modes even if launch policy restricts them.
+ADR-0001 approves one identity with switchable Client and Provider modes. Legacy admins can add a provider profile to a client (`/api/admin/users/:id/provider-profile`); the rebuild instead authorizes provider actions from provider eligibility and resource policy, never from the selected UI mode alone.
 
 ## Jobs
 
@@ -140,7 +140,7 @@ Typing, presence, message delivery, and WebRTC signaling use authenticated realt
 | POST | `/admin/disputes/{id}/assign` | Assign support owner |
 | POST | `/admin/disputes/{id}/decisions` | Append structured decision/outcome |
 
-Payment endpoints are intentionally not proposed until the owner decides whether KAILA processes money. Legacy “Payment Released” is only request state/timestamps (`/api/requests/:id/action`) and must not be represented as a real transfer.
+Payment endpoints are intentionally excluded under ADR-0002. Legacy “Payment Released” is only request state/timestamps (`/api/requests/:id/action`) and must not be represented as a real transfer.
 
 ## Assets
 
@@ -189,16 +189,16 @@ Ops validation, AI analytics/assistant, social feed, and mobile APK update endpo
 
 Socket connection authentication uses a signed access token at handshake and server-assigned rooms. Clients cannot choose arbitrary rooms or identify as a raw user ID. Every event has `eventId`, `occurredAt`, `resourceType`, `resourceId`, `version`, and minimal authorized `data`.
 
-Proposed server events: `job.created`, `job.updated`, `job.stage.changed`, `offer.created`, `offer.revised`, `offer.selected`, `message.created`, `message.reaction.changed`, `conversation.typing.changed`, `travel.started`, `travel.location.changed`, `travel.arrival.changed`, `travel.stopped`, `notification.created`, and `call.signal`. Clients reconcile by fetching the REST resource when versions skip or reconnect occurs.
+Proposed pilot server events: `job.created`, `job.updated`, `job.stage.changed`, `offer.created`, `offer.revised`, `offer.selected`, `message.created`, `message.reaction.changed`, `conversation.typing.changed`, `travel.started`, `travel.location.changed`, `travel.arrival.changed`, `travel.stopped`, and `notification.created`. Clients reconcile by fetching the REST resource when versions skip or reconnect occurs.
 
-Client events are commands only where low latency is necessary: typing/presence, travel coordinate update, and call signaling. Business transitions remain authenticated REST commands so Laravel owns validation and persistence.
+Client events are commands only where low latency is necessary: typing/presence and travel coordinate updates. Business transitions remain authenticated REST commands so Laravel owns validation and persistence. Call signaling is deferred.
 
-## Items requiring approval before contract freeze
+## Phase 0 contract decisions
 
-- One account with switchable client/provider modes versus exclusive role.
-- Exact canonical job state machine, including traveling, revision, cancellation, dispute, and auto-confirm.
-- Whether KAILA processes payments; payment provider, escrow/release semantics, refunds, fees, and compliance.
-- Whether clients can issue counteroffers and whether negotiations expire.
-- Direct messaging/calling before hire and staff access policy.
-- Exact-location sharing start/end, background collection, retention, and consent language.
-- Social feed, AI assistant/analytics, ops validation, and APK self-update launch scope.
+- One account has switchable modes under ADR-0001.
+- The accepted canonical state machine governs traveling, revision, cancellation, disputes, and completion.
+- KAILA-processed payments are excluded under ADR-0002.
+- Counterproposals and binding revisions follow ADR-0004.
+- Direct messaging/calling before hire is deferred; hired-job messaging and audited staff access follow ADR-0011.
+- Location sharing, foreground collection, retention, and consent follow ADR-0007 and ADR-0011.
+- Feed, AI, operations validation, APK self-update, calls, background location, and advanced analytics are deferred under ADR-0008 and ADR-0011.

@@ -15,7 +15,7 @@ Work:
 - Approve account mode model, canonical job state machine, offer negotiation, cancellation/revision/dispute policy, auto-confirm, ratings publication, exact-location policy, notification behavior, and launch feature boundary.
 - Decide whether payments are out of scope; if not, commission a separate regulated payment architecture.
 - Select session/auth approach, object storage/scanning, queue, Socket.IO adapter, TURN, maps/routing provider, FCM credential ownership, monitoring, and deployment environments.
-- Record decisions in `docs/decisions/` before implementation.
+- Record decisions in `docs/architecture/adr/` and maintain the Phase 0 decision register before implementation.
 
 Acceptance: every item in “Owner approval required” below has an owner and written decision; terminology and state diagram are frozen for Phase 1-4.
 
