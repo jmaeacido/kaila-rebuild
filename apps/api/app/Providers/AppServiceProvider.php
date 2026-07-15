@@ -2,11 +2,14 @@
 
 namespace App\Providers;
 
+use App\Contracts\OutboxTransport;
+use App\Support\LogOutboxTransport;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
+use LogicException;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -15,7 +18,15 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        if (config('outbox.transport') !== 'log') {
+            throw new LogicException('The configured outbox transport is not supported.');
+        }
+
+        if ($this->app->environment('production')) {
+            throw new LogicException('The local log outbox transport must not be used in production.');
+        }
+
+        $this->app->bind(OutboxTransport::class, LogOutboxTransport::class);
     }
 
     /**
