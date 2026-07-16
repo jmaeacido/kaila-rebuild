@@ -13,6 +13,8 @@ export type RealtimeEventEnvelope = z.infer<
   typeof realtimeEventEnvelopeSchema
 >;
 
+export const marketplaceRealtimeEventTypeSchema = z.enum(["job.posted", "job.updated", "opportunity.matched", "offer.created", "offer.revised", "offer.selected", "notification.created"]);
+
 export const realtimePublicationSchema = z.object({
   event: realtimeEventEnvelopeSchema,
   recipientUserIds: z.array(z.string().min(1)).min(1).max(100),

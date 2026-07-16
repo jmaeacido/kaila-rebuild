@@ -57,4 +57,10 @@ class ServiceJob extends Model
     {
         return $this->hasMany(JobAsset::class);
     }
+
+    /** @return HasMany<OfferThread, $this> */
+    public function offers(): HasMany
+    {
+        return $this->hasMany(OfferThread::class);
+    }
 }

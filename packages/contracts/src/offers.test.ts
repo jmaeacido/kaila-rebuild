@@ -1,0 +1,3 @@
+import { describe, expect, it } from "vitest";
+import { offerThreadSchema } from "./offers.js";
+describe("offer contracts",()=>{it("validates trust and immutable history",()=>{expect(offerThreadSchema.safeParse({id:"b27bc8a8-a3d9-4df8-8a18-3b143ca80f2e",jobId:"532639ab-3bfa-4abc-a096-780c897cf221",status:"active",provider:{id:1,displayName:"Ana",rating:"4.80",completedJobs:12,responseMinutes:8,verified:true},latestRevisionNumber:1,revisions:[{id:"c6cf3bb0-74af-4b63-a004-872493703fa0",revisionNumber:1,proposedBy:"provider",amountCentavos:85000,availabilityText:"Today",estimatedDurationText:null,scope:"Labor",message:null,expiresAt:null,createdAt:"2026-07-16T10:00:00Z"}]}).success).toBe(true);});});
