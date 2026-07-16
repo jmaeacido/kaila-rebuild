@@ -11,3 +11,8 @@ vendor/
 coverage/
 dist/
 *.log
+
+# Local env and secret files
+**/.env
+**/.env.*
+secrets/
