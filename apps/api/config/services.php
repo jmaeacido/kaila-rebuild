@@ -35,6 +35,11 @@ return [
         ],
     ],
 
-    'fcm' => ['transport' => env('FCM_TRANSPORT', 'fake'), 'project_id' => env('FCM_PROJECT_ID'), 'access_token' => env('FCM_ACCESS_TOKEN')],
+    'fcm' => [
+        'transport' => env('FCM_TRANSPORT', 'fake'),
+        'project_id' => env('FCM_PROJECT_ID'),
+        'access_token' => env('FCM_ACCESS_TOKEN'),
+        'service_account_path' => env('FCM_SERVICE_ACCOUNT_PATH'),
+    ],
 
 ];
