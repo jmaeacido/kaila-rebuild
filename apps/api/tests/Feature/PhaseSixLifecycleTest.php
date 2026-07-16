@@ -75,7 +75,7 @@ class PhaseSixLifecycleTest extends TestCase
         $id = $this->actingAs($client)->withHeader('Idempotency-Key', 'phase6-job-'.str()->uuid())->postJson('/api/v1/jobs', $draft)->json('data.id');
         $this->postJson("/api/v1/jobs/$id/post");
         $offer = $this->actingAs($provider)->postJson("/api/v1/jobs/$id/offers", ['amountCentavos' => 85000, 'availabilityText' => 'Today', 'estimatedDurationText' => 'Two hours', 'scope' => 'Labor and standard fittings included.', 'message' => 'Ready'])->json('data.revisions.0.id');
-        $this->actingAs($client)->postJson("/api/v1/jobs/$id/select-offer",['offerRevisionId' => $offer]);
+        $this->actingAs($client)->postJson("/api/v1/jobs/$id/select-offer", ['offerRevisionId' => $offer]);
 
         return [$id, $client, $provider];
     }

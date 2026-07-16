@@ -174,7 +174,7 @@ class JobLifecycleService
                 $this->closeReviews($locked, 'reviews.completed');
             }
 
-return $review;
+            return $review;
         });
     }
 
@@ -224,11 +224,12 @@ return $review;
         if ($snapshot) {
             $p = $this->access->participants($job);
             $rooms[] = "user:{$p['providerId']}";
-        }$this->outbox->record('job.state.changed','service_job',$job->id,$job->version,['rooms' => $rooms, 'jobId' => $job->id, 'status' => $to, 'version' => $job->version]);
+        }
+        $this->outbox->record('job.state.changed', 'service_job', $job->id, $job->version, ['rooms' => $rooms, 'jobId' => $job->id, 'status' => $to, 'version' => $job->version]);
     }
 
     private function stopTravel(ServiceJob $job): void
     {
-        TravelSession::query()->where('service_job_id',$job->id)->where('status','active')->update(['status' => 'stopped', 'stopped_at' => now()]);
+        TravelSession::query()->where('service_job_id', $job->id)->where('status', 'active')->update(['status' => 'stopped', 'stopped_at' => now()]);
     }
 }
