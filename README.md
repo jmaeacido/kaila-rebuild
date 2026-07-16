@@ -4,7 +4,7 @@ KAILA is a mobile-first local services marketplace connecting clients with trust
 
 ## Project status
 
-Phase 8 repository implementation — Capacitor Android packaging and release controls — is complete as of July 16, 2026. Signed release acceptance remains gated on protected credentials, physical-device evidence, and Play Console review.
+Phase 9 repository implementation — isolated deferred modules — is complete as of July 16, 2026. Production calls, broad community rollout, and any future model-backed assistant remain gated on external operational evidence.
 
 - Repository-controlled quality gates pass locally; external Phase 7 pilot and Phase 8 Android release gates remain explicit.
 - The final [GitHub Actions workflow](https://github.com/jmaeacido/kaila-rebuild/actions/runs/29452651122) passed on commit `bf999c4`.
@@ -13,6 +13,7 @@ Phase 8 repository implementation — Capacitor Android packaging and release co
 - Phase 3 acceptance evidence is recorded in the [Phase 3 acceptance report](docs/architecture/phase-3-acceptance-report.md).
 - Phase 7 repository evidence and external gates are recorded in the [Phase 7 acceptance report](docs/architecture/phase-7-acceptance-report.md).
 - Phase 8 repository evidence and external gates are recorded in the [Phase 8 acceptance report](docs/architecture/phase-8-acceptance-report.md) and [Android release runbook](docs/operations/phase-8-android-release.md).
+- Phase 9 repository evidence and external gates are recorded in the [Phase 9 acceptance report](docs/architecture/phase-9-acceptance-report.md) and [ADR-0023](docs/architecture/adr/0023-phase-9-deferred-modules.md).
 
 ## Applications
 
@@ -106,6 +107,10 @@ Phase 2 implements service taxonomy, geographic hierarchy and service areas, cli
 
 Phase 3 implements the three-step job-posting flow, idempotent drafts and posting, quarantined job photos, privacy-minimized provider opportunities, deterministic category/area/availability matching, durable Socket.IO/FCM notifications, and an immutable job timeline.
 
-## Next phase
+## Completed Phase 9
 
-Close the external Phase 7 pilot gates before Phase 8 Android packaging and release.
+Phase 9 adds consent-based direct messaging, TURN-gated call lifecycle foundations, opt-in community publishing, deterministic Katabang guidance, privacy-thresholded aggregate analytics, read-only operations validation, and separate administrative health views without changing the core job lifecycle.
+
+## Next gates
+
+Close the outstanding Phase 7 pilot, Phase 8 Android release, and Phase 9 operational rollout gates before production promotion.

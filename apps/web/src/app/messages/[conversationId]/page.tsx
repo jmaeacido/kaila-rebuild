@@ -1,0 +1,20 @@
+"use client";
+
+import { FormEvent, useCallback, useEffect, useState } from "react";
+import { MessageCircle } from "lucide-react";
+import { Button, Feedback } from "@kaila/ui";
+import Link from "next/link";
+import { useParams } from "next/navigation";
+import styles from "../../phase-nine.module.css";
+
+type Message = { id: string; senderUserId: number; body: string; createdAt: string };
+type Conversation = { id: string; status: string; requestedByMe: boolean; otherUser: { name: string }; messages: Message[] };
+async function csrfHeaders() { await fetch("/api/v1/auth/csrf", { credentials: "include" }); const token = document.cookie.split("; ").find((value) => value.startsWith("XSRF-TOKEN="))?.split("=")[1]; return { "Content-Type": "application/json", ...(token ? { "X-XSRF-TOKEN": decodeURIComponent(token) } : {}) }; }
+export default function DirectConversationPage() {
+  const { conversationId } = useParams<{ conversationId: string }>(); const [conversation, setConversation] = useState<Conversation | null>(null); const [body, setBody] = useState(""); const [state, setState] = useState<"loading" | "ready" | "error">("loading");
+  const load = useCallback(async () => { try { const response = await fetch(`/api/v1/direct-conversations/${conversationId}`, { credentials: "include" }); if (!response.ok) throw new Error(); setConversation(((await response.json()) as { data: Conversation }).data); setState("ready"); } catch { setState("error"); } }, [conversationId]);
+  useEffect(() => { void fetch(`/api/v1/direct-conversations/${conversationId}`, { credentials: "include" }).then(async (response) => { if (!response.ok) throw new Error(); setConversation(((await response.json()) as { data: Conversation }).data); setState("ready"); }).catch(() => setState("error")); }, [conversationId]);
+  async function accept() { setState("loading"); const response = await fetch(`/api/v1/direct-conversations/${conversationId}/accept`, { method: "POST", credentials: "include", headers: await csrfHeaders() }); if (!response.ok) return setState("error"); await load(); }
+  async function send(event: FormEvent) { event.preventDefault(); if (!body.trim()) return; setState("loading"); const response = await fetch(`/api/v1/direct-conversations/${conversationId}/messages`, { method: "POST", credentials: "include", headers: await csrfHeaders(), body: JSON.stringify({ body: body.trim(), commandId: crypto.randomUUID() }) }); if (!response.ok) return setState("error"); setBody(""); await load(); }
+  return <main className={styles.page}><header className={styles.header}><Link href="/messages">Back to messages</Link><p className={styles.eyebrow}>Direct conversation</p><h1>{conversation?.otherUser.name ?? "Conversation"}</h1></header>{state === "loading" && <div className={styles.skeleton} />}{state === "error" && <Feedback kind="error" title="Conversation is unavailable"><Button variant="secondary" onClick={() => void load()}>Try again</Button></Feedback>}{conversation && conversation.status === "pending" && <section className={styles.card}><MessageCircle aria-hidden="true" /><h2>{conversation.requestedByMe ? "Request sent" : "Message request"}</h2><p>{conversation.requestedByMe ? "You can message after the recipient accepts." : "Accept only if you want to talk with this person."}</p>{!conversation.requestedByMe && <Button onClick={() => void accept()}>Accept request</Button>}</section>}{conversation?.status === "accepted" && <><section className={styles.card} aria-label="Messages">{conversation.messages.length === 0 ? <p className={styles.meta}>No messages yet. Say hello when you are ready.</p> : conversation.messages.map((message) => <article key={message.id}><p>{message.body}</p><p className={styles.meta}>{new Date(message.createdAt).toLocaleString()}</p></article>)}</section><form className={`${styles.card} ${styles.form}`} onSubmit={(event) => void send(event)}><label>Message<textarea maxLength={12000} value={body} onChange={(event) => setBody(event.target.value)} /></label><Button disabled={!body.trim() || state === "loading"}>Send message</Button></form></>}</main>;
+}

@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { BriefcaseBusiness, Home, MapPin, MessageCircle, Search, ShieldCheck, UserRound } from "lucide-react";
+import { BriefcaseBusiness, HeartHandshake, Home, MapPin, MessageCircle, Search, ShieldCheck, UserRound } from "lucide-react";
 import { Button, Feedback } from "@kaila/ui";
+import Link from "next/link";
 import styles from "./page.module.css";
 
 type Reference = { id: number; name: string };
@@ -45,4 +46,4 @@ export default function HomePage() {
   </main>;
 }
 
-function NavItems() { return <><a aria-current="page" href="#main"><Home aria-hidden="true" /><span>Home</span></a><a href="#jobs"><BriefcaseBusiness aria-hidden="true" /><span>Jobs</span></a><a href="#messages"><MessageCircle aria-hidden="true" /><span>Messages</span></a><a href="/provider-profile"><UserRound aria-hidden="true" /><span>Profile</span></a></>; }
+function NavItems() { return <><a aria-current="page" href="#main"><Home aria-hidden="true" /><span>Home</span></a><a href="/jobs"><BriefcaseBusiness aria-hidden="true" /><span>Jobs</span></a><Link href="/community"><HeartHandshake aria-hidden="true" /><span>Community</span></Link><Link href="/messages"><MessageCircle aria-hidden="true" /><span>Messages</span></Link><Link href="/provider-profile"><UserRound aria-hidden="true" /><span>Profile</span></Link></>; }

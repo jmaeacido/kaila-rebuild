@@ -142,6 +142,10 @@ Risks: OEM behavior, background restrictions, full-screen intent policy, stale w
 
 Candidates: direct messaging, audio/video calls, social feed/public sharing, Katabang assistant, AI analytics, ops validation suite, richer admin analytics. Each requires a new scoped plan and approval; none should destabilize the core hire-to-completion flow.
 
+Approved implementation boundary (ADR-0023): consent-based direct messaging, TURN-gated participant calls, opt-in community publishing, deterministic non-authoritative Katabang guidance, privacy-thresholded aggregate analytics, a read-only operations validation suite, and separate admin health views. All modules are independently reversible and the canonical job lifecycle remains unchanged.
+
+Acceptance: authorization, consent, blocking, encryption, idempotency, aggregation privacy, disabled-feature, realtime-minimization, responsive/accessibility, and core-regression tests pass. Production calls, broad community rollout, and any model-backed AI remain subject to the external gates in the Phase 9 acceptance report.
+
 ## Owner approval required
 
 1. Can one identity switch between client and provider modes?

@@ -4,7 +4,8 @@ namespace App\Console\Commands;
 
 use App\Models\User;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use RuntimeException;
 
 class ImportLegacyUsers extends Command
@@ -40,7 +41,7 @@ class ImportLegacyUsers extends Command
                 'legacy_id' => $legacyId,
                 'name' => (string) ($row['name'] ?? ''),
                 'email' => $email,
-                'password' => '$2y$12$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi',
+                'password' => Hash::make(Str::random(64)),
                 'terms_accepted_version' => '2026-07-16',
                 'privacy_accepted_version' => '2026-07-16',
                 'provider_intent' => false,
@@ -140,6 +141,7 @@ class ImportLegacyUsers extends Command
             } elseif (! $inString && $char === ',') {
                 $values[] = trim($current);
                 $current = '';
+
                 continue;
             }
 

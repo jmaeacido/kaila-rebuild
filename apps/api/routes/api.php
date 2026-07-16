@@ -2,15 +2,20 @@
 
 use App\Http\Controllers\AdminDisputeController;
 use App\Http\Controllers\AdminMarketplaceController;
+use App\Http\Controllers\AdminPhaseNineController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\MobileSessionController;
 use App\Http\Controllers\Auth\PasswordRecoveryController;
 use App\Http\Controllers\Auth\RegisteredUserController;
+use App\Http\Controllers\CallController;
+use App\Http\Controllers\CommunityController;
 use App\Http\Controllers\ConversationController;
 use App\Http\Controllers\CurrentUserController;
+use App\Http\Controllers\DirectConversationController;
 use App\Http\Controllers\DurableNotificationController;
 use App\Http\Controllers\JobAssetController;
 use App\Http\Controllers\JobLifecycleController;
+use App\Http\Controllers\KatabangController;
 use App\Http\Controllers\MarketplaceProfileController;
 use App\Http\Controllers\MessageAssetController;
 use App\Http\Controllers\NotificationPreferenceController;
@@ -34,6 +39,7 @@ Route::middleware('throttle:registration')->post('/auth/register', RegisteredUse
 Route::get('/marketplace/reference-data', ReferenceDataController::class);
 Route::get('/providers', [MarketplaceProfileController::class, 'discover']);
 Route::get('/providers/{providerProfile}', [MarketplaceProfileController::class, 'publicProfile']);
+Route::get('/community', [CommunityController::class, 'index']);
 Route::get('/profile-assets/{profileAsset}', [ProfileAssetController::class, 'show']);
 Route::middleware('throttle:login')->post('/auth/login', [AuthenticatedSessionController::class, 'store']);
 Route::middleware('throttle:login')->post('/auth/mobile/login', [MobileSessionController::class, 'store']);
@@ -99,6 +105,16 @@ Route::middleware('mobile.auth')->group(function (): void {
     Route::delete('/auth/mobile/notifications/{notification}', [DurableNotificationController::class, 'clear']);
     Route::post('/auth/mobile/push-devices', [PushDeviceController::class, 'store']);
     Route::delete('/auth/mobile/push-devices/{pushDevice}', [PushDeviceController::class, 'destroy']);
+    Route::get('/auth/mobile/direct-conversations', [DirectConversationController::class, 'index']);
+    Route::post('/auth/mobile/direct-conversations', [DirectConversationController::class, 'store']);
+    Route::get('/auth/mobile/direct-conversations/{directConversation}', [DirectConversationController::class, 'show']);
+    Route::post('/auth/mobile/direct-conversations/{directConversation}/accept', [DirectConversationController::class, 'accept']);
+    Route::post('/auth/mobile/direct-conversations/{directConversation}/messages', [DirectConversationController::class, 'send']);
+    Route::post('/auth/mobile/calls', [CallController::class, 'store']);
+    Route::post('/auth/mobile/calls/{callSession}/transition', [CallController::class, 'transition']);
+    Route::post('/auth/mobile/community', [CommunityController::class, 'store']);
+    Route::put('/auth/mobile/community/{communityPost}/helpful', [CommunityController::class, 'react']);
+    Route::post('/auth/mobile/katabang', KatabangController::class);
 });
 
 Route::middleware('auth')->group(function (): void {
@@ -158,6 +174,16 @@ Route::middleware('auth')->group(function (): void {
     Route::delete('/notifications/{notification}', [DurableNotificationController::class, 'clear']);
     Route::post('/push-devices', [PushDeviceController::class, 'store']);
     Route::delete('/push-devices/{pushDevice}', [PushDeviceController::class, 'destroy']);
+    Route::get('/direct-conversations', [DirectConversationController::class, 'index']);
+    Route::post('/direct-conversations', [DirectConversationController::class, 'store']);
+    Route::get('/direct-conversations/{directConversation}', [DirectConversationController::class, 'show']);
+    Route::post('/direct-conversations/{directConversation}/accept', [DirectConversationController::class, 'accept']);
+    Route::post('/direct-conversations/{directConversation}/messages', [DirectConversationController::class, 'send']);
+    Route::post('/calls', [CallController::class, 'store']);
+    Route::post('/calls/{callSession}/transition', [CallController::class, 'transition']);
+    Route::post('/community', [CommunityController::class, 'store']);
+    Route::put('/community/{communityPost}/helpful', [CommunityController::class, 'react']);
+    Route::post('/katabang', KatabangController::class);
     Route::middleware('admin')->prefix('admin/marketplace')->group(function (): void {
         Route::get('/cases', [AdminDisputeController::class, 'index']);
         Route::get('/cases/{disputeCase}', [AdminDisputeController::class, 'show']);
@@ -171,6 +197,8 @@ Route::middleware('auth')->group(function (): void {
         Route::put('/assets/{profileAsset}/scan', [AdminMarketplaceController::class, 'asset']);
         Route::put('/message-assets/{messageAsset}/scan', [MessageAssetController::class, 'review']);
         Route::put('/credentials/{providerCredential}/review', [AdminMarketplaceController::class, 'credential']);
+        Route::get('/analytics', [AdminPhaseNineController::class, 'analytics']);
+        Route::get('/operations-validation', [AdminPhaseNineController::class, 'operations']);
     });
 });
 
