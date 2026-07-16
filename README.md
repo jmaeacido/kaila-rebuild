@@ -4,13 +4,14 @@ KAILA is a mobile-first local services marketplace connecting clients with trust
 
 ## Project status
 
-Phase 3 — job posting and provider opportunities — is complete as of July 16, 2026.
+Phase 7 repository implementation — migration rehearsal and pilot hardening — is complete as of July 16, 2026. Production pilot acceptance remains gated on external operational, security, device, and stakeholder evidence.
 
-- All acceptance criteria passed locally and in the disposable development environment.
+- Repository-controlled quality gates pass locally; external Phase 7 pilot gates are listed below.
 - The final [GitHub Actions workflow](https://github.com/jmaeacido/kaila-rebuild/actions/runs/29452651122) passed on commit `bf999c4`.
 - Detailed evidence is recorded in the [Phase 1 acceptance report](docs/architecture/phase-1-acceptance-report.md).
 - Phase 2 acceptance evidence is recorded in the [Phase 2 acceptance report](docs/architecture/phase-2-acceptance-report.md).
 - Phase 3 acceptance evidence is recorded in the [Phase 3 acceptance report](docs/architecture/phase-3-acceptance-report.md).
+- Phase 7 repository evidence and external gates are recorded in the [Phase 7 acceptance report](docs/architecture/phase-7-acceptance-report.md).
 
 ## Applications
 
@@ -106,4 +107,4 @@ Phase 3 implements the three-step job-posting flow, idempotent drafts and postin
 
 ## Next phase
 
-Phase 4 is next: immutable offers and revisions, comparison, provider selection, and the accepted commercial snapshot.
+Close the external Phase 7 pilot gates before Phase 8 Android packaging and release.

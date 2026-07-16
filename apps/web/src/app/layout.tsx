@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { OnlineStatus } from "./online-status";
 
 export const metadata: Metadata = {
   title: "KAILA — Local services near you",
@@ -13,7 +14,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body><OnlineStatus />{children}</body>
     </html>
   );
 }

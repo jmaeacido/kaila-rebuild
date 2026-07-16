@@ -15,6 +15,7 @@
   --color-focus: #0f4bff;
   --color-disabled: #98a2b3;
   --color-danger-surface: #fff1f2;
+  --color-warning-surface: #fff8e6;
   --gradient-primary: linear-gradient(135deg, #1463ff, #27b7ff);
   --gradient-hero: linear-gradient(135deg, #0f4bff, #3cc8ff);
   --spacing-4: 0.25rem;
@@ -57,6 +58,7 @@
   --duration-fast: 150ms;
   --duration-normal: 200ms;
   --duration-slow: 250ms;
+  --z-toast: 1000;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -68,6 +70,7 @@
     --color-background: #08111f;
     --color-surface: #111c2c;
     --color-danger-surface: #33171b;
+    --color-warning-surface: #332711;
     --color-focus: #27b7ff;
     --shadow-card: 0 2px 8px rgb(0 0 0 / 28%);
     --shadow-floating: 0 8px 24px rgb(0 0 0 / 34%);
