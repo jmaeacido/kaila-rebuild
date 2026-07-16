@@ -1,0 +1,20 @@
+.shell { display:grid; gap:var(--spacing-24); margin:auto; max-width:64rem; padding:var(--spacing-24) var(--spacing-16); }
+.shell > header { align-items:center; display:flex; justify-content:space-between; }
+.shell > header p, .privacy { color:var(--color-text-secondary); font-size:var(--font-small-size); }
+.shell h1, .shell h2 { color:var(--color-ink); }
+.shell button svg { height:var(--spacing-16); width:var(--spacing-16); }
+.list, .skeletons { display:grid; gap:var(--spacing-16); }
+.list article { background:var(--color-surface); border:var(--control-border-width) solid var(--color-border); border-radius:var(--radius-card); box-shadow:var(--shadow-card); display:grid; gap:var(--spacing-16); padding:var(--spacing-24); }
+.title span { color:var(--color-primary); font-size:var(--font-caption-size); font-weight:var(--font-weight-semibold); }
+.list dl { display:grid; gap:var(--spacing-12); }
+.list dl div { align-items:center; display:grid; gap:var(--spacing-8); grid-template-columns:var(--spacing-24) 5rem 1fr; }
+.list dt { color:var(--color-text-secondary); font-size:var(--font-small-size); }
+.list dd { color:var(--color-ink); font-weight:var(--font-weight-medium); }
+.list dl svg { color:var(--color-primary); height:var(--spacing-24); width:var(--spacing-24); }
+.actions { display:flex; gap:var(--spacing-12); justify-content:flex-end; }
+.empty { align-items:center; background:var(--color-surface); border-radius:var(--radius-card); display:flex; flex-direction:column; gap:var(--spacing-12); padding:var(--spacing-48) var(--spacing-24); text-align:center; }
+.empty > svg { color:var(--color-accent); height:var(--spacing-48); width:var(--spacing-48); }
+.skeletons span { animation:pulse var(--duration-slow) ease-out infinite alternate; background:var(--color-border); border-radius:var(--radius-card); height:15rem; }
+@media(min-width:48rem) { .shell { padding:var(--spacing-32); } .list { grid-template-columns:repeat(2,1fr); } }
+@media(prefers-reduced-motion:reduce) { .skeletons span { animation:none; } }
+@keyframes pulse { to { opacity:var(--opacity-disabled); } }

@@ -5,7 +5,10 @@ namespace App\Providers;
 use App\Contracts\MapsProvider;
 use App\Contracts\MetricsRecorder;
 use App\Contracts\OutboxTransport;
+use App\Contracts\PushTransport;
 use App\Support\DeterministicFakeMapsProvider;
+use App\Support\FakePushTransport;
+use App\Support\FcmPushTransport;
 use App\Support\LogOutboxTransport;
 use App\Support\RedisRealtimeOutboxTransport;
 use App\Support\StructuredLogMetricsRecorder;
@@ -43,6 +46,11 @@ class AppServiceProvider extends ServiceProvider
         }
         $this->app->bind(MapsProvider::class, DeterministicFakeMapsProvider::class);
         $this->app->bind(MetricsRecorder::class, StructuredLogMetricsRecorder::class);
+        $push = (string) config('services.fcm.transport', 'fake');
+        if ($push === 'fake' && $this->app->environment('production')) {
+            throw new LogicException('The fake push transport must not be used in production.');
+        }
+        $this->app->bind(PushTransport::class, $push === 'fcm' ? FcmPushTransport::class : FakePushTransport::class);
     }
 
     /**

@@ -30,7 +30,7 @@ export default function HomePage() {
     <div className={styles.layout}>
       <nav className={styles.desktopNav} aria-label="Primary"><NavItems /></nav>
       <section id="main" className={styles.content} aria-labelledby="home-title">
-        <div className={styles.hero}><p className={styles.eyebrow}><MapPin aria-hidden="true" /> Nearby help, made simple</p><h1 id="home-title">What do you need right now?</h1><p>Find trusted local providers who serve your area.</p></div>
+        <div className={styles.hero}><p className={styles.eyebrow}><MapPin aria-hidden="true" /> Nearby help, made simple</p><h1 id="home-title">What do you need right now?</h1><p>Tell local providers what you need in under a minute.</p><Button onClick={() => location.assign("/post-job")}>Post a Job</Button></div>
         <div className={styles.searchCard} aria-label="Find local providers">
           <label>Service<select value={categoryId} onChange={(event) => setCategoryId(event.target.value)}><option value="">Choose a service</option>{categories.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
           <label>Area<select value={areaId} onChange={(event) => setAreaId(event.target.value)}><option value="">Choose your area</option>{areas.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>

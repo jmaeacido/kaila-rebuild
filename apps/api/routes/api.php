@@ -6,12 +6,17 @@ use App\Http\Controllers\Auth\MobileSessionController;
 use App\Http\Controllers\Auth\PasswordRecoveryController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\CurrentUserController;
+use App\Http\Controllers\DurableNotificationController;
+use App\Http\Controllers\JobAssetController;
 use App\Http\Controllers\MarketplaceProfileController;
 use App\Http\Controllers\NotificationPreferenceController;
+use App\Http\Controllers\OpportunityController;
 use App\Http\Controllers\ProfileAssetController;
 use App\Http\Controllers\ProviderCredentialController;
+use App\Http\Controllers\PushDeviceController;
 use App\Http\Controllers\RealtimeTicketController;
 use App\Http\Controllers\ReferenceDataController;
+use App\Http\Controllers\ServiceJobController;
 use App\Http\Controllers\UserSessionController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -45,6 +50,19 @@ Route::middleware('mobile.auth')->group(function (): void {
     Route::put('/auth/mobile/provider-profile', [MarketplaceProfileController::class, 'provider']);
     Route::post('/auth/mobile/profile-assets', [ProfileAssetController::class, 'store']);
     Route::post('/auth/mobile/provider-credentials', [ProviderCredentialController::class, 'store']);
+    Route::get('/auth/mobile/jobs', [ServiceJobController::class, 'index']);
+    Route::post('/auth/mobile/jobs', [ServiceJobController::class, 'store']);
+    Route::get('/auth/mobile/jobs/{serviceJob}', [ServiceJobController::class, 'show']);
+    Route::put('/auth/mobile/jobs/{serviceJob}', [ServiceJobController::class, 'update']);
+    Route::post('/auth/mobile/jobs/{serviceJob}/post', [ServiceJobController::class, 'post']);
+    Route::post('/auth/mobile/jobs/{serviceJob}/assets', [JobAssetController::class, 'store']);
+    Route::get('/auth/mobile/opportunities', [OpportunityController::class, 'index']);
+    Route::put('/auth/mobile/opportunities/{opportunity}', [OpportunityController::class, 'decide']);
+    Route::get('/auth/mobile/notifications', [DurableNotificationController::class, 'index']);
+    Route::put('/auth/mobile/notifications/{notification}/read', [DurableNotificationController::class, 'read']);
+    Route::delete('/auth/mobile/notifications/{notification}', [DurableNotificationController::class, 'clear']);
+    Route::post('/auth/mobile/push-devices', [PushDeviceController::class, 'store']);
+    Route::delete('/auth/mobile/push-devices/{pushDevice}', [PushDeviceController::class, 'destroy']);
 });
 
 Route::middleware('auth')->group(function (): void {
@@ -62,6 +80,19 @@ Route::middleware('auth')->group(function (): void {
     Route::put('/me/provider-profile', [MarketplaceProfileController::class, 'provider']);
     Route::post('/me/profile-assets', [ProfileAssetController::class, 'store']);
     Route::post('/me/provider-credentials', [ProviderCredentialController::class, 'store']);
+    Route::get('/jobs', [ServiceJobController::class, 'index']);
+    Route::post('/jobs', [ServiceJobController::class, 'store']);
+    Route::get('/jobs/{serviceJob}', [ServiceJobController::class, 'show']);
+    Route::put('/jobs/{serviceJob}', [ServiceJobController::class, 'update']);
+    Route::post('/jobs/{serviceJob}/post', [ServiceJobController::class, 'post']);
+    Route::post('/jobs/{serviceJob}/assets', [JobAssetController::class, 'store']);
+    Route::get('/opportunities', [OpportunityController::class, 'index']);
+    Route::put('/opportunities/{opportunity}', [OpportunityController::class, 'decide']);
+    Route::get('/notifications', [DurableNotificationController::class, 'index']);
+    Route::put('/notifications/{notification}/read', [DurableNotificationController::class, 'read']);
+    Route::delete('/notifications/{notification}', [DurableNotificationController::class, 'clear']);
+    Route::post('/push-devices', [PushDeviceController::class, 'store']);
+    Route::delete('/push-devices/{pushDevice}', [PushDeviceController::class, 'destroy']);
     Route::middleware('admin')->prefix('admin/marketplace')->group(function (): void {
         Route::get('/review-queue', [AdminMarketplaceController::class, 'queue']);
         Route::post('/categories', [AdminMarketplaceController::class, 'category']);

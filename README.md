@@ -4,13 +4,13 @@ KAILA is a mobile-first local services marketplace connecting clients with trust
 
 ## Project status
 
-Phase 2 — marketplace reference data and profiles — is complete as of July 16, 2026.
+Phase 3 — job posting and provider opportunities — is complete as of July 16, 2026.
 
 - All acceptance criteria passed locally and in the disposable development environment.
 - The final [GitHub Actions workflow](https://github.com/jmaeacido/kaila-rebuild/actions/runs/29452651122) passed on commit `bf999c4`.
 - Detailed evidence is recorded in the [Phase 1 acceptance report](docs/architecture/phase-1-acceptance-report.md).
 - Phase 2 acceptance evidence is recorded in the [Phase 2 acceptance report](docs/architecture/phase-2-acceptance-report.md).
-- Phase 3 is next: job posting and provider opportunities, as defined in the [rebuild roadmap](docs/architecture/rebuild-roadmap.md#phase-3-job-posting-and-provider-opportunities).
+- Phase 3 acceptance evidence is recorded in the [Phase 3 acceptance report](docs/architecture/phase-3-acceptance-report.md).
 
 ## Applications
 
@@ -100,6 +100,10 @@ Pop-Location
 
 Phase 2 implements service taxonomy, geographic hierarchy and service areas, client and provider profiles, availability, private portfolio and credential assets, credential review state, deterministic eligible-provider discovery, privacy-safe public profiles, and separate administrative workflows for taxonomy and verification.
 
+## Completed Phase 3
+
+Phase 3 implements the three-step job-posting flow, idempotent drafts and posting, quarantined job photos, privacy-minimized provider opportunities, deterministic category/area/availability matching, durable Socket.IO/FCM notifications, and an immutable job timeline.
+
 ## Next phase
 
-Phase 3 implements the 60-second job-posting flow, privacy-minimized provider opportunities, deterministic matching from the Phase 2 reference data, durable Socket.IO/FCM notifications, and an immutable job timeline.
+Phase 4 is next: immutable offers and revisions, comparison, provider selection, and the accepted commercial snapshot.
