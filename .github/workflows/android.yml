@@ -30,4 +30,6 @@ jobs:
       - run: pnpm --filter @kaila/mobile android:sync
       - run: pnpm --filter @kaila/mobile android:verify
       - working-directory: apps/mobile/android
-        run: ./gradlew lintDebug testDebugUnitTest assembleDebug --stacktrace
+        run: |
+          test -x ./gradlew
+          ./gradlew lintDebug testDebugUnitTest assembleDebug --stacktrace
