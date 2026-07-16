@@ -16,6 +16,11 @@ use Illuminate\Support\Carbon;
  * @property int $service_category_id
  * @property int $area_id
  * @property string $status
+ * @property string|null $completion_deadline_id
+ * @property Carbon|null $work_started_at
+ * @property Carbon|null $completed_at
+ * @property Carbon|null $auto_confirm_at
+ * @property Carbon|null $review_closes_at
  */
 class ServiceJob extends Model
 {
@@ -25,7 +30,7 @@ class ServiceJob extends Model
 
     protected function casts(): array
     {
-        return ['scheduled_at' => 'datetime', 'posted_at' => 'datetime', 'latitude' => 'decimal:7', 'longitude' => 'decimal:7'];
+        return ['scheduled_at' => 'datetime', 'posted_at' => 'datetime', 'work_started_at' => 'datetime', 'completed_at' => 'datetime', 'auto_confirm_at' => 'datetime', 'review_closes_at' => 'datetime', 'latitude' => 'decimal:7', 'longitude' => 'decimal:7'];
     }
 
     /** @return BelongsTo<ServiceCategory, $this> */
