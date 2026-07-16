@@ -10,6 +10,7 @@ use App\Support\DeterministicFakeMapsProvider;
 use App\Support\FakePushTransport;
 use App\Support\FcmPushTransport;
 use App\Support\LogOutboxTransport;
+use App\Support\OpenStreetMapProvider;
 use App\Support\RedisRealtimeOutboxTransport;
 use App\Support\StructuredLogMetricsRecorder;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -38,13 +39,16 @@ class AppServiceProvider extends ServiceProvider
         };
         $this->app->bind(OutboxTransport::class, $implementation);
 
-        if (config('maps.provider') !== 'fake') {
-            throw new LogicException('The configured maps provider is not supported.');
-        }
-        if ($this->app->environment('production')) {
+        $mapsProvider = (string) config('maps.provider');
+        if ($mapsProvider === 'fake' && $this->app->environment('production')) {
             throw new LogicException('The deterministic fake maps provider must not be used in production.');
         }
-        $this->app->bind(MapsProvider::class, DeterministicFakeMapsProvider::class);
+        $mapsImplementation = match ($mapsProvider) {
+            'fake' => DeterministicFakeMapsProvider::class,
+            'openstreetmap' => OpenStreetMapProvider::class,
+            default => throw new LogicException('The configured maps provider is not supported.'),
+        };
+        $this->app->bind(MapsProvider::class, $mapsImplementation);
         $this->app->bind(MetricsRecorder::class, StructuredLogMetricsRecorder::class);
         $push = (string) config('services.fcm.transport', 'fake');
         if ($push === 'fake' && $this->app->environment('production')) {

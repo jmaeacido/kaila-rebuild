@@ -57,6 +57,9 @@ class TravelController extends Controller
         DB::table('location_samples')->insert(['travel_session_id' => $session->id, 'latitude' => $data['latitude'], 'longitude' => $data['longitude'], 'accuracy_meters' => $data['accuracyMeters'], 'captured_at' => $data['capturedAt']]);
         $routeAvailable = true;
         try {
+            if ($serviceJob->latitude === null || $serviceJob->longitude === null) {
+                throw new \RuntimeException('The destination is not pinned.');
+            }
             $route = $this->maps->route(new GeoPoint((float) $data['latitude'], (float) $data['longitude']), new GeoPoint((float) $serviceJob->latitude, (float) $serviceJob->longitude));
             $distance = $route->distanceMeters;
             $eta = $route->durationSeconds;
@@ -79,9 +82,29 @@ class TravelController extends Controller
         $session = TravelSession::query()->where('service_job_id', $serviceJob->id)->latest('started_at')->first();
         if (! $session) {
             return response()->json(['data' => null]);
-        }$sample = DB::table('location_samples')->where('travel_session_id', $session->id)->latest('captured_at')->first();
+        }
+
+        $sample = DB::table('location_samples')->where('travel_session_id', $session->id)->latest('captured_at')->first();
         $data = $this->present($session);
         $data['location'] = $sample ? ['latitude' => (float) $sample->latitude, 'longitude' => (float) $sample->longitude, 'accuracyMeters' => $sample->accuracy_meters, 'capturedAt' => $sample->captured_at] : null;
+        $data['destination'] = $serviceJob->latitude !== null && $serviceJob->longitude !== null
+            ? ['latitude' => (float) $serviceJob->latitude, 'longitude' => (float) $serviceJob->longitude]
+            : null;
+        $data['routeGeometry'] = null;
+        if ($sample && $data['destination']) {
+            try {
+                $route = $this->maps->route(
+                    new GeoPoint((float) $sample->latitude, (float) $sample->longitude),
+                    new GeoPoint($data['destination']['latitude'], $data['destination']['longitude']),
+                );
+                $data['routeGeometry'] = array_map(
+                    fn (GeoPoint $point): array => ['latitude' => $point->latitude, 'longitude' => $point->longitude],
+                    $route->geometry,
+                );
+            } catch (Throwable) {
+                // Distance and ETA already degrade safely when routing is unavailable.
+            }
+        }
 
         return response()->json(['data' => $data]);
     }

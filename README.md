@@ -92,6 +92,7 @@ Pop-Location
 - Durable notification preferences and auditable location-retention scheduling
 - Private S3-compatible storage adapter with disposable MinIO verification
 - Provider-neutral maps contract with a deterministic non-production fake
+- MapLibre/OpenFreeMap rendering with private, self-hosted Philippines Nominatim geocoding and OSRM routing
 - Semantic design tokens and axe-tested accessible controls, feedback, and loading states
 - CI MySQL/Redis acceptance services, dependency audits, and committed-secret scanning
 - Login and registration rate limits

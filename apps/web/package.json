@@ -10,13 +10,14 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@kaila/mobile": "workspace:*",
     "@kaila/design-tokens": "workspace:*",
+    "@kaila/mobile": "workspace:*",
     "@kaila/ui": "workspace:*",
+    "lucide-react": "^0.468.0",
+    "maplibre-gl": "5.12.0",
     "next": "16.2.10",
     "react": "19.2.4",
-    "react-dom": "19.2.4",
-    "lucide-react": "^0.468.0"
+    "react-dom": "19.2.4"
   },
   "devDependencies": {
     "@types/node": "^24",
