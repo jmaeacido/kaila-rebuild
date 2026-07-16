@@ -1,5 +1,8 @@
 apply plugin: 'com.android.application'
 
+def kailaVersionCode = (System.getenv('KAILA_VERSION_CODE') ?: '1').toInteger()
+def kailaVersionName = System.getenv('KAILA_VERSION_NAME') ?: '1.0.0-dev'
+
 android {
     namespace = "com.kaila.marketplace"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -7,8 +10,8 @@ android {
         applicationId "com.kaila.marketplace"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode (System.getenv("KAILA_VERSION_CODE") ?: "1").toInteger()
-        versionName (System.getenv("KAILA_VERSION_NAME") ?: "1.0.0-dev")
+        versionCode kailaVersionCode
+        versionName kailaVersionName
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
