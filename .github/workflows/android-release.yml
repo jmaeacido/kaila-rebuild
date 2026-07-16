@@ -1,0 +1,63 @@
+name: Android release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_name:
+        description: Store version name
+        required: true
+      version_code:
+        description: Monotonic store version code
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  bundle:
+    environment: android-production
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.13.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: gradle
+      - uses: android-actions/setup-android@v3
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @kaila/mobile android:sync
+        env:
+          KAILA_APP_ORIGIN: https://app.kaila-app.com
+      - name: Materialize release credentials
+        shell: bash
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          GOOGLE_SERVICES_BASE64: ${{ secrets.ANDROID_GOOGLE_SERVICES_BASE64 }}
+        run: |
+          test -n "$KEYSTORE_BASE64" && test -n "$GOOGLE_SERVICES_BASE64"
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/kaila-release.jks"
+          printf '%s' "$GOOGLE_SERVICES_BASE64" | base64 --decode > apps/mobile/android/app/google-services.json
+      - name: Build signed app bundle
+        working-directory: apps/mobile/android
+        env:
+          KAILA_ANDROID_KEYSTORE: ${{ runner.temp }}/kaila-release.jks
+          KAILA_ANDROID_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
+          KAILA_ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KAILA_ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          KAILA_VERSION_NAME: ${{ inputs.version_name }}
+          KAILA_VERSION_CODE: ${{ inputs.version_code }}
+        run: ./gradlew bundleRelease lintRelease --stacktrace
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kaila-${{ inputs.version_name }}-${{ github.sha }}
+          path: apps/mobile/android/app/build/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
+          retention-days: 14

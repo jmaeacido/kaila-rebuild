@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { OnlineStatus } from "./online-status";
+import { NativeRuntime } from "./native-runtime";
 
 export const metadata: Metadata = {
   title: "KAILA — Local services near you",
@@ -14,7 +15,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body><OnlineStatus />{children}</body>
+      <body><NativeRuntime /><OnlineStatus />{children}</body>
     </html>
   );
 }

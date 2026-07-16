@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">KAILA</string>
+    <string name="title_activity_main">KAILA</string>
+    <string name="package_name">com.kaila.marketplace</string>
+    <string name="custom_url_scheme">com.kaila.marketplace</string>
+</resources>
