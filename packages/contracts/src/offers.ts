@@ -1,0 +1,6 @@
+import { z } from "zod";
+export const offerTermsInputSchema=z.object({amountCentavos:z.number().int().positive().max(1_000_000_000),availabilityText:z.string().min(1).max(160),estimatedDurationText:z.string().max(160).nullable(),scope:z.string().min(1).max(2000),message:z.string().max(1000).nullable(),expiresAt:z.iso.datetime({offset:true}).nullable()});
+export const offerRevisionSchema=z.object({id:z.uuid(),revisionNumber:z.number().int().positive(),proposedBy:z.enum(["client","provider"]),amountCentavos:z.number().int().positive(),availabilityText:z.string(),estimatedDurationText:z.string().nullable(),scope:z.string(),message:z.string().nullable(),expiresAt:z.string().datetime().nullable(),createdAt:z.string().datetime()});
+export const offerThreadSchema=z.object({id:z.uuid(),jobId:z.uuid(),status:z.enum(["active","accepted","rejected","withdrawn","expired"]),provider:z.object({id:z.number().int().positive(),displayName:z.string(),rating:z.string().nullable(),completedJobs:z.number().int().nonnegative(),responseMinutes:z.number().int().nonnegative().nullable(),verified:z.boolean()}),latestRevisionNumber:z.number().int().positive(),revisions:z.array(offerRevisionSchema).min(1)});
+export type OfferTermsInput=z.infer<typeof offerTermsInputSchema>;
+export type OfferThread=z.infer<typeof offerThreadSchema>;

@@ -2,10 +2,20 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property int $id
+ * @property int $user_id
+ * @property string $display_name
+ * @property string|null $rating
+ * @property int $completed_jobs
+ * @property int|null $response_minutes
+ * @property Collection<int, ProviderCredential> $credentials
+ */
 class ProviderProfile extends Model
 {
     protected $guarded = [];
