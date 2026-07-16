@@ -11,6 +11,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
 #[Fillable([
+    'legacy_id',
     'name',
     'email',
     'password',
@@ -19,6 +20,22 @@ use Illuminate\Notifications\Notifiable;
     'provider_intent',
     'active_mode',
     'is_admin',
+    'role',
+    'area',
+    'category',
+    'username',
+    'contact_number',
+    'messenger_link',
+    'preferred_contact_channel',
+    'best_contact_time',
+    'data_privacy_consent',
+    'deleted_at',
+    'auth_provider',
+    'auth_subject',
+    'social_photo_url',
+    'account_status',
+    'status_updated_at',
+    'banned_at',
 ])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable

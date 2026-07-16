@@ -1,5 +1,6 @@
 <?php
 
+use App\Console\Commands\ImportLegacyUsers;
 use App\Http\Middleware\AssignRequestContext;
 use App\Http\Middleware\AuthenticateMobileAccessToken;
 use App\Http\Middleware\EnsureAdministrator;
@@ -18,6 +19,7 @@ use Illuminate\View\Middleware\ShareErrorsFromSession;
 use Symfony\Component\HttpFoundation\Response;
 
 return Application::configure(basePath: dirname(__DIR__))
+    ->withCommands([ImportLegacyUsers::class])
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
         api: __DIR__.'/../routes/api.php',

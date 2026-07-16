@@ -13,11 +13,28 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
+            $table->string('legacy_id')->nullable()->unique();
             $table->string('name');
-            $table->string('email')->unique();
+            $table->string('email')->unique()->nullable();
             $table->timestamp('email_verified_at')->nullable();
-            $table->string('password');
+            $table->string('password')->nullable();
             $table->rememberToken();
+            $table->string('role')->nullable();
+            $table->string('area')->nullable();
+            $table->string('category')->nullable();
+            $table->string('username')->nullable()->unique();
+            $table->string('contact_number')->nullable();
+            $table->string('messenger_link')->nullable();
+            $table->string('preferred_contact_channel')->nullable();
+            $table->string('best_contact_time')->nullable();
+            $table->boolean('data_privacy_consent')->default(false);
+            $table->timestamp('deleted_at')->nullable();
+            $table->string('auth_provider')->nullable();
+            $table->string('auth_subject')->nullable()->unique();
+            $table->string('social_photo_url')->nullable();
+            $table->string('account_status')->nullable();
+            $table->timestamp('status_updated_at')->nullable();
+            $table->timestamp('banned_at')->nullable();
             $table->timestamps();
         });
 
