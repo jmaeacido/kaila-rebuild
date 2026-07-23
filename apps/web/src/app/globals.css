@@ -45,3 +45,94 @@ a {
 }
 
 .offlineNotice svg { flex: 0 0 auto; height: var(--spacing-24); width: var(--spacing-24); }
+
+.authGuardLoading {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-16);
+  justify-content: center;
+  min-height: 100vh;
+  padding: var(--spacing-24);
+}
+
+.authGuardLoading img {
+  height: var(--spacing-64);
+  object-fit: contain;
+  width: var(--spacing-64);
+}
+
+.authGuardLoading p {
+  color: var(--color-text-secondary);
+}
+
+.appSessionBar {
+  align-items: center;
+  background: var(--color-surface);
+  border-bottom: var(--control-border-width) solid var(--color-border);
+  display: flex;
+  gap: var(--spacing-16);
+  justify-content: space-between;
+  min-height: var(--spacing-64);
+  padding: var(--spacing-8) var(--spacing-16);
+}
+
+.appSessionBar > a {
+  background: var(--color-on-primary);
+  border-radius: var(--radius-input);
+  display: inline-flex;
+  padding: var(--spacing-4) var(--spacing-8);
+}
+
+.appSessionBar img {
+  height: auto;
+  width: 7rem;
+}
+
+.appSessionBar > div {
+  align-items: center;
+  display: flex;
+  gap: var(--spacing-8);
+}
+
+.appSessionBar span {
+  color: var(--color-text-secondary);
+  display: none;
+  font-size: var(--font-small-size);
+}
+
+.appSessionBar button,
+.appSessionBar > div a {
+  align-items: center;
+  background: transparent;
+  border: var(--control-border-width) solid var(--color-border);
+  border-radius: var(--radius-button);
+  color: var(--color-text);
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  font-size: var(--font-small-size);
+  gap: var(--spacing-8);
+  padding: var(--spacing-8) var(--spacing-12);
+  text-decoration: none;
+}
+
+.appSessionBar button {
+  color: var(--color-danger);
+}
+
+.appSessionBar svg {
+  height: var(--spacing-16);
+  width: var(--spacing-16);
+}
+
+@media (min-width: 40rem) {
+  .appSessionBar {
+    padding-left: var(--spacing-24);
+    padding-right: var(--spacing-24);
+  }
+
+  .appSessionBar span {
+    display: inline;
+  }
+}

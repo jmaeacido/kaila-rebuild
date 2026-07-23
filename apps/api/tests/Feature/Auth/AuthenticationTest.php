@@ -40,6 +40,20 @@ class AuthenticationTest extends TestCase
         $this->assertDatabaseHas('audit_events', ['event_type' => 'auth.registered']);
     }
 
+    public function test_registration_config_exposes_current_policy_versions(): void
+    {
+        $this->getJson('/api/v1/auth/registration-config')
+            ->assertOk()
+            ->assertJsonPath('data.termsVersion', config('policies.terms_version'))
+            ->assertJsonPath('data.privacyVersion', config('policies.privacy_version'));
+    }
+
+    public function test_marketplace_actions_require_authentication(): void
+    {
+        $this->getJson('/api/v1/providers')->assertUnauthorized();
+        $this->getJson('/api/v1/community')->assertUnauthorized();
+    }
+
     public function test_registration_rejects_stale_policy_versions(): void
     {
         $this->postJson('/api/v1/auth/register', [
@@ -106,6 +120,13 @@ class AuthenticationTest extends TestCase
     public function test_unauthenticated_user_cannot_read_self(): void
     {
         $this->getJson('/api/v1/me')
+            ->assertUnauthorized()
+            ->assertJsonPath('error.code', 'AUTHENTICATION_REQUIRED');
+    }
+
+    public function test_unauthenticated_api_request_without_json_accept_header_does_not_redirect(): void
+    {
+        $this->get('/api/v1/admin/marketplace/review-queue')
             ->assertUnauthorized()
             ->assertJsonPath('error.code', 'AUTHENTICATION_REQUIRED');
     }

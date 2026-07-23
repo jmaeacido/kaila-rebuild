@@ -16,11 +16,18 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call(MarketplaceReferenceSeeder::class);
-        // User::factory(10)->create();
 
-        User::query()->firstOrCreate(
+        if (! app()->environment(['local', 'testing'])) {
+            return;
+        }
+
+        User::query()->updateOrCreate(
             ['email' => 'test@example.com'],
-            User::factory()->make(['name' => 'Test User'])->getAttributes(),
+            User::factory()->make([
+                'name' => 'Development Administrator',
+                'email' => 'test@example.com',
+                'is_admin' => true,
+            ])->getAttributes(),
         );
     }
 }

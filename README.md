@@ -46,17 +46,28 @@ Copy-Item .env.example .env
 composer install
 php artisan key:generate
 php artisan realtime:key
+php artisan migrate
+php artisan db:seed
 Pop-Location
 ```
 
 Copy the generated signing seed only to `apps/api/.env`. Copy the matching public key to the realtime service environment. Never place the signing seed in a browser, Android bundle, or Socket.IO environment.
 
-Run the outbox worker and scheduler in separate development terminals:
+Start the frontend services from the repository root:
 
 ```powershell
+pnpm dev
+```
+
+The root development command starts the web, admin, and realtime applications. Start the Laravel API, outbox worker, and scheduler in separate development terminals:
+
+```powershell
+php apps/api/artisan serve --host=127.0.0.1 --port=8000
 php apps/api/artisan queue:work redis --queue=outbox,default --tries=5
 php apps/api/artisan schedule:work
 ```
+
+For local development only, the database seeder creates the administrator account `test@example.com` with password `password`. Never reuse these credentials outside local development.
 
 Never reuse the example passwords outside local development.
 

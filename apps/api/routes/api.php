@@ -7,6 +7,7 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\MobileSessionController;
 use App\Http\Controllers\Auth\PasswordRecoveryController;
 use App\Http\Controllers\Auth\RegisteredUserController;
+use App\Http\Controllers\Auth\RegistrationConfigController;
 use App\Http\Controllers\CallController;
 use App\Http\Controllers\CommunityController;
 use App\Http\Controllers\ConversationController;
@@ -36,11 +37,8 @@ use Illuminate\Support\Facades\Route;
 Route::get('/auth/csrf', fn () => response()->noContent());
 
 Route::middleware('throttle:registration')->post('/auth/register', RegisteredUserController::class);
+Route::get('/auth/registration-config', RegistrationConfigController::class);
 Route::get('/marketplace/reference-data', ReferenceDataController::class);
-Route::get('/providers', [MarketplaceProfileController::class, 'discover']);
-Route::get('/providers/{providerProfile}', [MarketplaceProfileController::class, 'publicProfile']);
-Route::get('/community', [CommunityController::class, 'index']);
-Route::get('/profile-assets/{profileAsset}', [ProfileAssetController::class, 'show']);
 Route::middleware('throttle:login')->post('/auth/login', [AuthenticatedSessionController::class, 'store']);
 Route::middleware('throttle:login')->post('/auth/mobile/login', [MobileSessionController::class, 'store']);
 Route::middleware('throttle:login')->post('/auth/mobile/refresh', [MobileSessionController::class, 'refresh']);
@@ -119,6 +117,10 @@ Route::middleware('mobile.auth')->group(function (): void {
 
 Route::middleware('auth')->group(function (): void {
     Route::get('/me', CurrentUserController::class);
+    Route::get('/providers', [MarketplaceProfileController::class, 'discover']);
+    Route::get('/providers/{providerProfile}', [MarketplaceProfileController::class, 'publicProfile']);
+    Route::get('/community', [CommunityController::class, 'index']);
+    Route::get('/profile-assets/{profileAsset}', [ProfileAssetController::class, 'show']);
     Route::post('/auth/logout', [AuthenticatedSessionController::class, 'destroy']);
     Route::post('/auth/logout-all', [AuthenticatedSessionController::class, 'destroyAll']);
     Route::get('/me/sessions', [UserSessionController::class, 'index']);

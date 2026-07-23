@@ -41,7 +41,8 @@ class MarketplaceProfilesTest extends TestCase
         $this->provider('Still Reviewing', 'pending_review', $category, $area);
         $this->provider('Wrong Area', 'active', $category, $otherArea);
 
-        $this->getJson("/api/v1/providers?categoryId={$category->id}&areaId={$area->id}")
+        $this->actingAs(User::factory()->create())
+            ->getJson("/api/v1/providers?categoryId={$category->id}&areaId={$area->id}")
             ->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $eligible->id)->assertJsonPath('data.0.verified', false);
     }
 
@@ -53,11 +54,12 @@ class MarketplaceProfilesTest extends TestCase
             'original_name' => 'credential.jpg', 'mime_type' => 'image/jpeg', 'size_bytes' => 100, 'scan_status' => 'clean']);
         $credential = ProviderCredential::query()->create(['provider_profile_id' => $profile->id, 'asset_id' => $asset->id, 'type' => 'identity', 'label' => 'Government ID', 'review_status' => 'pending']);
 
-        $this->getJson("/api/v1/providers/{$profile->id}")->assertJsonPath('data.verified', false);
+        $viewer = User::factory()->create();
+        $this->actingAs($viewer)->getJson("/api/v1/providers/{$profile->id}")->assertJsonPath('data.verified', false);
         $admin = User::factory()->create(['is_admin' => true]);
         $this->actingAs($admin)->putJson("/api/v1/admin/marketplace/credentials/{$credential->id}/review", ['reviewStatus' => 'approved'])
             ->assertOk();
-        $this->getJson("/api/v1/providers/{$profile->id}")->assertJsonPath('data.verified', true);
+        $this->actingAs($viewer)->getJson("/api/v1/providers/{$profile->id}")->assertJsonPath('data.verified', true);
     }
 
     public function test_uploads_are_private_and_quarantined_until_scan(): void
@@ -80,7 +82,8 @@ class MarketplaceProfilesTest extends TestCase
         ProfileAsset::query()->create(['user_id' => $profile->user_id, 'purpose' => 'portfolio', 'disk' => 'private-assets', 'object_key' => 'portfolio/clean.jpg', 'original_name' => 'clean.jpg', 'mime_type' => 'image/jpeg', 'size_bytes' => 100, 'scan_status' => 'clean', 'caption' => 'Finished repair']);
         ProfileAsset::query()->create(['user_id' => $profile->user_id, 'purpose' => 'portfolio', 'disk' => 'private-assets', 'object_key' => 'portfolio/pending.jpg', 'original_name' => 'pending.jpg', 'mime_type' => 'image/jpeg', 'size_bytes' => 100, 'scan_status' => 'pending', 'caption' => 'Not reviewed']);
 
-        $this->getJson("/api/v1/providers/{$profile->id}")->assertOk()->assertJsonCount(1, 'data.portfolio')
+        $this->actingAs(User::factory()->create())
+            ->getJson("/api/v1/providers/{$profile->id}")->assertOk()->assertJsonCount(1, 'data.portfolio')
             ->assertJsonPath('data.portfolio.0.caption', 'Finished repair')->assertJsonMissingPath('data.portfolio.0.object_key');
     }
 

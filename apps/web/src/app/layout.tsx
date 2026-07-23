@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { OnlineStatus } from "./online-status";
 import { NativeRuntime } from "./native-runtime";
+import { AuthGuard } from "./auth-guard";
 
 export const metadata: Metadata = {
   title: "KAILA — Local services near you",
@@ -15,7 +16,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body><NativeRuntime /><OnlineStatus />{children}</body>
+      <body><NativeRuntime /><OnlineStatus /><AuthGuard>{children}</AuthGuard></body>
     </html>
   );
 }

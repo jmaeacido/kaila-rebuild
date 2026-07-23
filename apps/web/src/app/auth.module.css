@@ -1,0 +1,260 @@
+.page {
+  background:
+    radial-gradient(
+      circle at 15% 15%,
+      color-mix(in srgb, var(--color-accent) 18%, transparent),
+      transparent 28%
+    ),
+    var(--color-background);
+  display: grid;
+  min-height: 100vh;
+}
+
+.brandPanel {
+  background: var(--gradient-hero);
+  color: var(--color-on-primary);
+  display: none;
+  padding: var(--spacing-48);
+  position: relative;
+}
+
+.brandPanel > div {
+  align-self: center;
+  max-width: 32rem;
+}
+
+.brandPanel img,
+.cardHeader img {
+  background: var(--color-on-primary);
+  border-radius: var(--radius-input);
+  height: auto;
+  padding: var(--spacing-4) var(--spacing-8);
+  width: 8rem;
+}
+
+.brandPanel h2 {
+  font-size: var(--font-display-size);
+  line-height: var(--line-height-tight);
+  margin: var(--spacing-32) 0 var(--spacing-16);
+}
+
+.brandPanel p {
+  line-height: var(--line-height-body);
+}
+
+.benefits {
+  display: grid;
+  gap: var(--spacing-12);
+  margin-top: var(--spacing-32);
+}
+
+.benefits span {
+  align-items: center;
+  display: flex;
+  gap: var(--spacing-8);
+}
+
+.benefits svg {
+  height: var(--spacing-16);
+  width: var(--spacing-16);
+}
+
+.formSide {
+  align-items: center;
+  display: flex;
+  justify-content: center;
+  padding: var(--spacing-24) var(--spacing-16);
+}
+
+.card {
+  background: var(--color-surface);
+  border: var(--control-border-width) solid var(--color-border);
+  border-radius: var(--radius-dialog);
+  box-shadow: var(--shadow-card);
+  display: grid;
+  gap: var(--spacing-24);
+  max-width: 31rem;
+  padding: var(--spacing-24);
+  width: 100%;
+}
+
+.cardHeader {
+  display: grid;
+  gap: var(--spacing-8);
+}
+
+.cardHeader a {
+  justify-self: start;
+}
+
+.cardHeader h1 {
+  color: var(--color-ink);
+  font-size: var(--font-heading-size);
+  margin-top: var(--spacing-8);
+}
+
+.cardHeader p {
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-body);
+}
+
+.form {
+  display: grid;
+  gap: var(--spacing-16);
+}
+
+.form label,
+.fieldGroup > legend {
+  color: var(--color-ink);
+  font-size: var(--font-small-size);
+  font-weight: var(--font-weight-semibold);
+}
+
+.form label {
+  display: grid;
+  gap: var(--spacing-8);
+}
+
+.form input {
+  background: var(--color-background);
+  border: var(--control-border-width) solid var(--color-border);
+  border-radius: var(--radius-input);
+  color: var(--color-ink);
+  font: inherit;
+  min-height: var(--control-min-height);
+  padding: var(--spacing-12) var(--spacing-16);
+  width: 100%;
+}
+
+.passwordControl {
+  display: grid;
+  position: relative;
+}
+
+.passwordControl input {
+  padding-right: var(--spacing-48);
+}
+
+.passwordControl button {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  display: flex;
+  height: var(--control-min-height);
+  justify-content: center;
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: var(--control-min-height);
+}
+
+.passwordControl button svg {
+  height: var(--spacing-16);
+  width: var(--spacing-16);
+}
+
+.fieldError,
+.formError {
+  color: var(--color-danger);
+  font-size: var(--font-small-size);
+}
+
+.formError {
+  background: var(--color-danger-surface);
+  border-radius: var(--radius-input);
+  padding: var(--spacing-12);
+}
+
+.fieldGroup {
+  border: 0;
+  display: grid;
+  gap: var(--spacing-8);
+}
+
+.roleOptions {
+  display: grid;
+  gap: var(--spacing-8);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.roleOptions label {
+  border: var(--control-border-width) solid var(--color-border);
+  border-radius: var(--radius-card);
+  cursor: pointer;
+  display: grid;
+  gap: var(--spacing-4);
+  padding: var(--spacing-16);
+}
+
+.roleOptions label:has(input:checked) {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px
+    color-mix(in srgb, var(--color-primary) 12%, transparent);
+}
+
+.roleOptions input {
+  accent-color: var(--color-primary);
+  min-height: auto;
+  width: auto;
+}
+
+.roleOptions strong {
+  color: var(--color-ink);
+}
+
+.roleOptions span {
+  color: var(--color-text-secondary);
+  font-size: var(--font-caption-size);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-body);
+}
+
+.consent {
+  align-items: flex-start;
+  display: grid !important;
+  font-weight: var(--font-weight-regular) !important;
+  gap: var(--spacing-8) !important;
+  grid-template-columns: auto 1fr;
+  line-height: var(--line-height-body);
+}
+
+.consent input {
+  margin-top: var(--spacing-4);
+  min-height: auto;
+  width: auto;
+}
+
+.submit {
+  width: 100%;
+}
+
+.switch {
+  color: var(--color-text-secondary);
+  font-size: var(--font-small-size);
+  text-align: center;
+}
+
+.switch a {
+  color: var(--color-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+@media (min-width: 56rem) {
+  .page {
+    grid-template-columns: minmax(22rem, 0.85fr) minmax(32rem, 1.15fr);
+  }
+
+  .brandPanel {
+    display: flex;
+  }
+
+  .formSide {
+    padding: var(--spacing-48);
+  }
+
+  .card {
+    padding: var(--spacing-32);
+  }
+}
