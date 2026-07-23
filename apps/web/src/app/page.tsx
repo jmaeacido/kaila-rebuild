@@ -21,6 +21,8 @@ import {
 import { Button, Feedback } from "@kaila/ui";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { signedInHome, SignedInUser } from "./auth-client";
 import styles from "./page.module.css";
 
 type Reference = { id: number; name: string };
@@ -37,6 +39,7 @@ type Provider = {
 type ReferenceResult = { categories: Reference[]; areas: Reference[] };
 
 export default function HomePage() {
+  const router = useRouter();
   const [categories, setCategories] = useState<Reference[]>([]);
   const [areas, setAreas] = useState<Reference[]>([]);
   const [categoryId, setCategoryId] = useState("");
@@ -51,6 +54,36 @@ export default function HomePage() {
     setAreas(result.areas);
     setStatus("ready");
   }, []);
+
+  useEffect(() => {
+    void fetch("/api/v1/auth/session-status", {
+      credentials: "include",
+      headers: { Accept: "application/json" },
+    })
+      .then(async (response) => {
+        if (!response.ok) {
+          return false;
+        }
+        const body = (await response.json()) as {
+          data: { authenticated: boolean };
+        };
+        return body.data.authenticated;
+      })
+      .then(async (authenticated) => {
+        if (!authenticated) {
+          return;
+        }
+        const response = await fetch("/api/v1/me", {
+          credentials: "include",
+          headers: { Accept: "application/json" },
+        });
+        if (!response.ok) {
+          return;
+        }
+        const body = (await response.json()) as { data: SignedInUser };
+        router.replace(signedInHome(body.data));
+      });
+  }, [router]);
 
   useEffect(() => {
     void fetch("/api/v1/marketplace/reference-data")

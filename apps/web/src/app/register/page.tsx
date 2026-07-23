@@ -18,6 +18,7 @@ import {
   safeDestination,
 } from "../auth-client";
 import styles from "../auth.module.css";
+import { SocialLogin } from "../social-login";
 
 function RegisterForm() {
   const router = useRouter();
@@ -57,7 +58,7 @@ function RegisterForm() {
         data: { authenticated: boolean };
       };
       if (body.data.authenticated) {
-        router.replace(requestedDestination || "/");
+        router.replace(requestedDestination || "/post-job");
       }
     });
   }, [requestedDestination, router]);
@@ -308,6 +309,13 @@ function RegisterForm() {
               Create account
             </Button>
           </form>
+          <SocialLogin
+            destination={
+              requestedDestination ||
+              (role === "provider" ? "/provider-profile" : "/")
+            }
+            providerIntent={role === "provider"}
+          />
           <p className={styles.switch}>
             Already registered?{" "}
             <Link

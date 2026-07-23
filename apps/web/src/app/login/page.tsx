@@ -10,14 +10,18 @@ import {
   ApiError,
   prepareCsrf,
   safeDestination,
+  signedInHome,
+  SignedInUser,
 } from "../auth-client";
 import styles from "../auth.module.css";
+import { SocialLogin } from "../social-login";
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const destination = safeDestination(searchParams.get("next"));
+  const destination = safeDestination(searchParams.get("next"), "/post-job");
   const passwordWasReset = searchParams.get("passwordReset") === "1";
+  const socialError = searchParams.get("socialError");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -36,10 +40,23 @@ function LoginForm() {
         data: { authenticated: boolean };
       };
       if (body.data.authenticated) {
-        router.replace(destination);
+        if (searchParams.get("next")) {
+          router.replace(destination);
+          return;
+        }
+        const userResponse = await fetch("/api/v1/me", {
+          credentials: "include",
+          headers: { Accept: "application/json" },
+        });
+        if (userResponse.ok) {
+          const userBody = (await userResponse.json()) as {
+            data: SignedInUser;
+          };
+          router.replace(signedInHome(userBody.data));
+        }
       }
     });
-  }, [destination, router]);
+  }, [destination, router, searchParams]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -85,6 +102,11 @@ function LoginForm() {
         {passwordWasReset && (
           <p className={styles.formSuccess} role="status">
             Your password has been updated. Sign in with your new password.
+          </p>
+        )}
+        {socialError && (
+          <p className={styles.formError} role="alert">
+            {socialError}
           </p>
         )}
         <label>
@@ -140,6 +162,7 @@ function LoginForm() {
           Sign in
         </Button>
       </form>
+      <SocialLogin destination={destination} />
       <p className={styles.switch}>
         New to KAILA?{" "}
         <Link

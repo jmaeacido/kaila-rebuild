@@ -5,6 +5,17 @@ export type ApiError = {
   };
 };
 
+export type SignedInUser = {
+  activeMode: "client" | "provider" | null;
+  providerEligible: boolean;
+};
+
+export function signedInHome(user: SignedInUser): string {
+  return user.activeMode === "provider" && user.providerEligible
+    ? "/opportunities"
+    : "/post-job";
+}
+
 export function csrfToken(): string | undefined {
   const value = document.cookie
     .split("; ")

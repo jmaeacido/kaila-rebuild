@@ -9,6 +9,7 @@ use App\Http\Controllers\Auth\PasswordRecoveryController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\RegistrationConfigController;
 use App\Http\Controllers\Auth\SessionStatusController;
+use App\Http\Controllers\Auth\SocialAuthenticationController;
 use App\Http\Controllers\CallController;
 use App\Http\Controllers\CommunityController;
 use App\Http\Controllers\ConversationController;
@@ -42,6 +43,8 @@ Route::get('/auth/registration-config', RegistrationConfigController::class);
 Route::get('/auth/session-status', SessionStatusController::class);
 Route::get('/marketplace/reference-data', ReferenceDataController::class);
 Route::middleware('throttle:login')->post('/auth/login', [AuthenticatedSessionController::class, 'store']);
+Route::middleware('throttle:login')->get('/auth/social/{provider}/redirect', [SocialAuthenticationController::class, 'redirect']);
+Route::get('/auth/social/{provider}/callback', [SocialAuthenticationController::class, 'callback']);
 Route::middleware('throttle:login')->post('/auth/mobile/login', [MobileSessionController::class, 'store']);
 Route::middleware('throttle:login')->post('/auth/mobile/refresh', [MobileSessionController::class, 'refresh']);
 Route::middleware('throttle:password-recovery')->group(function (): void {
