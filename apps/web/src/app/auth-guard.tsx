@@ -7,7 +7,13 @@ import { usePathname, useRouter } from "next/navigation";
 import { Home, LogOut } from "lucide-react";
 import { prepareCsrf } from "./auth-client";
 
-const PUBLIC_PATHS = new Set(["/", "/login", "/register"]);
+const PUBLIC_PATHS = new Set([
+  "/",
+  "/forgot-password",
+  "/login",
+  "/register",
+  "/reset-password",
+]);
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -23,7 +29,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     }
 
     let active = true;
-    void fetch("/api/v1/me", {
+    void fetch("/api/v1/auth/session-status", {
       credentials: "include",
       headers: { Accept: "application/json" },
     })
@@ -31,14 +37,33 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
         if (!active) {
           return;
         }
-        if (response.ok) {
-          const body = (await response.json()) as { data: { name: string } };
-          setUserName(body.data.name);
-          setAllowedPath(pathname);
+        if (!response.ok) {
+          throw new Error("Session status request failed.");
+        }
+        const body = (await response.json()) as {
+          data: { authenticated: boolean };
+        };
+        if (!body.data.authenticated) {
+          const destination = `${pathname}${window.location.search}`;
+          router.replace(`/login?next=${encodeURIComponent(destination)}`);
           return;
         }
-        const destination = `${pathname}${window.location.search}`;
-        router.replace(`/login?next=${encodeURIComponent(destination)}`);
+
+        const userResponse = await fetch("/api/v1/me", {
+          credentials: "include",
+          headers: { Accept: "application/json" },
+        });
+        if (!active) {
+          return;
+        }
+        if (!userResponse.ok) {
+          throw new Error("Current user request failed.");
+        }
+        const userBody = (await userResponse.json()) as {
+          data: { name: string };
+        };
+        setUserName(userBody.data.name);
+        setAllowedPath(pathname);
       })
       .catch(() => {
         if (active) {

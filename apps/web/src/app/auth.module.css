@@ -131,6 +131,17 @@
   position: relative;
 }
 
+.forgotPasswordLink,
+.textLink {
+  color: var(--color-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.forgotPasswordLink {
+  justify-self: end;
+  line-height: var(--line-height-body);
+}
+
 .passwordControl input {
   padding-right: var(--spacing-48);
 }
@@ -165,6 +176,36 @@
   background: var(--color-danger-surface);
   border-radius: var(--radius-input);
   padding: var(--spacing-12);
+}
+
+.formSuccess {
+  background: color-mix(in srgb, var(--color-success) 10%, var(--color-surface));
+  border-radius: var(--radius-input);
+  color: var(--color-success);
+  font-size: var(--font-small-size);
+  line-height: var(--line-height-body);
+  padding: var(--spacing-12);
+}
+
+.formActions {
+  display: grid;
+  gap: var(--spacing-12);
+}
+
+.backLink {
+  align-items: center;
+  color: var(--color-primary);
+  display: inline-flex;
+  font-size: var(--font-small-size);
+  font-weight: var(--font-weight-semibold);
+  gap: var(--spacing-8);
+  justify-content: center;
+  min-height: var(--control-min-height);
+}
+
+.backLink svg {
+  height: var(--spacing-16);
+  width: var(--spacing-16);
 }
 
 .fieldGroup {

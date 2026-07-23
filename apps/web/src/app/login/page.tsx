@@ -1,11 +1,11 @@
 "use client";
 
 import { FormEvent, Suspense, useEffect, useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { CheckCircle2, Eye, EyeOff, LogIn } from "lucide-react";
+import { Eye, EyeOff, LogIn } from "lucide-react";
 import { Button } from "@kaila/ui";
+import { AuthFrame } from "../auth-frame";
 import {
   ApiError,
   prepareCsrf,
@@ -17,6 +17,7 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const destination = safeDestination(searchParams.get("next"));
+  const passwordWasReset = searchParams.get("passwordReset") === "1";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -81,6 +82,11 @@ function LoginForm() {
       description="Sign in to post jobs, send offers, message, and manage your work."
     >
       <form className={styles.form} onSubmit={(event) => void submit(event)}>
+        {passwordWasReset && (
+          <p className={styles.formSuccess} role="status">
+            Your password has been updated. Sign in with your new password.
+          </p>
+        )}
         <label>
           Email
           <input
@@ -111,6 +117,13 @@ function LoginForm() {
               {showPassword ? <EyeOff aria-hidden="true" /> : <Eye aria-hidden="true" />}
             </button>
           </span>
+          <Link
+            className={styles.forgotPasswordLink}
+            href={`/forgot-password?next=${encodeURIComponent(destination)}`}
+            prefetch={false}
+          >
+            Forgot password?
+          </Link>
         </label>
         {message && (
           <p className={styles.formError} role="alert">
@@ -131,65 +144,12 @@ function LoginForm() {
         New to KAILA?{" "}
         <Link
           href={`/register?next=${encodeURIComponent(destination)}`}
+          prefetch={false}
         >
           Create an account
         </Link>
       </p>
     </AuthFrame>
-  );
-}
-
-function AuthFrame({
-  title,
-  description,
-  children,
-}: {
-  title: string;
-  description: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <main className={styles.page}>
-      <aside className={styles.brandPanel}>
-        <div>
-          <Image
-            src="/brand/kaila-wordmark.png"
-            alt="KAILA"
-            width={1102}
-            height={248}
-            priority
-          />
-          <h2>Local work starts with trust.</h2>
-          <p>
-            One secure account for clients finding help and providers growing
-            their local reputation.
-          </p>
-          <div className={styles.benefits}>
-            <span><CheckCircle2 aria-hidden="true" />Post and manage jobs</span>
-            <span><CheckCircle2 aria-hidden="true" />Compare offers clearly</span>
-            <span><CheckCircle2 aria-hidden="true" />Keep messages in one place</span>
-          </div>
-        </div>
-      </aside>
-      <section className={styles.formSide}>
-        <div className={styles.card}>
-          <header className={styles.cardHeader}>
-            <Link href="/" aria-label="Back to KAILA home">
-              <Image
-                src="/brand/kaila-wordmark.png"
-                alt="KAILA"
-                width={1102}
-                height={248}
-                priority
-              />
-            </Link>
-            <h1>{title}</h1>
-            <p>{description}</p>
-          </header>
-          {children}
-        </div>
-      </section>
-    </main>
   );
 }
 
