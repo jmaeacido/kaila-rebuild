@@ -1,4 +1,4 @@
-# ADR-0023 â€” Phase 9 deferred module reintroduction
+# ADR-0023 — Phase 9 deferred module reintroduction
 
 **Decision date:** 2026-07-16
 **Status:** Accepted

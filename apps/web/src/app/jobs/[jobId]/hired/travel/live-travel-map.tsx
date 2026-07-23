@@ -2,13 +2,25 @@
 
 import { useEffect, useRef } from "react";
 import { LngLatBounds, Map, Marker } from "maplibre-gl";
-import "maplibre-gl/dist/maplibre-gl.css";
 import styles from "../hired.module.css";
+
+const maplibreStylesheetUrl = "https://unpkg.com/maplibre-gl@5.12.0/dist/maplibre-gl.css";
 
 type Point = { latitude: number; longitude: number };
 
 export function LiveTravelMap({ location, destination, route }: { location: Point | null; destination: Point | null; route: Point[] | null }) {
   const container = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const existingStylesheet = document.querySelector<HTMLLinkElement>("link[data-kaila-maplibre-stylesheet='true']");
+    if (!existingStylesheet) {
+      const stylesheet = document.createElement("link");
+      stylesheet.rel = "stylesheet";
+      stylesheet.href = maplibreStylesheetUrl;
+      stylesheet.dataset.kailaMaplibreStylesheet = "true";
+      document.head.appendChild(stylesheet);
+    }
+  }, []);
 
   useEffect(() => {
     if (!container.current || (!location && !destination)) return;

@@ -16,6 +16,6 @@ export default function CommunityPage() {
     {state === "loading" && <><div className={styles.skeleton} /><div className={styles.skeleton} /></>}
     {state === "error" && <Feedback kind="error" title="Community could not load"><Button variant="secondary" onClick={() => void load()}>Try again</Button></Feedback>}
     {state === "ready" && posts.length === 0 && <div className={styles.empty}><HeartHandshake aria-hidden="true" /><h2>No stories yet</h2><p>Share a useful local service tip when you are signed in.</p><Link className={styles.actionLink} href="/">Find local help</Link></div>}
-    {posts.length > 0 && <section className={styles.grid} aria-label="Community posts">{posts.map((post) => <article className={styles.card} key={post.id}><p className={styles.eyebrow}>{post.kind.replaceAll("_", " ")}</p><h2>{post.title}</h2><p>{post.body}</p><p className={styles.meta}>{post.author?.name ?? "KAILA member"}{post.areaLabel && <> Â· <MapPin aria-hidden="true" /> {post.areaLabel}</>} Â· {post.helpfulCount} helpful</p></article>)}</section>}
+    {posts.length > 0 && <section className={styles.grid} aria-label="Community posts">{posts.map((post) => <article className={styles.card} key={post.id}><p className={styles.eyebrow}>{post.kind.replaceAll("_", " ")}</p><h2>{post.title}</h2><p>{post.body}</p><p className={styles.meta}>{post.author?.name ?? "KAILA member"}{post.areaLabel && <> · <MapPin aria-hidden="true" /> {post.areaLabel}</>} · {post.helpfulCount} helpful</p></article>)}</section>}
   </main>;
 }

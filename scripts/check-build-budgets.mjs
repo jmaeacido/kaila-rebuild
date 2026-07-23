@@ -1,7 +1,9 @@
 import { readdir, stat } from "node:fs/promises";
 import { join } from "node:path";
 
-const budgets = [["apps/web/.next/static", 1_500_000], ["apps/admin/.next/static", 1_000_000]];
+// The web total includes the route-scoped MapLibre runtime added for live travel.
+// This guards total emitted JavaScript, so keep headroom narrow and review increases.
+const budgets = [["apps/web/.next/static", 1_850_000], ["apps/admin/.next/static", 1_000_000]];
 async function javascriptBytes(directory) {
   let total = 0;
   for (const entry of await readdir(directory, { withFileTypes: true })) {

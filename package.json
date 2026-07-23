@@ -13,6 +13,7 @@
     "lint": "pnpm --recursive --if-present lint",
     "performance:budget": "node scripts/check-build-budgets.mjs",
     "phase9:validate": "node scripts/validate-phase-nine.mjs",
+    "quality:encoding": "node scripts/check-text-encoding.mjs",
     "security:audit": "pnpm audit --audit-level high",
     "security:secrets": "node scripts/check-secrets.mjs",
     "test": "pnpm --recursive --if-present test",
