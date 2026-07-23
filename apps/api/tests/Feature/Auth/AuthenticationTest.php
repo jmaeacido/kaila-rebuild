@@ -4,8 +4,10 @@ namespace Tests\Feature\Auth;
 
 use App\Models\AuditEvent;
 use App\Models\User;
+use App\Notifications\BrandedWelcome;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
 class AuthenticationTest extends TestCase
@@ -14,6 +16,8 @@ class AuthenticationTest extends TestCase
 
     public function test_user_can_register_with_current_policy_versions(): void
     {
+        Notification::fake();
+
         $response = $this->postJson('/api/v1/auth/register', [
             'name' => 'Juan Dela Cruz',
             'email' => 'juan@example.test',
@@ -38,6 +42,10 @@ class AuthenticationTest extends TestCase
             'privacy_accepted_version' => config('policies.privacy_version'),
         ]);
         $this->assertDatabaseHas('audit_events', ['event_type' => 'auth.registered']);
+        Notification::assertSentTo(
+            User::query()->where('email', 'juan@example.test')->firstOrFail(),
+            BrandedWelcome::class,
+        );
     }
 
     public function test_registration_config_exposes_current_policy_versions(): void
@@ -46,6 +54,18 @@ class AuthenticationTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.termsVersion', config('policies.terms_version'))
             ->assertJsonPath('data.privacyVersion', config('policies.privacy_version'));
+    }
+
+    public function test_session_status_is_public_and_reports_authentication_state(): void
+    {
+        $this->getJson('/api/v1/auth/session-status')
+            ->assertOk()
+            ->assertJsonPath('data.authenticated', false);
+
+        $this->actingAs(User::factory()->create())
+            ->getJson('/api/v1/auth/session-status')
+            ->assertOk()
+            ->assertJsonPath('data.authenticated', true);
     }
 
     public function test_marketplace_actions_require_authentication(): void

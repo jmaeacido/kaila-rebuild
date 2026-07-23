@@ -8,6 +8,7 @@ use App\Http\Controllers\Auth\MobileSessionController;
 use App\Http\Controllers\Auth\PasswordRecoveryController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\RegistrationConfigController;
+use App\Http\Controllers\Auth\SessionStatusController;
 use App\Http\Controllers\CallController;
 use App\Http\Controllers\CommunityController;
 use App\Http\Controllers\ConversationController;
@@ -38,6 +39,7 @@ Route::get('/auth/csrf', fn () => response()->noContent());
 
 Route::middleware('throttle:registration')->post('/auth/register', RegisteredUserController::class);
 Route::get('/auth/registration-config', RegistrationConfigController::class);
+Route::get('/auth/session-status', SessionStatusController::class);
 Route::get('/marketplace/reference-data', ReferenceDataController::class);
 Route::middleware('throttle:login')->post('/auth/login', [AuthenticatedSessionController::class, 'store']);
 Route::middleware('throttle:login')->post('/auth/mobile/login', [MobileSessionController::class, 'store']);

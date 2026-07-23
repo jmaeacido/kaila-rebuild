@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\RegisterRequest;
 use App\Http\Resources\CurrentUserResource;
 use App\Models\User;
+use App\Notifications\BrandedWelcome;
 use App\Support\AuditRecorder;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\JsonResponse;
@@ -31,6 +32,7 @@ class RegisteredUserController extends Controller
         $request->session()->regenerate();
 
         $this->audit->record($request, 'auth.registered', $user, 'user', (string) $user->getKey());
+        $user->notify(new BrandedWelcome);
 
         return (new CurrentUserResource($user))
             ->response()

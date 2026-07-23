@@ -24,11 +24,17 @@ function LoginForm() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    void fetch("/api/v1/me", {
+    void fetch("/api/v1/auth/session-status", {
       credentials: "include",
       headers: { Accept: "application/json" },
-    }).then((response) => {
-      if (response.ok) {
+    }).then(async (response) => {
+      if (!response.ok) {
+        return;
+      }
+      const body = (await response.json()) as {
+        data: { authenticated: boolean };
+      };
+      if (body.data.authenticated) {
         router.replace(destination);
       }
     });

@@ -6,6 +6,8 @@ use App\Contracts\MapsProvider;
 use App\Contracts\MetricsRecorder;
 use App\Contracts\OutboxTransport;
 use App\Contracts\PushTransport;
+use App\Models\User;
+use App\Support\BrevoMailTransport;
 use App\Support\DeterministicFakeMapsProvider;
 use App\Support\FakePushTransport;
 use App\Support\FcmPushTransport;
@@ -13,8 +15,10 @@ use App\Support\LogOutboxTransport;
 use App\Support\OpenStreetMapProvider;
 use App\Support\RedisRealtimeOutboxTransport;
 use App\Support\StructuredLogMetricsRecorder;
+use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
@@ -62,6 +66,22 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        ResetPassword::createUrlUsing(function (User $user, string $token): string {
+            $origin = $user->is_admin
+                ? (string) config('app.admin_url')
+                : (string) config('app.url');
+
+            return $origin.'/reset-password?'.http_build_query([
+                'token' => $token,
+                'email' => $user->email,
+            ]);
+        });
+
+        Mail::extend(
+            'brevo',
+            fn (array $config): BrevoMailTransport => new BrevoMailTransport((string) ($config['key'] ?? '')),
+        );
+
         RateLimiter::for('registration', fn (Request $request) => [
             Limit::perMinute(5)->by($request->ip()),
         ]);

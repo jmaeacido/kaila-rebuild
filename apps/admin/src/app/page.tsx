@@ -13,6 +13,7 @@ import {
   X,
 } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import styles from "./page.module.css";
 
 type Provider = { id: number; display_name: string; bio: string };
@@ -92,7 +93,26 @@ export default function AdminHome() {
   }, [applyQueueResult, requestQueue]);
 
   useEffect(() => {
-    void requestQueue().then(applyQueueResult).catch(() => setState("error"));
+    void fetch("/api/v1/auth/session-status", {
+      credentials: "include",
+    })
+      .then(async (response) => {
+        if (!response.ok) {
+          throw new Error("Session status request failed.");
+        }
+
+        const body = (await response.json()) as {
+          data: { authenticated: boolean };
+        };
+
+        if (!body.data.authenticated) {
+          setState("signed-out");
+          return;
+        }
+
+        applyQueueResult(await requestQueue());
+      })
+      .catch(() => setState("error"));
   }, [applyQueueResult, requestQueue]);
 
   async function signIn(event: FormEvent<HTMLFormElement>) {
@@ -241,6 +261,7 @@ export default function AdminHome() {
                   aria-label={showPassword ? "Hide password" : "Show password"}
                   aria-pressed={showPassword}
                   onClick={() => setShowPassword((visible) => !visible)}
+                  tabIndex={-1}
                   type="button"
                 >
                   {showPassword ? (
@@ -256,6 +277,9 @@ export default function AdminHome() {
                 {loginMessage}
               </p>
             )}
+            <Link className={styles.textLink} href="/forgot-password">
+              Forgot your password?
+            </Link>
             <button
               className={styles.primaryButton}
               disabled={signingIn}

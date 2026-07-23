@@ -122,10 +122,10 @@ export default function HomePage() {
           <Link href="/community">Community</Link>
         </nav>
         <div className={styles.headerActions}>
-          <Link className={styles.providerLink} href="/login">
+          <Link className={styles.providerLink} href="/login" prefetch={false}>
             Sign in
           </Link>
-          <Link className={styles.headerCta} href="/register">
+          <Link className={styles.headerCta} href="/register" prefetch={false}>
             Get started
           </Link>
         </div>
@@ -153,6 +153,7 @@ export default function HomePage() {
             <Link
               className={styles.primaryCta}
               href="/login?next=%2Fpost-job"
+              prefetch={false}
             >
               Post a job
               <ArrowRight aria-hidden="true" />
@@ -160,6 +161,7 @@ export default function HomePage() {
             <Link
               className={styles.secondaryCta}
               href="/login?next=%2F%3Fstart%3Dfind"
+              prefetch={false}
             >
               <Search aria-hidden="true" />
               Find a provider
@@ -403,7 +405,7 @@ export default function HomePage() {
               and more.
             </p>
           </div>
-          <Link href="/register?next=%2Fpost-job">
+          <Link href="/register?next=%2Fpost-job" prefetch={false}>
             Post your first job
             <ArrowRight aria-hidden="true" />
           </Link>
@@ -417,7 +419,10 @@ export default function HomePage() {
               reputation.
             </p>
           </div>
-          <Link href="/register?role=provider&next=%2Fprovider-profile">
+          <Link
+            href="/register?role=provider&next=%2Fprovider-profile"
+            prefetch={false}
+          >
             Build your provider profile
             <ArrowRight aria-hidden="true" />
           </Link>
