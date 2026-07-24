@@ -19,7 +19,7 @@ import { SocialLogin } from "../social-login";
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const destination = safeDestination(searchParams.get("next"), "/post-job");
+  const destination = safeDestination(searchParams.get("next"), "/home");
   const passwordWasReset = searchParams.get("passwordReset") === "1";
   const socialError = searchParams.get("socialError");
   const [email, setEmail] = useState("");

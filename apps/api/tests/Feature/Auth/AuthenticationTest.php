@@ -3,6 +3,7 @@
 namespace Tests\Feature\Auth;
 
 use App\Models\AuditEvent;
+use App\Models\ProfileAsset;
 use App\Models\User;
 use App\Notifications\BrandedWelcome;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -135,6 +136,31 @@ class AuthenticationTest extends TestCase
             ->assertJsonPath('data.loggedOut', true);
 
         $this->assertGuest();
+    }
+
+    public function test_self_uses_only_a_clean_avatar(): void
+    {
+        $user = User::factory()->create();
+        ProfileAsset::query()->create([
+            'user_id' => $user->getKey(), 'purpose' => 'avatar', 'disk' => 'private-assets',
+            'object_key' => 'avatars/pending.jpg', 'original_name' => 'pending.jpg',
+            'mime_type' => 'image/jpeg', 'size_bytes' => 100, 'scan_status' => 'pending',
+        ]);
+        $clean = ProfileAsset::query()->create([
+            'user_id' => $user->getKey(), 'purpose' => 'avatar', 'disk' => 'private-assets',
+            'object_key' => 'avatars/clean.jpg', 'original_name' => 'clean.jpg',
+            'mime_type' => 'image/jpeg', 'size_bytes' => 100, 'scan_status' => 'clean', 'origin' => 'upload',
+        ]);
+        ProfileAsset::query()->create([
+            'user_id' => $user->getKey(), 'purpose' => 'avatar', 'disk' => 'private-assets',
+            'object_key' => 'avatars/social.jpg', 'original_name' => 'google-profile-picture.jpg',
+            'mime_type' => 'image/jpeg', 'size_bytes' => 100, 'scan_status' => 'clean', 'origin' => 'social',
+        ]);
+
+        $this->actingAs($user)
+            ->getJson('/api/v1/me')
+            ->assertOk()
+            ->assertJsonPath('data.avatarUrl', "/api/v1/profile-assets/{$clean->getKey()}");
     }
 
     public function test_unauthenticated_user_cannot_read_self(): void

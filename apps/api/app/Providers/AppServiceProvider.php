@@ -18,6 +18,7 @@ use App\Support\StructuredLogMetricsRecorder;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
@@ -66,6 +67,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        DB::prohibitDestructiveCommands(! $this->app->environment(['local', 'testing']));
+
         ResetPassword::createUrlUsing(function (User $user, string $token): string {
             $origin = $user->is_admin
                 ? (string) config('app.admin_url')

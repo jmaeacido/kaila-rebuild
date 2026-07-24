@@ -5,11 +5,11 @@ namespace App\Http\Controllers;
 use App\Models\ProfileAsset;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ProfileAssetController extends Controller
 {
@@ -29,12 +29,20 @@ class ProfileAssetController extends Controller
         return response()->json(['data' => $asset->only(['id', 'purpose', 'original_name', 'scan_status', 'caption'])], 201);
     }
 
-    public function show(Request $request, ProfileAsset $profileAsset): RedirectResponse
+    public function show(Request $request, ProfileAsset $profileAsset): StreamedResponse
     {
         /** @var User|null $user */ $user = $request->user();
         abort_unless(($user !== null && $profileAsset->user_id === $user->id) || ($profileAsset->purpose === 'portfolio' && $profileAsset->scan_status === 'clean'), 403);
         abort_unless($profileAsset->scan_status === 'clean', 409, 'The file is not available until its safety scan passes.');
 
-        return redirect()->away(Storage::disk($profileAsset->disk)->temporaryUrl($profileAsset->object_key, now()->addMinutes(5)));
+        return Storage::disk($profileAsset->disk)->response(
+            $profileAsset->object_key,
+            $profileAsset->original_name,
+            [
+                'Content-Type' => $profileAsset->mime_type,
+                'Cache-Control' => 'private, max-age=300',
+                'X-Content-Type-Options' => 'nosniff',
+            ],
+        );
     }
 }

@@ -1,0 +1,443 @@
+.shell {
+  display: grid;
+  gap: var(--spacing-24);
+  margin: 0 auto;
+  max-width: 72rem;
+  padding: var(--spacing-16) var(--spacing-16) calc(var(--spacing-64) + var(--spacing-48));
+}
+
+.hero {
+  background: var(--gradient-hero);
+  border-radius: var(--radius-dialog);
+  box-shadow: var(--shadow-floating);
+  color: var(--color-on-primary);
+  display: grid;
+  gap: var(--spacing-12);
+  isolation: isolate;
+  overflow: hidden;
+  padding: var(--spacing-32) var(--spacing-24);
+  position: relative;
+}
+
+.hero h1 {
+  font-size: clamp(var(--font-heading-size), 7vw, var(--font-display-size));
+  line-height: var(--line-height-tight);
+  max-width: 32rem;
+}
+
+.hero > p:not(.greeting) {
+  line-height: var(--line-height-body);
+  max-width: 34rem;
+}
+
+.greeting {
+  font-size: var(--font-small-size);
+  font-weight: var(--font-weight-semibold);
+}
+
+.route {
+  border: var(--control-border-width) dashed
+    color-mix(in srgb, var(--color-on-primary) 55%, transparent);
+  border-radius: var(--radius-pill);
+  height: 15rem;
+  position: absolute;
+  right: -5rem;
+  top: -5rem;
+  transform: rotate(-18deg);
+  width: 15rem;
+  z-index: -1;
+}
+
+.route span {
+  background: var(--color-on-primary);
+  border-radius: var(--radius-pill);
+  height: var(--spacing-8);
+  position: absolute;
+  width: var(--spacing-8);
+}
+
+.route span:first-child {
+  left: var(--spacing-16);
+  top: 45%;
+}
+
+.route span:nth-child(2) {
+  bottom: var(--spacing-24);
+  left: 45%;
+}
+
+.route span:last-child {
+  right: var(--spacing-16);
+  top: 35%;
+}
+
+.primaryAction,
+.discovery header a,
+.current header a,
+.activityCard > a,
+.empty > a,
+.helpCard > a {
+  align-items: center;
+  display: inline-flex;
+  font-weight: var(--font-weight-semibold);
+  gap: var(--spacing-8);
+  justify-content: center;
+  text-decoration: none;
+}
+
+.primaryAction {
+  background: var(--color-surface);
+  border-radius: var(--radius-button);
+  color: var(--color-primary);
+  margin-top: var(--spacing-8);
+  max-width: 18rem;
+  min-height: var(--control-min-height);
+  padding: var(--spacing-12) var(--spacing-16);
+}
+
+.primaryAction svg,
+.discovery header svg,
+.current header svg,
+.activityCard svg,
+.helpCard svg {
+  height: var(--spacing-16);
+  width: var(--spacing-16);
+}
+
+.primaryAction svg:last-child {
+  margin-left: auto;
+}
+
+.discovery,
+.current {
+  display: grid;
+  gap: var(--spacing-16);
+}
+
+.discovery > header,
+.current > header {
+  align-items: end;
+  display: flex;
+  justify-content: space-between;
+}
+
+.discovery h2,
+.current h2,
+.helpCard h2 {
+  color: var(--color-ink);
+  font-size: var(--font-section-size);
+}
+
+.eyebrow {
+  color: var(--color-primary);
+  font-size: var(--font-caption-size);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.08em;
+  margin-bottom: var(--spacing-4);
+}
+
+.discovery header a,
+.current header a {
+  color: var(--color-primary);
+  font-size: var(--font-small-size);
+}
+
+.categoryGrid {
+  display: grid;
+  gap: var(--spacing-12);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.categoryGrid a {
+  align-items: center;
+  background: var(--color-surface);
+  border: var(--control-border-width) solid var(--color-border);
+  border-radius: var(--radius-card);
+  color: var(--color-ink);
+  display: flex;
+  flex-direction: column;
+  font-size: var(--font-small-size);
+  font-weight: var(--font-weight-medium);
+  gap: var(--spacing-8);
+  justify-content: center;
+  min-height: 7rem;
+  padding: var(--spacing-12) var(--spacing-8);
+  text-align: center;
+  text-decoration: none;
+  transition:
+    border-color var(--duration-fast) ease-out,
+    transform var(--duration-fast) ease-out;
+}
+
+.categoryGrid a:active {
+  transform: scale(var(--scale-pressed));
+}
+
+.categoryGrid a span,
+.activityIcon,
+.helpCard > span {
+  align-items: center;
+  background: color-mix(in srgb, var(--color-primary) 10%, var(--color-surface));
+  border-radius: var(--radius-pill);
+  color: var(--color-primary);
+  display: flex;
+  height: var(--spacing-48);
+  justify-content: center;
+  width: var(--spacing-48);
+}
+
+.categoryGrid svg {
+  height: var(--spacing-24);
+  width: var(--spacing-24);
+}
+
+.activityCard,
+.empty,
+.helpCard {
+  background: var(--color-surface);
+  border: var(--control-border-width) solid var(--color-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+}
+
+.activityCard {
+  align-items: center;
+  display: grid;
+  gap: var(--spacing-12);
+  grid-template-columns: auto minmax(0, 1fr);
+  padding: var(--spacing-16);
+}
+
+.activityCard > div {
+  min-width: 0;
+}
+
+.activityCard > div > span {
+  color: var(--color-primary);
+  font-size: var(--font-caption-size);
+  font-weight: var(--font-weight-semibold);
+}
+
+.activityCard h3 {
+  color: var(--color-ink);
+  font-size: var(--font-card-title-size);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.activityCard p {
+  align-items: center;
+  color: var(--color-text-secondary);
+  display: flex;
+  font-size: var(--font-small-size);
+  gap: var(--spacing-4);
+  margin-top: var(--spacing-4);
+}
+
+.activityCard > a {
+  background: var(--color-primary);
+  border-radius: var(--radius-button);
+  color: var(--color-on-primary);
+  grid-column: 1 / -1;
+  min-height: var(--control-min-height);
+  padding: var(--spacing-8) var(--spacing-12);
+}
+
+.statusPill {
+  background: color-mix(in srgb, var(--color-primary) 9%, transparent);
+  border-radius: var(--radius-pill);
+  color: var(--color-primary);
+  font-size: var(--font-caption-size);
+  font-weight: var(--font-weight-semibold);
+  grid-column: 1 / -1;
+  justify-self: start;
+  padding: var(--spacing-8) var(--spacing-12);
+}
+
+.empty {
+  align-items: center;
+  display: grid;
+  gap: var(--spacing-16);
+  padding: var(--spacing-24);
+  text-align: center;
+}
+
+.empty > svg {
+  color: var(--color-accent);
+  height: var(--spacing-48);
+  justify-self: center;
+  width: var(--spacing-48);
+}
+
+.empty h3 {
+  color: var(--color-ink);
+}
+
+.empty p,
+.helpCard p {
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-body);
+}
+
+.empty > a,
+.helpCard > a {
+  background: var(--color-primary);
+  border-radius: var(--radius-button);
+  color: var(--color-on-primary);
+  min-height: var(--control-min-height);
+  padding: var(--spacing-8) var(--spacing-16);
+}
+
+.helpCard {
+  display: grid;
+  gap: var(--spacing-16);
+  padding: var(--spacing-24);
+}
+
+.helpCard > span {
+  background: color-mix(in srgb, var(--color-accent) 14%, var(--color-surface));
+}
+
+.helpCard > span svg {
+  height: var(--spacing-24);
+  width: var(--spacing-24);
+}
+
+.bottomNav {
+  background: color-mix(in srgb, var(--color-surface) 96%, transparent);
+  border: var(--control-border-width) solid var(--color-border);
+  border-radius: var(--radius-dialog);
+  bottom: var(--spacing-12);
+  box-shadow: var(--shadow-sheet);
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  left: var(--spacing-12);
+  padding: var(--spacing-8);
+  position: fixed;
+  right: var(--spacing-12);
+  z-index: 10;
+}
+
+.bottomNav a {
+  align-items: center;
+  border-radius: var(--radius-button);
+  color: var(--color-text-secondary);
+  display: flex;
+  flex-direction: column;
+  font-size: var(--font-caption-size);
+  font-weight: var(--font-weight-medium);
+  gap: var(--spacing-4);
+  justify-content: center;
+  padding: var(--spacing-8) var(--spacing-4);
+  text-decoration: none;
+}
+
+.bottomNav a[aria-current="page"] {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.bottomNav svg {
+  height: var(--spacing-24);
+  width: var(--spacing-24);
+}
+
+.heroSkeleton,
+.cardSkeletons span {
+  animation: pulse var(--duration-slow) ease-out infinite alternate;
+  background: var(--color-border);
+  border-radius: var(--radius-card);
+}
+
+.heroSkeleton {
+  height: 20rem;
+}
+
+.cardSkeletons {
+  display: grid;
+  gap: var(--spacing-12);
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.cardSkeletons span {
+  height: 8rem;
+}
+
+.retry {
+  background: var(--color-primary);
+  border: 0;
+  border-radius: var(--radius-button);
+  color: var(--color-on-primary);
+  cursor: pointer;
+  font: inherit;
+  font-weight: var(--font-weight-semibold);
+  justify-self: start;
+  padding: var(--spacing-12) var(--spacing-16);
+}
+
+@media (min-width: 48rem) {
+  .shell {
+    padding: var(--spacing-32);
+  }
+
+  .hero {
+    padding: var(--spacing-48);
+  }
+
+  .categoryGrid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  .activityCard {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    padding: var(--spacing-24);
+  }
+
+  .activityCard > a,
+  .statusPill {
+    grid-column: auto;
+  }
+
+  .helpCard {
+    align-items: center;
+    grid-template-columns: auto 1fr auto;
+  }
+
+  .bottomNav {
+    margin: 0 auto;
+    max-width: 40rem;
+  }
+}
+
+@media (min-width: 64rem) {
+  .shell {
+    grid-template-columns: 1.2fr 0.8fr;
+  }
+
+  .hero,
+  .discovery {
+    grid-column: 1 / -1;
+  }
+
+  .bottomNav {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .categoryGrid a {
+    transition: none;
+  }
+
+  .heroSkeleton,
+  .cardSkeletons span {
+    animation: none;
+  }
+}
+
+@keyframes pulse {
+  to {
+    opacity: var(--opacity-disabled);
+  }
+}

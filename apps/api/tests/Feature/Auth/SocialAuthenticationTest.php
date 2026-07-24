@@ -2,9 +2,11 @@
 
 namespace Tests\Feature\Auth;
 
+use App\Models\ProfileAsset;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class SocialAuthenticationTest extends TestCase
@@ -36,6 +38,8 @@ class SocialAuthenticationTest extends TestCase
 
     public function test_verified_google_profile_creates_and_authenticates_account(): void
     {
+        $disk = (string) config('filesystems.private_assets_disk');
+        Storage::fake($disk);
         Http::fake([
             'https://oauth2.googleapis.com/token' => Http::response(['access_token' => 'token']),
             'https://openidconnect.googleapis.com/v1/userinfo' => Http::response([
@@ -43,8 +47,18 @@ class SocialAuthenticationTest extends TestCase
                 'name' => 'Juan Dela Cruz',
                 'email' => 'JUAN@example.test',
                 'email_verified' => true,
-                'picture' => 'https://example.test/avatar.jpg',
+                'picture' => 'https://lh3.googleusercontent.com/avatar.png',
             ]),
+            'https://lh3.googleusercontent.com/avatar.png' => Http::response(
+                '',
+                302,
+                ['Location' => 'https://lh4.googleusercontent.com/avatar.png'],
+            ),
+            'https://lh4.googleusercontent.com/avatar.png' => Http::response(
+                base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII='),
+                200,
+                ['Content-Type' => 'image/png'],
+            ),
         ]);
 
         $state = $this->beginGoogle('/jobs', true);
@@ -57,6 +71,10 @@ class SocialAuthenticationTest extends TestCase
         $this->assertSame('google:google-user-1', $user->auth_subject);
         $this->assertTrue($user->provider_intent);
         $this->assertSame(config('policies.terms_version'), $user->terms_accepted_version);
+        $asset = ProfileAsset::query()->where('user_id', $user->getKey())->where('origin', 'social')->firstOrFail();
+        $this->assertSame('clean', $asset->scan_status);
+        $this->assertSame('image/webp', $asset->mime_type);
+        Storage::disk($disk)->assertExists($asset->object_key);
         $this->assertDatabaseHas('audit_events', ['event_type' => 'auth.social_login_succeeded']);
     }
 

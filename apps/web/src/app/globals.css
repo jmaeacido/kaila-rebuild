@@ -46,24 +46,109 @@ a {
 
 .offlineNotice svg { flex: 0 0 auto; height: var(--spacing-24); width: var(--spacing-24); }
 
-.authGuardLoading {
+.brandedLoader {
   align-items: center;
+  background: var(--color-background);
+  color: var(--color-ink);
   display: flex;
   flex-direction: column;
   gap: var(--spacing-16);
   justify-content: center;
   min-height: 100vh;
   padding: var(--spacing-24);
+  text-align: center;
 }
 
-.authGuardLoading img {
+.brandedLoaderMark {
+  align-items: center;
+  display: flex;
   height: var(--spacing-64);
-  object-fit: contain;
+  justify-content: center;
+  position: relative;
   width: var(--spacing-64);
 }
 
-.authGuardLoading p {
+.brandedLoaderMark img {
+  height: var(--spacing-64);
+  object-fit: contain;
+  position: relative;
+  width: var(--spacing-64);
+  z-index: 1;
+}
+
+.brandedLoaderHalo {
+  animation: branded-loader-halo var(--duration-slow) ease-out infinite alternate;
+  background: var(--gradient-primary);
+  border-radius: var(--radius-pill);
+  inset: 0;
+  opacity: var(--opacity-disabled);
+  position: absolute;
+  transform: scale(var(--scale-pressed));
+}
+
+.brandedLoaderCopy {
+  display: grid;
+  gap: var(--spacing-4);
+}
+
+.brandedLoaderCopy strong {
+  color: var(--color-primary);
+  font-size: var(--font-card-title-size);
+  letter-spacing: var(--spacing-4);
+}
+
+.brandedLoaderCopy p {
   color: var(--color-text-secondary);
+}
+
+.brandedLoaderRoute {
+  align-items: center;
+  display: flex;
+  height: var(--spacing-16);
+  justify-content: space-between;
+  position: relative;
+  width: calc(var(--spacing-64) + var(--spacing-48));
+}
+
+.brandedLoaderRoute > span {
+  background: var(--color-border);
+  border-radius: var(--radius-pill);
+  height: var(--spacing-4);
+  inset-inline: 0;
+  overflow: hidden;
+  position: absolute;
+}
+
+.brandedLoaderRoute > span::after {
+  animation: branded-loader-route calc(var(--duration-slow) * 4) ease-in-out infinite;
+  background: var(--gradient-primary);
+  border-radius: inherit;
+  content: "";
+  inset: 0;
+  position: absolute;
+  transform: translateX(-100%);
+}
+
+.brandedLoaderRoute i {
+  background: var(--color-surface);
+  border: var(--spacing-4) solid var(--color-primary);
+  border-radius: var(--radius-pill);
+  height: var(--spacing-16);
+  position: relative;
+  width: var(--spacing-16);
+}
+
+@keyframes branded-loader-halo {
+  to {
+    transform: none;
+  }
+}
+
+@keyframes branded-loader-route {
+  50%,
+  100% {
+    transform: translateX(100%);
+  }
 }
 
 .appSessionBar {
@@ -84,9 +169,13 @@ a {
   padding: var(--spacing-4) var(--spacing-8);
 }
 
-.appSessionBar img {
+.appSessionBar .sessionLogo {
+  aspect-ratio: 1102 / 248;
+  display: block;
   height: auto;
-  width: 7rem;
+  max-height: var(--spacing-32);
+  object-fit: contain;
+  width: calc(var(--spacing-64) + var(--spacing-48));
 }
 
 .appSessionBar > div {
@@ -95,14 +184,14 @@ a {
   gap: var(--spacing-8);
 }
 
-.appSessionBar span {
+.appSessionBar .sessionName {
   color: var(--color-text-secondary);
   display: none;
   font-size: var(--font-small-size);
 }
 
 .appSessionBar button,
-.appSessionBar > div a {
+.appSessionBar > div a:not(.sessionAvatar) {
   align-items: center;
   background: transparent;
   border: var(--control-border-width) solid var(--color-border);
@@ -126,13 +215,49 @@ a {
   width: var(--spacing-16);
 }
 
+.appSessionBar .sessionAvatar {
+  align-items: center;
+  background: var(--gradient-primary);
+  border: var(--control-border-width) solid var(--color-border);
+  border-radius: var(--radius-pill);
+  color: var(--color-on-primary);
+  display: flex;
+  font-weight: var(--font-weight-bold);
+  height: var(--control-min-height);
+  justify-content: center;
+  min-height: var(--control-min-height);
+  overflow: hidden;
+  position: relative;
+  text-decoration: none;
+  width: var(--control-min-height);
+}
+
+.appSessionBar .sessionAvatar img {
+  height: 100%;
+  inset: 0;
+  object-fit: cover;
+  position: absolute;
+  width: 100%;
+}
+
 @media (min-width: 40rem) {
   .appSessionBar {
     padding-left: var(--spacing-24);
     padding-right: var(--spacing-24);
   }
 
-  .appSessionBar span {
+  .appSessionBar .sessionName {
     display: inline;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brandedLoaderHalo,
+  .brandedLoaderRoute > span::after {
+    animation: none;
+  }
+
+  .brandedLoaderRoute > span::after {
+    transform: none;
   }
 }

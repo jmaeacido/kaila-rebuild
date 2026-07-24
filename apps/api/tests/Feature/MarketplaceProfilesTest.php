@@ -64,15 +64,21 @@ class MarketplaceProfilesTest extends TestCase
 
     public function test_uploads_are_private_and_quarantined_until_scan(): void
     {
-        Storage::fake('private-assets');
+        $disk = (string) config('filesystems.private_assets_disk');
+        Storage::fake($disk);
         $user = User::factory()->create();
         $response = $this->actingAs($user)->postJson('/api/v1/me/profile-assets', [
             'purpose' => 'portfolio', 'file' => UploadedFile::fake()->image('repair.jpg', 800, 600), 'caption' => 'Completed repair',
         ])->assertCreated()->assertJsonPath('data.scan_status', 'pending');
 
         $asset = ProfileAsset::query()->findOrFail($response->json('data.id'));
-        Storage::disk('private-assets')->assertExists($asset->object_key);
+        Storage::disk($disk)->assertExists($asset->object_key);
         $this->getJson("/api/v1/profile-assets/{$asset->id}")->assertStatus(409);
+        $asset->update(['scan_status' => 'clean']);
+        $this->get("/api/v1/profile-assets/{$asset->id}")
+            ->assertOk()
+            ->assertHeader('Content-Type', 'image/jpeg')
+            ->assertHeader('X-Content-Type-Options', 'nosniff');
     }
 
     public function test_public_profile_exposes_only_clean_portfolio_metadata(): void

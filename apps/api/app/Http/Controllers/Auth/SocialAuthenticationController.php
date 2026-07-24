@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Support\AuditRecorder;
+use App\Support\SocialAvatarImporter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -17,7 +18,10 @@ class SocialAuthenticationController extends Controller
 {
     private const PROVIDERS = ['google', 'facebook'];
 
-    public function __construct(private readonly AuditRecorder $audit) {}
+    public function __construct(
+        private readonly AuditRecorder $audit,
+        private readonly SocialAvatarImporter $avatars,
+    ) {}
 
     public function redirect(Request $request, string $provider): RedirectResponse
     {
@@ -102,6 +106,13 @@ class SocialAuthenticationController extends Controller
                     'provider_intent' => (bool) ($pending['provider_intent'] ?? false),
                 ]);
             });
+
+            try {
+                $this->avatars->import($user, $provider, $profile['avatar']);
+            } catch (Throwable $avatarException) {
+                report($avatarException);
+                $this->audit->record($request, 'auth.social_avatar_import_failed', $user, 'user', (string) $user->getKey());
+            }
 
             Auth::login($user);
             $request->session()->regenerate();

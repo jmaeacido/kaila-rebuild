@@ -6,6 +6,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Home, LogOut } from "lucide-react";
 import { prepareCsrf } from "./auth-client";
+import { BrandedLoader } from "./branded-loader";
 
 const PUBLIC_PATHS = new Set([
   "/",
@@ -20,6 +21,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [allowedPath, setAllowedPath] = useState<string | null>(null);
   const [userName, setUserName] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [loggingOut, setLoggingOut] = useState(false);
   const isPublic = PUBLIC_PATHS.has(pathname);
 
@@ -60,9 +62,10 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
           throw new Error("Current user request failed.");
         }
         const userBody = (await userResponse.json()) as {
-          data: { name: string };
+          data: { name: string; avatarUrl: string | null };
         };
         setUserName(userBody.data.name);
+        setAvatarUrl(userBody.data.avatarUrl);
         setAllowedPath(pathname);
       })
       .catch(() => {
@@ -81,18 +84,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   }
 
   if (allowedPath !== pathname) {
-    return (
-      <main className="authGuardLoading" aria-live="polite">
-        <Image
-          src="/brand/kaila-app-icon.png"
-          alt=""
-          width={533}
-          height={556}
-          priority
-        />
-        <p>Checking your KAILA session…</p>
-      </main>
-    );
+    return <BrandedLoader label="Checking your KAILA session…" />;
   }
 
   async function signOut() {
@@ -117,8 +109,9 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   return (
     <>
       <header className="appSessionBar">
-        <Link href="/" aria-label="KAILA home">
+        <Link href="/home" aria-label="KAILA home" prefetch={false}>
           <Image
+            className="sessionLogo"
             src="/brand/kaila-wordmark.png"
             alt="KAILA"
             width={1102}
@@ -127,8 +120,25 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
           />
         </Link>
         <div>
-          <span>{userName}</span>
-          <Link href="/">
+          <Link
+            className="sessionAvatar"
+            href="/account"
+            aria-label="Open account"
+            prefetch={false}
+          >
+            <span aria-hidden="true">{userName.charAt(0).toUpperCase()}</span>
+            {avatarUrl ? (
+              <Image
+                src={avatarUrl}
+                alt=""
+                width={44}
+                height={44}
+                unoptimized
+              />
+            ) : null}
+          </Link>
+          <span className="sessionName">{userName}</span>
+          <Link href="/home" prefetch={false}>
             <Home aria-hidden="true" />
             Home
           </Link>

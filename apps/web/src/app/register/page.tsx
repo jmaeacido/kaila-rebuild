@@ -58,7 +58,7 @@ function RegisterForm() {
         data: { authenticated: boolean };
       };
       if (body.data.authenticated) {
-        router.replace(requestedDestination || "/post-job");
+        router.replace(requestedDestination || "/home");
       }
     });
   }, [requestedDestination, router]);
@@ -125,7 +125,7 @@ function RegisterForm() {
         return;
       }
 
-      const fallback = role === "provider" ? "/provider-profile" : "/";
+      const fallback = role === "provider" ? "/provider-profile" : "/home";
       router.replace(requestedDestination || fallback);
       router.refresh();
     } catch {
@@ -312,7 +312,7 @@ function RegisterForm() {
           <SocialLogin
             destination={
               requestedDestination ||
-              (role === "provider" ? "/provider-profile" : "/")
+              (role === "provider" ? "/provider-profile" : "/home")
             }
             providerIntent={role === "provider"}
           />
@@ -320,7 +320,7 @@ function RegisterForm() {
             Already registered?{" "}
             <Link
               href={`/login?next=${encodeURIComponent(
-                requestedDestination || "/",
+                requestedDestination || "/home",
               )}`}
             >
               Sign in

@@ -11,9 +11,8 @@ export type SignedInUser = {
 };
 
 export function signedInHome(user: SignedInUser): string {
-  return user.activeMode === "provider" && user.providerEligible
-    ? "/opportunities"
-    : "/post-job";
+  void user;
+  return "/home";
 }
 
 export function csrfToken(): string | undefined {
