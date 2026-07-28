@@ -145,6 +145,7 @@ export default function AuthenticatedHomePage() {
       job.role === "provider" &&
       !["completed", "rated_closed", "cancelled"].includes(job.status),
   );
+  const providerJobHistory = jobs.filter((job) => job.role === "provider");
   const latestOpportunity = opportunities[0];
   const primaryHref = isProvider ? "/opportunities" : "/post-job";
   const primaryLabel = isProvider ? "Find nearby work" : "Post a job";
@@ -320,6 +321,42 @@ export default function AuthenticatedHomePage() {
           </div>
         )}
       </section>
+
+      {isProvider && (
+        <section className={styles.history} aria-labelledby="history-title">
+          <header>
+            <div>
+              <p className={styles.eyebrow}>YOUR WORK</p>
+              <h2 id="history-title">Job history</h2>
+            </div>
+            <span>{providerJobHistory.length} job{providerJobHistory.length === 1 ? "" : "s"}</span>
+          </header>
+          {providerJobHistory.length ? (
+            <div className={styles.historyList}>
+              {providerJobHistory.map((job) => (
+                <Link href={`/jobs/${job.id}`} key={job.id}>
+                  <span className={styles.historyIcon}><BriefcaseBusiness aria-hidden="true" /></span>
+                  <span>
+                    <strong>{job.title}</strong>
+                    <small><MapPin aria-hidden="true" /> {job.area.name}</small>
+                  </span>
+                  <span className={styles.historyStatus}>{jobStatusLabels[job.status] || job.status}</span>
+                  <ChevronRight aria-hidden="true" />
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <div className={styles.empty}>
+              <BriefcaseBusiness aria-hidden="true" />
+              <div>
+                <h3>No hired jobs yet</h3>
+                <p>Jobs appear here after a client accepts your offer.</p>
+              </div>
+              <Link href="/opportunities">Find nearby work</Link>
+            </div>
+          )}
+        </section>
+      )}
 
       <section className={styles.helpCard} aria-label="KAILA help">
         <span>

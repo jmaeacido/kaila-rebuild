@@ -176,5 +176,18 @@ class EndToEndMarketplaceLifecycleTest extends TestCase
             'user_id' => $client->id,
             'published_review_count' => 1,
         ]);
+
+        $this->actingAs($provider)
+            ->getJson('/api/v1/jobs')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $job)
+            ->assertJsonPath('data.0.role', 'provider')
+            ->assertJsonPath('data.0.status', 'rated_closed');
+
+        $this->getJson("/api/v1/jobs/$job")
+            ->assertOk()
+            ->assertJsonPath('data.role', 'provider')
+            ->assertJsonPath('data.timeline.0.type', 'job.draft_created');
     }
 }
