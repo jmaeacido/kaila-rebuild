@@ -129,6 +129,12 @@
   gap: var(--spacing-16);
 }
 
+.current,
+.history {
+  align-content: start;
+  align-self: start;
+}
+
 .discovery > header,
 .current > header,
 .history > header {

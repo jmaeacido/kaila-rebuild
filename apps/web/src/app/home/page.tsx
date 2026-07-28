@@ -153,7 +153,12 @@ export default function AuthenticatedHomePage() {
       job.role === "provider" &&
       !["completed", "rated_closed", "cancelled"].includes(job.status),
   );
-  const jobHistory = jobs.filter((job) => job.role === (isProvider ? "provider" : "client"));
+  const currentJob = isProvider ? activeProviderJob : activeClientJob;
+  const jobHistory = jobs.filter(
+    (job) =>
+      job.role === (isProvider ? "provider" : "client") &&
+      job.id !== currentJob?.id,
+  );
   const latestOpportunity = opportunities[0];
   const primaryHref = isProvider ? "/opportunities" : "/post-job";
   const primaryLabel = isProvider ? "Find nearby work" : "Post a job";
