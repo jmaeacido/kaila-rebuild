@@ -1,16 +1,30 @@
 "use client";
 
-import { ChangeEvent, useRef, useState } from "react";
-import { FileImage, Paperclip, X } from "lucide-react";
+import { ChangeEvent, useEffect, useRef, useState } from "react";
+import { ImageIcon, Paperclip, X } from "lucide-react";
+import Image from "next/image";
+import mediaStyles from "./attachment-media.module.css";
 import styles from "./attachment-picker.module.css";
 
 const maxFiles = 5;
 const maxBytes = 10 * 1024 * 1024;
-const acceptedTypes = new Set(["image/jpeg", "image/png", "image/webp", "application/pdf"]);
+const acceptedTypes = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "video/mp4",
+  "video/webm",
+  "video/quicktime",
+]);
+
+type SelectedAttachment = {
+  file: File;
+  previewUrl: string | null;
+};
 
 export function AttachmentPicker({
   name = "evidence",
-  label = "Add photos or PDFs",
+  label = "Add photos or videos",
   hint = "Up to 5 files, 10 MB each.",
 }: {
   name?: string;
@@ -18,14 +32,36 @@ export function AttachmentPicker({
   hint?: string;
 }) {
   const input = useRef<HTMLInputElement>(null);
-  const [files, setFiles] = useState<File[]>([]);
+  const attachmentsRef = useRef<SelectedAttachment[]>([]);
+  const [attachments, setAttachments] = useState<SelectedAttachment[]>([]);
   const [error, setError] = useState("");
+
+  useEffect(
+    () => () => {
+      attachmentsRef.current.forEach(({ previewUrl }) => {
+        if (previewUrl) URL.revokeObjectURL(previewUrl);
+      });
+    },
+    [],
+  );
 
   function commit(next: File[]) {
     const transfer = new DataTransfer();
     next.forEach((file) => transfer.items.add(file));
     if (input.current) input.current.files = transfer.files;
-    setFiles(next);
+
+    attachmentsRef.current.forEach(({ previewUrl }) => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    });
+    const selected = next.map((file) => ({
+      file,
+      previewUrl:
+        file.type.startsWith("image/") || file.type.startsWith("video/")
+          ? URL.createObjectURL(file)
+          : null,
+    }));
+    attachmentsRef.current = selected;
+    setAttachments(selected);
   }
 
   function select(event: ChangeEvent<HTMLInputElement>) {
@@ -37,7 +73,7 @@ export function AttachmentPicker({
     }
     const invalid = next.find((file) => !acceptedTypes.has(file.type) || file.size > maxBytes);
     if (invalid) {
-      setError(`${invalid.name} must be a JPG, PNG, WebP, or PDF no larger than 10 MB.`);
+      setError(`${invalid.name} must be a JPG, PNG, WebP, MP4, WebM, or MOV no larger than 10 MB.`);
       commit(next.filter((file) => acceptedTypes.has(file.type) && file.size <= maxBytes));
       return;
     }
@@ -55,19 +91,50 @@ export function AttachmentPicker({
           name={name}
           type="file"
           multiple
-          accept="image/jpeg,image/png,image/webp,application/pdf"
+          accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime"
           onChange={select}
         />
       </label>
       <p className={styles.hint}>{hint}</p>
       {error && <p className={styles.error} role="alert">{error}</p>}
-      {files.length > 0 && (
+      {attachments.length > 0 && (
         <ul className={styles.files} aria-label="Selected attachments">
-          {files.map((file, index) => (
-            <li key={`${file.name}-${file.lastModified}`}>
-              <FileImage aria-hidden="true" />
-              <span><strong>{file.name}</strong><small>{formatBytes(file.size)}</small></span>
-              <button type="button" onClick={() => commit(files.filter((_, item) => item !== index))} aria-label={`Remove ${file.name}`}>
+          {attachments.map(({ file, previewUrl }, index) => (
+            <li key={`${file.name}-${file.size}-${file.lastModified}`}>
+              <div className={styles.preview}>
+                {previewUrl && file.type.startsWith("image/") ? (
+                  <Image
+                    src={previewUrl}
+                    alt={`Preview of ${file.name}`}
+                    fill
+                    sizes="(max-width: 479px) 50vw, 160px"
+                    unoptimized
+                  />
+                ) : previewUrl ? (
+                  <video
+                    className={mediaStyles.video}
+                    src={previewUrl}
+                    aria-label={`Preview of ${file.name}`}
+                    muted
+                    playsInline
+                    preload="metadata"
+                  />
+                ) : (
+                  <ImageIcon aria-hidden="true" />
+                )}
+              </div>
+              <span className={styles.details}>
+                <strong>{file.name}</strong>
+                <small>{formatBytes(file.size)}</small>
+              </span>
+              <button
+                className={styles.remove}
+                type="button"
+                onClick={() =>
+                  commit(attachments.filter((_, item) => item !== index).map(({ file }) => file))
+                }
+                aria-label={`Remove ${file.name}`}
+              >
                 <X aria-hidden="true" />
               </button>
             </li>

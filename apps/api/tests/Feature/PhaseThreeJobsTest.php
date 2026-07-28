@@ -108,6 +108,8 @@ class PhaseThreeJobsTest extends TestCase
         $client = User::factory()->create();
         $created = $this->actingAs($client)->withHeader('Idempotency-Key', 'asset')->postJson('/api/v1/jobs', $this->draft($category, $area))->assertCreated();
         $this->postJson("/api/v1/jobs/{$created->json('data.id')}/assets", ['file' => UploadedFile::fake()->image('leak.jpg', 640, 480)])->assertCreated()->assertJsonPath('data.scan_status', 'pending');
+        $this->postJson("/api/v1/jobs/{$created->json('data.id')}/assets", ['file' => UploadedFile::fake()->create('leak.mp4', 100, 'video/mp4')])->assertCreated()->assertJsonPath('data.mime_type', 'video/mp4');
+        $this->postJson("/api/v1/jobs/{$created->json('data.id')}/assets", ['file' => UploadedFile::fake()->create('instructions.pdf', 100, 'application/pdf')])->assertUnprocessable();
         $this->assertDatabaseHas('job_assets', ['service_job_id' => $created->json('data.id'), 'scan_status' => 'pending']);
         $this->postJson("/api/v1/jobs/{$created->json('data.id')}/post")->assertOk();
         $this->postJson("/api/v1/jobs/{$created->json('data.id')}/assets", ['file' => UploadedFile::fake()->image('late.jpg')])->assertConflict();

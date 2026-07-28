@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { LngLatBounds, Map, Marker } from "maplibre-gl";
+import { addMissingStyleImageFallback } from "../../../../../lib/maplibre-style-images";
 import styles from "../hired.module.css";
 
 const maplibreStylesheetUrl = "https://unpkg.com/maplibre-gl@5.12.0/dist/maplibre-gl.css";
@@ -34,6 +35,7 @@ export function LiveTravelMap({ location, destination, route }: { location: Poin
       zoom: 14,
       attributionControl: {},
     });
+    const removeMissingImageFallback = addMissingStyleImageFallback(map);
     const markers: Marker[] = [];
 
     if (location) {
@@ -63,6 +65,7 @@ export function LiveTravelMap({ location, destination, route }: { location: Poin
     });
 
     return () => {
+      removeMissingImageFallback();
       markers.forEach(marker => marker.remove());
       map.remove();
     };

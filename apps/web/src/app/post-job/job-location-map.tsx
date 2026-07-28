@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { Map, Marker } from "maplibre-gl";
+import { addMissingStyleImageFallback } from "../../lib/maplibre-style-images";
 import styles from "./page.module.css";
 
 export type JobLocation = {
@@ -50,11 +51,13 @@ export function JobLocationMap({
       zoom: initialLocation.current ? 16 : 12,
     });
     mapRef.current = map;
+    const removeMissingImageFallback = addMissingStyleImageFallback(map);
     map.on("click", (event) => {
       onChangeRef.current({ latitude: event.lngLat.lat, longitude: event.lngLat.lng });
     });
 
     return () => {
+      removeMissingImageFallback();
       markerRef.current = null;
       mapRef.current = null;
       map.remove();

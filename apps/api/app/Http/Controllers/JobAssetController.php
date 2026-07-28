@@ -19,7 +19,7 @@ class JobAssetController
         abort_unless($user instanceof User, 401);
         abort_unless($serviceJob->client_user_id === $user->id, 404);
         abort_unless($serviceJob->status === 'draft', 409);
-        $request->validate(['file' => ['required', File::types(['jpg', 'jpeg', 'png', 'webp'])->max(8 * 1024)]]);
+        $request->validate(['file' => ['required', File::types(['jpg', 'jpeg', 'png', 'webp', 'mp4', 'webm', 'mov'])->max(10 * 1024)]]);
         abort_if($serviceJob->assets()->count() >= 5, 422, 'A job can have at most five attachments.');
         $file = $request->file('file');
         $id = (string) Str::uuid();

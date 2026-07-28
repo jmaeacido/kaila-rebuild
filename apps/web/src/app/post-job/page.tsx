@@ -227,7 +227,7 @@ export default function PostJobPage() {
       setStatus("error");
       setMessage(
         error instanceof Error && error.message === "ATTACHMENT_UPLOAD_FAILED"
-          ? "A photo could not be uploaded, so your job was kept as a draft. Check your connection and try again."
+          ? "A photo or video could not be uploaded, so your job was kept as a draft. Check your connection and try again."
           : "Your job could not be posted. Your details are still here—check your connection and try again.",
       );
     }
@@ -488,7 +488,7 @@ export default function PostJobPage() {
               </div>
               <AttachmentPicker
                 name="attachments"
-                label="Add job photos or PDFs"
+                label="Add job photos or videos"
                 hint="Optional. Add up to 5 files, 10 MB each. Providers see them after a safety scan."
               />
             </>
