@@ -97,6 +97,7 @@ Route::middleware('mobile.auth')->group(function (): void {
     Route::post('/auth/mobile/completions/{completionSubmission}/evidence', [JobLifecycleController::class, 'evidence']);
     Route::post('/auth/mobile/jobs/{serviceJob}/completion/confirm', [JobLifecycleController::class, 'confirm']);
     Route::post('/auth/mobile/jobs/{serviceJob}/completion/revision', [JobLifecycleController::class, 'revision']);
+    Route::post('/auth/mobile/jobs/{serviceJob}/revision-evidence', [JobLifecycleController::class, 'revisionEvidence']);
     Route::post('/auth/mobile/jobs/{serviceJob}/cancel', [JobLifecycleController::class, 'cancel']);
     Route::post('/auth/mobile/jobs/{serviceJob}/disputes', [JobLifecycleController::class, 'dispute']);
     Route::post('/auth/mobile/disputes/{disputeCase}/evidence', [JobLifecycleController::class, 'disputeEvidence']);
@@ -171,6 +172,7 @@ Route::middleware('auth')->group(function (): void {
     Route::post('/completions/{completionSubmission}/evidence', [JobLifecycleController::class, 'evidence']);
     Route::post('/jobs/{serviceJob}/completion/confirm', [JobLifecycleController::class, 'confirm']);
     Route::post('/jobs/{serviceJob}/completion/revision', [JobLifecycleController::class, 'revision']);
+    Route::post('/jobs/{serviceJob}/revision-evidence', [JobLifecycleController::class, 'revisionEvidence']);
     Route::post('/jobs/{serviceJob}/cancel', [JobLifecycleController::class, 'cancel']);
     Route::post('/jobs/{serviceJob}/disputes', [JobLifecycleController::class, 'dispute']);
     Route::post('/disputes/{disputeCase}/evidence', [JobLifecycleController::class, 'disputeEvidence']);

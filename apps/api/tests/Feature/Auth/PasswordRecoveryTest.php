@@ -3,7 +3,7 @@
 namespace Tests\Feature\Auth;
 
 use App\Models\User;
-use Illuminate\Auth\Notifications\ResetPassword;
+use App\Notifications\BrandedResetPassword;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -23,7 +23,7 @@ class PasswordRecoveryTest extends TestCase
         $missing = $this->postJson('/api/v1/auth/password/forgot', ['email' => 'missing@example.test'])->assertOk();
 
         $this->assertSame($existing->json('data.message'), $missing->json('data.message'));
-        Notification::assertSentTo($user, ResetPassword::class);
+        Notification::assertSentTo($user, BrandedResetPassword::class);
         $this->assertDatabaseCount('audit_events', 2);
     }
 
@@ -96,8 +96,8 @@ class PasswordRecoveryTest extends TestCase
         $this->postJson('/api/v1/auth/password/forgot', ['email' => $user->email])->assertOk();
         Notification::assertSentTo(
             $user,
-            ResetPassword::class,
-            function (ResetPassword $notification) use (&$token): bool {
+            BrandedResetPassword::class,
+            function (BrandedResetPassword $notification) use (&$token): bool {
                 $token = $notification->token;
 
                 return true;

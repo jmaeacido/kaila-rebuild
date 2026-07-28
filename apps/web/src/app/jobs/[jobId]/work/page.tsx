@@ -14,12 +14,12 @@ import {
   RefreshCw,
   RotateCcw,
   Star,
-  Upload,
   X,
 } from "lucide-react";
 import { Button, Feedback } from "@kaila/ui";
 import { LifecycleTimeline } from "./lifecycle-timeline";
 import { useJobRealtime } from "./use-job-realtime";
+import { AttachmentPicker, attachmentFiles } from "../../../../components/attachment-picker";
 import {
   prominentCompletionCopy,
   shouldShowHistoricalCompletionNote,
@@ -51,6 +51,7 @@ type Work = {
     submittedAt: string;
     evidence: Evidence[];
   } | null;
+  revisionEvidence: Evidence[];
   cancellation: {
     id: string;
     requestedByMe: boolean;
@@ -60,6 +61,7 @@ type Work = {
     id: string;
     status: string;
     reason: string;
+    evidence: Evidence[];
   } | null;
 };
 
@@ -170,8 +172,7 @@ export default function WorkPage({ params }: { params: Promise<{ jobId: string }
       if (!response.ok || !result?.data?.id) {
         throw new Error(readableError(result, "Completion could not be submitted."));
       }
-      const file = form.get("evidence");
-      if (file instanceof File && file.size > 0) {
+      for (const file of attachmentFiles(form)) {
         const upload = new FormData();
         upload.set("file", file);
         const evidenceResponse = await fetch(`/api/v1/completions/${result.data.id}/evidence`, {
@@ -210,6 +211,27 @@ export default function WorkPage({ params }: { params: Promise<{ jobId: string }
       await submitDispute(form, reason);
       return;
     }
+    if (type === "revision") {
+      const updated = await command("completion/revision", { reason }, "Correction request sent to the provider.");
+      if (!updated) return;
+      const files = attachmentFiles(form);
+      for (const file of files) {
+        const upload = new FormData();
+        upload.set("file", file);
+        const response = await fetch(`/api/v1/jobs/${jobId}/revision-evidence`, {
+          method: "POST",
+          credentials: "include",
+          headers: { Accept: "application/json" },
+          body: upload,
+        });
+        if (!response.ok) {
+          setNotice({ kind: "error", message: "The correction request was sent, but some evidence could not be uploaded." });
+          return;
+        }
+      }
+      if (files.length) setNotice({ kind: "success", message: "Correction request and evidence sent to the provider." });
+      return;
+    }
     const details = {
       revision: {
         path: "completion/revision",
@@ -241,8 +263,7 @@ export default function WorkPage({ params }: { params: Promise<{ jobId: string }
       if (!response.ok || !result?.data?.id) {
         throw new Error(readableError(result, "Support review could not be opened."));
       }
-      const file = form.get("evidence");
-      if (file instanceof File && file.size > 0) {
+      for (const file of attachmentFiles(form)) {
         const evidence = new FormData();
         evidence.set("file", file);
         const evidenceResponse = await fetch(`/api/v1/disputes/${result.data.id}/evidence`, {
@@ -379,6 +400,14 @@ export default function WorkPage({ params }: { params: Promise<{ jobId: string }
         </section>
       ) : null}
 
+      {data.revisionEvidence.length ? (
+        <EvidenceList title="Correction request evidence" evidence={data.revisionEvidence} />
+      ) : null}
+
+      {data.dispute?.evidence.length ? (
+        <EvidenceList title="Support review evidence" evidence={data.dispute.evidence} />
+      ) : null}
+
       <div className={styles.actions}>
         {data.role === "provider" && ["provider_selected", "provider_traveling", "revision_requested"].includes(data.status) && (
           <Button isLoading={requestState === "saving"} onClick={() => void command("work/start", {}, "Work started.")}>
@@ -436,10 +465,23 @@ function CompletionForm({ saving, onSubmit }: { saving: boolean; onSubmit: (even
   return (
     <form className={styles.form} onSubmit={onSubmit}>
       <label>What did you complete?<textarea name="summary" required minLength={10} maxLength={2000} placeholder="Describe the finished work and anything the client should check." /></label>
-      <label className={styles.fileInput}><Upload /> Add photo or PDF evidence<input name="evidence" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" /></label>
-      <p className={styles.hint}>One file up to 10 MB. The client can confirm, request a correction, or contact support.</p>
+      <AttachmentPicker hint="Optional. Up to 5 files, 10 MB each. The client can confirm, request a correction, or contact support." />
       <Button isLoading={saving}><CheckCircle2 /> Send for client review</Button>
     </form>
+  );
+}
+
+function EvidenceList({ title, evidence }: { title: string; evidence: Evidence[] }) {
+  return (
+    <section className={styles.evidence}>
+      <h2>{title}</h2>
+      {evidence.map((item) => (
+        <div key={item.id}>
+          <FileCheck2 aria-hidden="true" />
+          <span><strong>{item.original_name}</strong><small>Safety scan: {item.scan_status}</small></span>
+        </div>
+      ))}
+    </section>
   );
 }
 
@@ -452,7 +494,7 @@ function ReasonForm({ type, saving, onSubmit }: { type: "revision" | "cancel" | 
   return (
     <form className={styles.form} onSubmit={onSubmit}>
       <label>{copy[0]}<textarea name="reason" required minLength={10} maxLength={type === "dispute" ? 2000 : 1000} placeholder={copy[1]} /></label>
-      {type === "dispute" && <label className={styles.fileInput}><Upload /> Add photo or PDF evidence<input name="evidence" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" /></label>}
+      {(type === "revision" || type === "dispute") && <AttachmentPicker label={type === "revision" ? "Add photos showing what needs correction" : "Add support evidence"} />}
       {type === "dispute" && <p className={styles.hint}><CircleAlert /> Work and completion timers pause while support reviews the case.</p>}
       <Button variant={type === "cancel" ? "danger" : "primary"} isLoading={saving}>{copy[2]}</Button>
     </form>

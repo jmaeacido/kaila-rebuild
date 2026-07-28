@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -9,12 +9,12 @@ import {
   LocateFixed,
   MapPinned,
   MapPin,
-  Paperclip,
   Send,
   X,
 } from "lucide-react";
 import { Button, Feedback } from "@kaila/ui";
 import { JobLocationMap, type JobLocation } from "./job-location-map";
+import { AttachmentPicker, attachmentFiles } from "../../components/attachment-picker";
 import styles from "./page.module.css";
 
 type Reference = {
@@ -36,6 +36,7 @@ export default function PostJobPage() {
     "loading",
   );
   const [message, setMessage] = useState("");
+  const createKey = useRef(crypto.randomUUID());
   const [provinceId, setProvinceId] = useState("");
   const [cityId, setCityId] = useState("");
   const [showMap, setShowMap] = useState(false);
@@ -184,6 +185,8 @@ export default function PostJobPage() {
       return;
     }
     setStatus("saving");
+    const submission = new FormData(event.currentTarget as HTMLFormElement);
+    const attachments = attachmentFiles(submission, "attachments");
     const payload = {
       title: form.title,
       description: form.description,
@@ -201,18 +204,31 @@ export default function PostJobPage() {
     try {
       const created = await fetch("/api/v1/jobs", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "Idempotency-Key": crypto.randomUUID() },
+        headers: { "Content-Type": "application/json", "Idempotency-Key": createKey.current },
         body: JSON.stringify(payload),
       });
       if (!created.ok) throw new Error();
       const body = (await created.json()) as { data: { id: string } };
+      for (const file of attachments) {
+        const upload = new FormData();
+        upload.set("file", file);
+        const uploaded = await fetch(`/api/v1/jobs/${body.data.id}/assets`, {
+          method: "POST",
+          body: upload,
+        });
+        if (!uploaded.ok) {
+          throw new Error("ATTACHMENT_UPLOAD_FAILED");
+        }
+      }
       const posted = await fetch(`/api/v1/jobs/${body.data.id}/post`, { method: "POST" });
       if (!posted.ok) throw new Error();
       setStatus("success");
-    } catch {
+    } catch (error) {
       setStatus("error");
       setMessage(
-        "Your job could not be posted. Your details are still here—check your connection and try again.",
+        error instanceof Error && error.message === "ATTACHMENT_UPLOAD_FAILED"
+          ? "A photo could not be uploaded, so your job was kept as a draft. Check your connection and try again."
+          : "Your job could not be posted. Your details are still here—check your connection and try again.",
       );
     }
   }
@@ -470,10 +486,11 @@ export default function PostJobPage() {
                   />
                 </label>
               </div>
-              <p className={styles.optional}>
-                <Paperclip aria-hidden="true" /> Photos can be added from your Jobs page after saving
-                the draft.
-              </p>
+              <AttachmentPicker
+                name="attachments"
+                label="Add job photos or PDFs"
+                hint="Optional. Add up to 5 files, 10 MB each. Providers see them after a safety scan."
+              />
             </>
           )}
           {status === "error" && (

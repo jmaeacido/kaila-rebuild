@@ -8,6 +8,7 @@ use App\Models\CompletionSubmission;
 use App\Models\DisputeCase;
 use App\Models\DisputeEvidence;
 use App\Models\JobReview;
+use App\Models\RevisionEvidence;
 use App\Models\ServiceJob;
 use App\Models\User;
 use App\Support\HiredJobAccess;
@@ -47,12 +48,13 @@ class JobLifecycleController extends Controller
         $job = ServiceJob::query()->findOrFail($completionSubmission->service_job_id);
         $p = $this->access->requireParticipant($job, $u);
         abort_unless($u->id === $p['providerId'], 404);
+        abort_unless($completionSubmission->evidence()->count() < 5, 422, 'A completion can have up to 5 evidence files.');
         $d = $r->validate(['file' => 'required|file|max:10240|mimes:jpg,jpeg,png,webp,pdf']);
         $file = $d['file'];
         $id = (string) Str::uuid();
         $key = "completion/{$job->id}/{$id}";
         $file->storeAs('', $key, 'private');
-        $e = CompletionEvidence::query()->create(['id' => $id, 'completion_submission_id' => $completionSubmission->id, 'owner_user_id' => $u->id, 'disk' => 'private', 'object_key' => $key, 'original_name' => $file->getClientOriginalName(), 'mime_type' => $file->getMimeType(), 'size_bytes' => $file->getSize()]);
+        $e = CompletionEvidence::query()->create(['id' => $id, 'completion_submission_id' => $completionSubmission->id, 'owner_user_id' => $u->id, 'disk' => 'private', 'object_key' => $key, 'original_name' => $file->getClientOriginalName(), 'mime_type' => $file->getMimeType(), 'size_bytes' => $file->getSize(), 'scan_status' => 'pending']);
 
         return response()->json(['data' => ['id' => $e->id, 'scanStatus' => $e->scan_status]], 201);
     }
@@ -70,6 +72,31 @@ class JobLifecycleController extends Controller
         $j = $this->lifecycle->requestRevision($serviceJob, $this->user($r), $d['reason']);
 
         return response()->json(['data' => $this->present($j, $this->user($r))]);
+    }
+
+    public function revisionEvidence(Request $r, ServiceJob $serviceJob): JsonResponse
+    {
+        $u = $this->user($r);
+        $participants = $this->access->requireParticipant($serviceJob, $u);
+        abort_unless($u->id === $participants['clientId'], 404);
+        abort_unless($serviceJob->status === 'revision_requested', 409);
+        $submission = CompletionSubmission::query()->where('service_job_id', $serviceJob->id)->latest('cycle')->firstOrFail();
+        abort_unless(RevisionEvidence::query()->where('completion_submission_id', $submission->id)->count() < 5, 422, 'A revision request can have up to 5 evidence files.');
+        $data = $r->validate(['file' => 'required|file|max:10240|mimes:jpg,jpeg,png,webp,pdf']);
+        $file = $data['file'];
+        $id = (string) Str::uuid();
+        $key = "revisions/{$serviceJob->id}/{$id}";
+        $file->storeAs('', $key, 'private');
+        $evidence = RevisionEvidence::query()->create([
+            'id' => $id, 'service_job_id' => $serviceJob->id,
+            'completion_submission_id' => $submission->id, 'owner_user_id' => $u->id,
+            'disk' => 'private', 'object_key' => $key,
+            'original_name' => $file->getClientOriginalName(),
+            'mime_type' => $file->getMimeType(), 'size_bytes' => $file->getSize(),
+            'scan_status' => 'pending',
+        ]);
+
+        return response()->json(['data' => ['id' => $evidence->id, 'scanStatus' => $evidence->scan_status]], 201);
     }
 
     public function cancel(Request $r, ServiceJob $serviceJob): JsonResponse
@@ -94,6 +121,7 @@ class JobLifecycleController extends Controller
         $job = ServiceJob::query()->findOrFail($disputeCase->service_job_id);
         $this->access->requireParticipant($job, $u);
         abort_unless(in_array($disputeCase->status, ['open', 'assigned', 'appealed'], true), 409);
+        abort_unless($disputeCase->evidence()->count() < 5, 422, 'A dispute can have up to 5 evidence files.');
         $d = $r->validate(['note' => 'nullable|string|max:2000', 'file' => 'nullable|file|max:10240|mimes:jpg,jpeg,png,webp,pdf']);
         abort_unless(filled($d['note'] ?? null) || $r->hasFile('file'), 422);
         $values = ['id' => (string) Str::uuid(), 'dispute_case_id' => $disputeCase->id, 'submitted_by_user_id' => $u->id, 'note' => $d['note'] ?? null];
@@ -129,6 +157,11 @@ class JobLifecycleController extends Controller
             ->where('service_job_id', $j->id)
             ->latest()
             ->first();
+        $revisionEvidence = $sub
+            ? RevisionEvidence::query()
+                ->where('completion_submission_id', $sub->id)
+                ->get(['id', 'original_name', 'mime_type', 'scan_status'])
+            : collect();
         $reviewSubmitted = JobReview::query()
             ->where('service_job_id', $j->id)
             ->where('author_user_id', $u->id)
@@ -151,6 +184,7 @@ class JobLifecycleController extends Controller
                 'submittedAt' => $sub->submitted_at->toIso8601String(),
                 'evidence' => $sub->evidence,
             ] : null,
+            'revisionEvidence' => $revisionEvidence,
             'cancellation' => $cancellation ? [
                 'id' => $cancellation->id,
                 'requestedByMe' => $cancellation->requested_by_user_id === $u->id,
@@ -160,6 +194,8 @@ class JobLifecycleController extends Controller
                 'id' => $dispute->id,
                 'status' => $dispute->status,
                 'reason' => $dispute->reason,
+                'evidence' => $dispute->evidence()
+                    ->get(['id', 'original_name', 'mime_type', 'scan_status']),
             ] : null,
         ];
     }

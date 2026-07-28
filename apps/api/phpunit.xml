@@ -19,6 +19,8 @@
     </source>
     <php>
         <env name="APP_ENV" value="testing"/>
+        <env name="APP_CONFIG_CACHE" value="bootstrap/cache/testing-config.php" force="true"/>
+        <env name="APP_ROUTES_CACHE" value="bootstrap/cache/testing-routes.php" force="true"/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="BROADCAST_CONNECTION" value="null"/>
@@ -27,12 +29,17 @@
         <env name="DB_DATABASE" value=":memory:"/>
         <env name="DB_URL" value=""/>
         <env name="MAIL_MAILER" value="array"/>
+        <env name="KAILA_WEB_ORIGINS" value="http://localhost:3000,http://localhost:3001" force="true"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="OUTBOX_TRANSPORT" value="log"/>
         <env name="OUTBOX_REALTIME_CHANNEL" value="kaila:realtime:events"/>
         <env name="MAPS_PROVIDER" value="fake"/>
         <env name="SESSION_DRIVER" value="array"/>
         <env name="PULSE_ENABLED" value="false"/>
+        <env name="PHASE_NINE_ENABLED" value="true" force="true"/>
+        <env name="PHASE_NINE_CALLS" value="false" force="true"/>
+        <env name="PHASE_NINE_COMMUNITY" value="true" force="true"/>
+        <env name="TURN_CONFIGURED" value="false" force="true"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>
     </php>

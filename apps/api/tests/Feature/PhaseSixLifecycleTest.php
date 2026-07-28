@@ -11,6 +11,8 @@ use App\Models\ServiceCategory;
 use App\Models\ServiceJob;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class PhaseSixLifecycleTest extends TestCase
@@ -35,6 +37,53 @@ class PhaseSixLifecycleTest extends TestCase
         $this->assertDatabaseHas('service_jobs', ['id' => $id, 'status' => 'rated_closed']);
         $this->assertDatabaseHas('job_reviews', ['id' => JobReview::query()->firstOrFail()->id, 'published_at' => JobReview::query()->firstOrFail()->published_at]);
         $this->assertDatabaseHas('reputation_projections', ['published_review_count' => 1]);
+    }
+
+    public function test_completion_revision_and_dispute_evidence_is_private_authorized_and_limited(): void
+    {
+        Storage::fake('private');
+        [$id, $client, $provider] = $this->selectedJob();
+        $this->actingAs($provider)->postJson("/api/v1/jobs/$id/work/start")->assertOk();
+        $submission = $this->postJson("/api/v1/jobs/$id/completion", [
+            'summary' => 'All agreed repairs are finished and tested.',
+        ])->assertCreated()->json('data.id');
+
+        $this->postJson("/api/v1/completions/$submission/evidence", [
+            'file' => UploadedFile::fake()->image('finished.jpg'),
+        ])->assertCreated()->assertJsonPath('data.scanStatus', 'pending');
+
+        $this->actingAs($client)->postJson("/api/v1/jobs/$id/completion/revision", [
+            'reason' => 'The fixture still leaks during normal use.',
+        ])->assertOk();
+        $this->postJson("/api/v1/jobs/$id/revision-evidence", [
+            'file' => UploadedFile::fake()->image('still-leaking.jpg'),
+        ])->assertCreated()->assertJsonPath('data.scanStatus', 'pending');
+        $this->assertDatabaseHas('revision_evidence', [
+            'service_job_id' => $id,
+            'completion_submission_id' => $submission,
+            'owner_user_id' => $client->id,
+            'scan_status' => 'pending',
+        ]);
+
+        $this->actingAs($provider)->postJson("/api/v1/jobs/$id/revision-evidence", [
+            'file' => UploadedFile::fake()->image('not-client.jpg'),
+        ])->assertNotFound();
+
+        $caseId = $this->postJson("/api/v1/jobs/$id/disputes", [
+            'reason' => 'The correction request needs support review and documented evidence.',
+        ])->assertCreated()->json('data.id');
+        $this->postJson("/api/v1/disputes/$caseId/evidence", [
+            'file' => UploadedFile::fake()->create('invoice.pdf', 100, 'application/pdf'),
+        ])->assertCreated();
+        $this->getJson("/api/v1/jobs/$id/work")
+            ->assertOk()
+            ->assertJsonPath('data.revisionEvidence.0.original_name', 'still-leaking.jpg')
+            ->assertJsonPath('data.dispute.evidence.0.original_name', 'invoice.pdf');
+
+        $this->assertCount(3, Storage::disk('private')->allFiles());
+        $this->assertDatabaseCount('completion_evidence', 1);
+        $this->assertDatabaseCount('revision_evidence', 1);
+        $this->assertDatabaseCount('dispute_evidence', 1);
     }
 
     public function test_dispute_requires_structured_audited_support_decision_and_different_appeal_reviewer(): void
