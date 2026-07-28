@@ -27,10 +27,15 @@ final class LegacyMarketplaceReferenceData
                 'code' => '1600000000',
                 'name' => 'Region XIII (Caraga)',
                 'children' => [[
-                    'code' => '1630400000',
-                    'name' => 'City of Butuan',
-                    'type' => 'city',
-                    'children' => self::butuanBarangays(),
+                    'code' => '1600200000',
+                    'name' => 'Agusan del Norte',
+                    'type' => 'province',
+                    'children' => [[
+                        'code' => '1630400000',
+                        'name' => 'City of Butuan',
+                        'type' => 'city',
+                        'children' => self::butuanBarangays(),
+                    ]],
                 ]],
             ],
         ];

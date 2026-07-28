@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Superseded in part by Decision 0010
 
 ## Decision
 
@@ -14,10 +14,11 @@ Official 10-digit PSGC identifiers are stored in `areas.code` so references are
 stable and traceable. The hierarchy follows the workbook geography:
 
 - Region X → Misamis Oriental → City of Gingoog → barangays
-- Region XIII → City of Butuan → barangays
+- Region XIII → City of Butuan → barangays (superseded for marketplace presentation)
 
 Butuan is attached directly to its region because it is represented as a
 highly urbanized city with no province row in the legacy source workbook.
+Decision 0010 replaces this presentation rule.
 
 Reference seeding uses `updateOrCreate` and does not delete unrelated records.
 The three superseded service placeholders and four Davao-area placeholders from
