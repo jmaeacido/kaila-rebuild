@@ -20,6 +20,11 @@ import {
 import { Button, Feedback } from "@kaila/ui";
 import { LifecycleTimeline } from "./lifecycle-timeline";
 import { useJobRealtime } from "./use-job-realtime";
+import {
+  prominentCompletionCopy,
+  shouldShowHistoricalCompletionNote,
+  shouldShowReviewDeadline,
+} from "./work-copy";
 import styles from "./work.module.css";
 
 type Evidence = {
@@ -337,10 +342,28 @@ export default function WorkPage({ params }: { params: Promise<{ jobId: string }
         <StatusIcon status={data.status} />
         <div>
           <h2>{data.completion ? `Completion submission ${data.completion.cycle}` : "Ready for the next step"}</h2>
-          <p>{data.completion?.summary ?? primaryGuidance(data)}</p>
+          <p>
+            {prominentCompletionCopy(
+              data.status,
+              data.completion?.summary,
+              primaryGuidance(data),
+            )}
+          </p>
+          {shouldShowHistoricalCompletionNote(
+            data.status,
+            data.completion?.summary,
+          ) && (
+            <small>
+              Provider&apos;s completion note: {data.completion.summary}
+            </small>
+          )}
           {data.completion?.submittedAt && <small>Submitted {new Date(data.completion.submittedAt).toLocaleString()}</small>}
           {data.autoConfirmAt && <small>Client review ends {new Date(data.autoConfirmAt).toLocaleString()}</small>}
-          {data.reviewClosesAt && <small>Reviews close {new Date(data.reviewClosesAt).toLocaleString()}</small>}
+          {shouldShowReviewDeadline(data.status, data.reviewClosesAt) && (
+            <small>
+              Reviews close {new Date(data.reviewClosesAt).toLocaleString()}
+            </small>
+          )}
         </div>
       </section>
 
