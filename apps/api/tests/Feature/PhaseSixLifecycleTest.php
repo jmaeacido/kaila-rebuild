@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Area;
 use App\Models\DisputeCase;
 use App\Models\JobReview;
+use App\Models\OutboxEvent;
 use App\Models\ProviderProfile;
 use App\Models\ServiceCategory;
 use App\Models\ServiceJob;
@@ -60,6 +61,44 @@ class PhaseSixLifecycleTest extends TestCase
         $this->actingAs($provider)->postJson("/api/v1/jobs/$id/cancel", ['reason' => 'I agree that this booking should be cancelled.'])->assertOk();
         $this->assertDatabaseHas('service_jobs', ['id' => $id, 'status' => 'cancelled']);
         $this->assertDatabaseHas('travel_sessions', ['service_job_id' => $id, 'status' => 'stopped']);
+    }
+
+    public function test_work_view_exposes_only_the_current_participants_action_state(): void
+    {
+        [$id, $client, $provider] = $this->selectedJob();
+
+        $this->actingAs($client)
+            ->postJson("/api/v1/jobs/$id/cancel", [
+                'reason' => 'The property will not be accessible at the agreed time.',
+            ])
+            ->assertAccepted();
+
+        $this->actingAs($provider)
+            ->getJson("/api/v1/jobs/$id/work")
+            ->assertOk()
+            ->assertJsonPath('data.role', 'provider')
+            ->assertJsonPath('data.reviewSubmitted', false)
+            ->assertJsonPath('data.cancellation.requestedByMe', false)
+            ->assertJsonPath('data.cancellation.reason', 'The property will not be accessible at the agreed time.')
+            ->assertJsonMissingPath('data.cancellation.requestedByUserId');
+
+        $this->actingAs($provider)
+            ->postJson("/api/v1/jobs/$id/cancel", [
+                'reason' => 'I agree with the pending cancellation request.',
+            ])
+            ->assertOk();
+
+        $event = OutboxEvent::query()
+            ->where('resource_type', 'service_job')
+            ->where('resource_id', $id)
+            ->where('event_type', 'job.state.changed')
+            ->latest('occurred_at')
+            ->firstOrFail();
+        $this->assertEqualsCanonicalizing(
+            [(string) $client->id, (string) $provider->id],
+            $event->payload['recipientUserIds'],
+        );
+        $this->assertSame($id, $event->payload['data']['jobId']);
     }
 
     private function selectedJob(): array

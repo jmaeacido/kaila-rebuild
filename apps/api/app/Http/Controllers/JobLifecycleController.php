@@ -7,6 +7,7 @@ use App\Models\CompletionEvidence;
 use App\Models\CompletionSubmission;
 use App\Models\DisputeCase;
 use App\Models\DisputeEvidence;
+use App\Models\JobReview;
 use App\Models\ServiceJob;
 use App\Models\User;
 use App\Support\HiredJobAccess;
@@ -119,7 +120,47 @@ class JobLifecycleController extends Controller
     {
         $p = $this->access->participants($j);
         $sub = CompletionSubmission::query()->where('service_job_id', $j->id)->latest('cycle')->with('evidence:id,completion_submission_id,original_name,mime_type,scan_status')->first();
+        $cancellation = CancellationRequest::query()
+            ->where('service_job_id', $j->id)
+            ->where('status', 'pending')
+            ->latest()
+            ->first();
+        $dispute = DisputeCase::query()
+            ->where('service_job_id', $j->id)
+            ->latest()
+            ->first();
+        $reviewSubmitted = JobReview::query()
+            ->where('service_job_id', $j->id)
+            ->where('author_user_id', $u->id)
+            ->exists();
 
-        return ['jobId' => $j->id, 'status' => $j->status, 'version' => $j->version, 'role' => $u->id === $p['clientId'] ? 'client' : 'provider', 'workStartedAt' => $j->work_started_at?->toIso8601String(), 'autoConfirmAt' => $j->auto_confirm_at?->toIso8601String(), 'completedAt' => $j->completed_at?->toIso8601String(), 'reviewClosesAt' => $j->review_closes_at?->toIso8601String(), 'completion' => $sub ? ['id' => $sub->id, 'cycle' => $sub->cycle, 'summary' => $sub->summary, 'submittedAt' => $sub->submitted_at->toIso8601String(), 'evidence' => $sub->evidence] : null];
+        return [
+            'jobId' => $j->id,
+            'status' => $j->status,
+            'version' => $j->version,
+            'role' => $u->id === $p['clientId'] ? 'client' : 'provider',
+            'workStartedAt' => $j->work_started_at?->toIso8601String(),
+            'autoConfirmAt' => $j->auto_confirm_at?->toIso8601String(),
+            'completedAt' => $j->completed_at?->toIso8601String(),
+            'reviewClosesAt' => $j->review_closes_at?->toIso8601String(),
+            'reviewSubmitted' => $reviewSubmitted,
+            'completion' => $sub ? [
+                'id' => $sub->id,
+                'cycle' => $sub->cycle,
+                'summary' => $sub->summary,
+                'submittedAt' => $sub->submitted_at->toIso8601String(),
+                'evidence' => $sub->evidence,
+            ] : null,
+            'cancellation' => $cancellation ? [
+                'id' => $cancellation->id,
+                'requestedByMe' => $cancellation->requested_by_user_id === $u->id,
+                'reason' => $cancellation->reason,
+            ] : null,
+            'dispute' => $dispute ? [
+                'id' => $dispute->id,
+                'status' => $dispute->status,
+                'reason' => $dispute->reason,
+            ] : null,
+        ];
     }
 }

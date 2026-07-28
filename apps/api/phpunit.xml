@@ -29,6 +29,7 @@
         <env name="MAIL_MAILER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="OUTBOX_TRANSPORT" value="log"/>
+        <env name="OUTBOX_REALTIME_CHANNEL" value="kaila:realtime:events"/>
         <env name="MAPS_PROVIDER" value="fake"/>
         <env name="SESSION_DRIVER" value="array"/>
         <env name="PULSE_ENABLED" value="false"/>
