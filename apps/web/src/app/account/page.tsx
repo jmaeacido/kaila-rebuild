@@ -12,6 +12,7 @@ import {
   MapPin,
   Settings,
   ShieldCheck,
+  Star,
   UserRound,
 } from "lucide-react";
 import { Button, Feedback } from "@kaila/ui";
@@ -25,6 +26,7 @@ type User = {
   activeMode: "client" | "provider" | null;
   providerEligible: boolean;
   avatarUrl: string | null;
+  reputation: { averageRating: number | null; reviewCount: number };
 };
 type Profile = {
   activeMode: "client" | "provider" | null;
@@ -223,6 +225,23 @@ export default function AccountPage() {
             <ShieldCheck aria-hidden="true" />
             Pictures are checked before they appear
           </span>
+        </div>
+      </section>
+
+      <section className={styles.reputationCard} aria-labelledby="reputation-title">
+        <span className={styles.reputationIcon}><Star aria-hidden="true" /></span>
+        <div>
+          <p className={styles.eyebrow}>YOUR REPUTATION</p>
+          <h2 id="reputation-title">
+            {user.reputation.averageRating === null
+              ? "New to KAILA"
+              : `${user.reputation.averageRating.toFixed(1)} overall rating`}
+          </h2>
+          <p>
+            {user.reputation.reviewCount === 0
+              ? "Your rating will appear after a completed job review is published."
+              : `Based on ${user.reputation.reviewCount} published review${user.reputation.reviewCount === 1 ? "" : "s"} from your completed jobs.`}
+          </p>
         </div>
       </section>
 

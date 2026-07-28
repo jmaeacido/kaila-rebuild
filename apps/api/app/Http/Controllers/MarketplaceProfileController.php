@@ -103,8 +103,16 @@ class MarketplaceProfileController extends Controller
     /** @return array<string, mixed> */
     private function publicProvider(ProviderProfile $profile): array
     {
+        $reputation = DB::table('reputation_projections')
+            ->where('user_id', $profile->user_id)
+            ->first(['average_rating', 'published_review_count']);
+
         return ['id' => $profile->id, 'displayName' => $profile->display_name, 'bio' => $profile->bio, 'yearsExperience' => $profile->years_experience,
-            'rating' => $profile->rating, 'completedJobs' => $profile->completed_jobs, 'responseMinutes' => $profile->response_minutes,
+            'rating' => $reputation?->average_rating !== null
+                ? (float) $reputation->average_rating
+                : ($profile->rating !== null ? (float) $profile->rating : null),
+            'reviewCount' => (int) ($reputation?->published_review_count ?? 0),
+            'completedJobs' => $profile->completed_jobs, 'responseMinutes' => $profile->response_minutes,
             'memberSince' => $profile->created_at?->toDateString(), 'verified' => $profile->credentials->isNotEmpty(),
             'services' => $profile->services, 'serviceAreas' => $profile->serviceAreas, 'availability' => $profile->relationLoaded('availability') ? $profile->availability : [],
             'portfolio' => $profile->portfolio->map(fn (ProfileAsset $asset) => ['id' => $asset->id, 'caption' => $asset->caption, 'downloadPath' => "/api/v1/profile-assets/{$asset->id}"])];

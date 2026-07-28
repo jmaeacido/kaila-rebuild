@@ -17,6 +17,7 @@ import {
   Search,
   Settings,
   Sparkles,
+  Star,
   Wrench,
   Zap,
 } from "lucide-react";
@@ -28,6 +29,7 @@ type User = {
   name: string;
   activeMode: "client" | "provider" | null;
   providerEligible: boolean;
+  reputation: { averageRating: number | null; reviewCount: number };
 };
 
 type Reference = { id: number; name: string };
@@ -185,6 +187,12 @@ export default function AuthenticatedHomePage() {
           <span />
         </div>
         <p className={styles.greeting}>Hi, {firstName}</p>
+        <p className={styles.heroReputation}>
+          <Star aria-hidden="true" />
+          {user.reputation.averageRating === null
+            ? "New · No published reviews yet"
+            : `${user.reputation.averageRating.toFixed(1)} overall · ${user.reputation.reviewCount} review${user.reputation.reviewCount === 1 ? "" : "s"}`}
+        </p>
         <h1 id="home-title">
           {isProvider
             ? "Ready to help someone nearby?"

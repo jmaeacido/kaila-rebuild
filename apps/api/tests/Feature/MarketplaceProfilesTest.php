@@ -11,12 +11,32 @@ use App\Models\ServiceJob;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class MarketplaceProfilesTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_current_user_can_see_their_unified_published_reputation(): void
+    {
+        $user = User::factory()->create();
+        DB::table('reputation_projections')->insert([
+            'user_id' => $user->id,
+            'published_review_count' => 3,
+            'rating_sum' => 14,
+            'average_rating' => 4.67,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->actingAs($user)
+            ->getJson('/api/v1/me')
+            ->assertOk()
+            ->assertJsonPath('data.reputation.averageRating', 4.67)
+            ->assertJsonPath('data.reputation.reviewCount', 3);
+    }
 
     public function test_provider_can_create_a_valid_profile_and_switch_mode_without_gaining_admin_authority(): void
     {
@@ -39,12 +59,25 @@ class MarketplaceProfilesTest extends TestCase
         [$category, $area] = $this->referenceData();
         $otherArea = Area::query()->create(['type' => 'city', 'name' => 'Cebu City', 'code' => 'CEB', 'is_active' => true]);
         $eligible = $this->provider('Eligible Provider', 'active', $category, $area);
+        DB::table('reputation_projections')->insert([
+            'user_id' => $eligible->user_id,
+            'published_review_count' => 2,
+            'rating_sum' => 9,
+            'average_rating' => 4.5,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
         $this->provider('Still Reviewing', 'pending_review', $category, $area);
         $this->provider('Wrong Area', 'active', $category, $otherArea);
 
         $this->actingAs(User::factory()->create())
             ->getJson("/api/v1/providers?categoryId={$category->id}&areaId={$area->id}")
-            ->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $eligible->id)->assertJsonPath('data.0.verified', false);
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $eligible->id)
+            ->assertJsonPath('data.0.rating', 4.5)
+            ->assertJsonPath('data.0.reviewCount', 2)
+            ->assertJsonPath('data.0.verified', false);
     }
 
     public function test_city_wide_provider_is_discoverable_from_a_child_barangay(): void
