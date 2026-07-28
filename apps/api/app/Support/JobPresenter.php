@@ -12,7 +12,7 @@ class JobPresenter
     /** @return array<string, mixed> */
     public function owned(ServiceJob $job): array
     {
-        $job->loadMissing(['category:id,name,icon', 'area:id,parent_id,name,type', 'assets:id,service_job_id,original_name,mime_type,scan_status', 'timeline']);
+        $job->loadMissing(['category:id,name,icon', 'area:id,parent_id,name,type', 'assets:id,service_job_id,original_name,mime_type,size_bytes,scan_status', 'timeline']);
         $hasOffers = $job->offers()->exists();
 
         return [
@@ -21,7 +21,15 @@ class JobPresenter
             'scheduledAt' => $job->scheduled_at?->toIso8601String(), 'budgetMinCentavos' => $job->budget_min_centavos,
             'budgetMaxCentavos' => $job->budget_max_centavos, 'addressLabel' => $job->address_label,
             'location' => $job->latitude !== null ? ['latitude' => $job->latitude, 'longitude' => $job->longitude] : null,
-            'version' => $job->version, 'postedAt' => $job->posted_at?->toIso8601String(), 'assets' => $job->assets,
+            'version' => $job->version, 'postedAt' => $job->posted_at?->toIso8601String(),
+            'assets' => $job->assets->map(fn ($asset) => [
+                'id' => $asset->id,
+                'name' => $asset->original_name,
+                'mimeType' => $asset->mime_type,
+                'sizeBytes' => $asset->size_bytes,
+                'scanStatus' => $asset->scan_status,
+                'url' => $asset->scan_status === 'clean' ? "/api/v1/job-assets/{$asset->id}" : null,
+            ]),
             'canEdit' => $job->status === 'draft' || ($job->status === 'posted' && ! $hasOffers),
             'canCancel' => in_array($job->status, ['draft', 'posted', 'offers_received', 'provider_selected', 'provider_traveling'], true),
             'timeline' => $job->timeline->map(fn ($event) => ['id' => $event->id, 'type' => $event->event_type, 'jobVersion' => $event->job_version, 'metadata' => $event->metadata, 'occurredAt' => $event->occurred_at->toIso8601String()]),

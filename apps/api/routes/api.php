@@ -72,6 +72,7 @@ Route::middleware('mobile.auth')->group(function (): void {
     Route::put('/auth/mobile/jobs/{serviceJob}', [ServiceJobController::class, 'update']);
     Route::post('/auth/mobile/jobs/{serviceJob}/post', [ServiceJobController::class, 'post']);
     Route::post('/auth/mobile/jobs/{serviceJob}/assets', [JobAssetController::class, 'store']);
+    Route::get('/auth/mobile/job-assets/{jobAsset}', [JobAssetController::class, 'show']);
     Route::get('/auth/mobile/opportunities', [OpportunityController::class, 'index']);
     Route::put('/auth/mobile/opportunities/{opportunity}', [OpportunityController::class, 'decide']);
     Route::get('/auth/mobile/jobs/{serviceJob}/offers', [OfferController::class, 'index']);
@@ -146,6 +147,7 @@ Route::middleware('auth')->group(function (): void {
     Route::put('/jobs/{serviceJob}', [ServiceJobController::class, 'update']);
     Route::post('/jobs/{serviceJob}/post', [ServiceJobController::class, 'post']);
     Route::post('/jobs/{serviceJob}/assets', [JobAssetController::class, 'store']);
+    Route::get('/job-assets/{jobAsset}', [JobAssetController::class, 'show']);
     Route::get('/opportunities', [OpportunityController::class, 'index']);
     Route::put('/opportunities/{opportunity}', [OpportunityController::class, 'decide']);
     Route::get('/jobs/{serviceJob}/offers', [OfferController::class, 'index']);

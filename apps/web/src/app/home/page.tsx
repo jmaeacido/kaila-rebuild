@@ -382,20 +382,6 @@ export default function AuthenticatedHomePage() {
           )}
         </section>
 
-      <section className={styles.helpCard} aria-label="KAILA help">
-        <span>
-          <Sparkles aria-hidden="true" />
-        </span>
-        <div>
-          <h2>Not sure where to start?</h2>
-          <p>Katabang can guide you through posting, offers, and job issues.</p>
-        </div>
-        <Link href="/help/katabang">
-          Ask Katabang
-          <ArrowRight aria-hidden="true" />
-        </Link>
-      </section>
-
       <nav className={styles.bottomNav} aria-label="Marketplace navigation">
         <Link aria-current="page" href="/home" prefetch={false}>
           <Home aria-hidden="true" />

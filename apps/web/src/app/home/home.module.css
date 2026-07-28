@@ -89,8 +89,7 @@
 .discovery header a,
 .current header a,
 .activityCard > a,
-.empty > a,
-.helpCard > a {
+.empty > a {
   align-items: center;
   display: inline-flex;
   font-weight: var(--font-weight-semibold);
@@ -145,8 +144,7 @@
 
 .discovery h2,
 .current h2,
-.history h2,
-.helpCard h2 {
+.history h2 {
   color: var(--color-ink);
   font-size: var(--font-section-size);
 }
@@ -289,8 +287,7 @@
 }
 
 .categoryGrid a span,
-.activityIcon,
-.helpCard > span {
+.activityIcon {
   align-items: center;
   background: color-mix(in srgb, var(--color-primary) 10%, var(--color-surface));
   border-radius: var(--radius-pill);
@@ -307,8 +304,7 @@
 }
 
 .activityCard,
-.empty,
-.helpCard {
+.empty {
   background: var(--color-surface);
   border: var(--control-border-width) solid var(--color-border);
   border-radius: var(--radius-card);
@@ -389,34 +385,17 @@
   color: var(--color-ink);
 }
 
-.empty p,
-.helpCard p {
+.empty p {
   color: var(--color-text-secondary);
   line-height: var(--line-height-body);
 }
 
-.empty > a,
-.helpCard > a {
+.empty > a {
   background: var(--color-primary);
   border-radius: var(--radius-button);
   color: var(--color-on-primary);
   min-height: var(--control-min-height);
   padding: var(--spacing-8) var(--spacing-16);
-}
-
-.helpCard {
-  display: grid;
-  gap: var(--spacing-16);
-  padding: var(--spacing-24);
-}
-
-.helpCard > span {
-  background: color-mix(in srgb, var(--color-accent) 14%, var(--color-surface));
-}
-
-.helpCard > span svg {
-  height: var(--spacing-24);
-  width: var(--spacing-24);
 }
 
 .bottomNav {
@@ -514,11 +493,6 @@
     grid-column: auto;
   }
 
-  .helpCard {
-    align-items: center;
-    grid-template-columns: auto 1fr auto;
-  }
-
   .bottomNav {
     margin: 0 auto;
     max-width: 40rem;
@@ -538,6 +512,7 @@
   .bottomNav {
     display: none;
   }
+
 }
 
 @media (prefers-reduced-motion: reduce) {

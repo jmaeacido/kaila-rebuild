@@ -7,6 +7,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { Home, LogOut } from "lucide-react";
 import { prepareCsrf } from "./auth-client";
 import { BrandedLoader } from "./branded-loader";
+import { FloatingKatabang } from "../components/floating-katabang";
 
 const PUBLIC_PATHS = new Set([
   "/",
@@ -153,6 +154,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
         </div>
       </header>
       {children}
+      {pathname !== "/help/katabang" && <FloatingKatabang />}
     </>
   );
 }

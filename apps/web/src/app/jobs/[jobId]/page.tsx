@@ -2,6 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   ArrowLeft,
   CalendarClock,
@@ -13,15 +14,26 @@ import {
   PhilippinePeso,
   Tag,
   Hammer,
+  ImageIcon,
+  Video,
   Trash2,
   X,
 } from "lucide-react";
 import { Button, Feedback } from "@kaila/ui";
 import { AddressHierarchy, areaPathLabel, type AreaReference } from "../../address-hierarchy";
 import styles from "./job-details.module.css";
+import assetStyles from "./job-assets.module.css";
 
 type Reference = { id: number; name: string };
 type TimelineEvent = { id: string; type: string; occurredAt: string };
+type JobAsset = {
+  id: string;
+  name: string;
+  mimeType: string;
+  sizeBytes: number;
+  scanStatus: "pending" | "clean" | "rejected";
+  url: string | null;
+};
 type Job = {
   id: string;
   role: "client" | "provider";
@@ -40,6 +52,7 @@ type Job = {
   canEdit: boolean;
   canCancel: boolean;
   timeline: TimelineEvent[];
+  assets: JobAsset[];
 };
 
 const statusLabels: Record<string, string> = {
@@ -264,6 +277,45 @@ export default function JobDetailsPage({ params }: { params: Promise<{ jobId: st
             </dl>
             {job.addressLabel && <p className={styles.privateDetail}><MapPin /> {job.addressLabel} <span>{isHired ? "Shared with job participants" : "Private until hiring"}</span></p>}
           </section>
+
+          {job.assets.length > 0 && (
+            <section className={assetStyles.section}>
+              <h2>Job photos and videos</h2>
+              <div className={assetStyles.grid}>
+                {job.assets.map((asset) => (
+                  <article className={assetStyles.asset} key={asset.id}>
+                    <div className={assetStyles.preview}>
+                      {asset.url && asset.mimeType.startsWith("image/") ? (
+                        <Image
+                          src={asset.url}
+                          alt={asset.name}
+                          fill
+                          sizes="(max-width: 479px) 50vw, 180px"
+                          unoptimized
+                        />
+                      ) : asset.url && asset.mimeType.startsWith("video/") ? (
+                        <video src={asset.url} controls preload="metadata" aria-label={asset.name} />
+                      ) : asset.mimeType.startsWith("video/") ? (
+                        <Video aria-hidden="true" />
+                      ) : (
+                        <ImageIcon aria-hidden="true" />
+                      )}
+                    </div>
+                    <span>
+                      <strong>{asset.name}</strong>
+                      <small>
+                        {asset.scanStatus === "clean"
+                          ? "Ready to view"
+                          : asset.scanStatus === "pending"
+                            ? "Safety scan in progress"
+                            : "Unavailable after safety review"}
+                      </small>
+                    </span>
+                  </article>
+                ))}
+              </div>
+            </section>
+          )}
 
           <section className={styles.timeline}>
             <h2>Activity</h2>

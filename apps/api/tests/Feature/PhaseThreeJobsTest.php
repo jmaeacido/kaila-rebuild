@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Area;
+use App\Models\JobAsset;
 use App\Models\ProviderProfile;
 use App\Models\ServiceCategory;
 use App\Models\User;
@@ -107,7 +108,13 @@ class PhaseThreeJobsTest extends TestCase
         [$category, $area] = $this->references();
         $client = User::factory()->create();
         $created = $this->actingAs($client)->withHeader('Idempotency-Key', 'asset')->postJson('/api/v1/jobs', $this->draft($category, $area))->assertCreated();
-        $this->postJson("/api/v1/jobs/{$created->json('data.id')}/assets", ['file' => UploadedFile::fake()->image('leak.jpg', 640, 480)])->assertCreated()->assertJsonPath('data.scan_status', 'pending');
+        $uploaded = $this->postJson("/api/v1/jobs/{$created->json('data.id')}/assets", ['file' => UploadedFile::fake()->image('leak.jpg', 640, 480)])->assertCreated()->assertJsonPath('data.scan_status', 'pending');
+        $assetId = $uploaded->json('data.id');
+        $this->get("/api/v1/job-assets/{$assetId}")->assertNotFound();
+        JobAsset::query()->findOrFail($assetId)->update(['scan_status' => 'clean']);
+        $this->get("/api/v1/job-assets/{$assetId}")->assertOk();
+        $this->actingAs(User::factory()->create())->get("/api/v1/job-assets/{$assetId}")->assertNotFound();
+        $this->actingAs($client);
         $this->postJson("/api/v1/jobs/{$created->json('data.id')}/assets", ['file' => UploadedFile::fake()->create('leak.mp4', 100, 'video/mp4')])->assertCreated()->assertJsonPath('data.mime_type', 'video/mp4');
         $this->postJson("/api/v1/jobs/{$created->json('data.id')}/assets", ['file' => UploadedFile::fake()->create('instructions.pdf', 100, 'application/pdf')])->assertUnprocessable();
         $this->assertDatabaseHas('job_assets', ['service_job_id' => $created->json('data.id'), 'scan_status' => 'pending']);
