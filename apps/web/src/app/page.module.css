@@ -475,6 +475,8 @@
   min-height: var(--control-min-height);
   padding: var(--spacing-12);
 }
+.searchAddress { display:grid; gap:var(--spacing-8); grid-column:1 / -1; }
+.searchAddress > span { color:var(--color-ink); font-weight:var(--font-weight-medium); }
 
 .skeletons,
 .providerGrid {

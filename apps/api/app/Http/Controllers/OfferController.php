@@ -4,12 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Models\OfferRevision;
 use App\Models\OfferThread;
+use App\Models\ProfileAsset;
 use App\Models\ProviderProfile;
 use App\Models\ServiceJob;
 use App\Models\User;
 use App\Support\OfferService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class OfferController
 {
@@ -81,9 +83,9 @@ class OfferController
     /** @return array<string, mixed> */
     private function terms(Request $request): array
     {
-        $data = $request->validate(['amountCentavos' => ['required', 'integer', 'min:1', 'max:1000000000'], 'availabilityText' => ['required', 'string', 'max:160'], 'estimatedDurationText' => ['nullable', 'string', 'max:160'], 'scope' => ['required', 'string', 'max:2000'], 'message' => ['nullable', 'string', 'max:1000'], 'expiresAt' => ['nullable', 'date', 'after:now']]);
+        $data = $request->validate(['amountCentavos' => ['required', 'integer', 'min:1', 'max:1000000000'], 'availabilityText' => ['required', 'string', 'max:160'], 'estimatedDurationText' => ['nullable', 'string', 'max:160'], 'scope' => ['nullable', 'string', 'max:2000'], 'message' => ['nullable', 'string', 'max:1000'], 'expiresAt' => ['nullable', 'date', 'after:now']]);
 
-        return ['amount_centavos' => $data['amountCentavos'], 'availability_text' => $data['availabilityText'], 'estimated_duration_text' => $data['estimatedDurationText'] ?? null, 'scope' => $data['scope'], 'message' => $data['message'] ?? null, 'expires_at' => $data['expiresAt'] ?? null];
+        return ['amount_centavos' => $data['amountCentavos'], 'availability_text' => $data['availabilityText'], 'estimated_duration_text' => $data['estimatedDurationText'] ?? null, 'scope' => $data['scope'] ?? null, 'message' => $data['message'] ?? null, 'expires_at' => $data['expiresAt'] ?? null];
     }
 
     /** @return array<string, mixed> */
@@ -96,7 +98,17 @@ class OfferController
             abort(404);
         }
 
-        return ['id' => $thread->id, 'jobId' => $thread->service_job_id, 'status' => $thread->status, 'provider' => ['id' => $provider->id, 'displayName' => $provider->display_name, 'rating' => $provider->rating, 'completedJobs' => $provider->completed_jobs, 'responseMinutes' => $provider->response_minutes, 'verified' => $provider->credentials->contains('status', 'approved')], 'latestRevisionNumber' => $thread->latest_revision_number, 'revisions' => $thread->revisions->map(fn (OfferRevision $revision) => ['id' => $revision->id, 'revisionNumber' => $revision->revision_number, 'proposedBy' => $revision->proposed_by_user_id === $job->client_user_id ? 'client' : 'provider', 'amountCentavos' => $revision->amount_centavos, 'availabilityText' => $revision->availability_text, 'estimatedDurationText' => $revision->estimated_duration_text, 'scope' => $revision->scope, 'message' => $revision->message, 'expiresAt' => $revision->expires_at?->toIso8601String(), 'createdAt' => $revision->created_at->toIso8601String()])];
+        $avatar = ProfileAsset::query()
+            ->where('user_id', $provider->user_id)
+            ->where('purpose', 'avatar')
+            ->where('scan_status', 'clean')
+            ->latest()
+            ->first();
+        $reputation = DB::table('reputation_projections')->where('user_id', $provider->user_id);
+        $rating = $reputation->value('average_rating') ?? $provider->rating;
+        $reviewCount = (int) ($reputation->value('published_review_count') ?? 0);
+
+        return ['id' => $thread->id, 'jobId' => $thread->service_job_id, 'status' => $thread->status, 'provider' => ['id' => $provider->id, 'displayName' => $provider->display_name, 'avatarUrl' => $avatar ? "/api/v1/profile-assets/{$avatar->getKey()}" : null, 'rating' => $rating, 'reviewCount' => $reviewCount, 'completedJobs' => $provider->completed_jobs, 'responseMinutes' => $provider->response_minutes, 'verified' => $provider->credentials->contains('status', 'approved')], 'latestRevisionNumber' => $thread->latest_revision_number, 'revisions' => $thread->revisions->map(fn (OfferRevision $revision) => ['id' => $revision->id, 'revisionNumber' => $revision->revision_number, 'proposedBy' => $revision->proposed_by_user_id === $job->client_user_id ? 'client' : 'provider', 'amountCentavos' => $revision->amount_centavos, 'availabilityText' => $revision->availability_text, 'estimatedDurationText' => $revision->estimated_duration_text, 'scope' => $revision->scope, 'message' => $revision->message, 'expiresAt' => $revision->expires_at?->toIso8601String(), 'createdAt' => $revision->created_at->toIso8601String()])];
     }
 
     private function user(Request $request): User

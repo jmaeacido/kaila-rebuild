@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AcceptedOfferSnapshot;
+use App\Models\ProviderProfile;
 use App\Models\ServiceJob;
 use App\Models\User;
 use App\Support\JobPostingService;
@@ -18,16 +20,28 @@ class ServiceJobController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $jobs = ServiceJob::query()->where('client_user_id', $this->user($request)->id)->latest()->get();
+        $user = $this->user($request);
+        $provider = ProviderProfile::query()->where('user_id', $user->id)->first();
+        $hiredJobIds = $provider
+            ? AcceptedOfferSnapshot::query()->where('provider_profile_id', $provider->id)->pluck('service_job_id')
+            : collect();
+        $jobs = ServiceJob::query()
+            ->where(fn ($query) => $query->where('client_user_id', $user->id)->orWhereIn('id', $hiredJobIds))
+            ->latest()
+            ->get();
 
-        return response()->json(['data' => $jobs->map(fn (ServiceJob $job) => $this->presenter->owned($job))]);
+        return response()->json(['data' => $jobs->map(fn (ServiceJob $job) => $this->presenter->owned($job) + [
+            'role' => $job->client_user_id === $user->id ? 'client' : 'provider',
+        ])]);
     }
 
     public function show(Request $request, ServiceJob $serviceJob): JsonResponse
     {
-        $this->owns($request, $serviceJob);
+        $user = $this->user($request);
+        $role = $this->participantRole($serviceJob, $user);
+        abort_unless($role !== null, 404);
 
-        return response()->json(['data' => $this->presenter->owned($serviceJob)]);
+        return response()->json(['data' => $this->presenter->owned($serviceJob) + ['role' => $role]]);
     }
 
     public function store(Request $request): JsonResponse
@@ -58,10 +72,22 @@ class ServiceJobController extends Controller
     public function update(Request $request, ServiceJob $serviceJob): JsonResponse
     {
         $this->owns($request, $serviceJob);
-        abort_unless($serviceJob->status === 'draft', 409, 'Posted jobs cannot be edited in Phase 3.');
+        $editable = $serviceJob->status === 'draft'
+            || ($serviceJob->status === 'posted' && ! $serviceJob->offers()->exists());
+        abort_unless($editable, 409, 'This job can no longer be edited because an offer or work agreement already exists.');
         $data = $this->validated($request);
-        $serviceJob->update($this->attributes($data) + ['version' => $serviceJob->version + 1]);
-        $serviceJob->timeline()->create(['id' => (string) Str::uuid(), 'actor_user_id' => $this->user($request)->id, 'event_type' => 'job.draft_updated', 'job_version' => $serviceJob->version, 'metadata' => [], 'occurred_at' => now()]);
+        if ($serviceJob->status === 'posted') {
+            abort_unless(
+                $data['categoryId'] === $serviceJob->service_category_id && $data['areaId'] === $serviceJob->area_id,
+                409,
+                'Service and barangay cannot change after posting. Cancel this job and post a new one instead.',
+            );
+        }
+        $event = $serviceJob->status === 'draft' ? 'job.draft_updated' : 'job.updated';
+        DB::transaction(function () use ($serviceJob, $data, $event, $request): void {
+            $serviceJob->update($this->attributes($data) + ['version' => $serviceJob->version + 1]);
+            $serviceJob->timeline()->create(['id' => (string) Str::uuid(), 'actor_user_id' => $this->user($request)->id, 'event_type' => $event, 'job_version' => $serviceJob->version, 'metadata' => [], 'occurred_at' => now()]);
+        });
 
         return response()->json(['data' => $this->presenter->owned($serviceJob->refresh())]);
     }
@@ -91,6 +117,23 @@ class ServiceJobController extends Controller
     private function owns(Request $request, ServiceJob $job): void
     {
         abort_unless($job->client_user_id === $this->user($request)->id, 404);
+    }
+
+    private function participantRole(ServiceJob $job, User $user): ?string
+    {
+        if ($job->client_user_id === $user->id) {
+            return 'client';
+        }
+
+        $provider = ProviderProfile::query()->where('user_id', $user->id)->first();
+        if (! $provider) {
+            return null;
+        }
+
+        return AcceptedOfferSnapshot::query()
+            ->where('service_job_id', $job->id)
+            ->where('provider_profile_id', $provider->id)
+            ->exists() ? 'provider' : null;
     }
 
     private function user(Request $request): User

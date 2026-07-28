@@ -45,6 +45,22 @@ class PhaseThreeJobsTest extends TestCase
         $response->assertJsonMissingPath('data.0.location')->assertJsonMissingPath('data.0.addressLabel')->assertJsonMissingPath('data.0.clientUserId')->assertJsonPath('data.0.area.name', 'Davao City');
     }
 
+    public function test_provider_covering_a_whole_city_matches_a_job_in_its_barangay(): void
+    {
+        [$category, $city] = $this->references();
+        $barangay = Area::query()->create(['parent_id' => $city->id, 'type' => 'barangay', 'name' => 'Barangay One', 'code' => 'DVO-001', 'is_active' => true]);
+        $provider = $this->provider($category, $city, 'active');
+        $client = User::factory()->create();
+
+        $created = $this->actingAs($client)
+            ->withHeader('Idempotency-Key', 'city-wide-coverage')
+            ->postJson('/api/v1/jobs', $this->draft($category, $barangay))
+            ->assertCreated();
+        $this->postJson("/api/v1/jobs/{$created->json('data.id')}/post")->assertOk();
+
+        $this->assertDatabaseHas('job_opportunities', ['provider_profile_id' => $provider->id]);
+    }
+
     public function test_cross_user_access_and_idempotency_key_reuse_are_rejected(): void
     {
         [$category, $area] = $this->references();
@@ -56,6 +72,33 @@ class PhaseThreeJobsTest extends TestCase
         $this->withHeader('Idempotency-Key', 'same')->postJson('/api/v1/jobs', $changed)->assertConflict();
         $this->actingAs($other)->getJson("/api/v1/jobs/{$created->json('data.id')}")->assertNotFound();
         $this->putJson("/api/v1/jobs/{$created->json('data.id')}", $this->draft($category, $area))->assertNotFound();
+    }
+
+    public function test_client_can_edit_a_posted_job_before_any_offer_exists(): void
+    {
+        [$category, $area] = $this->references();
+        $client = User::factory()->create();
+        $created = $this->actingAs($client)->withHeader('Idempotency-Key', 'editable-posted')->postJson('/api/v1/jobs', $this->draft($category, $area))->assertCreated();
+        $this->postJson("/api/v1/jobs/{$created->json('data.id')}/post")->assertOk();
+        $updated = $this->draft($category, $area);
+        $updated['title'] = 'Updated leaking tap details';
+
+        $this->putJson("/api/v1/jobs/{$created->json('data.id')}", $updated)
+            ->assertOk()
+            ->assertJsonPath('data.title', 'Updated leaking tap details')
+            ->assertJsonPath('data.canEdit', true);
+        $this->assertDatabaseHas('job_timeline_events', ['service_job_id' => $created->json('data.id'), 'event_type' => 'job.updated']);
+    }
+
+    public function test_client_can_cancel_a_draft_job(): void
+    {
+        [$category, $area] = $this->references();
+        $client = User::factory()->create();
+        $created = $this->actingAs($client)->withHeader('Idempotency-Key', 'cancel-draft')->postJson('/api/v1/jobs', $this->draft($category, $area))->assertCreated();
+
+        $this->postJson("/api/v1/jobs/{$created->json('data.id')}/cancel", ['reason' => 'I no longer need this service request.'])
+            ->assertOk()
+            ->assertJsonPath('data.status', 'cancelled');
     }
 
     public function test_job_attachments_are_limited_private_and_quarantined(): void

@@ -78,7 +78,7 @@ class JobLifecycleService
     {
         return DB::transaction(function () use ($job, $actor, $reason) {
             $locked = ServiceJob::query()->lockForUpdate()->findOrFail($job->id);
-            if (in_array($locked->status, ['posted', 'offers_received'], true)) {
+            if (in_array($locked->status, ['draft', 'posted', 'offers_received'], true)) {
                 abort_unless($locked->client_user_id === $actor->id, 404);
                 $this->transition($locked, 'cancelled', $actor, 'job.cancelled', ['reason' => $reason]);
 

@@ -28,7 +28,7 @@ class OfferService
             $locked = ServiceJob::query()->lockForUpdate()->findOrFail($job->id);
             abort_unless(in_array($locked->status, ['posted', 'offers_received'], true), 409, 'This job is not accepting offers.');
             abort_if($locked->client_user_id === $actor->id, 403);
-            abort_unless(JobOpportunity::query()->where('service_job_id', $locked->id)->where('provider_profile_id', $provider->id)->whereIn('state', ['new', 'seen'])->exists(), 403);
+            abort_unless(JobOpportunity::query()->where('service_job_id', $locked->id)->where('provider_profile_id', $provider->id)->whereIn('state', ['new', 'seen', 'offered'])->exists(), 403);
             $existing = OfferThread::query()->where('service_job_id', $locked->id)->where('provider_profile_id', $provider->id)->with('revisions')->first();
             if ($existing instanceof OfferThread) {
                 $first = $existing->revisions->first();
@@ -39,6 +39,10 @@ class OfferService
 
             $thread = OfferThread::query()->create(['service_job_id' => $locked->id, 'provider_profile_id' => $provider->id, 'status' => 'active', 'latest_revision_number' => 1]);
             $revision = $this->revision($thread, $actor, $terms, 1);
+            JobOpportunity::query()
+                ->where('service_job_id', $locked->id)
+                ->where('provider_profile_id', $provider->id)
+                ->update(['state' => 'offered', 'decided_at' => now()]);
             if ($locked->status === 'posted') {
                 $locked->update(['status' => 'offers_received', 'version' => $locked->version + 1]);
                 $locked->timeline()->create(['id' => (string) Str::uuid(), 'actor_user_id' => $actor->id, 'event_type' => 'job.offers_received', 'job_version' => $locked->version, 'metadata' => ['offerThreadId' => $thread->id], 'occurred_at' => now()]);

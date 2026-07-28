@@ -15,7 +15,7 @@ use Illuminate\Support\Carbon;
  * @property int $amount_centavos
  * @property string $availability_text
  * @property string|null $estimated_duration_text
- * @property string $scope
+ * @property string|null $scope
  * @property string|null $message
  * @property Carbon|null $expires_at
  * @property Carbon $created_at

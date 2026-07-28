@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Area;
 use App\Models\ClientProfile;
 use App\Models\ProfileAsset;
 use App\Models\ProviderProfile;
 use App\Models\User;
+use App\Support\OpportunityMatchingService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -13,6 +15,8 @@ use Illuminate\Validation\Rule;
 
 class MarketplaceProfileController extends Controller
 {
+    public function __construct(private readonly OpportunityMatchingService $matching) {}
+
     public function show(Request $request): JsonResponse
     {
         /** @var User $user */ $user = $request->user();
@@ -65,6 +69,7 @@ class MarketplaceProfileController extends Controller
 
             return $profile;
         });
+        $this->matching->reconcileProvider($profile);
 
         return response()->json(['data' => $profile->load(['services:id,name,slug,icon', 'serviceAreas:id,name,type,code', 'availability'])]);
     }
@@ -72,9 +77,11 @@ class MarketplaceProfileController extends Controller
     public function discover(Request $request): JsonResponse
     {
         $data = $request->validate(['categoryId' => ['required', 'integer', 'exists:service_categories,id'], 'areaId' => ['required', 'integer', 'exists:areas,id']]);
+        $area = Area::query()->whereKey($data['areaId'])->firstOrFail();
+        $matchingAreaIds = array_values(array_filter([$area->id, $area->parent_id]));
         $profiles = ProviderProfile::query()->where('status', 'active')
             ->whereHas('services', fn ($q) => $q->whereKey($data['categoryId'])->where('is_active', true))
-            ->whereHas('serviceAreas', fn ($q) => $q->whereKey($data['areaId'])->where('is_active', true))
+            ->whereHas('serviceAreas', fn ($q) => $q->whereKey($matchingAreaIds)->where('is_active', true))
             ->with(['services:id,name,slug,icon', 'serviceAreas:id,name,type,code', 'portfolio:id,user_id,caption,sort_order', 'credentials' => fn ($q) => $q->where('review_status', 'approved')])
             ->orderByDesc('rating')->orderBy('id')->paginate(20);
 

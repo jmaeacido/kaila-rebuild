@@ -20,7 +20,14 @@ class PhaseFourOffersTest extends TestCase
         $offer = $this->actingAs($provider)->postJson("/api/v1/jobs/$jobId/offers", $payload)->assertCreated();
         $offer->assertJsonPath('data.revisions.0.amountCentavos', 85000)->assertJsonPath('data.revisions.0.proposedBy', 'provider');
         $this->assertDatabaseHas('service_jobs', ['id' => $jobId, 'status' => 'offers_received']);
+        $this->assertDatabaseHas('job_opportunities', ['service_job_id' => $jobId, 'state' => 'offered']);
         $this->assertDatabaseHas('durable_notifications', ['user_id' => $client->id, 'type' => 'offer.created']);
+        $this->actingAs($provider)
+            ->getJson('/api/v1/opportunities')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.state', 'offered')
+            ->assertJsonPath('data.0.offer.id', $offer->json('data.id'));
         $this->postJson("/api/v1/jobs/$jobId/offers", $payload)->assertCreated()->assertJsonPath('data.id', $offer->json('data.id'));
         $this->assertDatabaseCount('offer_threads', 1);
         $this->assertDatabaseCount('offer_revisions', 1);
@@ -45,6 +52,23 @@ class PhaseFourOffersTest extends TestCase
         $this->getJson("/api/v1/offers/$thread")->assertNotFound();
     }
 
+    public function test_offer_scope_is_optional(): void
+    {
+        [$jobId, $client, $provider] = $this->postedJob();
+        $payload = $this->terms(85000);
+        unset($payload['scope']);
+
+        $offer = $this->actingAs($provider)
+            ->postJson("/api/v1/jobs/$jobId/offers", $payload)
+            ->assertCreated()
+            ->assertJsonPath('data.revisions.0.scope', null);
+
+        $this->actingAs($client)
+            ->postJson("/api/v1/jobs/$jobId/select-offer", ['offerRevisionId' => $offer->json('data.revisions.0.id')])
+            ->assertOk()
+            ->assertJsonPath('data.scope', null);
+    }
+
     public function test_selection_is_exact_idempotent_and_closes_competitors_atomically(): void
     {
         [$jobId, $client, $first, $category, $area] = $this->postedJob(twoProviders: true);
@@ -61,6 +85,15 @@ class PhaseFourOffersTest extends TestCase
         $this->assertDatabaseHas('offer_threads', ['id' => $secondOffer->json('data.id'), 'status' => 'rejected']);
         $this->assertDatabaseHas('service_jobs', ['id' => $jobId, 'status' => 'provider_selected']);
         $this->assertDatabaseHas('durable_notifications', ['user_id' => $first->id, 'type' => 'offer.selected']);
+        $this->actingAs($first)
+            ->getJson('/api/v1/jobs')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $jobId)
+            ->assertJsonPath('data.0.role', 'provider');
+        $this->getJson("/api/v1/jobs/$jobId")
+            ->assertOk()
+            ->assertJsonPath('data.role', 'provider');
     }
 
     public function test_only_provider_withdraws_and_only_client_declines(): void

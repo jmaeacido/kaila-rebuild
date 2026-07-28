@@ -7,6 +7,7 @@ use App\Models\ProfileAsset;
 use App\Models\ProviderCredential;
 use App\Models\ProviderProfile;
 use App\Models\ServiceCategory;
+use App\Models\ServiceJob;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -44,6 +45,37 @@ class MarketplaceProfilesTest extends TestCase
         $this->actingAs(User::factory()->create())
             ->getJson("/api/v1/providers?categoryId={$category->id}&areaId={$area->id}")
             ->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $eligible->id)->assertJsonPath('data.0.verified', false);
+    }
+
+    public function test_city_wide_provider_is_discoverable_from_a_child_barangay(): void
+    {
+        [$category, $city] = $this->referenceData();
+        $barangay = Area::query()->create(['parent_id' => $city->id, 'type' => 'barangay', 'name' => 'Barangay One', 'code' => 'DVO-001', 'is_active' => true]);
+        $provider = $this->provider('City-wide Provider', 'active', $category, $city);
+
+        $this->actingAs(User::factory()->create())
+            ->getJson("/api/v1/providers?categoryId={$category->id}&areaId={$barangay->id}")
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $provider->id);
+    }
+
+    public function test_updating_active_provider_coverage_backfills_matching_open_jobs_once(): void
+    {
+        [$category, $city] = $this->referenceData();
+        $barangay = Area::query()->create(['parent_id' => $city->id, 'type' => 'barangay', 'name' => 'Barangay One', 'code' => 'DVO-001', 'is_active' => true]);
+        $client = User::factory()->create();
+        $job = ServiceJob::query()->create(['client_user_id' => $client->id, 'service_category_id' => $category->id, 'area_id' => $barangay->id, 'status' => 'posted', 'title' => 'Repair a leaking pipe', 'description' => 'The kitchen pipe has a steady leak under the sink.', 'schedule_type' => 'asap', 'posted_at' => now()]);
+        $provider = $this->provider('City-wide Provider', 'active', $category, $city);
+        $user = User::query()->findOrFail($provider->user_id);
+
+        $payload = $this->validProfile($category, $city);
+        $this->actingAs($user)->putJson('/api/v1/me/provider-profile', $payload)->assertOk();
+        $this->putJson('/api/v1/me/provider-profile', $payload)->assertOk();
+
+        $this->assertDatabaseHas('job_opportunities', ['service_job_id' => $job->id, 'provider_profile_id' => $provider->id]);
+        $this->assertDatabaseCount('job_opportunities', 1);
+        $this->assertDatabaseCount('durable_notifications', 1);
     }
 
     public function test_verified_badge_appears_only_after_clean_asset_and_approved_credential(): void

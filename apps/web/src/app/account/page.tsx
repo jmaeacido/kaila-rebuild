@@ -16,9 +16,9 @@ import {
 } from "lucide-react";
 import { Button, Feedback } from "@kaila/ui";
 import { prepareCsrf } from "../auth-client";
+import { AddressHierarchy, type AreaReference } from "../address-hierarchy";
 import styles from "./account.module.css";
 
-type Reference = { id: number; name: string };
 type User = {
   name: string;
   email: string;
@@ -35,7 +35,7 @@ type Profile = {
 export default function AccountPage() {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [areas, setAreas] = useState<Reference[]>([]);
+  const [areas, setAreas] = useState<AreaReference[]>([]);
   const [displayName, setDisplayName] = useState("");
   const [areaId, setAreaId] = useState("");
   const [status, setStatus] = useState<
@@ -61,7 +61,7 @@ export default function AccountPage() {
       ).data;
       const referenceData = (
         (await referenceResponse.json()) as {
-          data: { areas: Reference[] };
+          data: { areas: AreaReference[] };
         }
       ).data;
       setUser(userData);
@@ -292,23 +292,18 @@ export default function AccountPage() {
             value={displayName}
           />
         </label>
-        <label>
+        <div className={styles.homeArea}>
           <span>
             <MapPin aria-hidden="true" />
             Home area
           </span>
-          <select
-            onChange={(event) => setAreaId(event.target.value)}
+          <AddressHierarchy
+            areas={areas}
             value={areaId}
-          >
-            <option value="">Choose an area</option>
-            {areas.map((area) => (
-              <option key={area.id} value={area.id}>
-                {area.name}
-              </option>
-            ))}
-          </select>
-        </label>
+            onChange={setAreaId}
+            optional
+          />
+        </div>
         <Button isLoading={status === "saving"} type="submit">
           Save profile
         </Button>

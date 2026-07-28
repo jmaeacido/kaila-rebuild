@@ -12,6 +12,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Str;
 
 class CallController
@@ -32,8 +33,83 @@ class CallController
 
             return $call;
         });
+        $this->queueSignal($calleeId, ['type' => 'ringing', 'callId' => $call->id, 'media' => $call->media, 'callerUserId' => $actor->id]);
 
         return response()->json(['data' => $call], 201);
+    }
+
+    public function configuration(Request $request): JsonResponse
+    {
+        $this->user($request);
+        abort_unless(config('phase_nine.enabled') && config('phase_nine.calls') && config('phase_nine.turn_configured'), 503);
+
+        return response()->json(['data' => ['iceServers' => [
+            ['urls' => 'stun:stun.l.google.com:19302'],
+            ['urls' => array_values(array_filter(array_map('trim', explode(',', (string) config('phase_nine.turn_url'))))), 'username' => config('phase_nine.turn_username'), 'credential' => config('phase_nine.turn_credential')],
+        ]]]);
+    }
+
+    public function signals(Request $request): JsonResponse
+    {
+        $user = $this->user($request);
+        $key = "kaila:calls:signals:{$user->id}";
+        $signals = [];
+        for ($index = 0; $index < 100; $index++) {
+            $payload = Redis::lpop($key);
+            if (! is_string($payload)) {
+                break;
+            }
+            $decoded = json_decode((string) $payload, true);
+            if (is_array($decoded)) {
+                $signals[] = $decoded;
+            }
+        }
+
+        return response()->json(['data' => $signals]);
+    }
+
+    public function signal(Request $request, CallSession $callSession): JsonResponse
+    {
+        $data = $request->validate([
+            'type' => 'required|in:offer,answer,candidate,hangup',
+            'description' => 'nullable|array',
+            'candidate' => 'nullable|array',
+        ]);
+        $actor = $this->user($request);
+        abort_unless(in_array($actor->id, [$callSession->caller_user_id, $callSession->callee_user_id], true), 404);
+        $recipient = $actor->id === $callSession->caller_user_id ? $callSession->callee_user_id : $callSession->caller_user_id;
+        $description = isset($data['description'])
+            ? $this->normalizeSessionDescription($data['description'])
+            : null;
+        $this->queueSignal($recipient, [
+            'type' => $data['type'],
+            'callId' => $callSession->id,
+            'media' => $callSession->media,
+            'description' => $description,
+            'candidate' => $data['candidate'] ?? null,
+        ]);
+        if (in_array($data['type'], ['offer', 'answer'], true)) {
+            Redis::setex(
+                "kaila:calls:state:{$callSession->id}:{$data['type']}",
+                120,
+                json_encode($description, JSON_THROW_ON_ERROR),
+            );
+        }
+
+        return response()->json(['data' => ['delivered' => true]]);
+    }
+
+    public function signalState(Request $request, CallSession $callSession): JsonResponse
+    {
+        $actor = $this->user($request);
+        abort_unless(in_array($actor->id, [$callSession->caller_user_id, $callSession->callee_user_id], true), 404);
+        $offer = Redis::get("kaila:calls:state:{$callSession->id}:offer");
+        $answer = Redis::get("kaila:calls:state:{$callSession->id}:answer");
+
+        return response()->json(['data' => [
+            'offer' => is_string($offer) ? json_decode($offer, true) : null,
+            'answer' => is_string($answer) ? json_decode($answer, true) : null,
+        ]]);
     }
 
     public function transition(Request $request, CallSession $callSession): JsonResponse
@@ -42,8 +118,11 @@ class CallController
         $actor = $this->user($request);
         abort_unless(in_array($actor->id, [$callSession->caller_user_id, $callSession->callee_user_id], true), 404);
         if ($data['action'] === 'answer') {
-            abort_unless($actor->id === $callSession->callee_user_id && $callSession->status === 'ringing', 409);
-            $callSession->update(['status' => 'active', 'answered_at' => now()]);
+            abort_unless($actor->id === $callSession->callee_user_id, 409);
+            abort_unless(in_array($callSession->status, ['ringing', 'active'], true), 409);
+            if ($callSession->status === 'ringing') {
+                $callSession->update(['status' => 'active', 'answered_at' => now()]);
+            }
         } else {
             abort_unless(in_array($callSession->status, ['ringing', 'active'], true), 409);
             $callSession->update(['status' => $data['action'] === 'decline' ? 'declined' : 'ended', 'ended_at' => now(), 'ended_reason' => $data['reason'] ?? ($data['action'] === 'decline' ? 'declined' : 'completed')]);
@@ -72,5 +151,29 @@ class CallController
         abort_unless($user instanceof User, 401);
 
         return $user;
+    }
+
+    /** @param array<string, mixed> $payload */
+    private function queueSignal(int $userId, array $payload): void
+    {
+        $key = "kaila:calls:signals:$userId";
+        Redis::rpush($key, json_encode($payload, JSON_THROW_ON_ERROR));
+        Redis::expire($key, 120);
+    }
+
+    /**
+     * Laravel trims request strings, but WebRTC requires SDP to end with CRLF.
+     *
+     * @param  array<string, mixed>  $description
+     * @return array<string, mixed>
+     */
+    private function normalizeSessionDescription(array $description): array
+    {
+        if (isset($description['sdp']) && is_string($description['sdp'])) {
+            $lines = preg_split('/\r\n|\r|\n/', $description['sdp']);
+            $description['sdp'] = implode("\r\n", $lines ?: [])."\r\n";
+        }
+
+        return $description;
     }
 }

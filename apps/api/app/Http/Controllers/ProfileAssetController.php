@@ -32,7 +32,11 @@ class ProfileAssetController extends Controller
     public function show(Request $request, ProfileAsset $profileAsset): StreamedResponse
     {
         /** @var User|null $user */ $user = $request->user();
-        abort_unless(($user !== null && $profileAsset->user_id === $user->id) || ($profileAsset->purpose === 'portfolio' && $profileAsset->scan_status === 'clean'), 403);
+        abort_unless(
+            ($user !== null && $profileAsset->user_id === $user->id)
+            || (in_array($profileAsset->purpose, ['avatar', 'portfolio'], true) && $profileAsset->scan_status === 'clean'),
+            403
+        );
         abort_unless($profileAsset->scan_status === 'clean', 409, 'The file is not available until its safety scan passes.');
 
         return Storage::disk($profileAsset->disk)->response(

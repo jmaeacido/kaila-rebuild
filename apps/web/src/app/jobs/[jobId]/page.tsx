@@ -1,0 +1,301 @@
+"use client";
+
+import { FormEvent, useCallback, useEffect, useState } from "react";
+import Link from "next/link";
+import {
+  ArrowLeft,
+  CalendarClock,
+  Clock3,
+  MapPin,
+  MessageCircle,
+  Navigation,
+  Pencil,
+  PhilippinePeso,
+  Tag,
+  Hammer,
+  Trash2,
+  X,
+} from "lucide-react";
+import { Button, Feedback } from "@kaila/ui";
+import { AddressHierarchy, areaPathLabel, type AreaReference } from "../../address-hierarchy";
+import styles from "./job-details.module.css";
+
+type Reference = { id: number; name: string };
+type TimelineEvent = { id: string; type: string; occurredAt: string };
+type Job = {
+  id: string;
+  role: "client" | "provider";
+  status: string;
+  title: string;
+  description: string;
+  category: Reference;
+  area: Reference & { parent_id: number | null };
+  scheduleType: "asap" | "scheduled";
+  scheduledAt: string | null;
+  budgetMinCentavos: number | null;
+  budgetMaxCentavos: number | null;
+  addressLabel: string | null;
+  location: { latitude: string | number; longitude: string | number } | null;
+  postedAt: string | null;
+  canEdit: boolean;
+  canCancel: boolean;
+  timeline: TimelineEvent[];
+};
+
+const statusLabels: Record<string, string> = {
+  draft: "Draft",
+  posted: "Waiting for offers",
+  offers_received: "Offers received",
+  provider_selected: "Provider selected",
+  provider_traveling: "Provider on the way",
+  working: "Work in progress",
+  completion_submitted: "Waiting for confirmation",
+  revision_requested: "Revision requested",
+  completed: "Completed",
+  rated_closed: "Completed and rated",
+  cancelled: "Cancelled",
+  disputed: "Under review",
+};
+
+function pesos(value: number | null): string {
+  return value === null ? "Open" : `₱${(value / 100).toLocaleString()}`;
+}
+
+function localDateTime(value: string | null): string {
+  if (!value) return "";
+  const date = new Date(value);
+  const offset = date.getTimezoneOffset() * 60_000;
+  return new Date(date.getTime() - offset).toISOString().slice(0, 16);
+}
+
+export default function JobDetailsPage({ params }: { params: Promise<{ jobId: string }> }) {
+  const [job, setJob] = useState<Job | null>(null);
+  const [categories, setCategories] = useState<Reference[]>([]);
+  const [areas, setAreas] = useState<AreaReference[]>([]);
+  const [editing, setEditing] = useState(false);
+  const [editAreaId, setEditAreaId] = useState("");
+  const [cancelling, setCancelling] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
+  const [status, setStatus] = useState<"loading" | "ready" | "saving" | "error">("loading");
+  const [notice, setNotice] = useState("");
+
+  const load = useCallback(async () => {
+    setStatus("loading");
+    try {
+      const { jobId } = await params;
+      const [jobResponse, referenceResponse] = await Promise.all([
+        fetch(`/api/v1/jobs/${jobId}`, { cache: "no-store" }),
+        fetch("/api/v1/marketplace/reference-data", { cache: "no-store" }),
+      ]);
+      if (!jobResponse.ok || !referenceResponse.ok) throw new Error();
+      setJob(((await jobResponse.json()) as { data: Job }).data);
+      const references = (await referenceResponse.json()) as {
+        data: { categories: Reference[]; areas: AreaReference[] };
+      };
+      setCategories(references.data.categories);
+      setAreas(references.data.areas);
+      setStatus("ready");
+    } catch {
+      setStatus("error");
+    }
+  }, [params]);
+
+  useEffect(() => {
+    const initialLoad = window.setTimeout(() => void load(), 0);
+    return () => window.clearTimeout(initialLoad);
+  }, [load]);
+
+  async function save(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!job) return;
+    setStatus("saving");
+    setNotice("");
+    const data = new FormData(event.currentTarget);
+    const response = await fetch(`/api/v1/jobs/${job.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: data.get("title"),
+        description: data.get("description"),
+        categoryId: Number(data.get("categoryId")),
+        areaId: Number(data.get("areaId")),
+        scheduleType: data.get("scheduleType"),
+        scheduledAt:
+          data.get("scheduleType") === "scheduled"
+            ? new Date(String(data.get("scheduledAt"))).toISOString()
+            : null,
+        budgetMinCentavos: data.get("budgetMin")
+          ? Math.round(Number(data.get("budgetMin")) * 100)
+          : null,
+        budgetMaxCentavos: data.get("budgetMax")
+          ? Math.round(Number(data.get("budgetMax")) * 100)
+          : null,
+        addressLabel: data.get("addressLabel") || null,
+        latitude: job.location ? Number(job.location.latitude) : null,
+        longitude: job.location ? Number(job.location.longitude) : null,
+      }),
+    });
+    if (!response.ok) {
+      const body = (await response.json().catch(() => null)) as
+        | { error?: { message?: string } }
+        | null;
+      setStatus("ready");
+      setNotice(body?.error?.message || "This job could not be updated.");
+      return;
+    }
+    setJob(((await response.json()) as { data: Job }).data);
+    setEditing(false);
+    setStatus("ready");
+    setNotice("Your job details were updated.");
+  }
+
+  async function cancelJob(event: FormEvent) {
+    event.preventDefault();
+    if (!job || cancelReason.trim().length < 10) return;
+    setStatus("saving");
+    const response = await fetch(`/api/v1/jobs/${job.id}/cancel`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reason: cancelReason.trim() }),
+    });
+    if (!response.ok) {
+      setStatus("ready");
+      setNotice("This job could not be cancelled. Review its current status and try again.");
+      return;
+    }
+    const result = (await response.json()) as {
+      data: { status: string; requestId?: string };
+    };
+    setCancelling(false);
+    setCancelReason("");
+    setNotice(
+      response.status === 202
+        ? "Cancellation request sent to the provider."
+        : "The job was cancelled.",
+    );
+    if (result.data.status === "cancelled") {
+      await load();
+    } else {
+      setStatus("ready");
+    }
+  }
+
+  if (status === "loading" && !job) {
+    return <main className={styles.shell}><div className={styles.skeleton} /></main>;
+  }
+  if (status === "error" || !job) {
+    return (
+      <main className={styles.shell}>
+        <Feedback kind="error" title="Job details are unavailable">
+          Check your connection or return to Home.
+        </Feedback>
+        <Link href="/home">Back to Home</Link>
+      </main>
+    );
+  }
+
+  const isDraft = job.status === "draft";
+  const isHired = !["draft", "posted", "offers_received", "cancelled"].includes(job.status);
+  const areaLabel = areaPathLabel(areas, String(job.area.id)) || job.area.name;
+
+  return (
+    <main className={styles.shell}>
+      <header className={styles.topbar}>
+        <Link href="/home"><ArrowLeft aria-hidden="true" /> Home</Link>
+        <span className={styles.status}>{statusLabels[job.status] || job.status}</span>
+      </header>
+
+      <section className={styles.hero}>
+        <p>{job.category.name}</p>
+        <h1>{job.title}</h1>
+        <span>{job.postedAt ? `Posted ${new Date(job.postedAt).toLocaleString()}` : "Not posted yet"}</span>
+      </section>
+
+      {notice && (
+        <Feedback kind={notice.includes("could not") ? "error" : "success"} title="Job update">
+          {notice}
+        </Feedback>
+      )}
+
+      {editing ? (
+        <form className={styles.editForm} onSubmit={(event) => void save(event)}>
+          <header><h2>Edit job</h2><button type="button" onClick={() => setEditing(false)} aria-label="Close edit form"><X /></button></header>
+          <label>Short title<input name="title" required maxLength={120} defaultValue={job.title} /></label>
+          <label>What needs to be done?<textarea name="description" required minLength={10} maxLength={3000} defaultValue={job.description} /></label>
+          <label>
+            Service
+            <select name="categoryId" required defaultValue={job.category.id} disabled={!isDraft}>
+              {categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
+            </select>
+          </label>
+          {isDraft ? (
+            <div className={styles.addressEdit}>
+              <span>Job area</span>
+              <AddressHierarchy areas={areas} value={editAreaId || String(job.area.id)} onChange={setEditAreaId} />
+              <input type="hidden" name="areaId" value={editAreaId || job.area.id} />
+            </div>
+          ) : (
+            <label>Job area<input value={areaLabel} disabled /><input type="hidden" name="areaId" value={job.area.id} /></label>
+          )}
+          <input type="hidden" name="categoryId" value={job.category.id} disabled={isDraft} />
+          <div className={styles.scheduleChoices}>
+            <label><input type="radio" name="scheduleType" value="asap" defaultChecked={job.scheduleType === "asap"} /> As soon as possible</label>
+            <label><input type="radio" name="scheduleType" value="scheduled" defaultChecked={job.scheduleType === "scheduled"} /> Scheduled</label>
+          </div>
+          <label>Date and time<input name="scheduledAt" type="datetime-local" defaultValue={localDateTime(job.scheduledAt)} /></label>
+          <div className={styles.budget}>
+            <label>Budget from (₱)<input name="budgetMin" type="number" min="0" defaultValue={job.budgetMinCentavos === null ? "" : job.budgetMinCentavos / 100} /></label>
+            <label>Budget to (₱)<input name="budgetMax" type="number" min="0" defaultValue={job.budgetMaxCentavos === null ? "" : job.budgetMaxCentavos / 100} /></label>
+          </div>
+          <label>Landmark or address<input name="addressLabel" maxLength={180} defaultValue={job.addressLabel || ""} /></label>
+          {!isDraft && <p className={styles.lockNote}>Service and barangay are locked after posting so matched providers are not changed.</p>}
+          <div className={styles.formActions}><Button type="button" variant="secondary" onClick={() => setEditing(false)}>Discard</Button><Button isLoading={status === "saving"}>Save changes</Button></div>
+        </form>
+      ) : (
+        <>
+          <section className={styles.details}>
+            <h2>Job details</h2>
+            <p className={styles.description}>{job.description}</p>
+            <dl>
+              <div><Tag /><dt>Service</dt><dd>{job.category.name}</dd></div>
+              <div><MapPin /><dt>Area</dt><dd>{areaLabel}</dd></div>
+              <div><CalendarClock /><dt>When</dt><dd>{job.scheduleType === "asap" ? "As soon as possible" : new Date(job.scheduledAt || "").toLocaleString()}</dd></div>
+              <div><PhilippinePeso /><dt>Budget</dt><dd>{job.budgetMinCentavos === null && job.budgetMaxCentavos === null ? "Open" : `${pesos(job.budgetMinCentavos)} – ${pesos(job.budgetMaxCentavos)}`}</dd></div>
+            </dl>
+            {job.addressLabel && <p className={styles.privateDetail}><MapPin /> {job.addressLabel} <span>{isHired ? "Shared with job participants" : "Private until hiring"}</span></p>}
+          </section>
+
+          <section className={styles.timeline}>
+            <h2>Activity</h2>
+            {job.timeline.map((event) => (
+              <div key={event.id}><Clock3 /><span><strong>{event.type.replaceAll(".", " ")}</strong><small>{new Date(event.occurredAt).toLocaleString()}</small></span></div>
+            ))}
+          </section>
+
+          <div className={styles.actions}>
+            {job.canEdit && <Button onClick={() => { setEditAreaId(String(job.area.id)); setEditing(true); }}><Pencil /> Edit job</Button>}
+            {["posted", "offers_received"].includes(job.status) && <Button variant="secondary" onClick={() => location.assign(`/jobs/${job.id}/offers`)}>View offers</Button>}
+            {isHired && <Button onClick={() => location.assign(`/jobs/${job.id}/hired/conversation`)}><MessageCircle /> Message {job.role === "client" ? "provider" : "client"}</Button>}
+            {isHired && ["provider_selected", "provider_traveling"].includes(job.status) && <Button variant="secondary" onClick={() => location.assign(`/jobs/${job.id}/hired/travel`)}><Navigation /> {job.role === "provider" ? "Share travel" : "Track provider"}</Button>}
+            {isHired && <Button variant="secondary" onClick={() => location.assign(`/jobs/${job.id}/work`)}><Hammer /> {job.status === "provider_selected" && job.role === "provider" ? "Start work" : "Work status"}</Button>}
+            {job.canCancel && <Button variant="danger" onClick={() => setCancelling(true)}><Trash2 /> Cancel job</Button>}
+          </div>
+          {!job.canEdit && !["cancelled", "completed", "rated_closed"].includes(job.status) && (
+            <p className={styles.lockNote}>Editing is locked because an offer or work agreement already exists.</p>
+          )}
+        </>
+      )}
+
+      {cancelling && (
+        <section className={styles.cancelPanel} aria-labelledby="cancel-title">
+          <header><div><p>Important action</p><h2 id="cancel-title">Cancel this job?</h2></div><button type="button" onClick={() => setCancelling(false)} aria-label="Close cancellation"><X /></button></header>
+          <p>This preserves the job history. Tell us why you need to cancel.</p>
+          <form onSubmit={(event) => void cancelJob(event)}>
+            <label>Reason<textarea required minLength={10} maxLength={1000} value={cancelReason} onChange={(event) => setCancelReason(event.target.value)} placeholder="Briefly explain what changed." /></label>
+            <div><Button type="button" variant="secondary" onClick={() => setCancelling(false)}>Keep job</Button><Button variant="danger" disabled={cancelReason.trim().length < 10 || status === "saving"}>Confirm cancellation</Button></div>
+          </form>
+        </section>
+      )}
+    </main>
+  );
+}

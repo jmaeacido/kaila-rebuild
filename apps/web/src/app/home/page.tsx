@@ -33,6 +33,7 @@ type User = {
 type Reference = { id: number; name: string };
 type Job = {
   id: string;
+  role: "client" | "provider";
   status: string;
   title: string;
   area: Reference;
@@ -61,9 +62,11 @@ const categoryIcons: LucideIcon[] = [
 const jobStatusLabels: Record<string, string> = {
   draft: "Draft",
   posted: "Waiting for offers",
-  offered: "Offers received",
-  hired: "Provider selected",
-  traveling: "Provider on the way",
+  offers_received: "Offers received",
+  provider_selected: "Provider selected",
+  provider_traveling: "Provider on the way",
+  completion_submitted: "Waiting for confirmation",
+  revision_requested: "Revision requested",
   working: "Work in progress",
   completed: "Completed",
   rated_closed: "Completed and rated",
@@ -137,6 +140,11 @@ export default function AuthenticatedHomePage() {
     [user],
   );
   const latestJob = jobs[0];
+  const activeProviderJob = jobs.find(
+    (job) =>
+      job.role === "provider" &&
+      !["completed", "rated_closed", "cancelled"].includes(job.status),
+  );
   const latestOpportunity = opportunities[0];
   const primaryHref = isProvider ? "/opportunities" : "/post-job";
   const primaryLabel = isProvider ? "Find nearby work" : "Post a job";
@@ -232,19 +240,34 @@ export default function AuthenticatedHomePage() {
         <header>
           <div>
             <p className={styles.eyebrow}>
-              {isProvider ? "YOUR NEXT OPPORTUNITY" : "YOUR LATEST JOB"}
+              {isProvider && activeProviderJob ? "YOUR ACTIVE JOB" : isProvider ? "YOUR NEXT OPPORTUNITY" : "YOUR LATEST JOB"}
             </p>
             <h2 id="current-title">
-              {isProvider ? "Nearby work" : "Current activity"}
+              {isProvider && activeProviderJob ? "Hired work" : isProvider ? "Nearby work" : "Current activity"}
             </h2>
           </div>
-          <Link href={isProvider ? "/opportunities" : "/post-job"}>
-            {isProvider ? "See all" : "New job"}
+          <Link href={isProvider && activeProviderJob ? `/jobs/${activeProviderJob.id}` : isProvider ? "/opportunities" : "/post-job"}>
+            {isProvider && activeProviderJob ? "Open job" : isProvider ? "See all" : "New job"}
             <ChevronRight aria-hidden="true" />
           </Link>
         </header>
 
-        {isProvider && latestOpportunity ? (
+        {isProvider && activeProviderJob ? (
+          <article className={styles.activityCard}>
+            <span className={styles.activityIcon}>
+              <Hammer aria-hidden="true" />
+            </span>
+            <div>
+              <span>{jobStatusLabels[activeProviderJob.status] || "Hired job updated"}</span>
+              <h3>{activeProviderJob.title}</h3>
+              <p><MapPin aria-hidden="true" />{activeProviderJob.area.name}</p>
+            </div>
+            <Link href={`/jobs/${activeProviderJob.id}`}>
+              Continue
+              <ArrowRight aria-hidden="true" />
+            </Link>
+          </article>
+        ) : isProvider && latestOpportunity ? (
           <article className={styles.activityCard}>
             <span className={styles.activityIcon}>
               <BriefcaseBusiness aria-hidden="true" />
@@ -277,16 +300,10 @@ export default function AuthenticatedHomePage() {
                 {latestJob.area.name}
               </p>
             </div>
-            {latestJob.status === "posted" ? (
-              <Link href={`/jobs/${latestJob.id}/offers`}>
-                Offers
-                <ArrowRight aria-hidden="true" />
-              </Link>
-            ) : (
-              <span className={styles.statusPill}>
-                {latestJob.category.name}
-              </span>
-            )}
+            <Link href={`/jobs/${latestJob.id}`}>
+              View details
+              <ArrowRight aria-hidden="true" />
+            </Link>
           </article>
         ) : (
           <div className={styles.empty}>

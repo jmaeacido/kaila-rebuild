@@ -156,6 +156,7 @@ Route::middleware('auth')->group(function (): void {
     Route::post('/jobs/{serviceJob}/select-offer', [OfferController::class, 'select']);
     Route::get('/jobs/{serviceJob}/conversation', [ConversationController::class, 'show']);
     Route::post('/jobs/{serviceJob}/conversation/messages', [ConversationController::class, 'send']);
+    Route::put('/messages/{conversationMessage}/reaction', [ConversationController::class, 'react']);
     Route::post('/messages/{conversationMessage}/assets', [MessageAssetController::class, 'store']);
     Route::get('/message-assets/{messageAsset}', [MessageAssetController::class, 'show']);
     Route::put('/jobs/{serviceJob}/conversation/read', [ConversationController::class, 'read']);
@@ -187,6 +188,10 @@ Route::middleware('auth')->group(function (): void {
     Route::post('/direct-conversations/{directConversation}/accept', [DirectConversationController::class, 'accept']);
     Route::post('/direct-conversations/{directConversation}/messages', [DirectConversationController::class, 'send']);
     Route::post('/calls', [CallController::class, 'store']);
+    Route::get('/calls/configuration', [CallController::class, 'configuration']);
+    Route::get('/calls/signals', [CallController::class, 'signals']);
+    Route::get('/calls/{callSession}/signal-state', [CallController::class, 'signalState']);
+    Route::post('/calls/{callSession}/signal', [CallController::class, 'signal']);
     Route::post('/calls/{callSession}/transition', [CallController::class, 'transition']);
     Route::post('/community', [CommunityController::class, 'store']);
     Route::put('/community/{communityPost}/helpful', [CommunityController::class, 'react']);

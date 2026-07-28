@@ -23,6 +23,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signedInHome, SignedInUser } from "./auth-client";
+import { AddressHierarchy, type AreaReference } from "./address-hierarchy";
 import styles from "./page.module.css";
 
 type Reference = { id: number; name: string };
@@ -36,12 +37,12 @@ type Provider = {
   verified: boolean;
   serviceAreas: Reference[];
 };
-type ReferenceResult = { categories: Reference[]; areas: Reference[] };
+type ReferenceResult = { categories: Reference[]; areas: AreaReference[] };
 
 export default function HomePage() {
   const router = useRouter();
   const [categories, setCategories] = useState<Reference[]>([]);
-  const [areas, setAreas] = useState<Reference[]>([]);
+  const [areas, setAreas] = useState<AreaReference[]>([]);
   const [categoryId, setCategoryId] = useState("");
   const [areaId, setAreaId] = useState("");
   const [providers, setProviders] = useState<Provider[] | null>(null);
@@ -304,20 +305,10 @@ export default function HomePage() {
               ))}
             </select>
           </label>
-          <label>
+          <div className={styles.searchAddress}>
             <span>Area</span>
-            <select
-              value={areaId}
-              onChange={(event) => setAreaId(event.target.value)}
-            >
-              <option value="">Choose your area</option>
-              {areas.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.name}
-                </option>
-              ))}
-            </select>
-          </label>
+            <AddressHierarchy areas={areas} value={areaId} onChange={setAreaId} />
+          </div>
           <Button
             onClick={() => void discover()}
             disabled={!categoryId || !areaId || status === "searching"}

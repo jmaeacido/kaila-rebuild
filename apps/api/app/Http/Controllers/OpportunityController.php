@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\JobOpportunity;
+use App\Models\OfferThread;
 use App\Models\ProviderProfile;
 use App\Models\ServiceJob;
 use App\Models\User;
@@ -20,16 +21,26 @@ class OpportunityController
         $provider = ProviderProfile::query()->where('user_id', $this->user($request)->id)->where('status', 'active')->first();
         if (! $provider) {
             return response()->json(['data' => []]);
-        } $rows = JobOpportunity::query()->where('provider_profile_id', $provider->id)->whereIn('state', ['new', 'seen', 'passed'])->whereHas('job', fn ($q) => $q->where('status', 'posted'))->with('job')->latest()->get();
+        } $rows = JobOpportunity::query()->where('provider_profile_id', $provider->id)->whereIn('state', ['new', 'seen', 'passed', 'offered'])->whereHas('job', fn ($q) => $q->whereIn('status', ['posted', 'offers_received']))->with('job')->latest()->get();
         foreach ($rows->where('state', 'new') as $row) {
             $row->update(['state' => 'seen', 'seen_at' => now()]);
         }
 
-        return response()->json(['data' => $rows->map(function (JobOpportunity $row): array {
+        return response()->json(['data' => $rows->map(function (JobOpportunity $row) use ($provider): array {
             $job = $row->job;
             abort_unless($job instanceof ServiceJob, 404);
+            $offer = OfferThread::query()
+                ->where('service_job_id', $job->id)
+                ->where('provider_profile_id', $provider->id)
+                ->first();
 
-            return $this->presenter->opportunity($job, $row->id, $row->state);
+            return $this->presenter->opportunity($job, $row->id, $row->state) + [
+                'offer' => $offer ? [
+                    'id' => $offer->id,
+                    'status' => $offer->status,
+                    'latestRevisionNumber' => $offer->latest_revision_number,
+                ] : null,
+            ];
         })]);
     }
 

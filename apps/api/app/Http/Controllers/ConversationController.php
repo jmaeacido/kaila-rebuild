@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\ConversationMessage;
 use App\Models\JobConversation;
+use App\Models\ProfileAsset;
 use App\Models\ServiceJob;
 use App\Models\User;
 use App\Support\HiredJobAccess;
@@ -30,9 +31,45 @@ class ConversationController extends Controller
         if (! in_array($actor->id, $participants, true)) {
             DB::table('conversation_access_audits')->insert(['id' => (string) Str::uuid(), 'conversation_id' => $conversation->id, 'staff_user_id' => $actor->id, 'reason' => $request->string('accessReason')->trim()->value(), 'accessed_at' => now(), 'created_at' => now(), 'updated_at' => now()]);
         }
-        $messages = $conversation->messages()->orderByDesc('sequence')->limit(50)->get()->reverse()->values()->map(fn ($m) => ['id' => $m->id, 'sequence' => $m->sequence, 'senderUserId' => $m->sender_user_id, 'body' => $m->body_ciphertext === null ? null : Crypt::decryptString($m->body_ciphertext), 'keyVersion' => $m->encryption_key_version, 'createdAt' => $m->created_at?->toIso8601String()]);
+        $messages = $conversation->messages()->orderByDesc('sequence')->limit(50)->get()->reverse()->values()->map(function ($message) use ($actor): array {
+            $assets = DB::table('message_assets')->where('message_id', $message->id)->get();
+            $reactions = DB::table('message_reactions')
+                ->where('message_id', $message->id)
+                ->selectRaw('reaction, count(*) as total')
+                ->groupBy('reaction')
+                ->pluck('total', 'reaction');
+            $viewerReactions = DB::table('message_reactions')->where('message_id', $message->id)->where('user_id', $actor->id)->pluck('reaction');
 
-        return response()->json(['data' => ['id' => $conversation->id, 'jobId' => $serviceJob->id, 'version' => $conversation->version, 'messages' => $messages]]);
+            return [
+                'id' => $message->id,
+                'sequence' => $message->sequence,
+                'senderUserId' => $message->sender_user_id,
+                'body' => $message->body_ciphertext === null ? null : Crypt::decryptString($message->body_ciphertext),
+                'keyVersion' => $message->encryption_key_version,
+                'createdAt' => $message->created_at?->toIso8601String(),
+                'assets' => $assets->map(fn ($asset) => [
+                    'id' => $asset->id,
+                    'name' => $asset->original_name,
+                    'mimeType' => $asset->mime_type,
+                    'scanStatus' => $asset->scan_status,
+                    'url' => $asset->scan_status === 'clean' ? "/api/v1/message-assets/{$asset->id}" : null,
+                ]),
+                'reactions' => $reactions,
+                'viewerReactions' => $viewerReactions,
+            ];
+        });
+        $otherUserId = $actor->id === $participants['clientId'] ? $participants['providerId'] : $participants['clientId'];
+        $otherUser = User::query()->findOrFail($otherUserId);
+        $avatar = ProfileAsset::query()->where('user_id', $otherUserId)->where('purpose', 'avatar')->where('scan_status', 'clean')->latest()->first();
+
+        return response()->json(['data' => [
+            'id' => $conversation->id,
+            'jobId' => $serviceJob->id,
+            'version' => $conversation->version,
+            'viewerUserId' => $actor->id,
+            'otherParty' => ['id' => $otherUser->id, 'name' => $otherUser->name, 'avatarUrl' => $avatar ? "/api/v1/profile-assets/{$avatar->id}" : null],
+            'messages' => $messages,
+        ]]);
     }
 
     public function send(Request $request, ServiceJob $serviceJob): JsonResponse
@@ -86,5 +123,24 @@ class ConversationController extends Controller
         DB::transaction(fn () => $this->outbox->record('conversation.typing.changed', 'service_job', $serviceJob->id, (int) now()->format('U'), ['rooms' => ["user:$recipient"], 'jobId' => $serviceJob->id, 'actorUserId' => $actor->id, 'active' => $data['active']]));
 
         return response()->json(['data' => ['active' => $data['active']]]);
+    }
+
+    public function react(Request $request, ConversationMessage $conversationMessage): JsonResponse
+    {
+        $data = $request->validate(['reaction' => 'required|in:👍,❤️,😂,😮,😢,🙏']);
+        $actor = $request->user();
+        abort_unless($actor instanceof User, 401);
+        $conversation = JobConversation::query()->findOrFail($conversationMessage->conversation_id);
+        $job = ServiceJob::query()->findOrFail($conversation->service_job_id);
+        $this->access->requireParticipant($job, $actor);
+        $key = ['message_id' => $conversationMessage->id, 'user_id' => $actor->id, 'reaction' => $data['reaction']];
+        $existing = DB::table('message_reactions')->where($key)->exists();
+        if ($existing) {
+            DB::table('message_reactions')->where($key)->delete();
+        } else {
+            DB::table('message_reactions')->insert($key + ['created_at' => now(), 'updated_at' => now()]);
+        }
+
+        return response()->json(['data' => ['reaction' => $data['reaction'], 'active' => ! $existing]]);
     }
 }

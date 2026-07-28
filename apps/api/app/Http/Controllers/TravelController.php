@@ -65,8 +65,12 @@ class TravelController extends Controller
             $eta = $route->durationSeconds;
         } catch (Throwable) {
             $routeAvailable = false;
-            $distance = null;
-            $eta = null;
+            [$distance, $eta] = $this->fallbackMetrics(
+                (float) $data['latitude'],
+                (float) $data['longitude'],
+                $serviceJob->latitude !== null ? (float) $serviceJob->latitude : null,
+                $serviceJob->longitude !== null ? (float) $serviceJob->longitude : null,
+            );
         }$arrived = $distance !== null && $distance <= 30;
         $session->update(['version' => $session->version + 1, 'last_distance_meters' => $distance, 'last_eta_seconds' => $eta, 'arrived_at' => $arrived ? ($session->arrived_at ?? now()) : $session->arrived_at]);
         DB::transaction(fn () => $this->outbox->record($arrived ? 'travel.arrival.changed' : 'travel.location.changed', 'travel_session', $session->id, $session->version, ['rooms' => ["user:{$p['clientId']}", "user:{$p['providerId']}"], 'jobId' => $serviceJob->id, 'routeAvailable' => $routeAvailable]));
@@ -78,14 +82,26 @@ class TravelController extends Controller
     {
         $actor = $request->user();
         abort_unless($actor instanceof User, 401);
-        $this->access->requireParticipant($serviceJob, $actor);
+        $participants = $this->access->requireParticipant($serviceJob, $actor);
         $session = TravelSession::query()->where('service_job_id', $serviceJob->id)->latest('started_at')->first();
         if (! $session) {
-            return response()->json(['data' => null]);
+            return response()->json(['data' => [
+                'status' => 'not_started',
+                'canShareLocation' => $actor->id === $participants['providerId'],
+                'distanceMeters' => null,
+                'etaSeconds' => null,
+                'arrivedAt' => null,
+                'location' => null,
+                'destination' => $serviceJob->latitude !== null && $serviceJob->longitude !== null
+                    ? ['latitude' => (float) $serviceJob->latitude, 'longitude' => (float) $serviceJob->longitude]
+                    : null,
+                'routeGeometry' => null,
+            ]]);
         }
 
         $sample = DB::table('location_samples')->where('travel_session_id', $session->id)->latest('captured_at')->first();
         $data = $this->present($session);
+        $data['canShareLocation'] = $actor->id === $participants['providerId'];
         $data['location'] = $sample ? ['latitude' => (float) $sample->latitude, 'longitude' => (float) $sample->longitude, 'accuracyMeters' => $sample->accuracy_meters, 'capturedAt' => $sample->captured_at] : null;
         $data['destination'] = $serviceJob->latitude !== null && $serviceJob->longitude !== null
             ? ['latitude' => (float) $serviceJob->latitude, 'longitude' => (float) $serviceJob->longitude]
@@ -132,5 +148,23 @@ class TravelController extends Controller
     private function present(TravelSession $s): array
     {
         return ['id' => $s->id, 'status' => $s->status, 'version' => $s->version, 'startedAt' => $s->started_at->toIso8601String(), 'stoppedAt' => $s->stopped_at?->toIso8601String(), 'arrivedAt' => $s->arrived_at?->toIso8601String(), 'distanceMeters' => $s->last_distance_meters, 'etaSeconds' => $s->last_eta_seconds];
+    }
+
+    /** @return array{int|null, int|null} */
+    private function fallbackMetrics(float $fromLatitude, float $fromLongitude, ?float $toLatitude, ?float $toLongitude): array
+    {
+        if ($toLatitude === null || $toLongitude === null) {
+            return [null, null];
+        }
+
+        $earthRadiusMeters = 6371000;
+        $latitudeDelta = deg2rad($toLatitude - $fromLatitude);
+        $longitudeDelta = deg2rad($toLongitude - $fromLongitude);
+        $a = sin($latitudeDelta / 2) ** 2
+            + cos(deg2rad($fromLatitude)) * cos(deg2rad($toLatitude)) * sin($longitudeDelta / 2) ** 2;
+        $distance = (int) round($earthRadiusMeters * 2 * atan2(sqrt($a), sqrt(1 - $a)));
+        $etaSeconds = max(60, (int) ceil(($distance / 1000 / 22) * 3600));
+
+        return [$distance, $etaSeconds];
     }
 }
