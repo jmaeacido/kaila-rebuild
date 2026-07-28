@@ -211,6 +211,15 @@
   width: var(--spacing-16);
 }
 
+.historyList .jobRating {
+  color: var(--color-warning);
+  font-weight: var(--font-weight-semibold);
+}
+
+.historyList .jobRating svg {
+  fill: currentColor;
+}
+
 .historyStatus {
   background: color-mix(in srgb, var(--color-primary) 9%, transparent);
   border-radius: var(--radius-pill);

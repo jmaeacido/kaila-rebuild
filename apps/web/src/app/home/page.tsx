@@ -41,6 +41,8 @@ type Job = {
   area: Reference;
   category: Reference;
   scheduledAt: string | null;
+  ratingReceived: { rating: number } | null;
+  ratingGiven: { rating: number } | null;
 };
 type Opportunity = {
   id: number;
@@ -141,13 +143,17 @@ export default function AuthenticatedHomePage() {
     () => user?.name.trim().split(/\s+/)[0] || "there",
     [user],
   );
-  const latestJob = jobs[0];
+  const activeClientJob = jobs.find(
+    (job) =>
+      job.role === "client" &&
+      !["completed", "rated_closed", "cancelled"].includes(job.status),
+  );
   const activeProviderJob = jobs.find(
     (job) =>
       job.role === "provider" &&
       !["completed", "rated_closed", "cancelled"].includes(job.status),
   );
-  const providerJobHistory = jobs.filter((job) => job.role === "provider");
+  const jobHistory = jobs.filter((job) => job.role === (isProvider ? "provider" : "client"));
   const latestOpportunity = opportunities[0];
   const primaryHref = isProvider ? "/opportunities" : "/post-job";
   const primaryLabel = isProvider ? "Find nearby work" : "Post a job";
@@ -294,22 +300,22 @@ export default function AuthenticatedHomePage() {
               <ArrowRight aria-hidden="true" />
             </Link>
           </article>
-        ) : !isProvider && latestJob ? (
+        ) : !isProvider && activeClientJob ? (
           <article className={styles.activityCard}>
             <span className={styles.activityIcon}>
               <Clock3 aria-hidden="true" />
             </span>
             <div>
               <span>
-                {jobStatusLabels[latestJob.status] || "Job updated"}
+                {jobStatusLabels[activeClientJob.status] || "Job updated"}
               </span>
-              <h3>{latestJob.title}</h3>
+              <h3>{activeClientJob.title}</h3>
               <p>
                 <MapPin aria-hidden="true" />
-                {latestJob.area.name}
+                {activeClientJob.area.name}
               </p>
             </div>
-            <Link href={`/jobs/${latestJob.id}`}>
+            <Link href={`/jobs/${activeClientJob.id}`}>
               View details
               <ArrowRight aria-hidden="true" />
             </Link>
@@ -318,11 +324,11 @@ export default function AuthenticatedHomePage() {
           <div className={styles.empty}>
             <BriefcaseBusiness aria-hidden="true" />
             <div>
-              <h3>{isProvider ? "No nearby jobs yet" : "No jobs yet"}</h3>
+              <h3>{isProvider ? "No nearby jobs yet" : "No active jobs"}</h3>
               <p>
                 {isProvider
                   ? "We’ll show matching local work here when it becomes available."
-                  : "Post what you need and matching providers can send offers."}
+                  : "Completed work stays in Job history. Post a new job whenever you need help."}
               </p>
             </div>
             <Link href={primaryHref}>{primaryLabel}</Link>
@@ -330,23 +336,29 @@ export default function AuthenticatedHomePage() {
         )}
       </section>
 
-      {isProvider && (
-        <section className={styles.history} aria-labelledby="history-title">
+      <section className={styles.history} aria-labelledby="history-title" id="job-history">
           <header>
             <div>
-              <p className={styles.eyebrow}>YOUR WORK</p>
+              <p className={styles.eyebrow}>{isProvider ? "YOUR WORK" : "YOUR JOBS"}</p>
               <h2 id="history-title">Job history</h2>
             </div>
-            <span>{providerJobHistory.length} job{providerJobHistory.length === 1 ? "" : "s"}</span>
+            <span>{jobHistory.length} job{jobHistory.length === 1 ? "" : "s"}</span>
           </header>
-          {providerJobHistory.length ? (
+          {jobHistory.length ? (
             <div className={styles.historyList}>
-              {providerJobHistory.map((job) => (
+              {jobHistory.map((job) => (
                 <Link href={`/jobs/${job.id}`} key={job.id}>
                   <span className={styles.historyIcon}><BriefcaseBusiness aria-hidden="true" /></span>
                   <span>
                     <strong>{job.title}</strong>
                     <small><MapPin aria-hidden="true" /> {job.area.name}</small>
+                    {job.ratingReceived && (
+                      <small className={styles.jobRating}>
+                        <Star aria-hidden="true" />
+                        {job.ratingReceived.rating}.0 received
+                        {job.ratingGiven ? ` · ${job.ratingGiven.rating}.0 given` : ""}
+                      </small>
+                    )}
                   </span>
                   <span className={styles.historyStatus}>{jobStatusLabels[job.status] || job.status}</span>
                   <ChevronRight aria-hidden="true" />
@@ -358,13 +370,12 @@ export default function AuthenticatedHomePage() {
               <BriefcaseBusiness aria-hidden="true" />
               <div>
                 <h3>No hired jobs yet</h3>
-                <p>Jobs appear here after a client accepts your offer.</p>
+                <p>{isProvider ? "Jobs appear here after a client accepts your offer." : "Posted jobs appear here as they move from offers to completion."}</p>
               </div>
-              <Link href="/opportunities">Find nearby work</Link>
+              <Link href={isProvider ? "/opportunities" : "/post-job"}>{isProvider ? "Find nearby work" : "Post a job"}</Link>
             </div>
           )}
         </section>
-      )}
 
       <section className={styles.helpCard} aria-label="KAILA help">
         <span>

@@ -183,7 +183,9 @@ class EndToEndMarketplaceLifecycleTest extends TestCase
             ->assertJsonCount(1, 'data')
             ->assertJsonPath('data.0.id', $job)
             ->assertJsonPath('data.0.role', 'provider')
-            ->assertJsonPath('data.0.status', 'rated_closed');
+            ->assertJsonPath('data.0.status', 'rated_closed')
+            ->assertJsonPath('data.0.ratingReceived.rating', 5)
+            ->assertJsonPath('data.0.ratingGiven.rating', 5);
 
         $this->getJson("/api/v1/jobs/$job")
             ->assertOk()

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\AcceptedOfferSnapshot;
+use App\Models\JobReview;
 use App\Models\ProviderProfile;
 use App\Models\ServiceJob;
 use App\Models\User;
@@ -30,9 +31,9 @@ class ServiceJobController extends Controller
             ->latest()
             ->get();
 
-        return response()->json(['data' => $jobs->map(fn (ServiceJob $job) => $this->presenter->owned($job) + [
-            'role' => $job->client_user_id === $user->id ? 'client' : 'provider',
-        ])]);
+        return response()->json(['data' => $jobs->map(
+            fn (ServiceJob $job) => $this->presenter->owned($job) + $this->participantView($job, $user),
+        )]);
     }
 
     public function show(Request $request, ServiceJob $serviceJob): JsonResponse
@@ -41,7 +42,7 @@ class ServiceJobController extends Controller
         $role = $this->participantRole($serviceJob, $user);
         abort_unless($role !== null, 404);
 
-        return response()->json(['data' => $this->presenter->owned($serviceJob) + ['role' => $role]]);
+        return response()->json(['data' => $this->presenter->owned($serviceJob) + $this->participantView($serviceJob, $user)]);
     }
 
     public function store(Request $request): JsonResponse
@@ -134,6 +135,23 @@ class ServiceJobController extends Controller
             ->where('service_job_id', $job->id)
             ->where('provider_profile_id', $provider->id)
             ->exists() ? 'provider' : null;
+    }
+
+    /** @return array<string, mixed> */
+    private function participantView(ServiceJob $job, User $user): array
+    {
+        $reviews = JobReview::query()
+            ->where('service_job_id', $job->id)
+            ->whereNotNull('published_at')
+            ->get();
+        $received = $reviews->firstWhere('subject_user_id', $user->id);
+        $given = $reviews->firstWhere('author_user_id', $user->id);
+
+        return [
+            'role' => $job->client_user_id === $user->id ? 'client' : 'provider',
+            'ratingReceived' => $received ? ['rating' => $received->rating] : null,
+            'ratingGiven' => $given ? ['rating' => $given->rating] : null,
+        ];
     }
 
     private function user(Request $request): User
