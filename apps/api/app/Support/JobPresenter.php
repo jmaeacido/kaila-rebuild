@@ -43,7 +43,7 @@ class JobPresenter
      */
     public function opportunity(ServiceJob $job, int $opportunityId, string $state): array
     {
-        $job->loadMissing(['category:id,name,icon', 'area:id,name,type', 'assets' => fn ($query) => $query->where('scan_status', 'clean')->select('id', 'service_job_id', 'mime_type')]);
+        $job->loadMissing(['category:id,name,icon', 'area:id,name,type', 'assets' => fn ($query) => $query->where('scan_status', 'clean')->select('id', 'service_job_id', 'original_name', 'mime_type', 'size_bytes', 'scan_status')]);
         $client = User::query()->findOrFail($job->client_user_id);
         $avatar = ProfileAsset::query()
             ->where('user_id', $job->client_user_id)
@@ -63,7 +63,16 @@ class JobPresenter
             ],
             'category' => $job->category, 'area' => $job->area, 'scheduleType' => $job->schedule_type,
             'scheduledAt' => $job->scheduled_at?->toIso8601String(), 'budgetMinCentavos' => $job->budget_min_centavos,
-            'budgetMaxCentavos' => $job->budget_max_centavos, 'attachmentCount' => $job->assets->count(), 'postedAt' => $job->posted_at?->toIso8601String(),
+            'budgetMaxCentavos' => $job->budget_max_centavos,
+            'attachmentCount' => $job->assets->count(),
+            'assets' => $job->assets->map(fn ($asset) => [
+                'id' => $asset->id,
+                'name' => $asset->original_name,
+                'mimeType' => $asset->mime_type,
+                'sizeBytes' => $asset->size_bytes,
+                'url' => "/api/v1/job-assets/{$asset->id}",
+            ]),
+            'postedAt' => $job->posted_at?->toIso8601String(),
         ];
     }
 }

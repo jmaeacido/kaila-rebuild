@@ -25,6 +25,7 @@ class RedisRealtimeOutboxTransportTest extends TestCase
 
             return $channel === 'kaila:realtime:events'
                 && $publication['event']['eventId'] === $event->getKey()
+                && $publication['event']['type'] === 'job.updated'
                 && $publication['event']['data'] === ['status' => 'accepted']
                 && $publication['recipientUserIds'] === ['42', '84'];
         })->andReturn(2);
@@ -37,6 +38,20 @@ class RedisRealtimeOutboxTransportTest extends TestCase
         $event = $this->event(['data' => ['status' => 'accepted']]);
 
         $this->expectException(LogicException::class);
+        (new RedisRealtimeOutboxTransport)->publish($event);
+    }
+
+    public function test_transport_safely_delivers_legacy_server_owned_user_rooms(): void
+    {
+        $event = $this->event(['rooms' => ['user:42', 'not-a-user-room'], 'status' => 'accepted']);
+        Redis::shouldReceive('publish')->once()->withArgs(function (string $channel, string $message): bool {
+            $publication = json_decode($message, true, flags: JSON_THROW_ON_ERROR);
+
+            return $channel === 'kaila:realtime:events'
+                && $publication['recipientUserIds'] === ['42']
+                && $publication['event']['data'] === ['status' => 'accepted'];
+        })->andReturn(1);
+
         (new RedisRealtimeOutboxTransport)->publish($event);
     }
 

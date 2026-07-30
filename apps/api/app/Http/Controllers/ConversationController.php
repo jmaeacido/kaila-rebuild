@@ -8,6 +8,7 @@ use App\Models\ProfileAsset;
 use App\Models\ServiceJob;
 use App\Models\User;
 use App\Support\HiredJobAccess;
+use App\Support\NotificationService;
 use App\Support\OutboxRecorder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -17,7 +18,7 @@ use Illuminate\Support\Str;
 
 class ConversationController extends Controller
 {
-    public function __construct(private readonly HiredJobAccess $access, private readonly OutboxRecorder $outbox) {}
+    public function __construct(private readonly HiredJobAccess $access, private readonly OutboxRecorder $outbox, private readonly NotificationService $notifications) {}
 
     public function show(Request $request, ServiceJob $serviceJob): JsonResponse
     {
@@ -92,6 +93,7 @@ class ConversationController extends Controller
             $conversation->update(['version' => $sequence]);
             $recipient = $actor->id === $participants['clientId'] ? $participants['providerId'] : $participants['clientId'];
             $this->outbox->record('message.created', 'job_conversation', $conversation->id, $sequence, ['rooms' => ["user:$recipient", "user:{$actor->id}"], 'jobId' => $serviceJob->id, 'conversationId' => $conversation->id, 'messageId' => $message->id, 'sequence' => $sequence]);
+            $this->notifications->send($recipient, 'message.created', "New message from {$actor->name}", 'Open the job conversation to reply.', 'service_job', $serviceJob->id, ['jobId' => $serviceJob->id, 'conversationId' => $conversation->id], 'message');
 
             return $message;
         });

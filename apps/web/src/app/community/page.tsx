@@ -5,12 +5,14 @@ import { HeartHandshake, MapPin } from "lucide-react";
 import { Button, Feedback } from "@kaila/ui";
 import Link from "next/link";
 import styles from "../phase-nine.module.css";
+import { useRealtimeInvalidation } from "../use-realtime-invalidation";
 
 type Post = { id: string; kind: string; title: string; body: string; areaLabel: string | null; author: { name: string } | null; helpfulCount: number };
 
 export default function CommunityPage() {
   const [posts, setPosts] = useState<Post[]>([]); const [state, setState] = useState<"loading" | "ready" | "error">("loading");
   const load = useCallback(async () => { try { const response = await fetch("/api/v1/community"); if (!response.ok) throw new Error(); setPosts(((await response.json()) as { data: Post[] }).data); setState("ready"); } catch { setState("error"); } }, []);
+  useRealtimeInvalidation(() => void load(), (event) => event.resourceType === "community_post");
   useEffect(() => { void fetch("/api/v1/community").then(async (response) => { if (!response.ok) throw new Error(); setPosts(((await response.json()) as { data: Post[] }).data); setState("ready"); }).catch(() => setState("error")); }, []);
   return <main className={styles.page}><header className={styles.header}><Link href="/">Back home</Link><p className={styles.eyebrow}>KAILA Community</p><h1>Local help, shared by neighbors</h1><p>Practical stories and tips from the people doing the work.</p><Link className={styles.actionLink} href="/community/share">Share a story</Link></header>
     {state === "loading" && <><div className={styles.skeleton} /><div className={styles.skeleton} /></>}

@@ -19,6 +19,7 @@ import {
 import { Feedback } from "@kaila/ui";
 import { ServiceCategoryIcon } from "../../components/service-category-icon";
 import styles from "./home.module.css";
+import { useRealtimeInvalidation } from "../use-realtime-invalidation";
 
 type User = {
   name: string;
@@ -113,6 +114,9 @@ export default function AuthenticatedHomePage() {
       setStatus("error");
     }
   }, []);
+  useRealtimeInvalidation(() => void load(), (event) =>
+    ["service_job", "offer_thread", "notification", "job_conversation", "travel_session"].includes(event.resourceType),
+  );
 
   useEffect(() => {
     const initialLoad = window.setTimeout(() => void load(), 0);

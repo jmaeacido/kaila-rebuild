@@ -19,7 +19,13 @@ class FcmPushTransport implements PushTransport
             $project = $this->tokens->credentials()['project_id'];
         }
 
-        $response = Http::withToken($this->tokens->token())->timeout(10)->post("https://fcm.googleapis.com/v1/projects/{$project}/messages:send", ['message' => ['token' => $device->token_encrypted, 'notification' => ['title' => $notification->title, 'body' => $notification->body], 'data' => array_map('strval', array_merge($notification->data, ['notificationId' => $notification->id, 'resourceId' => $notification->resource_id]))]]);
+        $silent = ($notification->data['silent'] ?? null) === '1';
+        $response = Http::withToken($this->tokens->token())->timeout(10)->post("https://fcm.googleapis.com/v1/projects/{$project}/messages:send", ['message' => [
+            'token' => $device->token_encrypted,
+            'notification' => ['title' => $notification->title, 'body' => $notification->body],
+            'android' => ['priority' => $silent ? 'normal' : 'high', 'notification' => ['default_sound' => ! $silent]],
+            'data' => array_map('strval', array_merge($notification->data, ['notificationId' => $notification->id, 'resourceId' => $notification->resource_id])),
+        ]]);
         if (! $response->successful()) {
             throw new RuntimeException("FCM delivery failed with status {$response->status()}.");
         }

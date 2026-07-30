@@ -2,8 +2,13 @@
 
 namespace Tests\Feature;
 
+use App\Models\NotificationPreference;
+use App\Models\PushDevice;
 use App\Models\User;
+use App\Support\NotificationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
 
 class NotificationPreferencesTest extends TestCase
@@ -59,5 +64,58 @@ class NotificationPreferencesTest extends TestCase
             ->getJson('/api/v1/auth/mobile/notification-preferences')
             ->assertOk()
             ->assertJsonPath('data.timezone', 'Asia/Manila');
+    }
+
+    public function test_muted_messages_remain_durable_and_realtime_without_push(): void
+    {
+        Queue::fake();
+        $user = User::factory()->create();
+        NotificationPreference::query()->create(['user_id' => $user->id, 'mute_messages' => true, 'timezone' => 'Asia/Manila']);
+        PushDevice::query()->create([
+            'user_id' => $user->id,
+            'platform' => 'android',
+            'token_hash' => hash('sha256', 'test-token'),
+            'token_encrypted' => 'test-token',
+            'last_seen_at' => now(),
+        ]);
+
+        DB::transaction(fn () => app(NotificationService::class)->send(
+            $user->id,
+            'message.created',
+            'New message',
+            'Open the conversation.',
+            'service_job',
+            'job-1',
+            ['jobId' => 'job-1'],
+            'message',
+        ));
+
+        $this->assertDatabaseHas('durable_notifications', ['user_id' => $user->id, 'type' => 'message.created']);
+        $this->assertDatabaseCount('push_delivery_attempts', 0);
+        $this->assertDatabaseHas('outbox_events', ['event_type' => 'notification.created']);
+    }
+
+    public function test_notification_inbox_reports_unread_and_supports_read_all(): void
+    {
+        $user = User::factory()->create();
+        DB::transaction(fn () => app(NotificationService::class)->send(
+            $user->id,
+            'offer.created',
+            'New offer',
+            'A provider sent an offer.',
+            'service_job',
+            'job-1',
+            ['jobId' => 'job-1'],
+        ));
+
+        $this->actingAs($user)->getJson('/api/v1/notifications')
+            ->assertOk()
+            ->assertJsonPath('meta.unreadCount', 1)
+            ->assertJsonPath('data.0.resourceType', 'service_job')
+            ->assertJsonPath('data.0.data.type', 'offer');
+
+        $this->putJson('/api/v1/notifications/read')->assertOk();
+        $this->getJson('/api/v1/notifications')->assertJsonPath('meta.unreadCount', 0);
+        $this->assertDatabaseHas('outbox_events', ['event_type' => 'notification.read_all']);
     }
 }

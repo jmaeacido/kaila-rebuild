@@ -74,6 +74,7 @@ Route::middleware('mobile.auth')->group(function (): void {
     Route::post('/auth/mobile/jobs/{serviceJob}/post', [ServiceJobController::class, 'post']);
     Route::post('/auth/mobile/jobs/{serviceJob}/assets', [JobAssetController::class, 'store']);
     Route::get('/auth/mobile/job-assets/{jobAsset}', [JobAssetController::class, 'show']);
+    Route::delete('/auth/mobile/job-assets/{jobAsset}', [JobAssetController::class, 'destroy']);
     Route::get('/auth/mobile/opportunities', [OpportunityController::class, 'index']);
     Route::put('/auth/mobile/opportunities/{opportunity}', [OpportunityController::class, 'decide']);
     Route::get('/auth/mobile/jobs/{serviceJob}/offers', [OfferController::class, 'index']);
@@ -107,6 +108,7 @@ Route::middleware('mobile.auth')->group(function (): void {
     Route::post('/auth/mobile/jobs/{serviceJob}/reviews', [ReviewController::class, 'store']);
     Route::post('/auth/mobile/disputes/{disputeCase}/appeal', [AdminDisputeController::class, 'appeal']);
     Route::get('/auth/mobile/notifications', [DurableNotificationController::class, 'index']);
+    Route::put('/auth/mobile/notifications/read', [DurableNotificationController::class, 'readAll']);
     Route::put('/auth/mobile/notifications/{notification}/read', [DurableNotificationController::class, 'read']);
     Route::delete('/auth/mobile/notifications/{notification}', [DurableNotificationController::class, 'clear']);
     Route::post('/auth/mobile/push-devices', [PushDeviceController::class, 'store']);
@@ -150,6 +152,7 @@ Route::middleware('auth')->group(function (): void {
     Route::post('/jobs/{serviceJob}/post', [ServiceJobController::class, 'post']);
     Route::post('/jobs/{serviceJob}/assets', [JobAssetController::class, 'store']);
     Route::get('/job-assets/{jobAsset}', [JobAssetController::class, 'show']);
+    Route::delete('/job-assets/{jobAsset}', [JobAssetController::class, 'destroy']);
     Route::get('/opportunities', [OpportunityController::class, 'index']);
     Route::put('/opportunities/{opportunity}', [OpportunityController::class, 'decide']);
     Route::get('/jobs/{serviceJob}/offers', [OfferController::class, 'index']);
@@ -184,6 +187,7 @@ Route::middleware('auth')->group(function (): void {
     Route::get('/jobs/{serviceJob}/reviews', [ReviewController::class, 'index']);
     Route::post('/jobs/{serviceJob}/reviews', [ReviewController::class, 'store']);
     Route::get('/notifications', [DurableNotificationController::class, 'index']);
+    Route::put('/notifications/read', [DurableNotificationController::class, 'readAll']);
     Route::put('/notifications/{notification}/read', [DurableNotificationController::class, 'read']);
     Route::delete('/notifications/{notification}', [DurableNotificationController::class, 'clear']);
     Route::post('/push-devices', [PushDeviceController::class, 'store']);

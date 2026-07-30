@@ -15,7 +15,7 @@ use Illuminate\Support\Str;
 
 class JobLifecycleService
 {
-    public function __construct(private readonly HiredJobAccess $access, private readonly OutboxRecorder $outbox) {}
+    public function __construct(private readonly HiredJobAccess $access, private readonly OutboxRecorder $outbox, private readonly NotificationService $notifications) {}
 
     public function startWork(ServiceJob $job, User $actor): ServiceJob
     {
@@ -226,6 +226,32 @@ class JobLifecycleService
             $rooms[] = "user:{$p['providerId']}";
         }
         $this->outbox->record('job.state.changed', 'service_job', $job->id, $job->version, ['rooms' => $rooms, 'jobId' => $job->id, 'status' => $to, 'version' => $job->version]);
+        if ($snapshot) {
+            $recipient = $actor?->id === $p['clientId'] ? $p['providerId'] : $p['clientId'];
+            if ($actor === null) {
+                foreach ([$p['clientId'], $p['providerId']] as $recipientId) {
+                    $this->notifyTransition($recipientId, $event, $job);
+                }
+            } elseif ($recipient !== $actor->id) {
+                $this->notifyTransition($recipient, $event, $job);
+            }
+        }
+    }
+
+    private function notifyTransition(int $userId, string $event, ServiceJob $job): void
+    {
+        [$title, $body] = match ($event) {
+            'work.started' => ['Work has started', 'Your provider marked the job as in progress.'],
+            'completion.submitted' => ['Work is ready to review', 'Review the provider’s completion submission.'],
+            'completion.confirmed', 'completion.auto_confirmed' => ['Job completed', 'The job is complete and reviews are now open.'],
+            'completion.revision_requested' => ['Changes requested', 'The client requested a revision to the completed work.'],
+            'dispute.opened' => ['Dispute opened', 'A dispute was opened for this job.'],
+            'dispute.appealed' => ['Dispute appealed', 'The dispute decision was appealed.'],
+            'dispute.resolved' => ['Dispute updated', 'A decision was recorded for this dispute.'],
+            'job.cancelled' => ['Job cancelled', 'This job has been cancelled.'],
+            default => ['Job updated', 'The job status has changed.'],
+        };
+        $this->notifications->send($userId, $event, $title, $body, 'service_job', $job->id, ['jobId' => $job->id]);
     }
 
     private function stopTravel(ServiceJob $job): void

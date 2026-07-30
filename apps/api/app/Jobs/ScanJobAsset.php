@@ -4,10 +4,13 @@ namespace App\Jobs;
 
 use App\Contracts\MalwareScanner;
 use App\Models\JobAsset;
+use App\Models\ServiceJob;
+use App\Support\JobRealtimePublisher;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
 use RuntimeException;
 use Throwable;
 
@@ -52,19 +55,45 @@ class ScanJobAsset implements ShouldBeUnique, ShouldQueue
         } finally {
             fclose($stream);
         }
-        $asset->forceFill([
-            'scan_status' => $result->clean ? 'clean' : 'rejected',
-            'scan_signature' => $result->signature,
-            'scan_error' => null,
-            'scanned_at' => now(),
-        ])->save();
+        DB::transaction(function () use ($asset, $result): void {
+            $asset->forceFill([
+                'scan_status' => $result->clean ? 'clean' : 'rejected',
+                'scan_signature' => $result->signature,
+                'scan_error' => null,
+                'scanned_at' => now(),
+            ])->save();
+            $job = ServiceJob::query()->findOrFail($asset->service_job_id);
+            app(JobRealtimePublisher::class)->record(
+                'job.media.updated',
+                $job,
+                'job_asset',
+                $asset->id,
+                2,
+                ['scanStatus' => $asset->scan_status],
+            );
+        });
     }
 
     public function failed(?Throwable $exception): void
     {
-        JobAsset::query()->whereKey($this->assetId)->update([
-            'scan_status' => 'failed',
-            'scan_error' => mb_substr($exception?->getMessage() ?? 'Malware scan failed.', 0, 500),
-        ]);
+        DB::transaction(function () use ($exception): void {
+            $asset = JobAsset::query()->find($this->assetId);
+            if (! $asset) {
+                return;
+            }
+            $asset->update([
+                'scan_status' => 'failed',
+                'scan_error' => mb_substr($exception?->getMessage() ?? 'Malware scan failed.', 0, 500),
+            ]);
+            $job = ServiceJob::query()->findOrFail($asset->service_job_id);
+            app(JobRealtimePublisher::class)->record(
+                'job.media.updated',
+                $job,
+                'job_asset',
+                $asset->id,
+                2,
+                ['scanStatus' => 'failed'],
+            );
+        });
     }
 }

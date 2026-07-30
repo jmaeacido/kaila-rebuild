@@ -26,6 +26,68 @@
   display: grid;
   min-width: 0;
   overflow: hidden;
+  position: relative;
+}
+
+.remove {
+  align-items: center;
+  background: var(--color-danger);
+  border: 0;
+  border-radius: var(--radius-pill);
+  color: var(--color-on-primary);
+  display: flex;
+  height: var(--control-min-height);
+  justify-content: center;
+  position: absolute;
+  right: var(--spacing-4);
+  top: var(--spacing-4);
+  width: var(--control-min-height);
+}
+
+.remove svg {
+  height: var(--spacing-16);
+  width: var(--spacing-16);
+}
+
+.locationPicker,
+.mediaEditor {
+  background: var(--color-background);
+  border-radius: var(--radius-card);
+  display: grid;
+  gap: var(--spacing-12);
+  padding: var(--spacing-16);
+}
+
+.locationPicker > div:first-child,
+.mediaEditor > div:first-child {
+  display: grid;
+  gap: var(--spacing-4);
+}
+
+.locationPicker p,
+.mediaEditor p,
+.locationNote {
+  color: var(--color-text-secondary);
+  font-size: var(--font-small-size);
+}
+
+.locationActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-8);
+}
+
+.locationStatus {
+  color: var(--color-success) !important;
+}
+
+.locationError {
+  color: var(--color-danger) !important;
+}
+
+.mediaEditor h3 {
+  color: var(--color-ink);
+  font-size: var(--font-card-title-size);
 }
 
 .preview {

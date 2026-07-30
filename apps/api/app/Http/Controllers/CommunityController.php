@@ -32,7 +32,12 @@ class CommunityController
         abort_unless($user instanceof User, 401);
         $post = DB::transaction(function () use ($data, $user) {
             $post = CommunityPost::query()->create(['id' => (string) Str::uuid(), 'author_user_id' => $user->id, 'kind' => $data['kind'], 'title' => $data['title'], 'body' => $data['body'], 'area_label' => $data['areaLabel'] ?? null, 'moderation_status' => 'published', 'published_at' => now()]);
-            $this->outbox->record('community.post.published', 'community_post', $post->id, 1, ['rooms' => ["user:{$user->id}"], 'postId' => $post->id]);
+            User::query()->orderBy('id')->pluck('id')->chunk(100)->each(function ($recipientIds) use ($post): void {
+                $this->outbox->record('community.post.published', 'community_post', $post->id, 1, [
+                    'recipientUserIds' => $recipientIds->map(static fn (mixed $id): string => (string) $id)->values()->all(),
+                    'data' => ['postId' => $post->id],
+                ]);
+            });
 
             return $post;
         });
@@ -45,7 +50,15 @@ class CommunityController
         $user = $request->user();
         abort_unless($user instanceof User, 401);
         abort_unless($communityPost->moderation_status === 'published', 404);
-        DB::table('community_reactions')->upsert([['community_post_id' => $communityPost->id, 'user_id' => $user->id, 'reaction' => 'helpful', 'created_at' => now(), 'updated_at' => now()]], ['community_post_id', 'user_id'], ['reaction', 'updated_at']);
+        DB::transaction(function () use ($communityPost, $user): void {
+            DB::table('community_reactions')->upsert([['community_post_id' => $communityPost->id, 'user_id' => $user->id, 'reaction' => 'helpful', 'created_at' => now(), 'updated_at' => now()]], ['community_post_id', 'user_id'], ['reaction', 'updated_at']);
+            User::query()->orderBy('id')->pluck('id')->chunk(100)->each(function ($recipientIds) use ($communityPost): void {
+                $this->outbox->record('community.post.updated', 'community_post', $communityPost->id, (int) now()->format('U'), [
+                    'recipientUserIds' => $recipientIds->map(static fn (mixed $id): string => (string) $id)->values()->all(),
+                    'data' => ['postId' => $communityPost->id],
+                ]);
+            });
+        });
 
         return response()->json(['data' => ['helpful' => true]]);
     }

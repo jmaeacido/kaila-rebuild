@@ -5,11 +5,13 @@ import { MessageCircle } from "lucide-react";
 import { Button, Feedback } from "@kaila/ui";
 import Link from "next/link";
 import styles from "../phase-nine.module.css";
+import { useRealtimeInvalidation } from "../use-realtime-invalidation";
 
 type Conversation = { id: string; status: string; otherUser: { name: string }; requestedByMe: boolean };
 export default function MessagesPage() {
   const [items, setItems] = useState<Conversation[]>([]); const [recipient, setRecipient] = useState(""); const [state, setState] = useState<"loading" | "ready" | "error">("loading");
   const load = useCallback(async () => { try { const response = await fetch("/api/v1/direct-conversations", { credentials: "include" }); if (!response.ok) throw new Error(); setItems(((await response.json()) as { data: Conversation[] }).data); setState("ready"); } catch { setState("error"); } }, []);
+  useRealtimeInvalidation(() => void load(), (event) => event.resourceType === "direct_conversation");
   useEffect(() => { void fetch("/api/v1/direct-conversations", { credentials: "include" }).then(async (response) => { if (!response.ok) throw new Error(); setItems(((await response.json()) as { data: Conversation[] }).data); setState("ready"); }).catch(() => setState("error")); }, []);
   async function requestConversation() { if (!recipient) return; setState("loading"); try { await fetch("/api/v1/auth/csrf", { credentials: "include" }); const token = document.cookie.split("; ").find((value) => value.startsWith("XSRF-TOKEN="))?.split("=")[1]; const response = await fetch("/api/v1/direct-conversations", { method: "POST", credentials: "include", headers: { "Content-Type": "application/json", ...(token ? { "X-XSRF-TOKEN": decodeURIComponent(token) } : {}) }, body: JSON.stringify({ recipientUserId: Number(recipient) }) }); if (!response.ok) throw new Error(); setRecipient(""); await load(); } catch { setState("error"); } }
   return <main className={styles.page}><header className={styles.header}><Link href="/">Back home</Link><p className={styles.eyebrow}>Messages</p><h1>Talk before you book</h1><p>A recipient must accept your request before either person can send messages.</p></header>

@@ -7,6 +7,7 @@ describe("realtime event envelope", () => {
   it("rejects an invalid event identifier", () => {
     const result = realtimeEventEnvelopeSchema.safeParse({
       eventId: "client-selected-id",
+      type: "job.updated",
       occurredAt: "2026-07-16T00:00:00Z",
       resourceType: "job",
       resourceId: "job-1",

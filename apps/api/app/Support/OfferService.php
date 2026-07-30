@@ -2,15 +2,11 @@
 
 namespace App\Support;
 
-use App\Jobs\DeliverPushNotification;
 use App\Models\AcceptedOfferSnapshot;
-use App\Models\DurableNotification;
 use App\Models\JobOpportunity;
 use App\Models\OfferRevision;
 use App\Models\OfferThread;
 use App\Models\ProviderProfile;
-use App\Models\PushDeliveryAttempt;
-use App\Models\PushDevice;
 use App\Models\ServiceJob;
 use App\Models\User;
 use Illuminate\Database\QueryException;
@@ -19,7 +15,7 @@ use Illuminate\Support\Str;
 
 class OfferService
 {
-    public function __construct(private readonly OutboxRecorder $outbox) {}
+    public function __construct(private readonly OutboxRecorder $outbox, private readonly NotificationService $notifications) {}
 
     /** @param array<string, mixed> $terms */
     public function create(ServiceJob $job, ProviderProfile $provider, User $actor, array $terms): OfferThread
@@ -144,12 +140,7 @@ class OfferService
 
     private function notify(int $userId, string $type, string $title, string $body, ServiceJob $job, ?OfferRevision $revision): void
     {
-        $notification = DurableNotification::query()->create(['user_id' => $userId, 'type' => $type, 'title' => $title, 'body' => $body, 'resource_type' => 'service_job', 'resource_id' => $job->id, 'data' => ['jobId' => $job->id, 'offerRevisionId' => $revision?->id]]);
-        foreach (PushDevice::query()->where('user_id', $userId)->whereNull('revoked_at')->get() as $device) {
-            $attempt = PushDeliveryAttempt::query()->create(['notification_id' => $notification->id, 'push_device_id' => $device->id, 'attempt' => 1]);
-            DB::afterCommit(fn () => DeliverPushNotification::dispatch($attempt->id)->onQueue('notifications'));
-        }
-        $this->outbox->record('notification.created', 'notification', $notification->id, 1, ['rooms' => ["user:{$userId}"], 'notification' => ['id' => $notification->id, 'type' => $type, 'title' => $title, 'body' => $body, 'jobId' => $job->id]]);
+        $this->notifications->send($userId, $type, $title, $body, 'service_job', $job->id, ['jobId' => $job->id, 'offerRevisionId' => $revision?->id]);
     }
 
     /** @param array<string, mixed> $terms */

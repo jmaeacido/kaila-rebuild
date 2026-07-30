@@ -4,10 +4,12 @@ import { useCallback, useEffect, useState } from "react";
 import { BriefcaseBusiness, CalendarClock, MapPin, RefreshCw, Star, WalletCards } from "lucide-react";
 import { Button, Feedback } from "@kaila/ui";
 import styles from "./page.module.css";
+import { useRealtimeInvalidation } from "../use-realtime-invalidation";
 type Opportunity = { id:number; jobId:string; state:string; title:string; description:string; client:{displayName:string;avatarUrl:string|null;rating:string|null;reviewCount:number}; area:{name:string}; category:{name:string}; scheduleType:string; scheduledAt:string|null; budgetMinCentavos:number|null; budgetMaxCentavos:number|null; attachmentCount:number; offer:{id:string;status:string;latestRevisionNumber:number}|null };
 export default function OpportunitiesPage() {
   const [items,setItems]=useState<Opportunity[]>([]); const [status,setStatus]=useState<"loading"|"ready"|"error">("loading");
   const load=useCallback(async()=>{try{const response=await fetch("/api/v1/opportunities",{cache:"no-store"});if(!response.ok)throw new Error();const body=await response.json() as {data:Opportunity[]};setItems(body.data);setStatus("ready");}catch{setStatus("error");}},[]);
+  useRealtimeInvalidation(()=>void load(),event=>["opportunity.matched","job.updated","job.media.updated","offer.created","offer.revised","offer.selected"].includes(event.type));
   useEffect(()=>{const initial=window.setTimeout(()=>void load(),0);const reconcile=()=>void load();window.addEventListener("online",reconcile);return()=>{window.clearTimeout(initial);window.removeEventListener("online",reconcile);};},[load]);
   async function dismiss(id:number){const response=await fetch(`/api/v1/opportunities/${id}`,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({decision:"dismissed"})});if(response.ok)setItems(current=>current.filter(row=>row.id!==id));else setStatus("error");}
   return <main className={styles.shell}><header><div><p>Provider mode</p><h1>Opportunities</h1></div><Button variant="secondary" onClick={()=>void load()}><RefreshCw aria-hidden="true"/>Refresh</Button></header>

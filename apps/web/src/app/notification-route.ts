@@ -1,0 +1,23 @@
+export type NotificationRecord = {
+  id: string;
+  type: string;
+  title: string;
+  body: string;
+  resourceType: string;
+  resourceId: string;
+  data: Record<string, string | number | null>;
+  readAt: string | null;
+  createdAt: string;
+};
+
+export function notificationRoute(notification: NotificationRecord): string {
+  if (notification.resourceType === "direct_conversation" && /^[A-Za-z0-9-]+$/.test(notification.resourceId)) return `/messages/${notification.resourceId}`;
+  const jobId = String(notification.data.jobId ?? notification.resourceId);
+  if (notification.resourceType !== "service_job" || !/^[A-Za-z0-9-]+$/.test(jobId)) return "/notifications";
+  const routeType = notification.data.type;
+  if (routeType === "message") return `/jobs/${jobId}/hired/conversation`;
+  if (routeType === "travel") return `/jobs/${jobId}/hired/travel`;
+  if (routeType === "offer") return notification.type === "offer.selected" ? `/jobs/${jobId}/work` : `/jobs/${jobId}/offers`;
+  if (routeType === "job" && notification.type === "opportunity.matched") return `/opportunities/${jobId}`;
+  return `/jobs/${jobId}/work`;
+}

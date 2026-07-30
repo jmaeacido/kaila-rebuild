@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -15,17 +15,23 @@ import {
   Tag,
   Hammer,
   ImageIcon,
+  LocateFixed,
+  MapPinned,
   Video,
   Trash2,
   X,
 } from "lucide-react";
 import { Button, Feedback } from "@kaila/ui";
 import { AddressHierarchy, areaPathLabel, type AreaReference } from "../../address-hierarchy";
+import { AttachmentPicker, attachmentFiles } from "../../../components/attachment-picker";
+import { JobLocationMap, type JobLocation } from "../../post-job/job-location-map";
 import styles from "./job-details.module.css";
 import assetStyles from "./job-assets.module.css";
+import { useRealtimeInvalidation } from "../../use-realtime-invalidation";
 
 type Reference = { id: number; name: string };
 type TimelineEvent = { id: string; type: string; occurredAt: string };
+type LocationStatus = "idle" | "locating" | "resolving" | "pinned" | "error";
 type JobAsset = {
   id: string;
   name: string;
@@ -91,6 +97,12 @@ export default function JobDetailsPage({ params }: { params: Promise<{ jobId: st
   const [cancelReason, setCancelReason] = useState("");
   const [status, setStatus] = useState<"loading" | "ready" | "saving" | "error">("loading");
   const [notice, setNotice] = useState("");
+  const [editLocation, setEditLocation] = useState<JobLocation | null>(null);
+  const [showMap, setShowMap] = useState(false);
+  const [locationStatus, setLocationStatus] = useState<LocationStatus>("idle");
+  const [locationNotice, setLocationNotice] = useState("");
+  const [removedAssetIds, setRemovedAssetIds] = useState<string[]>([]);
+  const pinRequest = useRef(0);
 
   const load = useCallback(async () => {
     setStatus("loading");
@@ -112,6 +124,10 @@ export default function JobDetailsPage({ params }: { params: Promise<{ jobId: st
       setStatus("error");
     }
   }, [params]);
+  useRealtimeInvalidation(() => void load(), (event) =>
+    (event.resourceType === "service_job" && event.resourceId === job?.id)
+    || event.data.jobId === job?.id,
+  );
 
   useEffect(() => {
     const initialLoad = window.setTimeout(() => void load(), 0);
@@ -124,6 +140,13 @@ export default function JobDetailsPage({ params }: { params: Promise<{ jobId: st
     setStatus("saving");
     setNotice("");
     const data = new FormData(event.currentTarget);
+    if (!editLocation) {
+      setStatus("ready");
+      setLocationStatus("error");
+      setLocationNotice("Place the job-site pin before saving.");
+      return;
+    }
+    const newAttachments = attachmentFiles(data, "attachments");
     const response = await fetch(`/api/v1/jobs/${job.id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -144,8 +167,8 @@ export default function JobDetailsPage({ params }: { params: Promise<{ jobId: st
           ? Math.round(Number(data.get("budgetMax")) * 100)
           : null,
         addressLabel: data.get("addressLabel") || null,
-        latitude: job.location ? Number(job.location.latitude) : null,
-        longitude: job.location ? Number(job.location.longitude) : null,
+        latitude: editLocation.latitude,
+        longitude: editLocation.longitude,
       }),
     });
     if (!response.ok) {
@@ -156,10 +179,97 @@ export default function JobDetailsPage({ params }: { params: Promise<{ jobId: st
       setNotice(body?.error?.message || "This job could not be updated.");
       return;
     }
-    setJob(((await response.json()) as { data: Job }).data);
-    setEditing(false);
-    setStatus("ready");
-    setNotice("Your job details were updated.");
+    try {
+      for (const assetId of removedAssetIds) {
+        const removed = await fetch(`/api/v1/job-assets/${assetId}`, { method: "DELETE" });
+        if (!removed.ok) throw new Error("MEDIA_UPDATE_FAILED");
+      }
+      for (const file of newAttachments) {
+        const upload = new FormData();
+        upload.set("file", file);
+        const uploaded = await fetch(`/api/v1/jobs/${job.id}/assets`, {
+          method: "POST",
+          body: upload,
+        });
+        if (!uploaded.ok) throw new Error("MEDIA_UPDATE_FAILED");
+      }
+      await load();
+      setEditing(false);
+      setRemovedAssetIds([]);
+      setNotice("Your job details, location, and media were updated.");
+    } catch {
+      await load();
+      setEditing(false);
+      setRemovedAssetIds([]);
+      setNotice("Your job details were saved, but some media changes could not be completed. Review the job and try again.");
+    }
+  }
+
+  async function pin(location: JobLocation, source: "current" | "map") {
+    if (!job) return;
+    const request = ++pinRequest.current;
+    setLocationStatus("resolving");
+    setLocationNotice("Checking the pinned barangay…");
+    try {
+      const response = await fetch(
+        `/api/v1/jobs/resolve-area?latitude=${encodeURIComponent(location.latitude)}&longitude=${encodeURIComponent(location.longitude)}`,
+        { cache: "no-store" },
+      );
+      const body = (await response.json()) as {
+        data?: { id: number; name: string; city: string | null };
+        message?: string;
+      };
+      if (request !== pinRequest.current) return;
+      if (!response.ok || !body.data) throw new Error(body.message || "KAILA could not identify this pin.");
+      if (job.status !== "draft" && body.data.id !== job.area.id) {
+        throw new Error("The pin must stay in the original barangay after posting.");
+      }
+      setEditLocation(location);
+      if (job.status === "draft") setEditAreaId(String(body.data.id));
+      setLocationStatus("pinned");
+      setLocationNotice(
+        `${source === "current" ? "Current location" : "Job site"} pinned in ${[body.data.name, body.data.city].filter(Boolean).join(", ")}.`,
+      );
+    } catch (error) {
+      if (request !== pinRequest.current) return;
+      setLocationStatus("error");
+      setLocationNotice(error instanceof Error ? error.message : "KAILA could not identify this pin.");
+    }
+  }
+
+  function locate() {
+    if (!navigator.geolocation) {
+      setLocationStatus("error");
+      setLocationNotice("This device does not support GPS. Choose the job site on the map.");
+      return;
+    }
+    setLocationStatus("locating");
+    setLocationNotice("Finding your current location…");
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setShowMap(true);
+        void pin({ latitude: position.coords.latitude, longitude: position.coords.longitude }, "current");
+      },
+      () => {
+        setLocationStatus("error");
+        setLocationNotice("KAILA could not get your location. Enable permission or choose the job site on the map.");
+      },
+      { timeout: 12000, maximumAge: 30000, enableHighAccuracy: true },
+    );
+  }
+
+  function beginEditing() {
+    setEditAreaId(String(job?.area.id ?? ""));
+    setEditLocation(
+      job?.location
+        ? { latitude: Number(job.location.latitude), longitude: Number(job.location.longitude) }
+        : null,
+    );
+    setLocationStatus(job?.location ? "pinned" : "idle");
+    setLocationNotice("");
+    setRemovedAssetIds([]);
+    setShowMap(Boolean(job?.location));
+    setEditing(true);
   }
 
   async function cancelJob(event: FormEvent) {
@@ -261,6 +371,55 @@ export default function JobDetailsPage({ params }: { params: Promise<{ jobId: st
             <label>Budget to (₱)<input name="budgetMax" type="number" min="0" defaultValue={job.budgetMaxCentavos === null ? "" : job.budgetMaxCentavos / 100} /></label>
           </div>
           <label>Landmark or address<input name="addressLabel" maxLength={180} defaultValue={job.addressLabel || ""} /></label>
+          <section className={assetStyles.locationPicker} aria-labelledby="edit-job-site-pin">
+            <div>
+              <strong id="edit-job-site-pin">Job site pin</strong>
+              <p>{editLocation ? "Pinned. Providers can see approximate distance." : "Use GPS at the job site or choose it on the map."}</p>
+            </div>
+            <div className={assetStyles.locationActions}>
+              <Button type="button" variant="secondary" disabled={locationStatus === "locating"} onClick={locate}>
+                <LocateFixed aria-hidden="true" /> {locationStatus === "locating" ? "Finding location…" : "I am at the job site"}
+              </Button>
+              <Button type="button" variant="secondary" onClick={() => setShowMap(true)}>
+                <MapPinned aria-hidden="true" /> Pick on map
+              </Button>
+            </div>
+            {showMap && <JobLocationMap location={editLocation} onChange={(next) => void pin(next, "map")} />}
+            {locationNotice && <p className={locationStatus === "error" ? assetStyles.locationError : assetStyles.locationStatus} role={locationStatus === "error" ? "alert" : "status"}>{locationNotice}</p>}
+            <p className={assetStyles.locationNote}>Your exact pin and landmark stay private until hiring.</p>
+          </section>
+          <section className={assetStyles.mediaEditor} aria-labelledby="edit-job-media">
+            <div>
+              <h3 id="edit-job-media">Job photos and videos</h3>
+              <p>Keep up to five files that help providers understand the work.</p>
+            </div>
+            {job.assets.filter((asset) => !removedAssetIds.includes(asset.id)).length > 0 && (
+              <div className={assetStyles.grid}>
+                {job.assets.filter((asset) => !removedAssetIds.includes(asset.id)).map((asset) => (
+                  <article className={assetStyles.asset} key={asset.id}>
+                    <div className={assetStyles.preview}>
+                      {asset.url && asset.mimeType.startsWith("image/") ? (
+                        <Image src={asset.url} alt={asset.name} fill sizes="(max-width: 479px) 50vw, 180px" unoptimized />
+                      ) : asset.url && asset.mimeType.startsWith("video/") ? (
+                        <video src={asset.url} controls preload="metadata" aria-label={asset.name} />
+                      ) : asset.mimeType.startsWith("video/") ? (
+                        <Video aria-hidden="true" />
+                      ) : (
+                        <ImageIcon aria-hidden="true" />
+                      )}
+                    </div>
+                    <span><strong>{asset.name}</strong><small>{asset.scanStatus === "clean" ? "Ready to view" : "Safety scan in progress"}</small></span>
+                    <button type="button" className={assetStyles.remove} onClick={() => setRemovedAssetIds((current) => [...current, asset.id])} aria-label={`Remove ${asset.name}`}><Trash2 aria-hidden="true" /></button>
+                  </article>
+                ))}
+              </div>
+            )}
+            <AttachmentPicker
+              name="attachments"
+              maxFiles={Math.max(0, 5 - (job.assets.length - removedAssetIds.length))}
+              hint={`${Math.max(0, 5 - (job.assets.length - removedAssetIds.length))} file slots available, 10 MB each.`}
+            />
+          </section>
           {!isDraft && <p className={styles.lockNote}>Service and barangay are locked after posting so matched providers are not changed.</p>}
           <div className={styles.formActions}><Button type="button" variant="secondary" onClick={() => setEditing(false)}>Discard</Button><Button isLoading={status === "saving"}>Save changes</Button></div>
         </form>
@@ -327,7 +486,7 @@ export default function JobDetailsPage({ params }: { params: Promise<{ jobId: st
           </section>
 
           <div className={styles.actions}>
-            {job.canEdit && <Button onClick={() => { setEditAreaId(String(job.area.id)); setEditing(true); }}><Pencil /> Edit job</Button>}
+            {job.canEdit && <Button onClick={beginEditing}><Pencil /> Edit job</Button>}
             {["posted", "offers_received"].includes(job.status) && <Button variant="secondary" onClick={() => location.assign(`/jobs/${job.id}/offers`)}>View offers</Button>}
             {isHired && <Button onClick={() => location.assign(`/jobs/${job.id}/hired/conversation`)}><MessageCircle /> Message {job.role === "client" ? "provider" : "client"}</Button>}
             {isHired && ["provider_selected", "provider_traveling"].includes(job.status) && <Button variant="secondary" onClick={() => location.assign(`/jobs/${job.id}/hired/travel`)}><Navigation /> {job.role === "provider" ? "Share travel" : "Track provider"}</Button>}

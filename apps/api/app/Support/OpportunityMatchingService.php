@@ -2,19 +2,15 @@
 
 namespace App\Support;
 
-use App\Jobs\DeliverPushNotification;
 use App\Models\Area;
-use App\Models\DurableNotification;
 use App\Models\JobOpportunity;
 use App\Models\ProviderProfile;
-use App\Models\PushDeliveryAttempt;
-use App\Models\PushDevice;
 use App\Models\ServiceJob;
 use Illuminate\Support\Facades\DB;
 
 class OpportunityMatchingService
 {
-    public function __construct(private readonly OutboxRecorder $outbox) {}
+    public function __construct(private readonly OutboxRecorder $outbox, private readonly NotificationService $notifications) {}
 
     public function matchJob(ServiceJob $job, int $excludedUserId): void
     {
@@ -90,11 +86,6 @@ class OpportunityMatchingService
             return;
         }
 
-        $notification = DurableNotification::query()->create(['user_id' => $provider->user_id, 'type' => 'opportunity.matched', 'title' => 'New job near you', 'body' => $job->title, 'resource_type' => 'service_job', 'resource_id' => $job->id, 'data' => ['areaId' => $job->area_id, 'categoryId' => $job->service_category_id]]);
-        foreach (PushDevice::query()->where('user_id', $provider->user_id)->whereNull('revoked_at')->get() as $device) {
-            $attempt = PushDeliveryAttempt::query()->create(['notification_id' => $notification->id, 'push_device_id' => $device->id, 'attempt' => 1]);
-            DB::afterCommit(fn () => DeliverPushNotification::dispatch($attempt->id)->onQueue('notifications'));
-        }
-        $this->outbox->record('opportunity.matched', 'notification', $notification->id, 1, ['rooms' => ["user:{$provider->user_id}"], 'notification' => ['id' => $notification->id, 'type' => $notification->type, 'title' => $notification->title, 'body' => $notification->body, 'jobId' => $job->id]]);
+        $this->notifications->send($provider->user_id, 'opportunity.matched', 'New job near you', $job->title, 'service_job', $job->id, ['jobId' => $job->id, 'areaId' => $job->area_id, 'categoryId' => $job->service_category_id]);
     }
 }

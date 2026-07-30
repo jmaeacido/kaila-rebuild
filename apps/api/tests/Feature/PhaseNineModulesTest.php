@@ -27,6 +27,9 @@ class PhaseNineModulesTest extends TestCase
         $this->actingAs($recipient)->getJson("/api/v1/direct-conversations/$conversation")->assertOk()->assertJsonPath('data.messages.0.body', 'hello');
         $this->assertDatabaseCount('direct_messages', 1);
         $this->assertDatabaseMissing('direct_messages', ['body_ciphertext' => 'hello']);
+        $this->assertDatabaseHas('outbox_events', ['resource_id' => $conversation, 'event_type' => 'direct.conversation.requested']);
+        $this->assertDatabaseHas('outbox_events', ['resource_id' => $conversation, 'event_type' => 'direct.conversation.accepted']);
+        $this->assertDatabaseHas('outbox_events', ['resource_id' => $conversation, 'event_type' => 'direct.message.created']);
     }
 
     public function test_blocked_users_cannot_open_direct_conversations(): void
@@ -45,6 +48,8 @@ class PhaseNineModulesTest extends TestCase
         $this->actingAs($user)->putJson("/api/v1/community/$post/helpful")->assertOk();
         $this->putJson("/api/v1/community/$post/helpful")->assertOk();
         $this->assertDatabaseCount('community_reactions', 1);
+        $this->assertDatabaseHas('outbox_events', ['resource_id' => $post, 'event_type' => 'community.post.published']);
+        $this->assertDatabaseHas('outbox_events', ['resource_id' => $post, 'event_type' => 'community.post.updated']);
     }
 
     public function test_katabang_is_deterministic_redacts_input_and_never_decides_price(): void

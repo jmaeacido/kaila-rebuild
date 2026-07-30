@@ -8,6 +8,7 @@ use App\Models\ServiceJob;
 use App\Models\TravelSession;
 use App\Models\User;
 use App\Support\HiredJobAccess;
+use App\Support\NotificationService;
 use App\Support\OutboxRecorder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -17,7 +18,7 @@ use Throwable;
 
 class TravelController extends Controller
 {
-    public function __construct(private readonly HiredJobAccess $access, private readonly MapsProvider $maps, private readonly OutboxRecorder $outbox) {}
+    public function __construct(private readonly HiredJobAccess $access, private readonly MapsProvider $maps, private readonly OutboxRecorder $outbox, private readonly NotificationService $notifications) {}
 
     public function start(Request $request, ServiceJob $serviceJob): JsonResponse
     {
@@ -36,6 +37,7 @@ class TravelController extends Controller
             $job->update(['status' => 'provider_traveling', 'version' => $job->version + 1]);
             $job->timeline()->create(['id' => (string) Str::uuid(), 'actor_user_id' => $actor->id, 'event_type' => 'travel.started', 'job_version' => $job->version, 'metadata' => ['travelSessionId' => $session->id], 'occurred_at' => now()]);
             $this->outbox->record('travel.started', 'travel_session', $session->id, 1, ['rooms' => ["user:{$p['clientId']}", "user:{$p['providerId']}"], 'jobId' => $job->id]);
+            $this->notifications->send($p['clientId'], 'travel.started', 'Provider is on the way', 'Live travel progress is now available.', 'service_job', $job->id, ['jobId' => $job->id]);
 
             return $session;
         });
@@ -72,8 +74,14 @@ class TravelController extends Controller
                 $serviceJob->longitude !== null ? (float) $serviceJob->longitude : null,
             );
         }$arrived = $distance !== null && $distance <= 30;
+        $newArrival = $arrived && $session->arrived_at === null;
         $session->update(['version' => $session->version + 1, 'last_distance_meters' => $distance, 'last_eta_seconds' => $eta, 'arrived_at' => $arrived ? ($session->arrived_at ?? now()) : $session->arrived_at]);
-        DB::transaction(fn () => $this->outbox->record($arrived ? 'travel.arrival.changed' : 'travel.location.changed', 'travel_session', $session->id, $session->version, ['rooms' => ["user:{$p['clientId']}", "user:{$p['providerId']}"], 'jobId' => $serviceJob->id, 'routeAvailable' => $routeAvailable]));
+        DB::transaction(function () use ($arrived, $newArrival, $session, $p, $serviceJob, $routeAvailable): void {
+            $this->outbox->record($arrived ? 'travel.arrival.changed' : 'travel.location.changed', 'travel_session', $session->id, $session->version, ['rooms' => ["user:{$p['clientId']}", "user:{$p['providerId']}"], 'jobId' => $serviceJob->id, 'routeAvailable' => $routeAvailable]);
+            if ($newArrival) {
+                $this->notifications->send($p['clientId'], 'travel.arrived', 'Provider has arrived', 'Your provider is at the job location.', 'service_job', $serviceJob->id, ['jobId' => $serviceJob->id]);
+            }
+        });
 
         return response()->json(['data' => $this->present($session->refresh())]);
     }

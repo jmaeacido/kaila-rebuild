@@ -8,6 +8,7 @@ use App\Models\ProviderCredential;
 use App\Models\ProviderProfile;
 use App\Models\ServiceCategory;
 use App\Models\User;
+use App\Support\OutboxRecorder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -15,6 +16,8 @@ use Illuminate\Validation\Rule;
 
 class AdminMarketplaceController extends Controller
 {
+    public function __construct(private readonly OutboxRecorder $outbox) {}
+
     public function queue(): JsonResponse
     {
         return response()->json(['data' => [
@@ -48,7 +51,10 @@ class AdminMarketplaceController extends Controller
     public function provider(Request $request, ProviderProfile $providerProfile): JsonResponse
     {
         $data = $request->validate(['status' => ['required', Rule::in(['active', 'rejected', 'suspended'])]]);
-        $providerProfile->update(['status' => $data['status']]);
+        DB::transaction(function () use ($providerProfile, $data): void {
+            $providerProfile->update(['status' => $data['status']]);
+            $this->outbox->record('profile.updated', 'provider_profile', (string) $providerProfile->id, (int) now()->format('U'), ['rooms' => ["user:{$providerProfile->user_id}"], 'providerProfileId' => $providerProfile->id, 'status' => $providerProfile->status]);
+        });
 
         return response()->json(['data' => $providerProfile]);
     }
@@ -56,7 +62,10 @@ class AdminMarketplaceController extends Controller
     public function asset(Request $request, ProfileAsset $profileAsset): JsonResponse
     {
         $data = $request->validate(['scanStatus' => ['required', Rule::in(['clean', 'rejected'])]]);
-        $profileAsset->update(['scan_status' => $data['scanStatus']]);
+        DB::transaction(function () use ($profileAsset, $data): void {
+            $profileAsset->update(['scan_status' => $data['scanStatus']]);
+            $this->outbox->record('profile.media.updated', 'profile_asset', $profileAsset->id, (int) now()->format('U'), ['rooms' => ["user:{$profileAsset->user_id}"], 'profileAssetId' => $profileAsset->id, 'scanStatus' => $profileAsset->scan_status]);
+        });
 
         return response()->json(['data' => $profileAsset->only(['id', 'scan_status'])]);
     }
@@ -69,6 +78,8 @@ class AdminMarketplaceController extends Controller
             $asset = ProfileAsset::query()->lockForUpdate()->findOrFail($providerCredential->asset_id);
             abort_if($data['reviewStatus'] === 'approved' && $asset->scan_status !== 'clean', 409, 'A credential cannot be approved before its file passes scanning.');
             $providerCredential->update(['review_status' => $data['reviewStatus'], 'review_note' => $data['reviewNote'] ?? null, 'reviewed_by' => $admin->id, 'reviewed_at' => now()]);
+            $profile = ProviderProfile::query()->findOrFail($providerCredential->provider_profile_id);
+            $this->outbox->record('profile.updated', 'provider_profile', (string) $profile->id, (int) now()->format('U'), ['rooms' => ["user:{$profile->user_id}"], 'providerProfileId' => $profile->id, 'credentialReviewStatus' => $providerCredential->review_status]);
         });
 
         return response()->json(['data' => $providerCredential->fresh()]);

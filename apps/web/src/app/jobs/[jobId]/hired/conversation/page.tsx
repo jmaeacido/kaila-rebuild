@@ -20,6 +20,7 @@ import {
   X,
 } from "lucide-react";
 import styles from "../hired.module.css";
+import { useRealtimeInvalidation } from "../../../../use-realtime-invalidation";
 
 type Asset = {
   id: string;
@@ -89,13 +90,12 @@ export default function ConversationPage({ params }: { params: Promise<{ jobId: 
       setState("error");
     }
   }, [jobId]);
+  useRealtimeInvalidation(() => void load(), (event) => event.data.jobId === jobId);
 
   useEffect(() => {
     const initial = window.setTimeout(() => void load(), 0);
-    const timer = window.setInterval(() => void load(), 5000);
     return () => {
       window.clearTimeout(initial);
-      window.clearInterval(timer);
     };
   }, [load]);
 

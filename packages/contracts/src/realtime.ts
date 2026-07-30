@@ -2,6 +2,7 @@ import { z } from "zod";
 
 export const realtimeEventEnvelopeSchema = z.object({
   eventId: z.uuid(),
+  type: z.string().min(1),
   occurredAt: z.iso.datetime({ offset: true }),
   resourceType: z.string().min(1),
   resourceId: z.string().min(1),
@@ -13,7 +14,7 @@ export type RealtimeEventEnvelope = z.infer<
   typeof realtimeEventEnvelopeSchema
 >;
 
-export const marketplaceRealtimeEventTypeSchema = z.enum(["job.posted", "job.updated", "opportunity.matched", "offer.created", "offer.revised", "offer.selected", "message.created", "message.read", "conversation.typing.changed", "travel.started", "travel.location.changed", "travel.arrival.changed", "travel.stopped", "notification.created", "direct.message.created", "community.post.published", "call.ringing", "call.status.changed"]);
+export const marketplaceRealtimeEventTypeSchema = z.enum(["job.posted", "job.updated", "job.draft_updated", "job.media.updated", "job.state.changed", "opportunity.matched", "offer.created", "offer.revised", "offer.selected", "message.created", "message.read", "conversation.typing.changed", "travel.started", "travel.location.changed", "travel.arrival.changed", "travel.stopped", "notification.created", "direct.conversation.requested", "direct.conversation.accepted", "direct.message.created", "community.post.published", "community.post.updated", "profile.updated", "profile.media.updated", "call.ringing", "call.status.changed"]);
 
 export const typingCommandSchema = z.object({ jobId: z.uuid(), active: z.boolean() });
 export const travelLocationCommandSchema = z.object({ jobId: z.uuid(), latitude: z.number().min(-90).max(90), longitude: z.number().min(-180).max(180), accuracyMeters: z.number().int().positive().max(200), capturedAt: z.iso.datetime({ offset: true }), foreground: z.literal(true) });

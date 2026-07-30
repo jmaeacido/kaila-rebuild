@@ -19,6 +19,7 @@ import { Button, Feedback } from "@kaila/ui";
 import { prepareCsrf } from "../auth-client";
 import { AddressHierarchy, type AreaReference } from "../address-hierarchy";
 import styles from "./account.module.css";
+import { useRealtimeInvalidation } from "../use-realtime-invalidation";
 
 type User = {
   name: string;
@@ -80,6 +81,7 @@ export default function AccountPage() {
       setStatus("error");
     }
   }, []);
+  useRealtimeInvalidation(() => void load(), (event) => ["profile.updated", "profile.media.updated"].includes(event.type));
 
   useEffect(() => {
     const initialLoad = window.setTimeout(() => void load(), 0);

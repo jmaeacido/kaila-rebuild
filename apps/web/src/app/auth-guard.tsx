@@ -8,6 +8,7 @@ import { Home, LogOut } from "lucide-react";
 import { prepareCsrf } from "./auth-client";
 import { BrandedLoader } from "./branded-loader";
 import { FloatingKatabang } from "../components/floating-katabang";
+import { NotificationBell } from "./notification-bell";
 
 const PUBLIC_PATHS = new Set([
   "/",
@@ -146,6 +147,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
             ) : null}
           </Link>
           <span className="sessionName">{userName}</span>
+          <NotificationBell />
           <Link href="/home" prefetch={false}>
             <Home aria-hidden="true" />
             Home

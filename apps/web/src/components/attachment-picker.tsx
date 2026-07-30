@@ -6,7 +6,7 @@ import Image from "next/image";
 import mediaStyles from "./attachment-media.module.css";
 import styles from "./attachment-picker.module.css";
 
-const maxFiles = 5;
+const defaultMaxFiles = 5;
 const maxBytes = 10 * 1024 * 1024;
 const acceptedTypes = new Set([
   "image/jpeg",
@@ -26,10 +26,12 @@ export function AttachmentPicker({
   name = "evidence",
   label = "Add photos or videos",
   hint = "Up to 5 files, 10 MB each.",
+  maxFiles = defaultMaxFiles,
 }: {
   name?: string;
   label?: string;
   hint?: string;
+  maxFiles?: number;
 }) {
   const input = useRef<HTMLInputElement>(null);
   const attachmentsRef = useRef<SelectedAttachment[]>([]);
@@ -92,6 +94,7 @@ export function AttachmentPicker({
           type="file"
           multiple
           accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime"
+          disabled={maxFiles === 0}
           onChange={select}
         />
       </label>

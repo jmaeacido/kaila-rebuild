@@ -6,6 +6,7 @@ import { Button, Feedback } from "@kaila/ui";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import styles from "../../phase-nine.module.css";
+import { useRealtimeInvalidation } from "../../use-realtime-invalidation";
 
 type Message = { id: string; senderUserId: number; body: string; createdAt: string };
 type Conversation = { id: string; status: string; requestedByMe: boolean; otherUser: { name: string }; messages: Message[] };
@@ -13,6 +14,7 @@ async function csrfHeaders() { await fetch("/api/v1/auth/csrf", { credentials: "
 export default function DirectConversationPage() {
   const { conversationId } = useParams<{ conversationId: string }>(); const [conversation, setConversation] = useState<Conversation | null>(null); const [body, setBody] = useState(""); const [state, setState] = useState<"loading" | "ready" | "error">("loading");
   const load = useCallback(async () => { try { const response = await fetch(`/api/v1/direct-conversations/${conversationId}`, { credentials: "include" }); if (!response.ok) throw new Error(); setConversation(((await response.json()) as { data: Conversation }).data); setState("ready"); } catch { setState("error"); } }, [conversationId]);
+  useRealtimeInvalidation(() => void load(), (event) => event.resourceId === conversationId || event.data.conversationId === conversationId);
   useEffect(() => { void fetch(`/api/v1/direct-conversations/${conversationId}`, { credentials: "include" }).then(async (response) => { if (!response.ok) throw new Error(); setConversation(((await response.json()) as { data: Conversation }).data); setState("ready"); }).catch(() => setState("error")); }, [conversationId]);
   async function accept() { setState("loading"); const response = await fetch(`/api/v1/direct-conversations/${conversationId}/accept`, { method: "POST", credentials: "include", headers: await csrfHeaders() }); if (!response.ok) return setState("error"); await load(); }
   async function send(event: FormEvent) { event.preventDefault(); if (!body.trim()) return; setState("loading"); const response = await fetch(`/api/v1/direct-conversations/${conversationId}/messages`, { method: "POST", credentials: "include", headers: await csrfHeaders(), body: JSON.stringify({ body: body.trim(), commandId: crypto.randomUUID() }) }); if (!response.ok) return setState("error"); setBody(""); await load(); }

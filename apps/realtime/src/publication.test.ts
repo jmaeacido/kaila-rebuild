@@ -8,6 +8,7 @@ describe("realtime outbox publications", () => {
       JSON.stringify({
         event: {
           eventId: "123e4567-e89b-12d3-a456-426614174000",
+          type: "job.updated",
           occurredAt: "2026-07-16T05:00:00+00:00",
           resourceType: "job",
           resourceId: "job-1",

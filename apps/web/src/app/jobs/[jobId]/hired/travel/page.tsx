@@ -6,6 +6,7 @@ import { ArrowLeft, LocateFixed, ShieldCheck, Square } from "lucide-react";
 import { Button, Feedback } from "@kaila/ui";
 import styles from "../hired.module.css";
 import { LiveTravelMap } from "./live-travel-map";
+import { useRealtimeInvalidation } from "../../../../use-realtime-invalidation";
 
 type Point = { latitude: number; longitude: number };
 type Travel = {
@@ -35,12 +36,11 @@ export default function TravelPage({ params }: { params: Promise<{ jobId: string
       setState("error");
     }
   }, [jobId]);
+  useRealtimeInvalidation(() => void load(), (event) => event.data.jobId === jobId);
 
   useEffect(() => {
     void load();
-    const timer = window.setInterval(() => void load(), 5000);
     return () => {
-      window.clearInterval(timer);
       if (watchId.current !== null) navigator.geolocation.clearWatch(watchId.current);
     };
   }, [load]);

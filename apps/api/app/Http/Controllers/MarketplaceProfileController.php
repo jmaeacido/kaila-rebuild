@@ -8,6 +8,7 @@ use App\Models\ProfileAsset;
 use App\Models\ProviderProfile;
 use App\Models\User;
 use App\Support\OpportunityMatchingService;
+use App\Support\OutboxRecorder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -15,7 +16,7 @@ use Illuminate\Validation\Rule;
 
 class MarketplaceProfileController extends Controller
 {
-    public function __construct(private readonly OpportunityMatchingService $matching) {}
+    public function __construct(private readonly OpportunityMatchingService $matching, private readonly OutboxRecorder $outbox) {}
 
     public function show(Request $request): JsonResponse
     {
@@ -66,6 +67,7 @@ class MarketplaceProfileController extends Controller
             $profile->serviceAreas()->sync($data['areaIds']);
             $profile->availability()->delete();
             $profile->availability()->createMany(array_map(fn (array $slot) => ['day_of_week' => $slot['dayOfWeek'], 'starts_at' => $slot['startsAt'], 'ends_at' => $slot['endsAt'], 'is_available' => true], $data['availability']));
+            $this->outbox->record('profile.updated', 'provider_profile', (string) $profile->id, (int) now()->format('U'), ['rooms' => ["user:{$user->id}"], 'providerProfileId' => $profile->id]);
 
             return $profile;
         });

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\DirectConversation;
 use App\Models\DirectMessage;
 use App\Models\User;
+use App\Support\NotificationService;
 use App\Support\OutboxRecorder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -14,7 +15,7 @@ use Illuminate\Support\Str;
 
 class DirectConversationController
 {
-    public function __construct(private readonly OutboxRecorder $outbox) {}
+    public function __construct(private readonly OutboxRecorder $outbox, private readonly NotificationService $notifications) {}
 
     public function index(Request $request): JsonResponse
     {
@@ -36,10 +37,18 @@ class DirectConversationController
         $ids = [$actor->id, $recipientId];
         sort($ids);
         abort_if(DB::table('user_blocks')->where(fn ($query) => $query->where('blocker_user_id', $ids[0])->where('blocked_user_id', $ids[1]))->orWhere(fn ($query) => $query->where('blocker_user_id', $ids[1])->where('blocked_user_id', $ids[0]))->exists(), 409, 'Messaging is unavailable.');
-        $conversation = DirectConversation::query()->firstOrCreate(
-            ['lower_user_id' => $ids[0], 'higher_user_id' => $ids[1]],
-            ['id' => (string) Str::uuid(), 'requested_by_user_id' => $actor->id, 'status' => 'pending'],
-        );
+        $conversation = DB::transaction(function () use ($ids, $actor, $recipientId): DirectConversation {
+            $conversation = DirectConversation::query()->firstOrCreate(
+                ['lower_user_id' => $ids[0], 'higher_user_id' => $ids[1]],
+                ['id' => (string) Str::uuid(), 'requested_by_user_id' => $actor->id, 'status' => 'pending'],
+            );
+            if ($conversation->wasRecentlyCreated) {
+                $this->outbox->record('direct.conversation.requested', 'direct_conversation', $conversation->id, 1, ['rooms' => ["user:$recipientId", "user:{$actor->id}"], 'conversationId' => $conversation->id]);
+                $this->notifications->send($recipientId, 'message.requested', 'New message request', "{$actor->name} wants to start a conversation.", 'direct_conversation', $conversation->id, ['conversationId' => $conversation->id], 'message');
+            }
+
+            return $conversation;
+        });
 
         return response()->json(['data' => $this->present($conversation, $actor)], $conversation->wasRecentlyCreated ? 201 : 200);
     }
@@ -49,7 +58,11 @@ class DirectConversationController
         $actor = $this->participant($request, $directConversation);
         abort_unless($directConversation->requested_by_user_id !== $actor->id, 409, 'The recipient must accept this request.');
         abort_unless($directConversation->status === 'pending', 409);
-        $directConversation->update(['status' => 'accepted', 'accepted_at' => now()]);
+        DB::transaction(function () use ($directConversation, $actor): void {
+            $directConversation->update(['status' => 'accepted', 'accepted_at' => now()]);
+            $this->outbox->record('direct.conversation.accepted', 'direct_conversation', $directConversation->id, 1, ['rooms' => ["user:{$directConversation->lower_user_id}", "user:{$directConversation->higher_user_id}"], 'conversationId' => $directConversation->id, 'actorUserId' => $actor->id]);
+            $this->notifications->send($directConversation->requested_by_user_id, 'message.request.accepted', 'Message request accepted', "{$actor->name} accepted your message request.", 'direct_conversation', $directConversation->id, ['conversationId' => $directConversation->id], 'message');
+        });
 
         return response()->json(['data' => $this->present($directConversation, $actor)]);
     }
@@ -82,6 +95,7 @@ class DirectConversationController
             $message = $locked->messages()->create(['id' => (string) Str::uuid(), 'sender_user_id' => $actor->id, 'sequence' => $sequence, 'body_ciphertext' => Crypt::encryptString($data['body']), 'encryption_key_version' => (int) config('app.message_key_version', 1), 'client_command_id' => $data['commandId']]);
             $locked->update(['version' => $sequence]);
             $this->outbox->record('direct.message.created', 'direct_conversation', $locked->id, $sequence, ['rooms' => ["user:$otherId", "user:{$actor->id}"], 'conversationId' => $locked->id, 'messageId' => $message->id, 'sequence' => $sequence]);
+            $this->notifications->send($otherId, 'message.created', "New message from {$actor->name}", 'Open the conversation to reply.', 'direct_conversation', $locked->id, ['conversationId' => $locked->id], 'message');
 
             return $message;
         });

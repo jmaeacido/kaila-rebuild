@@ -4,6 +4,7 @@ export function notificationRoute(data: Record<string, string | undefined>): str
   const type = data.type;
   const jobId = data.jobId;
   if (!type || !allowedTypes.has(type)) return "/notifications";
+  if (type === "message" && data.conversationId && /^[A-Za-z0-9-]+$/.test(data.conversationId)) return `/messages/${data.conversationId}`;
   if (type === "security") return "/profile/sessions";
   if (type === "support") return "/notifications";
   if (!jobId || !/^[A-Za-z0-9-]+$/.test(jobId)) return "/notifications";

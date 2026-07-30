@@ -9,6 +9,7 @@ use App\Models\ServiceJob;
 use App\Models\User;
 use App\Support\JobPostingService;
 use App\Support\JobPresenter;
+use App\Support\JobRealtimePublisher;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -17,7 +18,7 @@ use Illuminate\Validation\Rule;
 
 class ServiceJobController extends Controller
 {
-    public function __construct(private readonly JobPresenter $presenter, private readonly JobPostingService $posting) {}
+    public function __construct(private readonly JobPresenter $presenter, private readonly JobPostingService $posting, private readonly JobRealtimePublisher $realtime) {}
 
     public function index(Request $request): JsonResponse
     {
@@ -88,6 +89,7 @@ class ServiceJobController extends Controller
         DB::transaction(function () use ($serviceJob, $data, $event, $request): void {
             $serviceJob->update($this->attributes($data) + ['version' => $serviceJob->version + 1]);
             $serviceJob->timeline()->create(['id' => (string) Str::uuid(), 'actor_user_id' => $this->user($request)->id, 'event_type' => $event, 'job_version' => $serviceJob->version, 'metadata' => [], 'occurred_at' => now()]);
+            $this->realtime->record($event, $serviceJob, 'service_job', $serviceJob->id, $serviceJob->version, ['status' => $serviceJob->status]);
         });
 
         return response()->json(['data' => $this->presenter->owned($serviceJob->refresh())]);

@@ -93,6 +93,7 @@ class PhaseThreeJobsTest extends TestCase
             ->assertJsonPath('data.title', 'Updated leaking tap details')
             ->assertJsonPath('data.canEdit', true);
         $this->assertDatabaseHas('job_timeline_events', ['service_job_id' => $created->json('data.id'), 'event_type' => 'job.updated']);
+        $this->assertDatabaseHas('outbox_events', ['resource_id' => $created->json('data.id'), 'event_type' => 'job.updated']);
     }
 
     public function test_client_can_cancel_a_draft_job(): void
@@ -125,7 +126,64 @@ class PhaseThreeJobsTest extends TestCase
         $this->postJson("/api/v1/jobs/{$created->json('data.id')}/assets", ['file' => UploadedFile::fake()->create('instructions.pdf', 100, 'application/pdf')])->assertUnprocessable();
         $this->assertDatabaseHas('job_assets', ['service_job_id' => $created->json('data.id'), 'scan_status' => 'pending']);
         $this->postJson("/api/v1/jobs/{$created->json('data.id')}/post")->assertOk();
-        $this->postJson("/api/v1/jobs/{$created->json('data.id')}/assets", ['file' => UploadedFile::fake()->image('late.jpg')])->assertConflict();
+        $this->postJson("/api/v1/jobs/{$created->json('data.id')}/assets", ['file' => UploadedFile::fake()->image('late.jpg')])->assertCreated();
+    }
+
+    public function test_matched_provider_can_view_clean_job_media_but_unmatched_provider_cannot(): void
+    {
+        Queue::fake();
+        Storage::fake('private-assets');
+        [$category, $area] = $this->references();
+        $provider = $this->provider($category, $area, 'active');
+        $client = User::factory()->create();
+        $created = $this->actingAs($client)
+            ->withHeader('Idempotency-Key', 'provider-media')
+            ->postJson('/api/v1/jobs', $this->draft($category, $area))
+            ->assertCreated();
+        $uploaded = $this->postJson(
+            "/api/v1/jobs/{$created->json('data.id')}/assets",
+            ['file' => UploadedFile::fake()->image('leaking-tap.jpg', 640, 480)],
+        )->assertCreated();
+        $assetId = $uploaded->json('data.id');
+        JobAsset::query()->findOrFail($assetId)->update(['scan_status' => 'clean']);
+        $this->postJson("/api/v1/jobs/{$created->json('data.id')}/post")->assertOk();
+
+        $providerUser = User::query()->findOrFail($provider->user_id);
+        $this->actingAs($providerUser)
+            ->getJson('/api/v1/opportunities')
+            ->assertOk()
+            ->assertJsonPath('data.0.attachmentCount', 1)
+            ->assertJsonPath('data.0.assets.0.name', 'leaking-tap.jpg')
+            ->assertJsonPath('data.0.assets.0.mimeType', 'image/jpeg')
+            ->assertJsonPath('data.0.assets.0.url', "/api/v1/job-assets/{$assetId}");
+        $this->get("/api/v1/job-assets/{$assetId}")->assertOk();
+
+        $this->actingAs(User::factory()->create())
+            ->get("/api/v1/job-assets/{$assetId}")
+            ->assertNotFound();
+    }
+
+    public function test_client_can_add_and_remove_media_while_posted_job_is_editable(): void
+    {
+        Queue::fake();
+        Storage::fake('private-assets');
+        [$category, $area] = $this->references();
+        $client = User::factory()->create();
+        $created = $this->actingAs($client)
+            ->withHeader('Idempotency-Key', 'edit-media')
+            ->postJson('/api/v1/jobs', $this->draft($category, $area))
+            ->assertCreated();
+        $this->postJson("/api/v1/jobs/{$created->json('data.id')}/post")->assertOk();
+        $uploaded = $this->postJson(
+            "/api/v1/jobs/{$created->json('data.id')}/assets",
+            ['file' => UploadedFile::fake()->image('updated-site.jpg')],
+        )->assertCreated();
+
+        $this->deleteJson("/api/v1/job-assets/{$uploaded->json('data.id')}")
+            ->assertOk()
+            ->assertJsonPath('data.deleted', true);
+        $this->assertDatabaseMissing('job_assets', ['id' => $uploaded->json('data.id')]);
+        $this->assertDatabaseHas('outbox_events', ['resource_id' => $uploaded->json('data.id'), 'event_type' => 'job.media.updated']);
     }
 
     public function test_job_asset_scanner_publishes_clean_files_and_rejects_malware(): void
