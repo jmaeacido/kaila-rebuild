@@ -85,7 +85,14 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   }
 
   if (allowedPath !== pathname) {
-    return <BrandedLoader label="Checking your KAILA session…" />;
+    return (
+      <>
+        <BrandedLoader label="Checking your KAILA session…" />
+        <div hidden aria-hidden="true">
+          {children}
+        </div>
+      </>
+    );
   }
 
   async function signOut() {

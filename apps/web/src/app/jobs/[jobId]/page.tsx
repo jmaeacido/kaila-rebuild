@@ -31,7 +31,7 @@ type JobAsset = {
   name: string;
   mimeType: string;
   sizeBytes: number;
-  scanStatus: "pending" | "clean" | "rejected";
+  scanStatus: "pending" | "clean" | "rejected" | "failed";
   url: string | null;
 };
 type Job = {
@@ -308,7 +308,9 @@ export default function JobDetailsPage({ params }: { params: Promise<{ jobId: st
                           ? "Ready to view"
                           : asset.scanStatus === "pending"
                             ? "Safety scan in progress"
-                            : "Unavailable after safety review"}
+                            : asset.scanStatus === "failed"
+                              ? "Safety scan delayed"
+                              : "Unavailable after safety review"}
                       </small>
                     </span>
                   </article>

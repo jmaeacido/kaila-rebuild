@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\ScanJobAsset;
 use App\Models\JobAsset;
 use App\Models\ServiceJob;
 use App\Models\User;
@@ -31,6 +32,7 @@ class JobAssetController
         $disk = (string) config('filesystems.private_assets_disk');
         Storage::disk($disk)->putFileAs("jobs/{$serviceJob->id}", $file, "{$id}.{$file->extension()}");
         $asset = JobAsset::query()->create(['id' => $id, 'service_job_id' => $serviceJob->id, 'user_id' => $user->id, 'disk' => $disk, 'object_key' => $key, 'original_name' => $file->getClientOriginalName(), 'mime_type' => $file->getMimeType() ?: 'application/octet-stream', 'size_bytes' => $file->getSize(), 'scan_status' => 'pending']);
+        ScanJobAsset::dispatch($asset->id);
 
         return response()->json(['data' => $asset->only(['id', 'original_name', 'mime_type', 'size_bytes', 'scan_status'])], 201);
     }

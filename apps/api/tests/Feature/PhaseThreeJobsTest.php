@@ -2,13 +2,17 @@
 
 namespace Tests\Feature;
 
+use App\Contracts\MalwareScanner;
+use App\Jobs\ScanJobAsset;
 use App\Models\Area;
 use App\Models\JobAsset;
 use App\Models\ProviderProfile;
 use App\Models\ServiceCategory;
 use App\Models\User;
+use App\Support\MalwareScanResult;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -104,12 +108,14 @@ class PhaseThreeJobsTest extends TestCase
 
     public function test_job_attachments_are_limited_private_and_quarantined(): void
     {
+        Queue::fake();
         Storage::fake('private-assets');
         [$category, $area] = $this->references();
         $client = User::factory()->create();
         $created = $this->actingAs($client)->withHeader('Idempotency-Key', 'asset')->postJson('/api/v1/jobs', $this->draft($category, $area))->assertCreated();
         $uploaded = $this->postJson("/api/v1/jobs/{$created->json('data.id')}/assets", ['file' => UploadedFile::fake()->image('leak.jpg', 640, 480)])->assertCreated()->assertJsonPath('data.scan_status', 'pending');
         $assetId = $uploaded->json('data.id');
+        Queue::assertPushed(ScanJobAsset::class, fn (ScanJobAsset $job) => $job->assetId === $assetId);
         $this->get("/api/v1/job-assets/{$assetId}")->assertNotFound();
         JobAsset::query()->findOrFail($assetId)->update(['scan_status' => 'clean']);
         $this->get("/api/v1/job-assets/{$assetId}")->assertOk();
@@ -120,6 +126,35 @@ class PhaseThreeJobsTest extends TestCase
         $this->assertDatabaseHas('job_assets', ['service_job_id' => $created->json('data.id'), 'scan_status' => 'pending']);
         $this->postJson("/api/v1/jobs/{$created->json('data.id')}/post")->assertOk();
         $this->postJson("/api/v1/jobs/{$created->json('data.id')}/assets", ['file' => UploadedFile::fake()->image('late.jpg')])->assertConflict();
+    }
+
+    public function test_job_asset_scanner_publishes_clean_files_and_rejects_malware(): void
+    {
+        Storage::fake('private-assets');
+        [$category, $area] = $this->references();
+        $client = User::factory()->create();
+        $job = $this->actingAs($client)->withHeader('Idempotency-Key', 'scan-assets')->postJson('/api/v1/jobs', $this->draft($category, $area))->assertCreated();
+
+        foreach (['clean' => MalwareScanResult::clean(), 'infected' => MalwareScanResult::infected('Test.Signature')] as $name => $result) {
+            $asset = JobAsset::query()->create([
+                'service_job_id' => $job->json('data.id'), 'user_id' => $client->id, 'disk' => 'private-assets',
+                'object_key' => "jobs/{$name}.jpg", 'original_name' => "{$name}.jpg", 'mime_type' => 'image/jpeg',
+                'size_bytes' => 4, 'scan_status' => 'pending',
+            ]);
+            Storage::disk('private-assets')->put($asset->object_key, 'test');
+            (new ScanJobAsset($asset->id))->handle(new class($result) implements MalwareScanner
+            {
+                public function __construct(private readonly MalwareScanResult $result) {}
+
+                public function scan($stream): MalwareScanResult
+                {
+                    return $this->result;
+                }
+            });
+        }
+
+        $this->assertDatabaseHas('job_assets', ['original_name' => 'clean.jpg', 'scan_status' => 'clean', 'scan_signature' => null]);
+        $this->assertDatabaseHas('job_assets', ['original_name' => 'infected.jpg', 'scan_status' => 'rejected', 'scan_signature' => 'Test.Signature']);
     }
 
     /** @return array{ServiceCategory, Area} */

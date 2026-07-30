@@ -2,12 +2,14 @@
 
 namespace App\Providers;
 
+use App\Contracts\MalwareScanner;
 use App\Contracts\MapsProvider;
 use App\Contracts\MetricsRecorder;
 use App\Contracts\OutboxTransport;
 use App\Contracts\PushTransport;
 use App\Models\User;
 use App\Support\BrevoMailTransport;
+use App\Support\ClamAvMalwareScanner;
 use App\Support\DeterministicFakeMapsProvider;
 use App\Support\FakePushTransport;
 use App\Support\FcmPushTransport;
@@ -32,6 +34,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        $this->app->singleton(MalwareScanner::class, fn () => new ClamAvMalwareScanner(
+            (string) config('media-scanning.clamav_socket'),
+            (int) config('media-scanning.timeout_seconds'),
+            (int) config('media-scanning.chunk_bytes'),
+        ));
+
         $transport = (string) config('outbox.transport');
         if ($transport === 'log' && $this->app->environment('production')) {
             throw new LogicException('The local log outbox transport must not be used in production.');
