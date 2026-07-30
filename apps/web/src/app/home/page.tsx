@@ -4,25 +4,20 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
-  BookOpen,
   BriefcaseBusiness,
   ChevronRight,
   Clock3,
   Hammer,
   Home,
-  House,
   MapPin,
   MessageCircle,
   Plus,
   Search,
   Settings,
-  Sparkles,
   Star,
-  Wrench,
-  Zap,
 } from "lucide-react";
 import { Feedback } from "@kaila/ui";
-import type { LucideIcon } from "lucide-react";
+import { ServiceCategoryIcon } from "../../components/service-category-icon";
 import styles from "./home.module.css";
 
 type User = {
@@ -33,6 +28,7 @@ type User = {
 };
 
 type Reference = { id: number; name: string };
+type Category = Reference & { icon: string };
 type Job = {
   id: string;
   role: "client" | "provider";
@@ -54,15 +50,6 @@ type Opportunity = {
   scheduledAt: string | null;
 };
 
-const categoryIcons: LucideIcon[] = [
-  Wrench,
-  Zap,
-  Sparkles,
-  Hammer,
-  House,
-  BookOpen,
-];
-
 const jobStatusLabels: Record<string, string> = {
   draft: "Draft",
   posted: "Waiting for offers",
@@ -78,7 +65,7 @@ const jobStatusLabels: Record<string, string> = {
 
 export default function AuthenticatedHomePage() {
   const [user, setUser] = useState<User | null>(null);
-  const [categories, setCategories] = useState<Reference[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
   const [status, setStatus] = useState<"loading" | "ready" | "error">(
@@ -100,7 +87,7 @@ export default function AuthenticatedHomePage() {
 
       const userBody = (await userResponse.json()) as { data: User };
       const referenceBody = (await referenceResponse.json()) as {
-        data: { categories: Reference[] };
+        data: { categories: Category[] };
       };
       const jobsBody = (await jobsResponse.json()) as { data: Job[] };
       let providerOpportunities: Opportunity[] = [];
@@ -238,15 +225,14 @@ export default function AuthenticatedHomePage() {
             </Link>
           </header>
           <div className={styles.categoryGrid}>
-            {categories.slice(0, 6).map((category, index) => {
-              const Icon = categoryIcons[index % categoryIcons.length];
+            {categories.slice(0, 6).map((category) => {
               return (
                 <Link
                   href={`/post-job?categoryId=${category.id}`}
                   key={category.id}
                 >
                   <span>
-                    <Icon aria-hidden="true" />
+                    <ServiceCategoryIcon icon={category.icon} aria-hidden="true" />
                   </span>
                   {category.name}
                 </Link>

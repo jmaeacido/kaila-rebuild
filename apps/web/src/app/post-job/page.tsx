@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -14,6 +14,8 @@ import {
 } from "lucide-react";
 import { Button, Feedback } from "@kaila/ui";
 import { JobLocationMap, type JobLocation } from "./job-location-map";
+import { BudgetRange } from "./budget-range";
+import { CategorySelect, type ServiceCategory } from "./category-select";
 import { AttachmentPicker, attachmentFiles } from "../../components/attachment-picker";
 import styles from "./page.module.css";
 
@@ -23,22 +25,19 @@ type Reference = {
   type?: "region" | "province" | "city" | "municipality" | "barangay";
   name: string;
 };
+type Category = Reference & ServiceCategory;
 type Step = 1 | 2 | 3;
-type LocationStatus = "idle" | "locating" | "pinned" | "error";
-
-const independentCity = "independent-city";
+type LocationStatus = "idle" | "locating" | "resolving" | "pinned" | "error";
 
 export default function PostJobPage() {
   const [step, setStep] = useState<Step>(1);
-  const [categories, setCategories] = useState<Reference[]>([]);
-  const [areas, setAreas] = useState<Reference[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [status, setStatus] = useState<"loading" | "ready" | "saving" | "success" | "error">(
     "loading",
   );
   const [message, setMessage] = useState("");
   const createKey = useRef(crypto.randomUUID());
-  const [provinceId, setProvinceId] = useState("");
-  const [cityId, setCityId] = useState("");
+  const pinRequest = useRef(0);
   const [showMap, setShowMap] = useState(false);
   const [locationStatus, setLocationStatus] = useState<LocationStatus>("idle");
   const [form, setForm] = useState({
@@ -55,37 +54,6 @@ export default function PostJobPage() {
     longitude: "",
   });
 
-  const provinces = useMemo(
-    () => areas.filter((area) => area.type === "province"),
-    [areas],
-  );
-  const independentCities = useMemo(
-    () =>
-      areas.filter(
-        (area) =>
-          area.type === "city" &&
-          areas.find((parent) => parent.id === area.parent_id)?.type === "region",
-      ),
-    [areas],
-  );
-  const cities = useMemo(
-    () =>
-      provinceId === independentCity
-        ? independentCities
-        : areas.filter(
-            (area) =>
-              ["city", "municipality"].includes(area.type ?? "") &&
-              String(area.parent_id) === provinceId,
-          ),
-    [areas, independentCities, provinceId],
-  );
-  const barangays = useMemo(
-    () =>
-      areas.filter(
-        (area) => area.type === "barangay" && String(area.parent_id) === cityId,
-      ),
-    [areas, cityId],
-  );
   const pinnedLocation =
     form.latitude && form.longitude
       ? { latitude: Number(form.latitude), longitude: Number(form.longitude) }
@@ -96,10 +64,9 @@ export default function PostJobPage() {
       .then(async (response) => {
         if (!response.ok) throw new Error();
         const body = (await response.json()) as {
-          data: { categories: Reference[]; areas: Reference[] };
+          data: { categories: Category[]; areas: Reference[] };
         };
         setCategories(body.data.categories);
-        setAreas(body.data.areas);
         const requestedCategory = new URLSearchParams(window.location.search).get("categoryId");
         if (
           requestedCategory &&
@@ -116,29 +83,45 @@ export default function PostJobPage() {
     setForm((current) => ({ ...current, [name]: value }));
   }
 
-  function chooseProvince(value: string) {
-    setProvinceId(value);
-    setCityId("");
-    field("areaId", "");
-  }
-
-  function chooseCity(value: string) {
-    setCityId(value);
-    field("areaId", "");
-  }
-
-  function pin(location: JobLocation, source: "current" | "map") {
+  async function pin(location: JobLocation, source: "current" | "map") {
+    const request = ++pinRequest.current;
     setForm((current) => ({
       ...current,
+      areaId: "",
       latitude: String(location.latitude),
       longitude: String(location.longitude),
     }));
-    setLocationStatus("pinned");
-    setMessage(
-      source === "current"
-        ? "Current location pinned as the job site."
-        : "Job site pinned on the map.",
-    );
+    setLocationStatus("resolving");
+    setMessage("Checking the pinned barangay…");
+
+    try {
+      const response = await fetch(
+        `/api/v1/jobs/resolve-area?latitude=${encodeURIComponent(location.latitude)}&longitude=${encodeURIComponent(location.longitude)}`,
+        { cache: "no-store" },
+      );
+      const body = (await response.json()) as {
+        data?: { id: number; name: string; city: string | null };
+        message?: string;
+      };
+      if (request !== pinRequest.current) return;
+      if (!response.ok || !body.data) {
+        throw new Error(body.message || "KAILA could not identify this pin. Try another location.");
+      }
+      setForm((current) => ({ ...current, areaId: String(body.data?.id ?? "") }));
+      setLocationStatus("pinned");
+      const area = [body.data.name, body.data.city].filter(Boolean).join(", ");
+      setMessage(
+        `${source === "current" ? "Current location" : "Job site"} pinned in ${area}.`,
+      );
+    } catch (error) {
+      if (request !== pinRequest.current) return;
+      setLocationStatus("error");
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "KAILA could not identify this pin. Try another location.",
+      );
+    }
   }
 
   function locate() {
@@ -151,7 +134,7 @@ export default function PostJobPage() {
     setMessage("Finding your current location…");
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        pin(
+        void pin(
           {
             latitude: position.coords.latitude,
             longitude: position.coords.longitude,
@@ -173,7 +156,13 @@ export default function PostJobPage() {
   }
 
   function clearPin() {
-    setForm((current) => ({ ...current, latitude: "", longitude: "" }));
+    pinRequest.current += 1;
+    setForm((current) => ({
+      ...current,
+      areaId: "",
+      latitude: "",
+      longitude: "",
+    }));
     setLocationStatus("idle");
     setMessage("");
   }
@@ -181,6 +170,15 @@ export default function PostJobPage() {
   async function submit(event: FormEvent) {
     event.preventDefault();
     if (step < 3) {
+      if (step === 1 && !form.categoryId) {
+        setMessage("Choose a service before continuing.");
+        return;
+      }
+      if (step === 2 && (!form.areaId || !form.latitude || !form.longitude)) {
+        setLocationStatus("error");
+        setMessage("Place the job-site pin in a supported barangay before continuing.");
+        return;
+      }
       setStep((step + 1) as Step);
       return;
     }
@@ -274,19 +272,16 @@ export default function PostJobPage() {
               <h1>What can we help with?</h1>
               <label>
                 Service
-                <select
-                  required
+                <CategorySelect
+                  categories={categories}
                   value={form.categoryId}
-                  onChange={(event) => field("categoryId", event.target.value)}
-                >
-                  <option value="">Choose a service</option>
-                  {categories.map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.name}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(value) => {
+                    field("categoryId", value);
+                    setMessage("");
+                  }}
+                />
               </label>
+              {message && <p className={styles.fieldError} role="alert">{message}</p>}
               <label>
                 Short title
                 <input
@@ -316,61 +311,13 @@ export default function PostJobPage() {
                 <MapPin aria-hidden="true" /> Nearby help
               </p>
               <h1>Where is the job?</h1>
-              <div className={styles.addressFields}>
-                <label>
-                  Province
-                  <select required value={provinceId} onChange={(event) => chooseProvince(event.target.value)}>
-                    <option value="">Choose province</option>
-                    {provinces.map((province) => (
-                      <option key={province.id} value={province.id}>
-                        {province.name}
-                      </option>
-                    ))}
-                    {independentCities.length > 0 && (
-                      <option value={independentCity}>Independent City</option>
-                    )}
-                  </select>
-                </label>
-                <label>
-                  City / Municipality
-                  <select
-                    required
-                    disabled={!provinceId}
-                    value={cityId}
-                    onChange={(event) => chooseCity(event.target.value)}
-                  >
-                    <option value="">Choose city or municipality</option>
-                    {cities.map((city) => (
-                      <option key={city.id} value={city.id}>
-                        {city.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label>
-                  Barangay
-                  <select
-                    required
-                    disabled={!cityId}
-                    value={form.areaId}
-                    onChange={(event) => field("areaId", event.target.value)}
-                  >
-                    <option value="">Choose barangay</option>
-                    {barangays.map((barangay) => (
-                      <option key={barangay.id} value={barangay.id}>
-                        {barangay.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              </div>
               <label>
-                Landmark or address
+                Landmark <span className={styles.optionalLabel}>(optional)</span>
                 <input
                   value={form.addressLabel}
                   maxLength={180}
                   onChange={(event) => field("addressLabel", event.target.value)}
-                  placeholder="Shown only after you hire"
+                  placeholder="Near the covered court"
                 />
               </label>
               <section className={styles.locationPicker} aria-labelledby="job-site-pin">
@@ -404,7 +351,7 @@ export default function PostJobPage() {
                 {showMap && (
                   <JobLocationMap
                     location={pinnedLocation}
-                    onChange={(next) => pin(next, "map")}
+                    onChange={(next) => void pin(next, "map")}
                   />
                 )}
                 {message && (
@@ -424,8 +371,8 @@ export default function PostJobPage() {
                 </p>
               </section>
               <p className={styles.privacy}>
-                Providers see only your selected barangay before you hire. Your pin and address stay
-                private.
+                Providers see only the pinned barangay before you hire. Your exact pin and landmark
+                stay private.
               </p>
             </>
           )}
@@ -466,26 +413,12 @@ export default function PostJobPage() {
                   />
                 </label>
               )}
-              <div className={styles.budget}>
-                <label>
-                  Budget from (₱)
-                  <input
-                    type="number"
-                    min="0"
-                    value={form.budgetMin}
-                    onChange={(event) => field("budgetMin", event.target.value)}
-                  />
-                </label>
-                <label>
-                  Budget to (₱)
-                  <input
-                    type="number"
-                    min={form.budgetMin || "0"}
-                    value={form.budgetMax}
-                    onChange={(event) => field("budgetMax", event.target.value)}
-                  />
-                </label>
-              </div>
+              <BudgetRange
+                minimum={form.budgetMin}
+                maximum={form.budgetMax}
+                onMinimumChange={(value) => field("budgetMin", value)}
+                onMaximumChange={(value) => field("budgetMax", value)}
+              />
               <AttachmentPicker
                 name="attachments"
                 label="Add job photos or videos"
@@ -509,7 +442,10 @@ export default function PostJobPage() {
               Back
             </Button>
           )}
-          <Button type="submit" disabled={status === "saving"}>
+          <Button
+            type="submit"
+            disabled={status === "saving" || (step === 2 && locationStatus === "resolving")}
+          >
             {step === 3 ? (
               <>
                 <Send aria-hidden="true" /> {status === "saving" ? "Posting…" : "Post Job"}

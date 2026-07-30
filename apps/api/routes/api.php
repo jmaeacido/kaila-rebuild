@@ -16,6 +16,7 @@ use App\Http\Controllers\ConversationController;
 use App\Http\Controllers\CurrentUserController;
 use App\Http\Controllers\DirectConversationController;
 use App\Http\Controllers\DurableNotificationController;
+use App\Http\Controllers\JobAreaController;
 use App\Http\Controllers\JobAssetController;
 use App\Http\Controllers\JobLifecycleController;
 use App\Http\Controllers\KatabangController;
@@ -142,6 +143,7 @@ Route::middleware('auth')->group(function (): void {
     Route::post('/me/profile-assets', [ProfileAssetController::class, 'store']);
     Route::post('/me/provider-credentials', [ProviderCredentialController::class, 'store']);
     Route::get('/jobs', [ServiceJobController::class, 'index']);
+    Route::get('/jobs/resolve-area', JobAreaController::class);
     Route::post('/jobs', [ServiceJobController::class, 'store']);
     Route::get('/jobs/{serviceJob}', [ServiceJobController::class, 'show']);
     Route::put('/jobs/{serviceJob}', [ServiceJobController::class, 'update']);

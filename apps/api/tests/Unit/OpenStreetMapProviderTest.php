@@ -42,6 +42,22 @@ class OpenStreetMapProviderTest extends TestCase
         $this->assertEquals([new GeoPoint(14.59, 120.98), new GeoPoint(14.62, 121.01)], $route->geometry);
     }
 
+    public function test_it_reverse_geocodes_a_pin_with_address_details(): void
+    {
+        Http::fake([
+            'http://nominatim.test/reverse*' => Http::response([
+                'address' => ['suburb' => 'Barangay One', 'city' => 'Davao City'],
+            ]),
+        ]);
+
+        $address = app(OpenStreetMapProvider::class)->reverse(7.0707, 125.6087);
+
+        $this->assertSame('Barangay One', $address['suburb']);
+        Http::assertSent(fn ($request) => $request['lat'] === 7.0707
+            && $request['lon'] === 125.6087
+            && $request['addressdetails'] === 1);
+    }
+
     public function test_it_fails_closed_when_services_return_no_result(): void
     {
         Http::fake(['http://nominatim.test/search*' => Http::response([])]);

@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { Map, Marker } from "maplibre-gl";
+import { useEffect, useRef, useState } from "react";
+import { Map as MapIcon, Satellite } from "lucide-react";
+import { Map as MapLibreMap, Marker, type StyleSpecification } from "maplibre-gl";
 import { addMissingStyleImageFallback } from "../../lib/maplibre-style-images";
 import styles from "./page.module.css";
 
@@ -12,6 +13,23 @@ export type JobLocation = {
 
 const defaultCenter: JobLocation = { latitude: 8.826, longitude: 125.117 };
 const maplibreStylesheetUrl = "https://unpkg.com/maplibre-gl@5.12.0/dist/maplibre-gl.css";
+const streetStyle = "https://tiles.openfreemap.org/styles/liberty";
+const satelliteStyle: StyleSpecification = {
+  version: 8,
+  sources: {
+    satellite: {
+      type: "raster",
+      tiles: [
+        "https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+      ],
+      tileSize: 256,
+      maxzoom: 19,
+      attribution: "Esri, Vantor, Earthstar Geographics, and the GIS User Community",
+    },
+  },
+  layers: [{ id: "satellite", type: "raster", source: "satellite" }],
+};
+type MapLayer = "map" | "satellite";
 
 export function JobLocationMap({
   location,
@@ -21,10 +39,17 @@ export function JobLocationMap({
   onChange: (location: JobLocation) => void;
 }) {
   const container = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<Map | null>(null);
+  const mapRef = useRef<MapLibreMap | null>(null);
   const markerRef = useRef<Marker | null>(null);
   const onChangeRef = useRef(onChange);
   const initialLocation = useRef(location);
+  const [layer, setLayer] = useState<MapLayer>("map");
+
+  function changeLayer(nextLayer: MapLayer) {
+    if (nextLayer === layer) return;
+    setLayer(nextLayer);
+    mapRef.current?.setStyle(nextLayer === "satellite" ? satelliteStyle : streetStyle);
+  }
 
   useEffect(() => {
     onChangeRef.current = onChange;
@@ -44,9 +69,9 @@ export function JobLocationMap({
 
     if (!container.current) return;
     const center = initialLocation.current ?? defaultCenter;
-    const map = new Map({
+    const map = new MapLibreMap({
       container: container.current,
-      style: "https://tiles.openfreemap.org/styles/liberty",
+      style: streetStyle,
       center: [center.longitude, center.latitude],
       zoom: initialLocation.current ? 16 : 12,
     });
@@ -91,11 +116,31 @@ export function JobLocationMap({
 
   return (
     <div className={styles.mapWrap}>
-      <div
-        ref={container}
-        className={styles.mapCanvas}
-        aria-label="Choose the job site on the map"
-      />
+      <div className={styles.mapStage}>
+        <div
+          ref={container}
+          className={styles.mapCanvas}
+          aria-label="Choose the job site on the map"
+        />
+        <div className={styles.mapLayerToggle} aria-label="Map layer">
+          <button
+            type="button"
+            className={layer === "map" ? styles.mapLayerActive : ""}
+            aria-pressed={layer === "map"}
+            onClick={() => changeLayer("map")}
+          >
+            <MapIcon aria-hidden="true" /> Map
+          </button>
+          <button
+            type="button"
+            className={layer === "satellite" ? styles.mapLayerActive : ""}
+            aria-pressed={layer === "satellite"}
+            onClick={() => changeLayer("satellite")}
+          >
+            <Satellite aria-hidden="true" /> Satellite
+          </button>
+        </div>
+      </div>
       <p className={styles.mapHint}>Tap the map to place the pin. Drag it for finer placement.</p>
     </div>
   );

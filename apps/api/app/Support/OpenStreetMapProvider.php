@@ -11,6 +11,25 @@ use RuntimeException;
 
 class OpenStreetMapProvider implements MapsProvider
 {
+    /** @return array<string, mixed> */
+    public function reverse(float $latitude, float $longitude): array
+    {
+        $response = $this->client()->get(rtrim((string) config('maps.nominatim_url'), '/').'/reverse', [
+            'lat' => $latitude,
+            'lon' => $longitude,
+            'format' => 'jsonv2',
+            'addressdetails' => 1,
+            'zoom' => 18,
+        ]);
+
+        $address = $response->json('address');
+        if (! $response->successful() || ! is_array($address)) {
+            throw new RuntimeException('The pinned location could not be identified.');
+        }
+
+        return $address;
+    }
+
     public function geocode(string $query): GeoPoint
     {
         $response = $this->client()->get(rtrim((string) config('maps.nominatim_url'), '/').'/search', [
