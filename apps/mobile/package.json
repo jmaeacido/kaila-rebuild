@@ -9,6 +9,9 @@
   },
   "scripts": {
     "build": "vite build",
+    "android:doctor": "node scripts/android-doctor.mjs",
+    "android:debug": "node scripts/build-android.mjs debug",
+    "android:bundle": "node scripts/build-android.mjs release",
     "android:sync": "pnpm build && cap sync android",
     "android:verify": "node scripts/verify-android-release.mjs",
     "lint": "tsc --noEmit",
@@ -16,6 +19,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@kaila/design-tokens": "workspace:*",
     "@capacitor/app": "8.1.0",
     "@capacitor/core": "8.4.2",
     "@capacitor/network": "8.0.1",

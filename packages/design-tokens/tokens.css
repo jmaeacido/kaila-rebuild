@@ -45,8 +45,10 @@
   --focus-ring-width: 0.1875rem;
   --spinner-size: 1rem;
   --opacity-disabled: 0.6;
+  --opacity-route-accent: 0.16;
   --scale-pressed: 0.98;
   --rotation-full: 360deg;
+  --content-width-compact: 24rem;
   --radius-input: 0.75rem;
   --radius-button: 0.875rem;
   --radius-card: 1rem;

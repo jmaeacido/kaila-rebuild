@@ -69,6 +69,9 @@ importers:
       '@capacitor/push-notifications':
         specifier: 8.1.1
         version: 8.1.1(@capacitor/core@8.4.2)
+      '@kaila/design-tokens':
+        specifier: workspace:*
+        version: link:../../packages/design-tokens
     devDependencies:
       '@capacitor/android':
         specifier: 8.4.2
