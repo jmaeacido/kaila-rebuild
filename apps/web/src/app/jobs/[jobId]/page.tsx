@@ -221,11 +221,8 @@ export default function JobDetailsPage({ params }: { params: Promise<{ jobId: st
       };
       if (request !== pinRequest.current) return;
       if (!response.ok || !body.data) throw new Error(body.message || "KAILA could not identify this pin.");
-      if (job.status !== "draft" && body.data.id !== job.area.id) {
-        throw new Error("The pin must stay in the original barangay after posting.");
-      }
       setEditLocation(location);
-      if (job.status === "draft") setEditAreaId(String(body.data.id));
+      setEditAreaId(String(body.data.id));
       setLocationStatus("pinned");
       setLocationNotice(
         `${source === "current" ? "Current location" : "Job site"} pinned in ${[body.data.name, body.data.city].filter(Boolean).join(", ")}.`,
@@ -351,15 +348,11 @@ export default function JobDetailsPage({ params }: { params: Promise<{ jobId: st
               {categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
             </select>
           </label>
-          {isDraft ? (
-            <div className={styles.addressEdit}>
-              <span>Job area</span>
-              <AddressHierarchy areas={areas} value={editAreaId || String(job.area.id)} onChange={setEditAreaId} />
-              <input type="hidden" name="areaId" value={editAreaId || job.area.id} />
-            </div>
-          ) : (
-            <label>Job area<input value={areaLabel} disabled /><input type="hidden" name="areaId" value={job.area.id} /></label>
-          )}
+          <div className={styles.addressEdit}>
+            <span>Job area</span>
+            <AddressHierarchy areas={areas} value={editAreaId || String(job.area.id)} onChange={setEditAreaId} />
+            <input type="hidden" name="areaId" value={editAreaId || job.area.id} />
+          </div>
           <input type="hidden" name="categoryId" value={job.category.id} disabled={isDraft} />
           <div className={styles.scheduleChoices}>
             <label><input type="radio" name="scheduleType" value="asap" defaultChecked={job.scheduleType === "asap"} /> As soon as possible</label>
@@ -420,7 +413,7 @@ export default function JobDetailsPage({ params }: { params: Promise<{ jobId: st
               hint={`${Math.max(0, 5 - (job.assets.length - removedAssetIds.length))} file slots available, 10 MB each.`}
             />
           </section>
-          {!isDraft && <p className={styles.lockNote}>Service and barangay are locked after posting so matched providers are not changed.</p>}
+          {!isDraft && <p className={styles.lockNote}>The service is locked after posting. Moving the job updates the matched providers.</p>}
           <div className={styles.formActions}><Button type="button" variant="secondary" onClick={() => setEditing(false)}>Discard</Button><Button isLoading={status === "saving"}>Save changes</Button></div>
         </form>
       ) : (

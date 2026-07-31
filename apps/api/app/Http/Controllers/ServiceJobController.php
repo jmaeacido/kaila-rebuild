@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Support\JobPostingService;
 use App\Support\JobPresenter;
 use App\Support\JobRealtimePublisher;
+use App\Support\OpportunityMatchingService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -18,7 +19,7 @@ use Illuminate\Validation\Rule;
 
 class ServiceJobController extends Controller
 {
-    public function __construct(private readonly JobPresenter $presenter, private readonly JobPostingService $posting, private readonly JobRealtimePublisher $realtime) {}
+    public function __construct(private readonly JobPresenter $presenter, private readonly JobPostingService $posting, private readonly JobRealtimePublisher $realtime, private readonly OpportunityMatchingService $matching) {}
 
     public function index(Request $request): JsonResponse
     {
@@ -80,16 +81,27 @@ class ServiceJobController extends Controller
         $data = $this->validated($request);
         if ($serviceJob->status === 'posted') {
             abort_unless(
-                $data['categoryId'] === $serviceJob->service_category_id && $data['areaId'] === $serviceJob->area_id,
+                $data['categoryId'] === $serviceJob->service_category_id,
                 409,
-                'Service and barangay cannot change after posting. Cancel this job and post a new one instead.',
+                'The service cannot change after posting. Cancel this job and post a new one instead.',
             );
         }
         $event = $serviceJob->status === 'draft' ? 'job.draft_updated' : 'job.updated';
         DB::transaction(function () use ($serviceJob, $data, $event, $request): void {
+            $previousProviderProfileIds = $serviceJob->status === 'posted'
+                ? $serviceJob->opportunities()
+                    ->pluck('provider_profile_id')
+                    ->map(static fn (mixed $id): int => (int) $id)
+                    ->values()
+                    ->all()
+                : [];
             $serviceJob->update($this->attributes($data) + ['version' => $serviceJob->version + 1]);
+            if ($serviceJob->status === 'posted') {
+                $serviceJob->opportunities()->delete();
+                $this->matching->matchJob($serviceJob, $this->user($request)->id);
+            }
             $serviceJob->timeline()->create(['id' => (string) Str::uuid(), 'actor_user_id' => $this->user($request)->id, 'event_type' => $event, 'job_version' => $serviceJob->version, 'metadata' => [], 'occurred_at' => now()]);
-            $this->realtime->record($event, $serviceJob, 'service_job', $serviceJob->id, $serviceJob->version, ['status' => $serviceJob->status]);
+            $this->realtime->record($event, $serviceJob, 'service_job', $serviceJob->id, $serviceJob->version, ['status' => $serviceJob->status], $previousProviderProfileIds);
         });
 
         return response()->json(['data' => $this->presenter->owned($serviceJob->refresh())]);

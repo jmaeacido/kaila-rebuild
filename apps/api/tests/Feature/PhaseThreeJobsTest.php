@@ -96,6 +96,38 @@ class PhaseThreeJobsTest extends TestCase
         $this->assertDatabaseHas('outbox_events', ['resource_id' => $created->json('data.id'), 'event_type' => 'job.updated']);
     }
 
+    public function test_moving_a_posted_job_reconciles_provider_matches(): void
+    {
+        [$category, $originalArea] = $this->references();
+        $newArea = Area::query()->create(['type' => 'city', 'name' => 'Tagum', 'code' => 'TAG', 'is_active' => true]);
+        $originalProvider = $this->provider($category, $originalArea, 'active');
+        $newProvider = $this->provider($category, $newArea, 'active');
+        $client = User::factory()->create();
+        $created = $this->actingAs($client)
+            ->withHeader('Idempotency-Key', 'move-posted-job')
+            ->postJson('/api/v1/jobs', $this->draft($category, $originalArea))
+            ->assertCreated();
+        $this->postJson("/api/v1/jobs/{$created->json('data.id')}/post")->assertOk();
+
+        $updated = $this->draft($category, $newArea);
+        $updated['latitude'] = 7.4478;
+        $updated['longitude'] = 125.8078;
+        $this->putJson("/api/v1/jobs/{$created->json('data.id')}", $updated)
+            ->assertOk()
+            ->assertJsonPath('data.area.id', $newArea->id)
+            ->assertJsonPath('data.location.latitude', '7.4478000')
+            ->assertJsonPath('data.location.longitude', '125.8078000');
+
+        $this->assertDatabaseMissing('job_opportunities', [
+            'service_job_id' => $created->json('data.id'),
+            'provider_profile_id' => $originalProvider->id,
+        ]);
+        $this->assertDatabaseHas('job_opportunities', [
+            'service_job_id' => $created->json('data.id'),
+            'provider_profile_id' => $newProvider->id,
+        ]);
+    }
+
     public function test_client_can_cancel_a_draft_job(): void
     {
         [$category, $area] = $this->references();

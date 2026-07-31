@@ -11,7 +11,10 @@ class JobRealtimePublisher
 {
     public function __construct(private readonly OutboxRecorder $outbox) {}
 
-    /** @param array<string, mixed> $data */
+    /**
+     * @param  array<string, mixed>  $data
+     * @param  array<int, int>  $additionalProviderProfileIds
+     */
     public function record(
         string $eventType,
         ServiceJob $job,
@@ -19,6 +22,7 @@ class JobRealtimePublisher
         string $resourceId,
         int $resourceVersion,
         array $data = [],
+        array $additionalProviderProfileIds = [],
     ): void {
         $providerProfileIds = JobOpportunity::query()
             ->where('service_job_id', $job->id)
@@ -28,6 +32,7 @@ class JobRealtimePublisher
                     ->where('service_job_id', $job->id)
                     ->pluck('provider_profile_id'),
             )
+            ->merge($additionalProviderProfileIds)
             ->unique();
         $recipientUserIds = ProviderProfile::query()
             ->whereIn('id', $providerProfileIds)
