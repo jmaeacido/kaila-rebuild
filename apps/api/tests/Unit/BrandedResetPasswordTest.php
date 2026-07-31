@@ -11,6 +11,7 @@ class BrandedResetPasswordTest extends TestCase
 {
     public function test_it_renders_branded_html_and_plain_text_with_the_admin_reset_url(): void
     {
+        config(['app.url' => 'https://kaila-app.com']);
         ResetPassword::createUrlUsing(
             fn (User $user, string $token): string => 'https://admin.kaila-app.com/reset-password?token='.$token.'&email='.urlencode($user->email),
         );

@@ -11,6 +11,7 @@ class BrandedWelcomeTest extends TestCase
 {
     public function test_it_renders_branded_html_and_plain_text_for_the_primary_app(): void
     {
+        config(['app.url' => 'https://kaila-app.com']);
         $user = new User([
             'name' => 'Juan Dela Cruz',
             'email' => 'juan@example.test',

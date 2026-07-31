@@ -54,7 +54,9 @@ class ServiceJob extends Model
     /** @return HasMany<JobTimelineEvent, $this> */
     public function timeline(): HasMany
     {
-        return $this->hasMany(JobTimelineEvent::class)->orderBy('occurred_at');
+        return $this->hasMany(JobTimelineEvent::class)
+            ->orderBy('job_version')
+            ->orderBy('occurred_at');
     }
 
     /** @return HasMany<JobAsset, $this> */

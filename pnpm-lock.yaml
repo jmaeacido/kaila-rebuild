@@ -5,11 +5,15 @@ settings:
   excludeLinksFromLockfile: false
 
 overrides:
+  brace-expansion: 5.0.9
   electron-to-chromium: 1.5.389
-  postcss: 8.5.10
+  postcss: 8.5.18
   socket.io-parser: 4.2.6
   sharp: 0.35.0
   tar: 7.5.19
+
+patchedDependencies:
+  minimatch@3.1.5: 44943b6c8f5db1bf4449d3c2ce9bf8e9a5e1da7b472b4e5eaadf58db55fcce88
 
 importers:
 
@@ -1570,9 +1574,6 @@ packages:
     resolution: {integrity: sha512-qIj0G9wZbMGNLjLmg1PT6v2mE9AH2zlnADJD/2tC6E00hgmhUOfEB6greHPAfLRSufHqROIUTkw6E+M3lH0PTQ==}
     engines: {node: '>= 0.4'}
 
-  balanced-match@1.0.2:
-    resolution: {integrity: sha512-3oSeUO0TMV67hN1AmbXsK4yaqU7tjiHlbxRDZOpH0KW9+CeX4bRAaX0Anxt0tx2MrpRpWwQaPwIlISEJhYU5Pw==}
-
   balanced-match@4.0.4:
     resolution: {integrity: sha512-BLrgEcRTwX2o6gGxGOCNyMvGSp35YofuYzw9h1IMTRmKqttAZZVU67bdb9Pr2vUHA8+j3i2tJfjO6C6+4myGTA==}
     engines: {node: 18 || 20 || >=22}
@@ -1600,12 +1601,9 @@ packages:
     resolution: {integrity: sha512-apC2+fspHGI3mMKj+dGevkGo/tCqVB8jMb6i+OX+E29p0Iposz07fABkRIfVUPNd5A5VbuOz1bZbnmkKLYF+wQ==}
     engines: {node: '>= 5.10.0'}
 
-  brace-expansion@1.1.16:
-    resolution: {integrity: sha512-IDw48K2/2kRkg9LdJxurvq3lV3aBgq0REY89duEqFRthjlPdXHKMj7EnQOXVckxzgisinf3nHfrcE2FufFLXMw==}
-
-  brace-expansion@5.0.7:
-    resolution: {integrity: sha512-7oFy703dxfY3/NLxC1fh2SUCQ0H9rmAY+5EpDVfXjUTTs+HEwR2nYaqLv+GWcTsumwxPfiz6CzCNkwXwBUwqCA==}
-    engines: {node: 18 || 20 || >=22}
+  brace-expansion@5.0.9:
+    resolution: {integrity: sha512-ScQ4IuvIEF1TMlP7Zt+vjJ//9zlPb2SDcxWxM3bk8s6t6GGdJ7KO1dCcTidOPJKePW30LE/2cT7wCyPho9/Wxg==}
+    engines: {node: 20 || >=22}
 
   braces@3.0.3:
     resolution: {integrity: sha512-yQbXgO/OSZVD2IsiLlro+7Hf6Q18EJrKSEsdoMzKePKXct3gvD8oLcOQdIzGupr5Fj+EDe8gO/lxc1BzfMpxvA==}
@@ -1679,9 +1677,6 @@ packages:
   commander@12.1.0:
     resolution: {integrity: sha512-Vw8qHK3bZM9y/P10u3Vib8o/DdkvA2OtPtZvD871QKjy74Wj1WSKFILMPRPSdUSx5RFK1arlJzEtA4PkFgnbuA==}
     engines: {node: '>=18'}
-
-  concat-map@0.0.1:
-    resolution: {integrity: sha512-/Srv4dswyQNBfohGpz9o6Yb3Gz3SrUDqBH5rTuhGR7ahtlbYKnVxw2bCFMRljaA7EXHaXZ8wsHdodFvbkhKmqg==}
 
   convert-source-map@2.0.0:
     resolution: {integrity: sha512-Kvp459HrV2FEJ1CAsi1Ku+MY3kasH19TFykTz2xWmMeq6bk2NU3XXvfJ+Q61m0xktWwt+1HSYf3JZsTms3aRJg==}
@@ -2694,8 +2689,8 @@ packages:
     resolution: {integrity: sha512-/+5VFTchJDoVj3bhoqi6UeymcD00DAwb1nJwamzPvHEszJ4FpF6SNNbUbOS8yI56qHzdV8eK0qEfOSiodkTdxg==}
     engines: {node: '>= 0.4'}
 
-  postcss@8.5.10:
-    resolution: {integrity: sha512-pMMHxBOZKFU6HgAZ4eyGnwXF/EvPGGqUr0MnZ5+99485wwW41kW91A4LOGxSHhgugZmSChL5AlElNdwlNgcnLQ==}
+  postcss@8.5.18:
+    resolution: {integrity: sha512-xdB1oSLHbz1vRWgCDalrCqEFTWzFlhqFC5tIHLMOSUIjhm3XXQ1qrFy8S/ESr1JYRRXqM3c1QFiMZUJdUTqyMQ==}
     engines: {node: ^10 || ^12 || >=14}
 
   potpack@2.1.0:
@@ -3690,7 +3685,7 @@ snapshots:
     dependencies:
       '@eslint/object-schema': 2.1.7
       debug: 4.4.3
-      minimatch: 3.1.5
+      minimatch: 3.1.5(patch_hash=44943b6c8f5db1bf4449d3c2ce9bf8e9a5e1da7b472b4e5eaadf58db55fcce88)
     transitivePeerDependencies:
       - supports-color
 
@@ -3711,7 +3706,7 @@ snapshots:
       ignore: 5.3.2
       import-fresh: 3.3.1
       js-yaml: 4.3.0
-      minimatch: 3.1.5
+      minimatch: 3.1.5(patch_hash=44943b6c8f5db1bf4449d3c2ce9bf8e9a5e1da7b472b4e5eaadf58db55fcce88)
       strip-json-comments: 3.1.1
     transitivePeerDependencies:
       - supports-color
@@ -4598,8 +4593,6 @@ snapshots:
 
   axobject-query@4.1.0: {}
 
-  balanced-match@1.0.2: {}
-
   balanced-match@4.0.4: {}
 
   base64-js@1.5.1: {}
@@ -4618,12 +4611,7 @@ snapshots:
     dependencies:
       big-integer: 1.6.52
 
-  brace-expansion@1.1.16:
-    dependencies:
-      balanced-match: 1.0.2
-      concat-map: 0.0.1
-
-  brace-expansion@5.0.7:
+  brace-expansion@5.0.9:
     dependencies:
       balanced-match: 4.0.4
 
@@ -4694,8 +4682,6 @@ snapshots:
   color-name@1.1.4: {}
 
   commander@12.1.0: {}
-
-  concat-map@0.0.1: {}
 
   convert-source-map@2.0.0: {}
 
@@ -5059,7 +5045,7 @@ snapshots:
       hasown: 2.0.4
       is-core-module: 2.16.2
       is-glob: 4.0.3
-      minimatch: 3.1.5
+      minimatch: 3.1.5(patch_hash=44943b6c8f5db1bf4449d3c2ce9bf8e9a5e1da7b472b4e5eaadf58db55fcce88)
       object.fromentries: 2.0.8
       object.groupby: 1.0.3
       object.values: 1.2.1
@@ -5087,7 +5073,7 @@ snapshots:
       hasown: 2.0.4
       jsx-ast-utils: 3.3.5
       language-tags: 1.0.9
-      minimatch: 3.1.5
+      minimatch: 3.1.5(patch_hash=44943b6c8f5db1bf4449d3c2ce9bf8e9a5e1da7b472b4e5eaadf58db55fcce88)
       object.fromentries: 2.0.8
       safe-regex-test: 1.1.0
       string.prototype.includes: 2.0.1
@@ -5115,7 +5101,7 @@ snapshots:
       estraverse: 5.3.0
       hasown: 2.0.4
       jsx-ast-utils: 3.3.5
-      minimatch: 3.1.5
+      minimatch: 3.1.5(patch_hash=44943b6c8f5db1bf4449d3c2ce9bf8e9a5e1da7b472b4e5eaadf58db55fcce88)
       object.entries: 1.1.9
       object.fromentries: 2.0.8
       object.values: 1.2.1
@@ -5169,7 +5155,7 @@ snapshots:
       is-glob: 4.0.3
       json-stable-stringify-without-jsonify: 1.0.1
       lodash.merge: 4.6.2
-      minimatch: 3.1.5
+      minimatch: 3.1.5(patch_hash=44943b6c8f5db1bf4449d3c2ce9bf8e9a5e1da7b472b4e5eaadf58db55fcce88)
       natural-compare: 1.4.0
       optionator: 0.9.4
     transitivePeerDependencies:
@@ -5702,11 +5688,11 @@ snapshots:
 
   minimatch@10.2.5:
     dependencies:
-      brace-expansion: 5.0.7
+      brace-expansion: 5.0.9
 
-  minimatch@3.1.5:
+  minimatch@3.1.5(patch_hash=44943b6c8f5db1bf4449d3c2ce9bf8e9a5e1da7b472b4e5eaadf58db55fcce88):
     dependencies:
-      brace-expansion: 1.1.16
+      brace-expansion: 5.0.9
 
   minimist@1.2.8: {}
 
@@ -5750,7 +5736,7 @@ snapshots:
       '@swc/helpers': 0.5.15
       baseline-browser-mapping: 2.10.43
       caniuse-lite: 1.0.30001805
-      postcss: 8.5.10
+      postcss: 8.5.18
       react: 19.2.4
       react-dom: 19.2.4(react@19.2.4)
       styled-jsx: 5.1.6(@babel/core@7.29.7)(react@19.2.4)
@@ -5909,7 +5895,7 @@ snapshots:
 
   possible-typed-array-names@1.1.0: {}
 
-  postcss@8.5.10:
+  postcss@8.5.18:
     dependencies:
       nanoid: 3.3.16
       picocolors: 1.1.1
@@ -6556,7 +6542,7 @@ snapshots:
       esbuild: 0.28.1
       fdir: 6.5.0(picomatch@4.0.5)
       picomatch: 4.0.5
-      postcss: 8.5.10
+      postcss: 8.5.18
       rollup: 4.62.2
       tinyglobby: 0.2.17
     optionalDependencies:
