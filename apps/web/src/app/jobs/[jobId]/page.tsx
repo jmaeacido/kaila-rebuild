@@ -22,7 +22,7 @@ import {
   X,
 } from "lucide-react";
 import { Button, Feedback } from "@kaila/ui";
-import { AddressHierarchy, areaPathLabel, type AreaReference } from "../../address-hierarchy";
+import { areaPathLabel, type AreaReference } from "../../address-hierarchy";
 import { AttachmentPicker, attachmentFiles } from "../../../components/attachment-picker";
 import { JobLocationMap, type JobLocation } from "../../post-job/job-location-map";
 import styles from "./job-details.module.css";
@@ -348,11 +348,7 @@ export default function JobDetailsPage({ params }: { params: Promise<{ jobId: st
               {categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
             </select>
           </label>
-          <div className={styles.addressEdit}>
-            <span>Job area</span>
-            <AddressHierarchy areas={areas} value={editAreaId || String(job.area.id)} onChange={setEditAreaId} />
-            <input type="hidden" name="areaId" value={editAreaId || job.area.id} />
-          </div>
+          <input type="hidden" name="areaId" value={editAreaId || job.area.id} />
           <input type="hidden" name="categoryId" value={job.category.id} disabled={isDraft} />
           <div className={styles.scheduleChoices}>
             <label><input type="radio" name="scheduleType" value="asap" defaultChecked={job.scheduleType === "asap"} /> As soon as possible</label>
