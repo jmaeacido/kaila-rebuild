@@ -14,8 +14,11 @@ const PUBLIC_PATHS = new Set([
   "/",
   "/forgot-password",
   "/login",
+  "/privacy",
   "/register",
   "/reset-password",
+  "/terms",
+  "/account-deletion",
 ]);
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
