@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\DB;
 
 class OpportunityMatchingService
 {
-    public function __construct(private readonly OutboxRecorder $outbox, private readonly NotificationService $notifications) {}
+    public function __construct(private readonly NotificationService $notifications) {}
 
     public function matchJob(ServiceJob $job, int $excludedUserId): void
     {

@@ -39,7 +39,7 @@ class CurrentUserResource extends JsonResource
                 'averageRating' => $reputation?->average_rating !== null
                     ? (float) $reputation->average_rating
                     : null,
-                'reviewCount' => (int) ($reputation?->published_review_count ?? 0),
+                'reviewCount' => (int) ($reputation->published_review_count ?? 0),
             ],
         ];
     }

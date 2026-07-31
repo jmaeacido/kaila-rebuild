@@ -74,8 +74,8 @@ class NotificationService
         $preference = NotificationPreference::query()->find($userId);
 
         return match ($channel) {
-            'message' => ! ($preference?->mute_messages ?? false),
-            'routine' => ! ($preference?->mute_routine_reminders ?? false),
+            'message' => ! ($preference->mute_messages ?? false),
+            'routine' => ! ($preference->mute_routine_reminders ?? false),
             default => true,
         };
     }

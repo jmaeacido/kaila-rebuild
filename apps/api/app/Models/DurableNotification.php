@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Carbon;
 
 /**
  * @property string $id
@@ -12,6 +13,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property string $body
  * @property string $resource_id
  * @property array<string, scalar|null> $data
+ * @property Carbon|null $read_at
  */
 class DurableNotification extends Model
 {
