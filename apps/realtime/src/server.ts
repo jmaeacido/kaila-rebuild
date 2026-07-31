@@ -57,7 +57,7 @@ const httpServer = createServer((request, response) => {
 
 const io = new Server(httpServer, {
   cors: {
-    origin: config.KAILA_API_ORIGIN,
+    origin: config.allowedOrigins,
     credentials: true,
   },
 });

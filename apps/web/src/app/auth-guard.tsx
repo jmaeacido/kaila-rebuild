@@ -9,6 +9,7 @@ import { prepareCsrf } from "./auth-client";
 import { BrandedLoader } from "./branded-loader";
 import { FloatingKatabang } from "../components/floating-katabang";
 import { NotificationBell } from "./notification-bell";
+import { PullToRefresh } from "./pull-to-refresh";
 
 const PUBLIC_PATHS = new Set([
   "/",
@@ -120,6 +121,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 
   return (
     <>
+      <PullToRefresh />
       <header className="appSessionBar">
         <Link href="/home" aria-label="KAILA home" prefetch={false}>
           <Image

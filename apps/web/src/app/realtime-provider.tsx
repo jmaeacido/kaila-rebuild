@@ -15,6 +15,9 @@ export type DomainEvent = {
 
 export const domainEventName = "kaila:domain-event";
 export const realtimeReconcileName = "kaila:realtime-reconcile";
+export const realtimeStatusName = "kaila:realtime-status";
+
+export type RealtimeStatus = "connecting" | "connected" | "disconnected";
 
 type TicketResponse = { data: { ticket: string } };
 
@@ -26,19 +29,28 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
 
     let socket: Socket | null = null;
     let retryTimer: number | null = null;
+    let retryAttempt = 0;
     let disposed = false;
+
+    const publishStatus = (status: RealtimeStatus) => {
+      window.dispatchEvent(
+        new CustomEvent<RealtimeStatus>(realtimeStatusName, { detail: status }),
+      );
+    };
 
     const disconnectCleanly = (target: Socket | null) => {
       if (!target) return;
-      if (target.connected) {
-        target.disconnect();
-        return;
-      }
-      target.once("connect", () => target.disconnect());
+      target.removeAllListeners();
+      target.disconnect();
     };
 
-    const scheduleReconnect = (delay: number) => {
+    const scheduleReconnect = (minimumDelay = 1_000) => {
       if (disposed || retryTimer !== null) return;
+      publishStatus("disconnected");
+      const exponentialDelay = Math.min(30_000, 1_000 * 2 ** retryAttempt);
+      const jitter = Math.floor(Math.random() * 500);
+      const delay = Math.max(minimumDelay, exponentialDelay) + jitter;
+      retryAttempt = Math.min(retryAttempt + 1, 5);
       retryTimer = window.setTimeout(() => {
         retryTimer = null;
         void connect();
@@ -48,6 +60,7 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
     const connect = async () => {
       disconnectCleanly(socket);
       socket = null;
+      publishStatus("connecting");
       try {
         const response = await fetch("/api/v1/realtime/ticket", {
           method: "POST",
@@ -55,17 +68,19 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
           headers: { Accept: "application/json" },
         });
         if (!response.ok || disposed) {
-          scheduleReconnect(response.status === 401 ? 30_000 : 5_000);
+          scheduleReconnect(response.status === 401 ? 30_000 : 2_000);
           return;
         }
         const { data } = (await response.json()) as TicketResponse;
         const nextSocket = io(realtimeUrl, {
           auth: { ticket: data.ticket },
           reconnection: false,
-          transports: ["websocket"],
+          transports: ["websocket", "polling"],
         });
         socket = nextSocket;
         nextSocket.on("connect", () => {
+          retryAttempt = 0;
+          publishStatus("connected");
           window.dispatchEvent(new Event(realtimeReconcileName));
         });
         nextSocket.on("domain.event", (event: DomainEvent) => {
@@ -77,18 +92,26 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
           }
           window.dispatchEvent(new CustomEvent<DomainEvent>(domainEventName, { detail: event }));
         });
-        nextSocket.on("disconnect", () => scheduleReconnect(2_000));
+        nextSocket.on("disconnect", () => scheduleReconnect());
         nextSocket.on("connect_error", () => {
-          nextSocket.disconnect();
-          scheduleReconnect(5_000);
+          disconnectCleanly(nextSocket);
+          scheduleReconnect(2_000);
         });
       } catch {
-        scheduleReconnect(5_000);
+        scheduleReconnect(2_000);
       }
     };
 
     const recover = () => {
-      if (document.visibilityState === "visible" && (!socket || !socket.connected)) void connect();
+      if (document.visibilityState !== "visible") return;
+      if (!socket || !socket.connected) {
+        if (retryTimer !== null) {
+          window.clearTimeout(retryTimer);
+          retryTimer = null;
+        }
+        retryAttempt = 0;
+        void connect();
+      }
       window.dispatchEvent(new Event(realtimeReconcileName));
     };
     window.addEventListener("online", recover);
@@ -101,6 +124,7 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
       window.removeEventListener("online", recover);
       document.removeEventListener("visibilitychange", recover);
       disconnectCleanly(socket);
+      publishStatus("disconnected");
     };
   }, []);
 

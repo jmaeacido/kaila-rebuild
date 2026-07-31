@@ -1,0 +1,69 @@
+.indicator {
+  align-items: end;
+  display: flex;
+  height: var(--pull-offset);
+  justify-content: center;
+  left: 0;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+  position: fixed;
+  right: 0;
+  top: 0;
+  transform: translateY(calc(var(--spacing-48) * -1));
+  transition:
+    opacity var(--duration-fast) ease-out,
+    transform var(--duration-fast) ease-out;
+  z-index: var(--z-toast);
+}
+
+.indicator[data-visible="true"] {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.indicator span {
+  align-items: center;
+  background: var(--color-surface);
+  border: var(--control-border-width) solid var(--color-border);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-floating);
+  color: var(--color-text);
+  display: flex;
+  font-size: var(--font-small-size);
+  font-weight: var(--font-weight-semibold);
+  gap: var(--spacing-8);
+  min-height: var(--control-min-height);
+  padding: 0 var(--spacing-16);
+}
+
+.indicator svg {
+  color: var(--color-primary);
+  height: var(--spacing-16);
+  transform: rotate(calc(var(--pull-progress) * 180deg));
+  width: var(--spacing-16);
+}
+
+.indicator[data-refreshing="true"] svg {
+  animation: refresh-spin var(--duration-slow) linear infinite;
+}
+
+@keyframes refresh-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .indicator {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .indicator,
+  .indicator svg {
+    animation: none;
+    transition: none;
+  }
+}
