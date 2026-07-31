@@ -11,6 +11,7 @@ import {
   FileCheck2,
   Hammer,
   MessageCircle,
+  Navigation,
   RefreshCw,
   RotateCcw,
   Star,
@@ -409,9 +410,19 @@ export default function WorkPage({ params }: { params: Promise<{ jobId: string }
       ) : null}
 
       <div className={styles.actions}>
+        {data.status === "provider_selected" && data.role === "provider" && (
+          <Button onClick={() => location.assign(`/jobs/${jobId}/hired/travel`)}>
+            <Navigation /> Start travel &amp; navigation
+          </Button>
+        )}
+        {data.status === "provider_traveling" && (
+          <Button onClick={() => location.assign(`/jobs/${jobId}/hired/travel`)}>
+            <Navigation /> {data.role === "provider" ? "View travel & navigation" : "Track provider"}
+          </Button>
+        )}
         {data.role === "provider" && ["provider_selected", "provider_traveling", "revision_requested"].includes(data.status) && (
-          <Button isLoading={requestState === "saving"} onClick={() => void command("work/start", {}, "Work started.")}>
-            <Hammer /> {data.status === "revision_requested" ? "Resume corrections" : "Start work"}
+          <Button variant={data.status === "revision_requested" ? "primary" : "secondary"} isLoading={requestState === "saving"} onClick={() => void command("work/start", {}, "Work started.")}>
+            <Hammer /> {data.status === "revision_requested" ? "Resume corrections" : data.status === "provider_selected" ? "Already on site — start work" : "Start work"}
           </Button>
         )}
         {data.role === "provider" && data.status === "working" && (
@@ -527,8 +538,8 @@ function StatusIcon({ status }: { status: string }) {
 }
 
 function primaryGuidance(data: Work): string {
-  if (data.status === "provider_selected") return data.role === "provider" ? "Travel to the client or start work when ready." : "The provider is preparing for your job.";
-  if (data.status === "provider_traveling") return data.role === "provider" ? "Start work after arriving." : "Follow the provider’s travel status.";
+  if (data.status === "provider_selected") return data.role === "provider" ? "Start travel for directions and live location sharing." : "The provider is preparing for your job.";
+  if (data.status === "provider_traveling") return data.role === "provider" ? "Use navigation while traveling, then start work after arriving." : "Track the provider’s live travel status.";
   if (data.status === "working") return data.role === "provider" ? "Submit the finished work when it is ready for review." : "The provider is working on your job.";
   if (data.status === "completion_submitted") return data.role === "client" ? "Check the work, then confirm or request a correction." : "Waiting for the client to review the completed work.";
   if (data.status === "revision_requested") return data.role === "provider" ? "Review the correction request and resume work." : "Waiting for the provider to make the correction.";
