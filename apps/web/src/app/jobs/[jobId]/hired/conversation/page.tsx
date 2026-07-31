@@ -65,6 +65,7 @@ export default function ConversationPage({ params }: { params: Promise<{ jobId: 
   const [state, setState] = useState<"loading" | "ready" | "sending" | "error">("loading");
   const [notice, setNotice] = useState("");
   const [showEmoji, setShowEmoji] = useState(false);
+  const [reactionMessageId, setReactionMessageId] = useState<string | null>(null);
   const [call, setCall] = useState<ActiveCall | null>(null);
   const [muted, setMuted] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
@@ -402,12 +403,16 @@ export default function ConversationPage({ params }: { params: Promise<{ jobId: 
                     ))}
                     <time>{new Date(message.createdAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</time>
                   </div>
-                  <div className={styles.messageReactions}>
-                    {reactions.map((reaction) => (
+                  <div className={styles.messageReactions} data-open={reactionMessageId === message.id}>
+                    {Object.entries(message.reactions).filter(([, count]) => count > 0).map(([reaction, count]) => (
                       <button className={message.viewerReactions.includes(reaction) ? styles.reacted : ""} key={reaction} type="button" onClick={() => void react(message.id, reaction)} aria-label={`React ${reaction}`}>
-                        {reaction}{message.reactions[reaction] ? <span>{message.reactions[reaction]}</span> : null}
+                        {reaction}<span>{count}</span>
                       </button>
                     ))}
+                    <button className={styles.reactionToggle} type="button" onClick={() => setReactionMessageId((current) => current === message.id ? null : message.id)} aria-label="Choose a reaction" aria-expanded={reactionMessageId === message.id}><Smile /></button>
+                    {reactionMessageId === message.id && <div className={styles.reactionTray}>{reactions.map((reaction) => (
+                      <button className={message.viewerReactions.includes(reaction) ? styles.reacted : ""} key={reaction} type="button" onClick={() => { void react(message.id, reaction); setReactionMessageId(null); }} aria-label={`React ${reaction}`}>{reaction}</button>
+                    ))}</div>}
                   </div>
                 </div>
               </article>

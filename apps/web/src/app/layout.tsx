@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import "maplibre-gl/dist/maplibre-gl.css";
 import "./globals.css";
 import { OnlineStatus } from "./online-status";
 import { NativeRuntime } from "./native-runtime";
@@ -17,7 +18,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body><NativeRuntime /><OnlineStatus /><AuthGuard><RealtimeProvider>{children}</RealtimeProvider></AuthGuard></body>
+      <body><NativeRuntime /><OnlineStatus /><RealtimeProvider><AuthGuard>{children}</AuthGuard></RealtimeProvider></body>
     </html>
   );
 }

@@ -19,6 +19,7 @@ import {
 } from "../auth-client";
 import styles from "../auth.module.css";
 import { SocialLogin } from "../social-login";
+import { realtimeAuthChangedName } from "../realtime-provider";
 
 function RegisterForm() {
   const router = useRouter();
@@ -126,6 +127,7 @@ function RegisterForm() {
       }
 
       const fallback = role === "provider" ? "/provider-profile" : "/home";
+      window.dispatchEvent(new Event(realtimeAuthChangedName));
       router.replace(requestedDestination || fallback);
       router.refresh();
     } catch {

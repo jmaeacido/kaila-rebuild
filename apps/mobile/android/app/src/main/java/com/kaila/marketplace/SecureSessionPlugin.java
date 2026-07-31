@@ -13,6 +13,7 @@ import com.getcapacitor.annotation.CapacitorPlugin;
 public class SecureSessionPlugin extends Plugin {
     private static final String FILE_NAME = "kaila_secure_session";
     private static final String SESSION_KEY = "mobile_tokens";
+    private static final String SOCIAL_AUTH_KEY = "social_auth_state";
 
     private SharedPreferences preferences() throws Exception {
         MasterKey masterKey = new MasterKey.Builder(getContext())
@@ -46,6 +47,30 @@ public class SecureSessionPlugin extends Plugin {
     @PluginMethod
     public void clear(PluginCall call) {
         try { preferences().edit().remove(SESSION_KEY).apply(); call.resolve(); }
+        catch (Exception exception) { call.reject("Secure storage is unavailable", exception); }
+    }
+
+    @PluginMethod
+    public void saveSocialAuth(PluginCall call) {
+        String value = call.getString("value");
+        if (value == null || value.length() > 4096) { call.reject("Invalid social authentication payload"); return; }
+        try { preferences().edit().putString(SOCIAL_AUTH_KEY, value).apply(); call.resolve(); }
+        catch (Exception exception) { call.reject("Secure storage is unavailable", exception); }
+    }
+
+    @PluginMethod
+    public void loadSocialAuth(PluginCall call) {
+        try {
+            JSObject result = new JSObject();
+            String value = preferences().getString(SOCIAL_AUTH_KEY, null);
+            if (value != null) result.put("value", value);
+            call.resolve(result);
+        } catch (Exception exception) { call.reject("Secure storage is unavailable", exception); }
+    }
+
+    @PluginMethod
+    public void clearSocialAuth(PluginCall call) {
+        try { preferences().edit().remove(SOCIAL_AUTH_KEY).apply(); call.resolve(); }
         catch (Exception exception) { call.reject("Secure storage is unavailable", exception); }
     }
 }

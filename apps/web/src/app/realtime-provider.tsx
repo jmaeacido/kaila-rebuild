@@ -16,6 +16,7 @@ export type DomainEvent = {
 export const domainEventName = "kaila:domain-event";
 export const realtimeReconcileName = "kaila:realtime-reconcile";
 export const realtimeStatusName = "kaila:realtime-status";
+export const realtimeAuthChangedName = "kaila:realtime-auth-changed";
 
 export type RealtimeStatus = "connecting" | "connected" | "disconnected";
 
@@ -115,6 +116,7 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
       window.dispatchEvent(new Event(realtimeReconcileName));
     };
     window.addEventListener("online", recover);
+    window.addEventListener(realtimeAuthChangedName, recover);
     document.addEventListener("visibilitychange", recover);
     void connect();
 
@@ -122,6 +124,7 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
       disposed = true;
       if (retryTimer !== null) window.clearTimeout(retryTimer);
       window.removeEventListener("online", recover);
+      window.removeEventListener(realtimeAuthChangedName, recover);
       document.removeEventListener("visibilitychange", recover);
       disconnectCleanly(socket);
       publishStatus("disconnected");

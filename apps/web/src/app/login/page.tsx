@@ -19,6 +19,7 @@ import {
   clearMobileSocialVerifier,
   readMobileSocialVerifier,
 } from "@kaila/mobile/oauth";
+import { realtimeAuthChangedName } from "../realtime-provider";
 
 function LoginForm() {
   const router = useRouter();
@@ -37,7 +38,7 @@ function LoginForm() {
     if (socialCode) {
       void Promise.resolve()
         .then(async () => {
-          const verifier = readMobileSocialVerifier();
+          const verifier = await readMobileSocialVerifier();
           if (!verifier) {
             throw new Error("This social sign-in return is invalid or expired. Please try again.");
           }
@@ -62,7 +63,8 @@ function LoginForm() {
           if (!response.ok || !body.data) {
             throw new Error(body.error?.message ?? "Social sign-in could not be completed.");
           }
-          clearMobileSocialVerifier();
+          await clearMobileSocialVerifier();
+          window.dispatchEvent(new Event(realtimeAuthChangedName));
           router.replace(body.data.destination);
           router.refresh();
         })
@@ -128,6 +130,7 @@ function LoginForm() {
         return;
       }
 
+      window.dispatchEvent(new Event(realtimeAuthChangedName));
       router.replace(destination);
       router.refresh();
     } catch {

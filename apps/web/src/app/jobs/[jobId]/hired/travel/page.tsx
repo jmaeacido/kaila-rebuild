@@ -20,10 +20,24 @@ type Travel = {
   routeGeometry: Point[] | null;
 };
 
+function fallbackMetrics(location: Point | null, destination: Point | null) {
+  if (!location || !destination) return { distanceMeters: null, etaSeconds: null };
+  const radius = 6_371_000;
+  const latitude = (destination.latitude - location.latitude) * Math.PI / 180;
+  const longitude = (destination.longitude - location.longitude) * Math.PI / 180;
+  const startLatitude = location.latitude * Math.PI / 180;
+  const endLatitude = destination.latitude * Math.PI / 180;
+  const value = Math.sin(latitude / 2) ** 2
+    + Math.cos(startLatitude) * Math.cos(endLatitude) * Math.sin(longitude / 2) ** 2;
+  const distanceMeters = Math.round(radius * 2 * Math.atan2(Math.sqrt(value), Math.sqrt(1 - value)));
+  return { distanceMeters, etaSeconds: Math.max(60, Math.ceil(distanceMeters / 1000 / 22 * 3600)) };
+}
+
 export default function TravelPage({ params }: { params: Promise<{ jobId: string }> }) {
   const { jobId } = use(params);
   const [travel, setTravel] = useState<Travel | null>(null);
   const [state, setState] = useState<"loading" | "ready" | "sharing" | "error">("loading");
+  const [errorMessage, setErrorMessage] = useState("");
   const watchId = useRef<number | null>(null);
 
   const load = useCallback(async () => {
@@ -33,6 +47,7 @@ export default function TravelPage({ params }: { params: Promise<{ jobId: string
       setTravel(((await response.json()) as { data: Travel }).data);
       setState("ready");
     } catch {
+      setErrorMessage("Travel details could not be loaded. Check your connection and try again.");
       setState("error");
     }
   }, [jobId]);
@@ -65,7 +80,12 @@ export default function TravelPage({ params }: { params: Promise<{ jobId: string
     if (watchId.current !== null || !navigator.geolocation) return;
     watchId.current = navigator.geolocation.watchPosition(
       (position) => void sendPosition(position).catch(() => setState("error")),
-      () => setState("error"),
+      (error) => {
+        setErrorMessage(error.code === error.PERMISSION_DENIED
+          ? "Allow precise location for KAILA in Android Settings, then try again."
+          : "Android could not get a current location. Turn on Location and try again.");
+        setState("error");
+      },
       { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 },
     );
   }, [sendPosition]);
@@ -88,6 +108,7 @@ export default function TravelPage({ params }: { params: Promise<{ jobId: string
         timeout: 15000,
       }));
     } catch {
+      setErrorMessage("Allow precise location for KAILA and turn on Android Location, then try again.");
       setState("error");
       return;
     }
@@ -114,6 +135,10 @@ export default function TravelPage({ params }: { params: Promise<{ jobId: string
     await load();
   }
 
+  const estimated = fallbackMetrics(travel?.location ?? null, travel?.destination ?? null);
+  const distanceMeters = travel?.distanceMeters ?? estimated.distanceMeters;
+  const etaSeconds = travel?.etaSeconds ?? estimated.etaSeconds;
+
   return (
     <main className={styles.shell}>
       <header className={styles.top}>
@@ -123,12 +148,12 @@ export default function TravelPage({ params }: { params: Promise<{ jobId: string
           <p>{travel?.arrivedAt ? "Provider has arrived" : travel?.status === "active" ? "Provider is on the way" : "Live sharing is off"}</p>
         </div>
       </header>
-      {state === "error" && <Feedback kind="error" title="Live map is unavailable">You can still coordinate in chat. Try again in the foreground.</Feedback>}
+      {state === "error" && <Feedback kind="error" title="Live map is unavailable">{errorMessage || "You can still coordinate in chat. Try again in the foreground."}</Feedback>}
       <section className={styles.map}>
         <LiveTravelMap location={travel?.location ?? null} destination={travel?.destination ?? null} route={travel?.routeGeometry ?? null} />
         <div className={styles.stats}>
-          <div><span>ETA</span><strong>{travel?.etaSeconds ? `${Math.ceil(travel.etaSeconds / 60)} min` : "Not available"}</strong></div>
-          <div><span>Distance</span><strong>{travel?.distanceMeters != null ? travel.distanceMeters >= 1000 ? `${(travel.distanceMeters / 1000).toFixed(1)} km` : `${travel.distanceMeters} m` : "Not available"}</strong></div>
+          <div><span>ETA</span><strong>{etaSeconds ? `${Math.ceil(etaSeconds / 60)} min` : "Waiting for provider"}</strong></div>
+          <div><span>Distance</span><strong>{distanceMeters != null ? distanceMeters >= 1000 ? `${(distanceMeters / 1000).toFixed(1)} km` : `${distanceMeters} m` : "Waiting for provider"}</strong></div>
         </div>
         <div className={styles.notice}><ShieldCheck /><p>Live sharing resumes whenever the provider returns to this travel screen. Exact location is limited to job participants and raw samples expire after 24 hours.</p></div>
         <div className={styles.actions}>

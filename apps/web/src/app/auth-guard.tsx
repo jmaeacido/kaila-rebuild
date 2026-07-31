@@ -10,6 +10,7 @@ import { BrandedLoader } from "./branded-loader";
 import { FloatingKatabang } from "../components/floating-katabang";
 import { NotificationBell } from "./notification-bell";
 import { PullToRefresh } from "./pull-to-refresh";
+import { realtimeAuthChangedName } from "./realtime-provider";
 
 const PUBLIC_PATHS = new Set([
   "/",
@@ -113,6 +114,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
         },
       });
     } finally {
+      window.dispatchEvent(new Event(realtimeAuthChangedName));
       router.replace("/login");
       router.refresh();
       setLoggingOut(false);

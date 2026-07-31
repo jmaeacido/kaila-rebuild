@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { beginMobileSocialLogin } from "@kaila/mobile/oauth";
 import styles from "./auth.module.css";
 
@@ -14,6 +14,12 @@ export function SocialLogin({
   providerIntent = false,
 }: SocialLoginProps) {
   const [loading, setLoading] = useState<"google" | "facebook" | null>(null);
+
+  useEffect(() => {
+    const browserClosed = () => setLoading(null);
+    window.addEventListener("kaila:social-browser-closed", browserClosed);
+    return () => window.removeEventListener("kaila:social-browser-closed", browserClosed);
+  }, []);
 
   async function continueWith(provider: "google" | "facebook") {
     setLoading(provider);

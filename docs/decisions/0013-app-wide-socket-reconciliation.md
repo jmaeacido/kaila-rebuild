@@ -17,6 +17,10 @@ deduplication inconsistent.
 
 - The authenticated web application owns one Socket.IO connection for the
   lifetime of the root layout.
+- The realtime provider wraps the route-level authentication guard so temporary
+  session checks during navigation cannot unmount the socket. Explicit
+  authentication-change events reconnect immediately after login, registration,
+  social exchange, and logout instead of waiting for a retry timer.
 - Every connection and reconnection uses a newly issued, single-use realtime
   ticket. The browser never chooses rooms; the server derives the user room from
   verified ticket claims.

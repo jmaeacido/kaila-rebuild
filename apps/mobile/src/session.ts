@@ -1,10 +1,9 @@
-import { Capacitor, registerPlugin } from "@capacitor/core";
+import { Capacitor } from "@capacitor/core";
 import { Preferences } from "@capacitor/preferences";
 import { PushNotifications } from "@capacitor/push-notifications";
+import { SecureSession } from "./secure-session-plugin";
 
 export type MobileTokens = { accessToken: string; refreshToken: string; accessExpiresAt: string; refreshExpiresAt: string };
-type SecureSessionPlugin = { save(options: { value: string }): Promise<void>; load(): Promise<{ value?: string }>; clear(): Promise<void> };
-const SecureSession = registerPlugin<SecureSessionPlugin>("SecureSession");
 const fallbackKey = "kaila.mobile.session";
 
 export async function saveSession(tokens: MobileTokens): Promise<void> {
