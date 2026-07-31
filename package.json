@@ -11,6 +11,7 @@
     "dev": "pnpm --parallel --filter @kaila/web --filter @kaila/admin --filter @kaila/realtime dev",
     "format:check": "pnpm --recursive --if-present format:check",
     "lint": "pnpm --recursive --if-present lint",
+    "mobile:audit": "node scripts/audit-mobile-layout.mjs",
     "performance:budget": "node scripts/check-build-budgets.mjs",
     "phase9:validate": "node scripts/validate-phase-nine.mjs",
     "quality:encoding": "node scripts/check-text-encoding.mjs",
@@ -18,5 +19,8 @@
     "security:secrets": "node scripts/check-secrets.mjs",
     "test": "pnpm --recursive --if-present test",
     "typecheck": "pnpm --recursive --if-present typecheck"
+  },
+  "devDependencies": {
+    "playwright": "1.62.0"
   }
 }
