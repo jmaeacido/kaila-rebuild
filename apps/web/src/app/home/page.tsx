@@ -6,7 +6,6 @@ import {
   ArrowRight,
   BriefcaseBusiness,
   ChevronRight,
-  Clock3,
   Hammer,
   Home,
   MapPin,
@@ -134,21 +133,22 @@ export default function AuthenticatedHomePage() {
     () => user?.name.trim().split(/\s+/)[0] || "there",
     [user],
   );
-  const activeClientJob = jobs.find(
+  const activeClientJobs = jobs.filter(
     (job) =>
       job.role === "client" &&
       !["completed", "rated_closed", "cancelled"].includes(job.status),
   );
-  const activeProviderJob = jobs.find(
+  const activeProviderJobs = jobs.filter(
     (job) =>
       job.role === "provider" &&
       !["completed", "rated_closed", "cancelled"].includes(job.status),
   );
-  const currentJob = isProvider ? activeProviderJob : activeClientJob;
+  const activeJobs = isProvider ? activeProviderJobs : activeClientJobs;
+  const currentJob = activeJobs[0];
   const jobHistory = jobs.filter(
     (job) =>
       job.role === (isProvider ? "provider" : "client") &&
-      job.id !== currentJob?.id,
+      ["completed", "rated_closed", "cancelled"].includes(job.status),
   );
   const latestOpportunity = opportunities[0];
   const primaryHref = isProvider ? "/opportunities" : "/post-job";
@@ -250,33 +250,35 @@ export default function AuthenticatedHomePage() {
         <header>
           <div>
             <p className={styles.eyebrow}>
-              {isProvider && activeProviderJob ? "YOUR ACTIVE JOB" : isProvider ? "YOUR NEXT OPPORTUNITY" : "YOUR LATEST JOB"}
+              {activeJobs.length ? `YOUR ACTIVE JOB${activeJobs.length === 1 ? "" : "S"}` : isProvider ? "YOUR NEXT OPPORTUNITY" : "YOUR LATEST JOB"}
             </p>
             <h2 id="current-title">
-              {isProvider && activeProviderJob ? "Hired work" : isProvider ? "Nearby work" : "Current activity"}
+              {activeJobs.length ? "Hired work" : isProvider ? "Nearby work" : "Current activity"}
             </h2>
           </div>
-          <Link href={isProvider && activeProviderJob ? `/jobs/${activeProviderJob.id}` : isProvider ? "/opportunities" : "/post-job"}>
-            {isProvider && activeProviderJob ? "Open job" : isProvider ? "See all" : "New job"}
+          <Link href={currentJob ? `/jobs/${currentJob.id}` : isProvider ? "/opportunities" : "/post-job"}>
+            {currentJob ? "Open job" : isProvider ? "See all" : "New job"}
             <ChevronRight aria-hidden="true" />
           </Link>
         </header>
 
-        {isProvider && activeProviderJob ? (
-          <article className={styles.activityCard}>
+        {activeJobs.length ? (
+          <div className={styles.activeJobList}>
+          {activeJobs.map((job) => <article className={styles.activityCard} key={job.id}>
             <span className={styles.activityIcon}>
               <Hammer aria-hidden="true" />
             </span>
             <div>
-              <span>{jobStatusLabels[activeProviderJob.status] || "Hired job updated"}</span>
-              <h3>{activeProviderJob.title}</h3>
-              <p><MapPin aria-hidden="true" />{activeProviderJob.area.name}</p>
+              <span>{jobStatusLabels[job.status] || "Hired job updated"}</span>
+              <h3>{job.title}</h3>
+              <p><MapPin aria-hidden="true" />{job.area.name}</p>
             </div>
-            <Link href={`/jobs/${activeProviderJob.id}`}>
+            <Link href={`/jobs/${job.id}`}>
               Continue
               <ArrowRight aria-hidden="true" />
             </Link>
-          </article>
+          </article>)}
+          </div>
         ) : isProvider && latestOpportunity ? (
           <article className={styles.activityCard}>
             <span className={styles.activityIcon}>
@@ -292,26 +294,6 @@ export default function AuthenticatedHomePage() {
             </div>
             <Link href={`/opportunities/${latestOpportunity.jobId}`}>
               View
-              <ArrowRight aria-hidden="true" />
-            </Link>
-          </article>
-        ) : !isProvider && activeClientJob ? (
-          <article className={styles.activityCard}>
-            <span className={styles.activityIcon}>
-              <Clock3 aria-hidden="true" />
-            </span>
-            <div>
-              <span>
-                {jobStatusLabels[activeClientJob.status] || "Job updated"}
-              </span>
-              <h3>{activeClientJob.title}</h3>
-              <p>
-                <MapPin aria-hidden="true" />
-                {activeClientJob.area.name}
-              </p>
-            </div>
-            <Link href={`/jobs/${activeClientJob.id}`}>
-              View details
               <ArrowRight aria-hidden="true" />
             </Link>
           </article>

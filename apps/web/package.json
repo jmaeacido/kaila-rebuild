@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --test src/app/auth-client.test.mjs src/app/work-copy.test.mjs src/app/pull-to-refresh-gesture.test.mjs src/app/notification-feedback.test.mjs",
+    "test": "node --test src/app/auth-client.test.mjs src/app/work-copy.test.mjs src/app/pull-to-refresh-gesture.test.mjs src/app/notification-feedback.test.mjs src/app/home/home-job-sections.test.mjs src/app/hired-experience.test.mjs",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

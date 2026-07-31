@@ -125,6 +125,7 @@
 
 .discovery,
 .current,
+.activeJobList{display:grid;gap:var(--spacing-12)}
 .history {
   display: grid;
   gap: var(--spacing-16);

@@ -54,7 +54,12 @@ type CallSignal = {
 };
 type ActiveCall = { id: string; media: "audio" | "video"; direction: "incoming" | "outgoing"; status: "ringing" | "connecting" | "active" };
 
-const emojis = ["😀", "😂", "😊", "👍", "❤️", "🙏", "🎉", "👌", "💪", "✨"];
+const emojiGroups = [
+  { label: "Smileys", emojis: ["😀", "😃", "😄", "😁", "😆", "😅", "😂", "🤣", "😊", "😇", "🙂", "🙃", "😉", "😍", "🥰", "😘", "😋", "😎", "🤩", "🥳", "😏", "😢", "😭", "😡", "🤔", "🫡", "😴", "🤗"] },
+  { label: "Gestures", emojis: ["👍", "👎", "👌", "✌️", "🤞", "🤟", "🤘", "👏", "🙌", "👐", "🤝", "🙏", "💪", "👋", "🫶", "☝️", "👇", "👉", "👈"] },
+  { label: "Hearts and celebrations", emojis: ["❤️", "🧡", "💛", "💚", "💙", "💜", "🖤", "🤍", "🤎", "💔", "💕", "💖", "✨", "🎉", "🎊", "🎂", "🎁", "🏆", "⭐", "🔥"] },
+  { label: "Work and places", emojis: ["🔧", "🔨", "🪛", "🧰", "🧹", "🪠", "⚡", "💡", "🏠", "📍", "🚗", "🏍️", "✅", "❌", "⚠️", "📞", "💬", "📸", "💵", "🕐"] },
+];
 const reactions = ["👍", "❤️", "😂", "😮", "😢", "🙏"];
 
 export default function ConversationPage({ params }: { params: Promise<{ jobId: string }> }) {
@@ -423,7 +428,7 @@ export default function ConversationPage({ params }: { params: Promise<{ jobId: 
 
         <form className={styles.composer} onSubmit={(event) => void send(event)}>
           {file && <div className={styles.filePreview}><Paperclip /><span>{file.name}</span><button type="button" onClick={() => setFile(null)} aria-label="Remove attachment"><X /></button></div>}
-          {showEmoji && <div className={styles.emojiPicker} role="group" aria-label="Choose emoji">{emojis.map((emoji) => <button type="button" key={emoji} onClick={() => { setText((current) => current + emoji); setShowEmoji(false); }}>{emoji}</button>)}</div>}
+          {showEmoji && <div className={styles.emojiPicker} aria-label="Choose emoji">{emojiGroups.map((group) => <section key={group.label}><h2>{group.label}</h2><div>{group.emojis.map((emoji) => <button type="button" key={emoji} aria-label={`Add ${emoji}`} onClick={() => setText((current) => current + emoji)}>{emoji}</button>)}</div></section>)}</div>}
           <div className={styles.composerBar}>
             <button type="button" onClick={() => fileInput.current?.click()} aria-label="Attach image or PDF"><Plus /></button>
             <input ref={fileInput} hidden type="file" accept="image/jpeg,image/png,image/webp,application/pdf" onChange={(event) => setFile(event.target.files?.[0] || null)} />

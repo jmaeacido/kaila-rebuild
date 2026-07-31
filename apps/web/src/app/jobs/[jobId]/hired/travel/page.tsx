@@ -79,8 +79,13 @@ export default function TravelPage({ params }: { params: Promise<{ jobId: string
   const beginLocationWatch = useCallback(() => {
     if (watchId.current !== null || !navigator.geolocation) return;
     watchId.current = navigator.geolocation.watchPosition(
-      (position) => void sendPosition(position).catch(() => setState("error")),
+      (position) => void sendPosition(position).catch(() => {
+        setErrorMessage("Your latest location could not be shared. Check your connection, then retry.");
+        setState("error");
+      }),
       (error) => {
+        if (watchId.current !== null) navigator.geolocation.clearWatch(watchId.current);
+        watchId.current = null;
         setErrorMessage(error.code === error.PERMISSION_DENIED
           ? "Allow precise location for KAILA in Android Settings, then try again."
           : "Android could not get a current location. Turn on Location and try again.");
@@ -97,6 +102,7 @@ export default function TravelPage({ params }: { params: Promise<{ jobId: string
   async function start() {
     setState("sharing");
     if (!navigator.geolocation) {
+      setErrorMessage("Live location is not supported on this device.");
       setState("error");
       return;
     }
@@ -148,7 +154,7 @@ export default function TravelPage({ params }: { params: Promise<{ jobId: string
           <p>{travel?.arrivedAt ? "Provider has arrived" : travel?.status === "active" ? "Provider is on the way" : "Live sharing is off"}</p>
         </div>
       </header>
-      {state === "error" && <Feedback kind="error" title="Live map is unavailable">{errorMessage || "You can still coordinate in chat. Try again in the foreground."}</Feedback>}
+      {state === "error" && <Feedback kind="error" title={travel ? "Live location needs attention" : "Live map is unavailable"}>{errorMessage || "You can still coordinate in chat. Try again in the foreground."}</Feedback>}
       <section className={styles.map}>
         <LiveTravelMap location={travel?.location ?? null} destination={travel?.destination ?? null} route={travel?.routeGeometry ?? null} />
         <div className={styles.stats}>
@@ -161,7 +167,7 @@ export default function TravelPage({ params }: { params: Promise<{ jobId: string
             ? <Button variant="secondary" onClick={() => void stop()}><Square />Stop sharing</Button>
             : <Button disabled={state === "sharing"} onClick={() => void start()}><LocateFixed />{state === "sharing" ? "Starting…" : "Start foreground sharing"}</Button>)}
           {!travel?.canShareLocation && travel?.status !== "active" && <p>Location will appear here when the provider starts traveling.</p>}
-          <Button variant="secondary" onClick={() => void load()}>Refresh map</Button>
+          <Button variant="secondary" onClick={() => { setErrorMessage(""); void load(); if (travel?.canShareLocation && travel.status === "active") beginLocationWatch(); }}>Retry live map</Button>
         </div>
       </section>
     </main>
