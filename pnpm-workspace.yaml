@@ -14,7 +14,9 @@ overrides:
   tar: 7.5.19
 
 allowBuilds:
+  '@firebase/util': true
   esbuild: true
+  protobufjs: true
   sharp: true
   unrs-resolver: true
 

@@ -490,3 +490,14 @@ a {
     min-width: 0 !important;
   }
 }
+/* Global realtime and confirmation feedback */
+.toastViewport { position: fixed; right: var(--spacing-16); bottom: calc(76px + var(--spacing-16)); z-index: 1000; display: grid; gap: var(--spacing-8); width: min(380px, calc(100vw - (2 * var(--spacing-16)))); pointer-events: none; }
+.appToast { display: grid; grid-template-columns: 44px 1fr 44px; gap: var(--spacing-8); align-items: start; padding: var(--spacing-12); color: var(--color-ink); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-card); box-shadow: var(--shadow-floating); pointer-events: auto; animation: toast-in var(--duration-fast) ease-out; }
+.appToastIcon { display: grid; place-items: center; width: 44px; height: 44px; color: var(--color-primary); background: color-mix(in srgb, var(--color-primary) 10%, var(--color-surface)); border-radius: 999px; }
+.appToastIcon svg, .appToastClose svg { width: 20px; height: 20px; }
+.appToast strong { display: block; margin-block: 2px var(--spacing-4); }
+.appToast p { margin: 0; color: var(--color-text-secondary); font-size: 14px; }
+.appToast a, .appToast div > button { display: inline-flex; min-height: 44px; align-items: center; margin-top: var(--spacing-4); padding: 0; border: 0; color: var(--color-primary); background: transparent; font: inherit; font-weight: 600; text-decoration: none; cursor: pointer; }
+.appToastClose { display: grid; place-items: center; width: 44px; height: 44px; border: 0; color: var(--color-text-secondary); background: transparent; border-radius: var(--radius-button); cursor: pointer; }
+@keyframes toast-in { from { opacity: 0; transform: translateY(var(--spacing-8)); } to { opacity: 1; transform: translateY(0); } }
+@media (min-width: 768px) { .toastViewport { bottom: var(--spacing-24); } }

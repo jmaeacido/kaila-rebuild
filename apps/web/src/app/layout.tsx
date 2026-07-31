@@ -5,6 +5,7 @@ import { OnlineStatus } from "./online-status";
 import { NativeRuntime } from "./native-runtime";
 import { AuthGuard } from "./auth-guard";
 import { RealtimeProvider } from "./realtime-provider";
+import { NotificationRuntime } from "./notification-runtime";
 
 export const metadata: Metadata = {
   title: "KAILA — Local services near you",
@@ -18,7 +19,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body><NativeRuntime /><OnlineStatus /><RealtimeProvider><AuthGuard>{children}</AuthGuard></RealtimeProvider></body>
+      <body><NativeRuntime /><OnlineStatus /><RealtimeProvider><NotificationRuntime /><AuthGuard>{children}</AuthGuard></RealtimeProvider></body>
     </html>
   );
 }

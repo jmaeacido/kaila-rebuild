@@ -27,7 +27,9 @@ class FcmPushTransport implements PushTransport
             'data' => array_map('strval', array_merge($notification->data, ['notificationId' => $notification->id, 'resourceId' => $notification->resource_id])),
         ]]);
         if (! $response->successful()) {
-            throw new RuntimeException("FCM delivery failed with status {$response->status()}.");
+            $code = $response->json('error.details.0.errorCode') ?? $response->json('error.status');
+            $reason = is_string($code) && $code !== '' ? " ({$code})" : '';
+            throw new RuntimeException("FCM delivery failed with status {$response->status()}{$reason}.");
         }
 
         return (string) $response->json('name');

@@ -84,7 +84,8 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
           publishStatus("connected");
           window.dispatchEvent(new Event(realtimeReconcileName));
         });
-        nextSocket.on("domain.event", (event: DomainEvent) => {
+        nextSocket.on("domain.event", (event: DomainEvent, acknowledge?: () => void) => {
+          acknowledge?.();
           if (!event?.eventId || seenEventIds.current.has(event.eventId)) return;
           seenEventIds.current.add(event.eventId);
           if (seenEventIds.current.size > 500) {

@@ -70,9 +70,18 @@ await deliverySubscriber.subscribe(config.OUTBOX_REALTIME_CHANNEL, (message) => 
     return;
   }
 
-  for (const userId of publication.recipientUserIds) {
-    io.to(`user:${userId}`).emit("domain.event", publication.event);
-  }
+  const rooms = publication.recipientUserIds.map((userId) => `user:${userId}`);
+  let target = io.to(rooms[0]);
+  for (const room of rooms.slice(1)) target = target.to(room);
+  target.timeout(2_000).emit("domain.event", publication.event, (error: Error | null, responses: unknown[]) => {
+    process.stdout.write(structuredLog(error ? "warn" : "info", "realtime.event_delivery", {
+      eventId: publication.event.eventId,
+      eventType: publication.event.type,
+      recipientCount: publication.recipientUserIds.length,
+      acknowledgementCount: responses?.length ?? 0,
+      timedOut: Boolean(error),
+    }) + "\n");
+  });
 });
 
 io.use(async (socket, next) => {
@@ -89,18 +98,29 @@ io.use(async (socket, next) => {
     socket.data.userId = claims.sub;
     socket.data.sessionId = claims.sessionId;
     next();
-  } catch {
+  } catch (error) {
+    process.stderr.write(structuredLog("warn", "realtime.authentication_rejected", {
+      reason: error instanceof Error ? error.message : "UNKNOWN",
+    }) + "\n");
     next(new Error("AUTHENTICATION_INVALID"));
   }
 });
 
-io.on("connection", (socket) => {
+io.on("connection", async (socket) => {
   // Authorization context comes only from verified claims. Handshake payloads
   // and client events are never accepted as room identifiers.
-  void socket.join(`user:${socket.data.userId as string}`);
+  const userId = socket.data.userId as string;
+  await socket.join(`user:${userId}`);
   process.stdout.write(
-    structuredLog("info", "realtime.connected", { connectionId: socket.id }) + "\n",
+    structuredLog("info", "realtime.connected", { connectionId: socket.id, userId }) + "\n",
   );
+  socket.on("disconnect", (reason) => {
+    process.stdout.write(structuredLog("info", "realtime.disconnected", {
+      connectionId: socket.id,
+      userId,
+      reason,
+    }) + "\n");
+  });
 });
 
 httpServer.listen(config.PORT, config.HOST, () => {

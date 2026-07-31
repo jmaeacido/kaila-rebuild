@@ -22,10 +22,11 @@ export function NativeRuntime() {
     void navigator.serviceWorker.getRegistrations().then((registrations) =>
       Promise.all(
         registrations
-          .filter(
-            (registration) =>
-              new URL(registration.scope).origin === window.location.origin,
-          )
+          .filter((registration) => {
+            const worker = registration.active ?? registration.waiting ?? registration.installing;
+            return new URL(registration.scope).origin === window.location.origin
+              && !worker?.scriptURL.endsWith("/firebase-messaging-sw.js");
+          })
           .map((registration) => registration.unregister()),
       ),
     );
