@@ -2,12 +2,14 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   Bell,
   Clock3,
   Laptop,
   LockKeyhole,
+  LogOut,
   MessageCircle,
   ShieldCheck,
   Smartphone,
@@ -33,6 +35,7 @@ type Session = {
 };
 
 export default function SettingsPage() {
+  const router = useRouter();
   const [preferences, setPreferences] = useState<Preferences | null>(null);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [status, setStatus] = useState<
@@ -119,6 +122,25 @@ export default function SettingsPage() {
     } catch {
       setNotice("We couldn’t sign out that device. Try again.");
       setStatus("error");
+    }
+  }
+
+  async function signOutCurrentDevice() {
+    setStatus("saving");
+    setNotice("");
+    try {
+      const token = await prepareCsrf();
+      await fetch("/api/v1/auth/logout", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          Accept: "application/json",
+          ...(token ? { "X-XSRF-TOKEN": token } : {}),
+        },
+      });
+    } finally {
+      router.replace("/login");
+      router.refresh();
     }
   }
 
@@ -324,6 +346,23 @@ export default function SettingsPage() {
             <p>No browser sessions are available to review.</p>
           </div>
         )}
+      </section>
+
+      <section className={`${styles.card} ${settingsStyles.signOutCard}`}>
+        <span>
+          <LogOut aria-hidden="true" />
+        </span>
+        <div>
+          <h2>Sign out of this device</h2>
+          <p>Your account and activity will remain safe.</p>
+        </div>
+        <Button
+          disabled={status === "saving"}
+          onClick={() => void signOutCurrentDevice()}
+          variant="secondary"
+        >
+          Sign out
+        </Button>
       </section>
     </main>
   );

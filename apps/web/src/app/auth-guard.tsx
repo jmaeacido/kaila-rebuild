@@ -151,6 +151,16 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
           </Link>
           <span className="sessionName">{userName}</span>
           <NotificationBell />
+          <button
+            className="sessionMobileSignOut"
+            disabled={loggingOut}
+            onClick={() => void signOut()}
+            type="button"
+            aria-label={loggingOut ? "Signing out" : "Sign out"}
+            title={loggingOut ? "Signing out" : "Sign out"}
+          >
+            <LogOut aria-hidden="true" />
+          </button>
           <Link className="sessionDesktopAction" href="/home" prefetch={false}>
             <Home aria-hidden="true" />
             Home

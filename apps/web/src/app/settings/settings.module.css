@@ -26,3 +26,10 @@
 .empty { align-items:center; color:var(--color-text-secondary); display:flex; flex-direction:column; gap:var(--spacing-12); padding:var(--spacing-24); text-align:center; }
 .empty svg { color:var(--color-accent); height:var(--spacing-48); width:var(--spacing-48); }
 @media(min-width:48rem) { .sessionList article { grid-template-columns:auto minmax(0,1fr) auto; } .sessionList button { grid-column:auto; } }
+.signOutCard { align-items:center; display:grid !important; gap:var(--spacing-12); grid-template-columns:auto minmax(0,1fr); }
+.signOutCard > span { align-items:center; background:var(--color-danger-surface); border-radius:var(--radius-pill); color:var(--color-danger); display:flex; height:var(--spacing-48); justify-content:center; width:var(--spacing-48); }
+.signOutCard > span svg { height:var(--spacing-24); width:var(--spacing-24); }
+.signOutCard > div { display:grid; gap:var(--spacing-4); }
+.signOutCard p { color:var(--color-text-secondary); font-size:var(--font-small-size); }
+.signOutCard button { grid-column:1/-1; justify-content:center; width:100%; }
+@media(min-width:48rem) { .signOutCard { grid-template-columns:auto minmax(0,1fr) auto; } .signOutCard button { grid-column:auto; width:auto; } }

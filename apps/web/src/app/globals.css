@@ -8,14 +8,58 @@
 
 html {
   color-scheme: light dark;
+  max-width: 100%;
+  overflow-x: clip;
 }
 
 body {
   min-height: 100vh;
+  max-width: 100%;
+  overflow-x: clip;
   color: var(--color-text);
   background: var(--color-background);
   font-family: Inter, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
+}
+
+body > *,
+main,
+section,
+article,
+header,
+footer,
+nav,
+form,
+fieldset,
+div {
+  min-width: 0;
+}
+
+img,
+svg,
+video,
+canvas {
+  max-width: 100%;
+}
+
+input,
+select,
+textarea {
+  max-width: 100%;
+}
+
+h1,
+h2,
+h3,
+p,
+dd,
+dt,
+li,
+blockquote,
+label,
+button,
+a {
+  overflow-wrap: anywhere;
 }
 
 button,
@@ -264,6 +308,16 @@ a {
   width: 100%;
 }
 
+.appSessionBar .sessionMobileSignOut {
+  align-items: center;
+  display: inline-flex;
+  flex: 0 0 var(--control-min-height);
+  height: var(--control-min-height);
+  justify-content: center;
+  padding: 0;
+  width: var(--control-min-height);
+}
+
 @media (max-width: 63.999rem) {
   .appSessionBar {
     gap: var(--spacing-8);
@@ -276,6 +330,25 @@ a {
   .appSessionBar .sessionDesktopAction {
     display: none;
   }
+
+  .appSessionBar > a {
+    flex: 0 1 auto;
+    min-width: 0;
+  }
+
+  .appSessionBar > div {
+    flex: 0 0 auto;
+  }
+
+  .appSessionBar .notificationBell {
+    align-items: center;
+    display: inline-flex;
+    flex: 0 0 var(--control-min-height);
+    height: var(--control-min-height);
+    justify-content: center;
+    padding: 0;
+    width: var(--control-min-height);
+  }
 }
 
 @media (max-width: 29.999rem) {
@@ -285,7 +358,20 @@ a {
   }
 
   .appSessionBar .sessionLogo {
-    width: calc(var(--spacing-64) + var(--spacing-24));
+    width: calc(var(--spacing-64) + var(--spacing-16));
+  }
+
+  .appSessionBar > div {
+    gap: var(--spacing-4);
+  }
+
+  .appSessionBar .sessionAvatar,
+  .appSessionBar .notificationBell,
+  .appSessionBar .sessionMobileSignOut {
+    flex-basis: var(--control-min-height);
+    height: var(--control-min-height);
+    min-height: var(--control-min-height);
+    width: var(--control-min-height);
   }
 }
 
@@ -300,6 +386,12 @@ a {
   }
 }
 
+@media (min-width: 64rem) {
+  .appSessionBar .sessionMobileSignOut {
+    display: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .brandedLoaderHalo,
   .brandedLoaderRoute > span::after {
@@ -308,5 +400,93 @@ a {
 
   .brandedLoaderRoute > span::after {
     transform: none;
+  }
+}
+
+/*
+ * Shared phone-width resilience for every route. Page modules remain
+ * responsible for their visual identity; this layer guarantees containment,
+ * readable controls, and non-clipped actions throughout the application.
+ */
+@media (max-width: 39.999rem) {
+  main {
+    max-width: 100%;
+  }
+
+  :where(input, select, textarea) {
+    font-size: 1rem;
+    width: 100%;
+  }
+
+  :where(button, a) {
+    max-width: 100%;
+    white-space: normal;
+  }
+
+  :where(
+    [class*="shell"],
+    [class*="page"]
+  ) {
+    max-width: 100%;
+  }
+
+  :where(
+    [class*="card"],
+    [class*="panel"],
+    [class*="sheet"],
+    [class*="hero"]
+  ) {
+    max-width: 100%;
+  }
+
+  :where(
+    [class*="actions"],
+    [class*="formActions"]
+  ) {
+    align-items: stretch;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    width: 100%;
+  }
+
+  :where(
+    [class*="actions"],
+    [class*="formActions"]
+  ) > :where(button, a) {
+    justify-content: center;
+    text-align: center;
+    width: 100%;
+  }
+
+  :where(
+    [class*="topbar"],
+    [class*="pageHeader"],
+    [class*="compareHeader"]
+  ) {
+    max-width: 100%;
+  }
+
+  :where(dl) > div {
+    min-width: 0;
+  }
+
+  ol[class*="timeline"] {
+    grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
+    overflow: visible !important;
+    width: 100%;
+  }
+
+  ol[class*="timeline"] > li {
+    font-size: clamp(0.58rem, 2.4vw, var(--font-caption-size));
+    min-width: 0 !important;
+  }
+
+  :where([class*="composer"]) {
+    max-width: 100%;
+  }
+
+  :where([class*="attachment"]) {
+    max-width: 100%;
+    min-width: 0 !important;
   }
 }
