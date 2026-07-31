@@ -120,6 +120,10 @@ Route::middleware('mobile.auth')->group(function (): void {
     Route::post('/auth/mobile/direct-conversations/{directConversation}/accept', [DirectConversationController::class, 'accept']);
     Route::post('/auth/mobile/direct-conversations/{directConversation}/messages', [DirectConversationController::class, 'send']);
     Route::post('/auth/mobile/calls', [CallController::class, 'store']);
+    Route::get('/auth/mobile/calls/configuration', [CallController::class, 'configuration']);
+    Route::get('/auth/mobile/calls/signals', [CallController::class, 'signals']);
+    Route::get('/auth/mobile/calls/{callSession}/signal-state', [CallController::class, 'signalState']);
+    Route::post('/auth/mobile/calls/{callSession}/signal', [CallController::class, 'signal']);
     Route::post('/auth/mobile/calls/{callSession}/transition', [CallController::class, 'transition']);
     Route::post('/auth/mobile/community', [CommunityController::class, 'store']);
     Route::put('/auth/mobile/community/{communityPost}/helpful', [CommunityController::class, 'react']);

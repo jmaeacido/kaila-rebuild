@@ -1,10 +1,28 @@
-const allowedTypes = new Set(["job", "offer", "message", "travel", "completion", "dispute", "review", "security", "support"]);
+const allowedTypes = new Set(["job", "offer", "message", "call", "travel", "completion", "dispute", "review", "security", "support"]);
+
+export function incomingCallRoute(event: {
+  type?: string;
+  data?: { contextType?: string; contextId?: string };
+}): string | null {
+  const contextId = event.data?.contextId;
+  return event.type === "call.ringing"
+    && event.data?.contextType === "job"
+    && Boolean(contextId && /^[A-Za-z0-9-]+$/.test(contextId))
+    ? `/jobs/${contextId}/hired/conversation`
+    : null;
+}
 
 export function notificationRoute(data: Record<string, string | undefined>): string {
   const type = data.type;
   const jobId = data.jobId;
   if (!type || !allowedTypes.has(type)) return "/notifications";
   if (type === "message" && data.conversationId && /^[A-Za-z0-9-]+$/.test(data.conversationId)) return `/messages/${data.conversationId}`;
+  if (
+    type === "call"
+    && data.contextType === "job"
+    && data.contextId
+    && /^[A-Za-z0-9-]+$/.test(data.contextId)
+  ) return `/jobs/${data.contextId}/hired/conversation`;
   if (type === "security") return "/profile/sessions";
   if (type === "support") return "/notifications";
   if (!jobId || !/^[A-Za-z0-9-]+$/.test(jobId)) return "/notifications";

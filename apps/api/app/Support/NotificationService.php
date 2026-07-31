@@ -100,6 +100,7 @@ class NotificationService
         return match (true) {
             str_starts_with($type, 'offer.') => 'offer',
             str_starts_with($type, 'message.') => 'message',
+            str_starts_with($type, 'call.') => 'call',
             str_starts_with($type, 'travel.') => 'travel',
             str_starts_with($type, 'completion.') => 'completion',
             str_starts_with($type, 'dispute.') => 'dispute',

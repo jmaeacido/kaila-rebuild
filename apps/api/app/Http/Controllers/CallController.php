@@ -7,6 +7,7 @@ use App\Models\DirectConversation;
 use App\Models\ServiceJob;
 use App\Models\User;
 use App\Support\HiredJobAccess;
+use App\Support\NotificationService;
 use App\Support\OutboxRecorder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -17,7 +18,11 @@ use Illuminate\Support\Str;
 
 class CallController
 {
-    public function __construct(private readonly HiredJobAccess $jobAccess, private readonly OutboxRecorder $outbox) {}
+    public function __construct(
+        private readonly HiredJobAccess $jobAccess,
+        private readonly OutboxRecorder $outbox,
+        private readonly NotificationService $notifications,
+    ) {}
 
     public function store(Request $request): JsonResponse
     {
@@ -29,7 +34,21 @@ class CallController
         $calleeId = $this->callee($data['contextType'], $data['contextId'], $actor);
         $call = DB::transaction(function () use ($data, $actor, $calleeId) {
             $call = CallSession::query()->create(['id' => (string) Str::uuid(), 'context_type' => $data['contextType'], 'context_id' => $data['contextId'], 'caller_user_id' => $actor->id, 'callee_user_id' => $calleeId, 'media' => $data['media'], 'status' => 'ringing']);
-            $this->outbox->record('call.ringing', 'call_session', $call->id, 1, ['rooms' => ["user:$calleeId", "user:{$actor->id}"], 'callId' => $call->id, 'contextType' => $call->context_type, 'contextId' => $call->context_id, 'media' => $call->media]);
+            $this->outbox->record('call.ringing', 'call_session', $call->id, 1, ['rooms' => ["user:$calleeId"], 'callId' => $call->id, 'contextType' => $call->context_type, 'contextId' => $call->context_id, 'media' => $call->media]);
+            $this->notifications->send(
+                $calleeId,
+                'call.ringing',
+                "Incoming {$call->media} call",
+                "{$actor->name} is calling about your job.",
+                'call_session',
+                $call->id,
+                [
+                    'callId' => $call->id,
+                    'contextType' => $call->context_type,
+                    'contextId' => $call->context_id,
+                    'media' => $call->media,
+                ],
+            );
 
             return $call;
         });
