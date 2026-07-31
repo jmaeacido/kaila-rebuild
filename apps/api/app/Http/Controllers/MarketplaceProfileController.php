@@ -61,7 +61,7 @@ class MarketplaceProfileController extends Controller
         $profile = DB::transaction(function () use ($user, $data): ProviderProfile {
             $profile = ProviderProfile::query()->updateOrCreate(['user_id' => $user->id], [
                 'display_name' => $data['displayName'], 'bio' => $data['bio'], 'years_experience' => $data['yearsExperience'],
-                'status' => $this->ownedProvider($user)?->status === 'active' ? 'active' : 'pending_review',
+                'status' => 'pending_review',
             ]);
             $profile->services()->sync($data['serviceIds']);
             $profile->serviceAreas()->sync($data['areaIds']);

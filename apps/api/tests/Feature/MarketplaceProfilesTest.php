@@ -7,7 +7,6 @@ use App\Models\ProfileAsset;
 use App\Models\ProviderCredential;
 use App\Models\ProviderProfile;
 use App\Models\ServiceCategory;
-use App\Models\ServiceJob;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -93,22 +92,23 @@ class MarketplaceProfilesTest extends TestCase
             ->assertJsonPath('data.0.id', $provider->id);
     }
 
-    public function test_updating_active_provider_coverage_backfills_matching_open_jobs_once(): void
+    public function test_updating_an_active_provider_returns_it_to_the_admin_review_queue(): void
     {
         [$category, $city] = $this->referenceData();
-        $barangay = Area::query()->create(['parent_id' => $city->id, 'type' => 'barangay', 'name' => 'Barangay One', 'code' => 'DVO-001', 'is_active' => true]);
-        $client = User::factory()->create();
-        $job = ServiceJob::query()->create(['client_user_id' => $client->id, 'service_category_id' => $category->id, 'area_id' => $barangay->id, 'status' => 'posted', 'title' => 'Repair a leaking pipe', 'description' => 'The kitchen pipe has a steady leak under the sink.', 'schedule_type' => 'asap', 'posted_at' => now()]);
         $provider = $this->provider('City-wide Provider', 'active', $category, $city);
         $user = User::query()->findOrFail($provider->user_id);
 
         $payload = $this->validProfile($category, $city);
-        $this->actingAs($user)->putJson('/api/v1/me/provider-profile', $payload)->assertOk();
-        $this->putJson('/api/v1/me/provider-profile', $payload)->assertOk();
+        $this->actingAs($user)
+            ->putJson('/api/v1/me/provider-profile', $payload)
+            ->assertOk()
+            ->assertJsonPath('data.status', 'pending_review');
 
-        $this->assertDatabaseHas('job_opportunities', ['service_job_id' => $job->id, 'provider_profile_id' => $provider->id]);
-        $this->assertDatabaseCount('job_opportunities', 1);
-        $this->assertDatabaseCount('durable_notifications', 1);
+        $admin = User::factory()->create(['is_admin' => true]);
+        $this->actingAs($admin)
+            ->getJson('/api/v1/admin/marketplace/review-queue')
+            ->assertOk()
+            ->assertJsonPath('data.providers.0.id', $provider->id);
     }
 
     public function test_verified_badge_appears_only_after_clean_asset_and_approved_credential(): void
