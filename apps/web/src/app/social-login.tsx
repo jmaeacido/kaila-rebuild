@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { beginMobileSocialLogin } from "@kaila/mobile/oauth";
 import styles from "./auth.module.css";
 
 type SocialLoginProps = {
@@ -14,15 +15,19 @@ export function SocialLogin({
 }: SocialLoginProps) {
   const [loading, setLoading] = useState<"google" | "facebook" | null>(null);
 
-  function continueWith(provider: "google" | "facebook") {
+  async function continueWith(provider: "google" | "facebook") {
     setLoading(provider);
     const query = new URLSearchParams({
       next: destination,
       providerIntent: providerIntent ? "1" : "0",
     });
-    window.location.assign(
-      `/api/v1/auth/social/${provider}/redirect?${query.toString()}`,
-    );
+    const path = `/api/v1/auth/social/${provider}/redirect?${query.toString()}`;
+    try {
+      const opened = await beginMobileSocialLogin(new URL(path, window.location.origin));
+      if (!opened) window.location.assign(path);
+    } catch {
+      setLoading(null);
+    }
   }
 
   return (
@@ -33,7 +38,7 @@ export function SocialLogin({
       <div className={styles.socialButtons}>
         <button
           disabled={loading !== null}
-          onClick={() => continueWith("google")}
+          onClick={() => void continueWith("google")}
           type="button"
         >
           <span aria-hidden="true">G</span>
@@ -41,7 +46,7 @@ export function SocialLogin({
         </button>
         <button
           disabled={loading !== null}
-          onClick={() => continueWith("facebook")}
+          onClick={() => void continueWith("facebook")}
           type="button"
         >
           <span aria-hidden="true">f</span>

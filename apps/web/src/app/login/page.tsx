@@ -15,6 +15,10 @@ import {
 } from "../auth-client";
 import styles from "../auth.module.css";
 import { SocialLogin } from "../social-login";
+import {
+  clearMobileSocialVerifier,
+  readMobileSocialVerifier,
+} from "@kaila/mobile/oauth";
 
 function LoginForm() {
   const router = useRouter();
@@ -29,6 +33,46 @@ function LoginForm() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    const socialCode = searchParams.get("socialCode");
+    if (socialCode) {
+      void Promise.resolve()
+        .then(async () => {
+          const verifier = readMobileSocialVerifier();
+          if (!verifier) {
+            throw new Error("This social sign-in return is invalid or expired. Please try again.");
+          }
+          setLoading(true);
+          const csrf = await prepareCsrf();
+          return fetch("/api/v1/auth/social/mobile/exchange", {
+            method: "POST",
+            credentials: "include",
+            headers: {
+              Accept: "application/json",
+              "Content-Type": "application/json",
+              ...(csrf ? { "X-XSRF-TOKEN": csrf } : {}),
+            },
+            body: JSON.stringify({ code: socialCode, codeVerifier: verifier }),
+          });
+        })
+        .then(async (response) => {
+          const body = (await response.json()) as {
+            data?: { destination: string };
+            error?: { message?: string };
+          };
+          if (!response.ok || !body.data) {
+            throw new Error(body.error?.message ?? "Social sign-in could not be completed.");
+          }
+          clearMobileSocialVerifier();
+          router.replace(body.data.destination);
+          router.refresh();
+        })
+        .catch((reason: unknown) => {
+          setMessage(reason instanceof Error ? reason.message : "Social sign-in could not be completed.");
+        })
+        .finally(() => setLoading(false));
+      return;
+    }
+
     void fetch("/api/v1/auth/session-status", {
       credentials: "include",
       headers: { Accept: "application/json" },

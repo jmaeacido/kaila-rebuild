@@ -6,9 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Support\AuditRecorder;
 use App\Support\SocialAvatarImporter;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
@@ -28,12 +30,17 @@ class SocialAuthenticationController extends Controller
         abort_unless(in_array($provider, self::PROVIDERS, true), 404);
         $settings = $this->settings($provider);
         abort_if($settings['client_id'] === '' || $settings['client_secret'] === '', 503, 'Social sign-in is not configured.');
+        $mobile = $request->boolean('mobile');
+        $codeChallenge = $request->string('codeChallenge')->toString();
+        abort_if($mobile && preg_match('/^[A-Za-z0-9_-]{43}$/', $codeChallenge) !== 1, 422, 'The mobile sign-in request could not be verified.');
 
         $state = Str::random(64);
         $request->session()->put("social_auth.$state", [
             'provider' => $provider,
             'next' => $this->safeDestination($request->query('next')),
             'provider_intent' => $request->boolean('providerIntent'),
+            'mobile' => $mobile,
+            'code_challenge' => $mobile ? $codeChallenge : null,
             'created_at' => now()->timestamp,
         ]);
 
@@ -67,7 +74,7 @@ class SocialAuthenticationController extends Controller
 
         $destination = $this->safeDestination($pending['next'] ?? '/');
         if ($request->filled('error') || ! $request->filled('code')) {
-            return $this->failureRedirect($destination, 'Social sign-in was cancelled.');
+            return $this->socialFailureRedirect($pending, $destination, 'Social sign-in was cancelled.');
         }
 
         try {
@@ -114,9 +121,14 @@ class SocialAuthenticationController extends Controller
                 $this->audit->record($request, 'auth.social_avatar_import_failed', $user, 'user', (string) $user->getKey());
             }
 
+            $this->audit->record($request, 'auth.social_login_succeeded', $user, 'user', (string) $user->getKey());
+
+            if (($pending['mobile'] ?? false) === true) {
+                return $this->mobileSuccessRedirect($user, $destination, (string) ($pending['code_challenge'] ?? ''));
+            }
+
             Auth::login($user);
             $request->session()->regenerate();
-            $this->audit->record($request, 'auth.social_login_succeeded', $user, 'user', (string) $user->getKey());
 
             return redirect()->away($this->publicDestination($destination));
         } catch (Throwable $exception) {
@@ -125,10 +137,60 @@ class SocialAuthenticationController extends Controller
             }
             $this->audit->record($request, 'auth.social_login_failed');
 
-            return $this->failureRedirect($destination, $exception instanceof SocialAuthenticationException
+            return $this->socialFailureRedirect($pending, $destination, $exception instanceof SocialAuthenticationException
                 ? $exception->getMessage()
                 : 'Social sign-in is unavailable right now. Please try again.');
         }
+    }
+
+    public function exchange(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'code' => ['required', 'string', 'min:43', 'max:128'],
+            'codeVerifier' => ['required', 'string', 'min:43', 'max:128'],
+        ]);
+        $codeHash = hash('sha256', $validated['code']);
+        $cacheKey = "social_auth_exchange.$codeHash";
+        $exchange = Cache::lock("social_auth_exchange_lock.$codeHash", 5)->block(2, function () use ($cacheKey, $validated): ?array {
+            $pending = Cache::get($cacheKey);
+            if (! is_array($pending)
+                || ! is_string($pending['code_challenge'] ?? null)
+                || ! hash_equals($pending['code_challenge'], $this->codeChallenge($validated['codeVerifier']))) {
+                return null;
+            }
+
+            Cache::forget($cacheKey);
+
+            return $pending;
+        });
+
+        if (! is_array($exchange)) {
+            return response()->json(['error' => [
+                'code' => 'SOCIAL_EXCHANGE_INVALID',
+                'message' => 'This social sign-in return is invalid or expired. Please try again.',
+                'fields' => (object) [],
+            ]], 422);
+        }
+
+        $userId = $exchange['user_id'] ?? null;
+        $user = (is_int($userId) || is_string($userId))
+            ? User::query()->whereKey($userId)->first()
+            : null;
+        if (! $user) {
+            return response()->json(['error' => [
+                'code' => 'SOCIAL_EXCHANGE_INVALID',
+                'message' => 'This social sign-in return is invalid or expired. Please try again.',
+                'fields' => (object) [],
+            ]], 422);
+        }
+
+        Auth::login($user);
+        $request->session()->regenerate();
+        $this->audit->record($request, 'auth.mobile_social_exchange_succeeded', $user, 'user', (string) $user->getKey());
+
+        return response()->json(['data' => [
+            'destination' => $this->safeDestination($exchange['destination'] ?? '/home'),
+        ]]);
     }
 
     /** @return array{id:string,name:string,email:string,avatar:?string} */
@@ -200,6 +262,39 @@ class SocialAuthenticationController extends Controller
             'next' => $destination,
             'socialError' => $message,
         ]));
+    }
+
+    /** @param array<string, mixed> $pending */
+    private function socialFailureRedirect(array $pending, string $destination, string $message): RedirectResponse
+    {
+        if (($pending['mobile'] ?? false) === true) {
+            return redirect()->away('kaila://app/login?'.http_build_query(['socialError' => $message]));
+        }
+
+        return $this->failureRedirect($destination, $message);
+    }
+
+    private function mobileSuccessRedirect(User $user, string $destination, string $codeChallenge): RedirectResponse
+    {
+        throw_unless(
+            preg_match('/^[A-Za-z0-9_-]{43}$/', $codeChallenge) === 1,
+            SocialAuthenticationException::class,
+            'The mobile sign-in request could not be verified.',
+        );
+
+        $code = rtrim(strtr(base64_encode(random_bytes(32)), '+/', '-_'), '=');
+        Cache::put('social_auth_exchange.'.hash('sha256', $code), [
+            'user_id' => $user->getKey(),
+            'destination' => $this->safeDestination($destination),
+            'code_challenge' => $codeChallenge,
+        ], now()->addMinutes(5));
+
+        return redirect()->away('kaila://app/login?'.http_build_query(['socialCode' => $code]));
+    }
+
+    private function codeChallenge(string $verifier): string
+    {
+        return rtrim(strtr(base64_encode(hash('sha256', $verifier, true)), '+/', '-_'), '=');
     }
 
     private function publicDestination(string $destination): string

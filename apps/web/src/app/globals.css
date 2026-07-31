@@ -160,6 +160,7 @@ a {
   justify-content: space-between;
   min-height: var(--spacing-64);
   padding: var(--spacing-8) var(--spacing-16);
+  width: 100%;
 }
 
 .appSessionBar > a {
@@ -182,6 +183,7 @@ a {
   align-items: center;
   display: flex;
   gap: var(--spacing-8);
+  min-width: 0;
 }
 
 .appSessionBar .sessionName {
@@ -260,6 +262,31 @@ a {
   object-fit: cover;
   position: absolute;
   width: 100%;
+}
+
+@media (max-width: 63.999rem) {
+  .appSessionBar {
+    gap: var(--spacing-8);
+  }
+
+  .appSessionBar .sessionLogo {
+    width: calc(var(--spacing-64) + var(--spacing-32));
+  }
+
+  .appSessionBar .sessionDesktopAction {
+    display: none;
+  }
+}
+
+@media (max-width: 29.999rem) {
+  .appSessionBar {
+    padding-left: var(--spacing-12);
+    padding-right: var(--spacing-12);
+  }
+
+  .appSessionBar .sessionLogo {
+    width: calc(var(--spacing-64) + var(--spacing-24));
+  }
 }
 
 @media (min-width: 40rem) {

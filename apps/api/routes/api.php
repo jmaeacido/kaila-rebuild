@@ -46,6 +46,7 @@ Route::get('/marketplace/reference-data', ReferenceDataController::class);
 Route::middleware('throttle:login')->post('/auth/login', [AuthenticatedSessionController::class, 'store']);
 Route::middleware('throttle:login')->get('/auth/social/{provider}/redirect', [SocialAuthenticationController::class, 'redirect']);
 Route::get('/auth/social/{provider}/callback', [SocialAuthenticationController::class, 'callback']);
+Route::middleware('throttle:login')->post('/auth/social/mobile/exchange', [SocialAuthenticationController::class, 'exchange']);
 Route::middleware('throttle:login')->post('/auth/mobile/login', [MobileSessionController::class, 'store']);
 Route::middleware('throttle:login')->post('/auth/mobile/refresh', [MobileSessionController::class, 'refresh']);
 Route::middleware('throttle:password-recovery')->group(function (): void {

@@ -6,6 +6,7 @@ describe("mobile routing", () => {
     expect(deepLinkRoute("https://app.kaila-app.com/jobs/abc/work", "app.kaila-app.com")).toBe("/jobs/abc/work");
     expect(deepLinkRoute("https://evil.example/jobs/abc/work", "app.kaila-app.com")).toBeNull();
     expect(deepLinkRoute("javascript:alert(1)", "app.kaila-app.com")).toBeNull();
+    expect(deepLinkRoute("kaila://app/login?socialCode=return-code", "app.kaila-app.com")).toBe("/login?socialCode=return-code");
   });
   it("maps privacy-safe notification data to known screens", () => {
     expect(notificationRoute({ type: "message", jobId: "job-7" })).toBe("/jobs/job-7/hired/conversation");

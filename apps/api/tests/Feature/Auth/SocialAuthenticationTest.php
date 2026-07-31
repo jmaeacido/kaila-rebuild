@@ -103,6 +103,45 @@ class SocialAuthenticationTest extends TestCase
         $this->assertSame('facebook:existing', $existing->fresh()->auth_subject);
     }
 
+    public function test_mobile_social_login_returns_to_app_and_exchanges_once_with_verifier(): void
+    {
+        Http::fake([
+            'https://oauth2.googleapis.com/token' => Http::response(['access_token' => 'token']),
+            'https://openidconnect.googleapis.com/v1/userinfo' => Http::response([
+                'sub' => 'google-mobile-1',
+                'name' => 'Mobile Member',
+                'email' => 'mobile@example.test',
+                'email_verified' => true,
+            ]),
+        ]);
+        $verifier = str_repeat('v', 43);
+        $challenge = rtrim(strtr(base64_encode(hash('sha256', $verifier, true)), '+/', '-_'), '=');
+        $state = $this->beginGoogle('/home', false, $challenge);
+
+        $callback = $this->get("/api/v1/auth/social/google/callback?state=$state&code=valid-code");
+        $callback->assertRedirect();
+        $location = (string) $callback->headers->get('Location');
+        $this->assertStringStartsWith('kaila://app/login?', $location);
+        parse_str((string) parse_url($location, PHP_URL_QUERY), $query);
+        $this->assertGuest();
+
+        $this->postJson('/api/v1/auth/social/mobile/exchange', [
+            'code' => $query['socialCode'],
+            'codeVerifier' => str_repeat('x', 43),
+        ])->assertUnprocessable();
+
+        $this->postJson('/api/v1/auth/social/mobile/exchange', [
+            'code' => $query['socialCode'],
+            'codeVerifier' => $verifier,
+        ])->assertOk()->assertJsonPath('data.destination', '/home');
+        $this->assertAuthenticated();
+
+        $this->postJson('/api/v1/auth/social/mobile/exchange', [
+            'code' => $query['socialCode'],
+            'codeVerifier' => $verifier,
+        ])->assertUnprocessable();
+    }
+
     public function test_callback_rejects_missing_or_expired_state(): void
     {
         Http::fake();
@@ -113,12 +152,17 @@ class SocialAuthenticationTest extends TestCase
         $this->assertGuest();
     }
 
-    private function beginGoogle(string $destination, bool $providerIntent = false): string
+    private function beginGoogle(string $destination, bool $providerIntent = false, ?string $codeChallenge = null): string
     {
-        $response = $this->get('/api/v1/auth/social/google/redirect?'.http_build_query([
+        $parameters = [
             'next' => $destination,
             'providerIntent' => $providerIntent ? '1' : '0',
-        ]));
+        ];
+        if ($codeChallenge !== null) {
+            $parameters['mobile'] = '1';
+            $parameters['codeChallenge'] = $codeChallenge;
+        }
+        $response = $this->get('/api/v1/auth/social/google/redirect?'.http_build_query($parameters));
         parse_str((string) parse_url((string) $response->headers->get('Location'), PHP_URL_QUERY), $query);
 
         return (string) $query['state'];

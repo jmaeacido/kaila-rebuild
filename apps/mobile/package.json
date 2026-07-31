@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "exports": {
+    "./oauth": "./src/oauth.ts",
     "./runtime": "./src/runtime.ts",
     "./session": "./src/session.ts"
   },
@@ -19,12 +20,13 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@kaila/design-tokens": "workspace:*",
     "@capacitor/app": "8.1.0",
+    "@capacitor/browser": "8.0.4",
     "@capacitor/core": "8.4.2",
     "@capacitor/network": "8.0.1",
     "@capacitor/preferences": "8.0.1",
-    "@capacitor/push-notifications": "8.1.1"
+    "@capacitor/push-notifications": "8.1.1",
+    "@kaila/design-tokens": "workspace:*"
   },
   "devDependencies": {
     "@capacitor/android": "8.4.2",
