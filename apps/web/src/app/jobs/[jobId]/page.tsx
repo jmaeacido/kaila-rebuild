@@ -29,6 +29,7 @@ import assetStyles from "./job-assets.module.css";
 import { useRealtimeInvalidation } from "../../use-realtime-invalidation";
 import { ServiceCategoryIcon } from "../../../components/service-category-icon";
 import { formatTravelDistance, formatTravelEta, type TravelMetrics } from "../../travel-metrics";
+import { MediaViewer, type ViewableMedia } from "../../../components/media-viewer";
 
 type Reference = { id: number; name: string };
 type CategoryReference = Reference & { icon: string };
@@ -108,6 +109,7 @@ export default function JobDetailsPage({ params }: { params: Promise<{ jobId: st
   const [cancelReason, setCancelReason] = useState("");
   const [status, setStatus] = useState<"loading" | "ready" | "saving" | "error">("loading");
   const [notice, setNotice] = useState("");
+  const [selectedMediaIndex, setSelectedMediaIndex] = useState<number | null>(null);
   const [editLocation, setEditLocation] = useState<JobLocation | null>(null);
   const [showMap, setShowMap] = useState(false);
   const [locationStatus, setLocationStatus] = useState<LocationStatus>("idle");
@@ -328,6 +330,7 @@ export default function JobDetailsPage({ params }: { params: Promise<{ jobId: st
   const isDraft = job.status === "draft";
   const isHired = !["draft", "posted", "offers_received", "cancelled"].includes(job.status);
   const areaLabel = areaPathLabel(areas, String(job.area.id)) || job.area.name;
+  const viewableMedia = job.assets.filter((asset): asset is JobAsset & { url: string } => asset.url !== null && (asset.mimeType.startsWith("image/") || asset.mimeType.startsWith("video/")));
 
   return (
     <main className={styles.shell}>
@@ -465,23 +468,19 @@ export default function JobDetailsPage({ params }: { params: Promise<{ jobId: st
               <div className={assetStyles.grid}>
                 {job.assets.map((asset) => (
                   <article className={assetStyles.asset} key={asset.id}>
+                    {asset.url && (asset.mimeType.startsWith("image/") || asset.mimeType.startsWith("video/")) ? (
+                    <button className={assetStyles.preview} type="button" onClick={() => setSelectedMediaIndex(viewableMedia.findIndex((candidate) => candidate.id === asset.id))} aria-label={`Preview ${asset.name}`}>
+                      {asset.mimeType.startsWith("image/") ? <Image src={asset.url} alt={asset.name} fill sizes="(max-width: 479px) 50vw, 180px" unoptimized /> : <><video src={asset.url} muted playsInline preload="metadata" aria-hidden="true" /><span className={assetStyles.playBadge}><Video aria-hidden="true" /></span></>}
+                    </button>
+                    ) : (
                     <div className={assetStyles.preview}>
-                      {asset.url && asset.mimeType.startsWith("image/") ? (
-                        <Image
-                          src={asset.url}
-                          alt={asset.name}
-                          fill
-                          sizes="(max-width: 479px) 50vw, 180px"
-                          unoptimized
-                        />
-                      ) : asset.url && asset.mimeType.startsWith("video/") ? (
-                        <video src={asset.url} controls preload="metadata" aria-label={asset.name} />
-                      ) : asset.mimeType.startsWith("video/") ? (
+                      {asset.mimeType.startsWith("video/") ? (
                         <Video aria-hidden="true" />
                       ) : (
                         <ImageIcon aria-hidden="true" />
                       )}
                     </div>
+                    )}
                     <span>
                       <strong>{asset.name}</strong>
                       <small>
@@ -494,6 +493,7 @@ export default function JobDetailsPage({ params }: { params: Promise<{ jobId: st
                               : "Unavailable after safety review"}
                       </small>
                     </span>
+                    {asset.url && <button className={assetStyles.openAsset} type="button" onClick={() => setSelectedMediaIndex(viewableMedia.findIndex((candidate) => candidate.id === asset.id))}>View {asset.mimeType.startsWith("video/") ? "video" : "image"}</button>}
                   </article>
                 ))}
               </div>
@@ -531,6 +531,7 @@ export default function JobDetailsPage({ params }: { params: Promise<{ jobId: st
           </form>
         </section>
       )}
+      {selectedMediaIndex !== null && <MediaViewer assets={viewableMedia as ViewableMedia[]} initialIndex={selectedMediaIndex} onClose={() => setSelectedMediaIndex(null)} />}
     </main>
   );
 }

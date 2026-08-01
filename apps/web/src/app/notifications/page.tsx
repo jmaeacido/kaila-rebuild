@@ -39,6 +39,7 @@ export default function NotificationsPage() {
 
   async function open(item: NotificationRecord) {
     if (!item.readAt) await mutate(`/api/v1/notifications/${item.id}/read`, "PUT");
+    window.location.assign(notificationRoute(item));
   }
 
   return (
@@ -53,7 +54,7 @@ export default function NotificationsPage() {
       <section className={styles.list} aria-label="Notifications">
         {items.map((item) => (
           <article className={item.readAt ? styles.read : styles.unread} key={item.id}>
-            <Link href={notificationRoute(item)} onClick={() => void open(item)}>
+            <Link href={notificationRoute(item)} onClick={(event) => { event.preventDefault(); void open(item); }}>
               <span className={styles.dot} aria-label={item.readAt ? "Read" : "Unread"} />
               <div><h2>{item.title}</h2><p>{item.body}</p><time dateTime={item.createdAt}>{new Date(item.createdAt).toLocaleString()}</time></div>
             </Link>

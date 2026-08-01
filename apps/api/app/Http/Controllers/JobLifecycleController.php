@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AcceptedOfferSnapshot;
 use App\Models\CancellationRequest;
 use App\Models\CompletionEvidence;
 use App\Models\CompletionSubmission;
 use App\Models\DisputeCase;
 use App\Models\DisputeEvidence;
 use App\Models\JobReview;
+use App\Models\ProfileAsset;
 use App\Models\RevisionEvidence;
 use App\Models\ServiceJob;
 use App\Models\User;
@@ -15,6 +17,7 @@ use App\Support\HiredJobAccess;
 use App\Support\JobLifecycleService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class JobLifecycleController extends Controller
@@ -147,6 +150,12 @@ class JobLifecycleController extends Controller
     private function present(ServiceJob $j, User $u): array
     {
         $p = $this->access->participants($j);
+        $j->loadMissing(['category:id,name,icon', 'area:id,name,type']);
+        $snapshot = AcceptedOfferSnapshot::query()->where('service_job_id', $j->id)->firstOrFail();
+        $counterpartId = $u->id === $p['clientId'] ? $p['providerId'] : $p['clientId'];
+        $counterpart = User::query()->findOrFail($counterpartId);
+        $counterpartAvatar = ProfileAsset::query()->where('user_id', $counterpartId)->where('purpose', 'avatar')->where('scan_status', 'clean')->latest()->first();
+        $counterpartReputation = DB::table('reputation_projections')->where('user_id', $counterpartId)->first(['average_rating', 'published_review_count']);
         $sub = CompletionSubmission::query()->where('service_job_id', $j->id)->latest('cycle')->with('evidence:id,completion_submission_id,original_name,mime_type,scan_status')->first();
         $cancellation = CancellationRequest::query()
             ->where('service_job_id', $j->id)
@@ -172,6 +181,24 @@ class JobLifecycleController extends Controller
             'status' => $j->status,
             'version' => $j->version,
             'role' => $u->id === $p['clientId'] ? 'client' : 'provider',
+            'job' => [
+                'title' => $j->title,
+                'description' => $j->description,
+                'category' => $j->category,
+                'area' => $j->area,
+                'addressLabel' => $j->address_label,
+                'scheduleType' => $j->schedule_type,
+                'scheduledAt' => $j->scheduled_at?->toIso8601String(),
+                'agreedAmountCentavos' => $snapshot->amount_centavos,
+                'agreedScope' => $snapshot->scope,
+                'estimatedDurationText' => $snapshot->estimated_duration_text,
+                'counterpart' => [
+                    'displayName' => $counterpart->name,
+                    'avatarUrl' => $counterpartAvatar ? "/api/v1/profile-assets/{$counterpartAvatar->getKey()}" : null,
+                    'rating' => $counterpartReputation?->average_rating,
+                    'reviewCount' => (int) ($counterpartReputation->published_review_count ?? 0),
+                ],
+            ],
             'workStartedAt' => $j->work_started_at?->toIso8601String(),
             'autoConfirmAt' => $j->auto_confirm_at?->toIso8601String(),
             'completedAt' => $j->completed_at?->toIso8601String(),

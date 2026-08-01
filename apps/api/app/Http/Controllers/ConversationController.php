@@ -15,9 +15,12 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class ConversationController extends Controller
 {
+    private const ALLOWED_REACTIONS = ['👍', '👎', '❤️', '😂', '🤣', '😮', '😢', '😭', '😡', '🎉', '🔥', '👏', '🙏', '💯', '✅', '👀', '🤔', '🙌'];
+
     public function __construct(private readonly HiredJobAccess $access, private readonly OutboxRecorder $outbox, private readonly NotificationService $notifications) {}
 
     public function show(Request $request, ServiceJob $serviceJob): JsonResponse
@@ -129,7 +132,7 @@ class ConversationController extends Controller
 
     public function react(Request $request, ConversationMessage $conversationMessage): JsonResponse
     {
-        $data = $request->validate(['reaction' => 'required|in:👍,❤️,😂,😮,😢,🙏']);
+        $data = $request->validate(['reaction' => ['required', Rule::in(self::ALLOWED_REACTIONS)]]);
         $actor = $request->user();
         abort_unless($actor instanceof User, 401);
         $conversation = JobConversation::query()->findOrFail($conversationMessage->conversation_id);

@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Contracts\MapsProvider;
+use App\Domain\Maps\GeoPoint;
 use App\Models\JobOpportunity;
 use App\Models\OfferThread;
 use App\Models\ProviderProfile;
@@ -11,10 +13,11 @@ use App\Support\JobPresenter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use RuntimeException;
 
 class OpportunityController
 {
-    public function __construct(private readonly JobPresenter $presenter) {}
+    public function __construct(private readonly JobPresenter $presenter, private readonly MapsProvider $maps) {}
 
     public function index(Request $request): JsonResponse
     {
@@ -52,6 +55,34 @@ class OpportunityController
         $opportunity->update(['state' => $data['decision'], 'decided_at' => now()]);
 
         return response()->json(['data' => ['id' => $opportunity->id, 'state' => $opportunity->state]]);
+    }
+
+    public function routeEstimate(Request $request, JobOpportunity $opportunity): JsonResponse
+    {
+        $provider = ProviderProfile::query()->where('user_id', $this->user($request)->id)->first();
+        abort_unless($provider && $opportunity->provider_profile_id === $provider->id, 404);
+
+        $data = $request->validate([
+            'latitude' => ['required', 'numeric', 'between:-90,90'],
+            'longitude' => ['required', 'numeric', 'between:-180,180'],
+        ]);
+        $job = $opportunity->job()->firstOrFail();
+        abort_if($job->latitude === null || $job->longitude === null, 422, 'This job does not have a location estimate.');
+
+        try {
+            $route = $this->maps->route(
+                new GeoPoint((float) $data['latitude'], (float) $data['longitude']),
+                new GeoPoint(round((float) $job->latitude, 3), round((float) $job->longitude, 3)),
+            );
+        } catch (RuntimeException) {
+            return response()->json(['message' => 'A driving route is not currently available.'], 503);
+        }
+
+        return response()->json(['data' => [
+            'distanceMeters' => $route->distanceMeters,
+            'durationSeconds' => $route->durationSeconds,
+            'approximate' => true,
+        ]]);
     }
 
     private function user(Request $request): User

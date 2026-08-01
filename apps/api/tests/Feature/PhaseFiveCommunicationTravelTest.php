@@ -2,12 +2,16 @@
 
 namespace Tests\Feature;
 
+use App\Jobs\ScanMessageAsset;
 use App\Models\Area;
 use App\Models\ProviderProfile;
 use App\Models\ServiceCategory;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class PhaseFiveCommunicationTravelTest extends TestCase
@@ -42,6 +46,38 @@ class PhaseFiveCommunicationTravelTest extends TestCase
         [$job,$client,$provider] = $this->selectedJob();
         DB::table('user_blocks')->insert(['blocker_user_id' => $client->id, 'blocked_user_id' => $provider->id, 'created_at' => now(), 'updated_at' => now()]);
         $this->actingAs($provider)->postJson("/api/v1/jobs/$job/conversation/messages", ['body' => 'x', 'commandId' => 'blocked'])->assertConflict();
+    }
+
+    public function test_participants_can_use_the_expanded_reaction_set(): void
+    {
+        [$job, $client, $provider] = $this->selectedJob();
+        $message = $this->actingAs($provider)->postJson("/api/v1/jobs/$job/conversation/messages", [
+            'body' => 'The repair is ready for review.',
+            'commandId' => 'reaction-message',
+        ])->assertCreated()->json('data.id');
+
+        $this->actingAs($client)->putJson("/api/v1/messages/$message/reaction", ['reaction' => '🎉'])
+            ->assertOk()
+            ->assertJsonPath('data.active', true);
+        $this->putJson("/api/v1/messages/$message/reaction", ['reaction' => '🚫'])->assertUnprocessable();
+        $this->assertDatabaseHas('message_reactions', ['message_id' => $message, 'user_id' => $client->id, 'reaction' => '🎉']);
+    }
+
+    public function test_message_images_are_quarantined_and_queued_for_scanning(): void
+    {
+        Queue::fake();
+        Storage::fake((string) config('filesystems.private_assets_disk'));
+        [$job, $client, $provider] = $this->selectedJob();
+        $message = $this->actingAs($provider)->postJson("/api/v1/jobs/$job/conversation/messages", [
+            'body' => 'Attachment',
+            'commandId' => 'image-message',
+        ])->assertCreated()->json('data.id');
+        $asset = $this->postJson("/api/v1/messages/$message/assets", [
+            'file' => UploadedFile::fake()->image('repair.jpg', 640, 480),
+        ])->assertCreated()->assertJsonPath('data.scanStatus', 'pending')->json('data.id');
+
+        Queue::assertPushed(ScanMessageAsset::class, fn (ScanMessageAsset $job): bool => $job->assetId === $asset);
+        $this->get("/api/v1/message-assets/$asset")->assertNotFound();
     }
 
     public function test_foreground_travel_is_provider_owned_reconciles_and_stops(): void

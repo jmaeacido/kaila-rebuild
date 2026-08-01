@@ -160,6 +160,7 @@ Route::middleware('auth')->group(function (): void {
     Route::delete('/job-assets/{jobAsset}', [JobAssetController::class, 'destroy']);
     Route::get('/opportunities', [OpportunityController::class, 'index']);
     Route::put('/opportunities/{opportunity}', [OpportunityController::class, 'decide']);
+    Route::post('/opportunities/{opportunity}/route-estimate', [OpportunityController::class, 'routeEstimate']);
     Route::get('/jobs/{serviceJob}/offers', [OfferController::class, 'index']);
     Route::post('/jobs/{serviceJob}/offers', [OfferController::class, 'store']);
     Route::get('/offers/{offerThread}', [OfferController::class, 'show']);

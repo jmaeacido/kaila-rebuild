@@ -11,6 +11,7 @@ import { ServiceCategoryIcon } from "../../../components/service-category-icon";
 import { JobRequestLocation } from "../../../components/job-request-location";
 
 type Opportunity = {
+  id: number;
   jobId: string;
   title: string;
   description: string;
@@ -154,7 +155,7 @@ export default function MakeOfferPage({ params }: { params: Promise<{ jobId: str
           <div><span><ServiceCategoryIcon icon={opportunity.category.icon} aria-hidden="true" />{opportunity.category.name}</span>{offer && <strong>Offer sent · Revision {offer.latestRevisionNumber}</strong>}</div>
           <h1>{opportunity.title}</h1>
           <p>{opportunity.description}</p>
-          <JobRequestLocation address={opportunity.approximateAddress} location={opportunity.approximateLocation} />
+          <JobRequestLocation opportunityId={opportunity.id} address={opportunity.approximateAddress} location={opportunity.approximateLocation} />
           <dl>
             <div><MapPin /><dt>Area</dt><dd>{opportunity.area.name}</dd></div>
             <div><Clock3 /><dt>When</dt><dd>{opportunity.scheduleType === "asap" ? "As soon as possible" : new Date(opportunity.scheduledAt || "").toLocaleString()}</dd></div>

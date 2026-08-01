@@ -21,12 +21,13 @@ import {
 } from "lucide-react";
 import styles from "../hired.module.css";
 import { useRealtimeInvalidation } from "../../../../use-realtime-invalidation";
+import { MediaViewer, type ViewableMedia } from "../../../../../components/media-viewer";
 
 type Asset = {
   id: string;
   name: string;
   mimeType: string;
-  scanStatus: "pending" | "clean" | "rejected";
+  scanStatus: "pending" | "clean" | "rejected" | "failed";
   url: string | null;
 };
 type Message = {
@@ -59,8 +60,13 @@ const emojiGroups = [
   { label: "Gestures", emojis: ["👍", "👎", "👌", "✌️", "🤞", "🤟", "🤘", "👏", "🙌", "👐", "🤝", "🙏", "💪", "👋", "🫶", "☝️", "👇", "👉", "👈"] },
   { label: "Hearts and celebrations", emojis: ["❤️", "🧡", "💛", "💚", "💙", "💜", "🖤", "🤍", "🤎", "💔", "💕", "💖", "✨", "🎉", "🎊", "🎂", "🎁", "🏆", "⭐", "🔥"] },
   { label: "Work and places", emojis: ["🔧", "🔨", "🪛", "🧰", "🧹", "🪠", "⚡", "💡", "🏠", "📍", "🚗", "🏍️", "✅", "❌", "⚠️", "📞", "💬", "📸", "💵", "🕐"] },
+  { label: "People and activities", emojis: ["👶", "🧒", "👩", "👨", "👵", "👴", "👷", "🧑‍🔧", "🧑‍🏫", "🧑‍🍳", "🧑‍💻", "🏃", "🚶", "💃", "🕺", "⚽", "🏀", "🏐", "🎮", "🎵"] },
+  { label: "Animals and nature", emojis: ["🐶", "🐱", "🐭", "🐰", "🦊", "🐻", "🐼", "🐸", "🐵", "🐔", "🐦", "🦋", "🌸", "🌻", "🌴", "🌵", "☀️", "🌤️", "🌧️", "🌈"] },
+  { label: "Food and drink", emojis: ["🍎", "🍌", "🍉", "🍇", "🍓", "🥭", "🍔", "🍕", "🍗", "🍜", "🍚", "🍰", "🍪", "☕", "🧋", "🥤", "🍺", "🥂", "🍽️", "🛒"] },
+  { label: "Travel and objects", emojis: ["🚙", "🚌", "🚲", "✈️", "🚢", "⛽", "🗺️", "⌚", "📱", "💻", "🔑", "🔒", "🔔", "📌", "📦", "📝", "✏️", "🔍", "💳", "🧾"] },
+  { label: "Symbols", emojis: ["💯", "✔️", "❗", "❓", "‼️", "➕", "➖", "➡️", "⬅️", "⬆️", "⬇️", "🔴", "🟠", "🟡", "🟢", "🔵", "🟣", "⚫", "⚪", "🟤"] },
 ];
-const reactions = ["👍", "❤️", "😂", "😮", "😢", "🙏"];
+const reactions = ["👍", "👎", "❤️", "😂", "🤣", "😮", "😢", "😭", "😡", "🎉", "🔥", "👏", "🙏", "💯", "✅", "👀", "🤔", "🙌"];
 
 export default function ConversationPage({ params }: { params: Promise<{ jobId: string }> }) {
   const { jobId } = use(params);
@@ -71,6 +77,7 @@ export default function ConversationPage({ params }: { params: Promise<{ jobId: 
   const [notice, setNotice] = useState("");
   const [showEmoji, setShowEmoji] = useState(false);
   const [reactionMessageId, setReactionMessageId] = useState<string | null>(null);
+  const [selectedMediaId, setSelectedMediaId] = useState<string | null>(null);
   const [call, setCall] = useState<ActiveCall | null>(null);
   const [muted, setMuted] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
@@ -358,6 +365,9 @@ export default function ConversationPage({ params }: { params: Promise<{ jobId: 
   }
 
   const otherName = conversation?.otherParty.name || "Job participant";
+  const conversationMedia = conversation?.messages.flatMap((message) => message.assets)
+    .filter((asset): asset is Asset & { url: string } => asset.url !== null && asset.mimeType.startsWith("image/")) ?? [];
+  const selectedMediaIndex = selectedMediaId === null ? -1 : conversationMedia.findIndex((asset) => asset.id === selectedMediaId);
   return (
     <main className={styles.chatShell}>
       <section className={styles.chatWindow}>
@@ -399,12 +409,14 @@ export default function ConversationPage({ params }: { params: Promise<{ jobId: 
                   <div className={styles.bubble}>
                     {!attachmentOnly && message.body && <p>{message.body}</p>}
                     {message.assets.map((asset) => (
-                      <div className={styles.attachment} key={asset.id}>
-                        {asset.url && asset.mimeType.startsWith("image/")
-                          ? <a href={asset.url} target="_blank"><img src={asset.url} alt={asset.name} /></a>
-                          : asset.mimeType.startsWith("image/") ? <ImageIcon /> : <FileText />}
-                        <span><strong>{asset.name}</strong><small>{asset.scanStatus === "clean" ? "Ready to view" : asset.scanStatus === "pending" ? "Safety check in progress" : "Attachment unavailable"}</small></span>
-                      </div>
+                      asset.url && asset.mimeType.startsWith("image/") ? (
+                        <button className={styles.chatImage} key={asset.id} type="button" onClick={() => setSelectedMediaId(asset.id)} aria-label={`View ${asset.name}`}><img src={asset.url} alt={asset.name} /></button>
+                      ) : (
+                        <div className={styles.attachment} key={asset.id}>
+                          {asset.mimeType.startsWith("image/") ? <ImageIcon /> : <FileText />}
+                          <span><strong>{asset.name}</strong><small>{asset.scanStatus === "clean" ? "Ready to view" : asset.scanStatus === "pending" ? "Safety check in progress" : "Attachment unavailable"}</small></span>
+                        </div>
+                      )
                     ))}
                     <time>{new Date(message.createdAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</time>
                   </div>
@@ -462,6 +474,7 @@ export default function ConversationPage({ params }: { params: Promise<{ jobId: 
             </div>
           </section>
         )}
+        {selectedMediaIndex >= 0 && <MediaViewer assets={conversationMedia as ViewableMedia[]} initialIndex={selectedMediaIndex} onClose={() => setSelectedMediaId(null)} />}
       </section>
     </main>
   );

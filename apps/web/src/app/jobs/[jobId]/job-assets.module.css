@@ -101,6 +101,43 @@
   position: relative;
 }
 
+a.preview {
+  cursor: zoom-in;
+}
+
+a.preview:focus-visible,
+.openAsset:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-focus);
+  outline-offset: calc(var(--focus-ring-width) * -1);
+}
+
+.openAsset {
+  align-items: center;
+  border-top: var(--control-border-width) solid var(--color-border);
+  color: var(--color-primary);
+  display: flex;
+  font-size: var(--font-small-size);
+  font-weight: var(--font-weight-semibold);
+  gap: var(--spacing-8);
+  justify-content: center;
+  min-height: var(--control-min-height);
+  padding: var(--spacing-8);
+  text-decoration: none;
+  background: transparent;
+  border-bottom: 0;
+  border-left: 0;
+  border-right: 0;
+  cursor: pointer;
+  width: 100%;
+}
+
+.openAsset svg {
+  height: var(--spacing-16);
+  width: var(--spacing-16);
+}
+
+.playBadge{align-items:center;background:color-mix(in srgb,var(--color-ink) 72%,transparent);border-radius:var(--radius-pill);color:var(--color-on-primary);display:flex;height:var(--spacing-48);justify-content:center;left:50%;position:absolute;top:50%;transform:translate(-50%,-50%);width:var(--spacing-48)}
+
 .preview img,
 .preview video {
   height: 100%;

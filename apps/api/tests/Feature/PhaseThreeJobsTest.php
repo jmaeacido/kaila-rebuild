@@ -50,6 +50,30 @@ class PhaseThreeJobsTest extends TestCase
         $response->assertJsonMissingPath('data.0.location')->assertJsonMissingPath('data.0.addressLabel')->assertJsonMissingPath('data.0.clientUserId')->assertJsonPath('data.0.area.name', 'Davao City');
     }
 
+    public function test_matched_provider_can_request_an_approximate_driving_route_without_receiving_job_coordinates(): void
+    {
+        [$category, $area] = $this->references();
+        $provider = $this->provider($category, $area, 'active');
+        $client = User::factory()->create();
+        $created = $this->actingAs($client)->withHeader('Idempotency-Key', 'route-estimate')->postJson('/api/v1/jobs', $this->draft($category, $area))->assertCreated();
+        $this->postJson("/api/v1/jobs/{$created->json('data.id')}/post")->assertOk();
+        $providerUser = User::query()->findOrFail($provider->user_id);
+        $opportunity = $this->actingAs($providerUser)->getJson('/api/v1/opportunities')->assertOk()->json('data.0');
+
+        $this->postJson("/api/v1/opportunities/{$opportunity['id']}/route-estimate", [
+            'latitude' => 8.8108569,
+            'longitude' => 125.1208204,
+        ])->assertOk()
+            ->assertJsonPath('data.approximate', true)
+            ->assertJsonMissingPath('data.destination')
+            ->assertJsonStructure(['data' => ['distanceMeters', 'durationSeconds', 'approximate']]);
+
+        $this->actingAs(User::factory()->create())->postJson("/api/v1/opportunities/{$opportunity['id']}/route-estimate", [
+            'latitude' => 8.8108569,
+            'longitude' => 125.1208204,
+        ])->assertNotFound();
+    }
+
     public function test_provider_covering_a_whole_city_matches_a_job_in_its_barangay(): void
     {
         [$category, $city] = $this->references();

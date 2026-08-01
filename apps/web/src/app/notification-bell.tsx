@@ -5,6 +5,7 @@ import { Bell, ChevronRight } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { notificationRoute, type NotificationRecord } from "./notification-route";
 import { useRealtimeInvalidation } from "./use-realtime-invalidation";
+import { prepareCsrf } from "./auth-client";
 
 export const notificationsChangedName = "kaila:notifications-changed";
 
@@ -50,6 +51,29 @@ export function NotificationBell() {
     };
   }, [open]);
 
+  const openNotification = useCallback(async (item: NotificationRecord) => {
+    setOpen(false);
+    if (!item.readAt) {
+      const readAt = new Date().toISOString();
+      setItems((current) => current.map((candidate) => candidate.id === item.id ? { ...candidate, readAt } : candidate));
+      setUnread((current) => Math.max(0, current - 1));
+      try {
+        const token = await prepareCsrf();
+        const response = await fetch(`/api/v1/notifications/${item.id}/read`, {
+          method: "PUT",
+          credentials: "include",
+          keepalive: true,
+          headers: { Accept: "application/json", ...(token ? { "X-XSRF-TOKEN": token } : {}) },
+        });
+        if (!response.ok) throw new Error();
+        window.dispatchEvent(new Event(notificationsChangedName));
+      } catch {
+        void load();
+      }
+    }
+    window.location.assign(notificationRoute(item));
+  }, [load]);
+
   return (
     <div className="notificationMenu" ref={container}>
       <button
@@ -68,7 +92,7 @@ export function NotificationBell() {
           <header><strong>Notifications</strong><span>{unread} unread</span></header>
           <div className="notificationDropdownList">
             {items.length === 0 ? <p className="notificationDropdownEmpty">You’re all caught up.</p> : items.map((item) => (
-              <Link className={item.readAt ? "" : "unread"} href={notificationRoute(item)} key={item.id} onClick={() => setOpen(false)}>
+              <Link className={item.readAt ? "" : "unread"} href={notificationRoute(item)} key={item.id} onClick={(event) => { event.preventDefault(); void openNotification(item); }}>
                 <span aria-hidden="true" />
                 <div><strong>{item.title}</strong><p>{item.body}</p><time dateTime={item.createdAt}>{new Date(item.createdAt).toLocaleString()}</time></div>
               </Link>

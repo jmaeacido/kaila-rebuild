@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\ScanMessageAsset;
 use App\Models\ConversationMessage;
 use App\Models\JobConversation;
 use App\Models\MessageAsset;
@@ -33,6 +34,7 @@ class MessageAssetController extends Controller
         $key = "messages/{$conversation->id}/$id";
         Storage::disk((string) config('filesystems.private_assets_disk'))->put($key, $file->getContent());
         DB::table('message_assets')->insert(['id' => $id, 'message_id' => $conversationMessage->id, 'owner_user_id' => $actor->id, 'disk' => config('filesystems.private_assets_disk'), 'object_key' => $key, 'original_name' => $file->getClientOriginalName(), 'mime_type' => $file->getMimeType(), 'size_bytes' => $file->getSize(), 'scan_status' => 'pending', 'created_at' => now(), 'updated_at' => now()]);
+        ScanMessageAsset::dispatch($id);
 
         return response()->json(['data' => ['id' => $id, 'name' => $file->getClientOriginalName(), 'mimeType' => $file->getMimeType(), 'scanStatus' => 'pending']], 201);
     }
@@ -47,7 +49,7 @@ class MessageAssetController extends Controller
         $this->access->requireParticipant($job, $actor);
         abort_unless($messageAsset->scan_status === 'clean', 404);
 
-        return Storage::disk($messageAsset->disk)->download($messageAsset->object_key, $messageAsset->original_name, ['Content-Type' => $messageAsset->mime_type]);
+        return Storage::disk($messageAsset->disk)->response($messageAsset->object_key, $messageAsset->original_name, ['Content-Type' => $messageAsset->mime_type]);
     }
 
     public function review(Request $request, MessageAsset $messageAsset): JsonResponse

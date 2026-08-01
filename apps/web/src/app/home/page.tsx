@@ -15,9 +15,11 @@ import {
   Search,
   Settings,
   Star,
+  X,
 } from "lucide-react";
 import { Feedback } from "@kaila/ui";
 import { ServiceCategoryIcon } from "../../components/service-category-icon";
+import { OpportunityRouteMetrics } from "../../components/job-request-location";
 import styles from "./home.module.css";
 import { useRealtimeInvalidation } from "../use-realtime-invalidation";
 import { formatTravelDistance, formatTravelEta, type TravelMetrics } from "../travel-metrics";
@@ -60,6 +62,8 @@ type Opportunity = {
   category: Category;
   scheduleType: string;
   scheduledAt: string | null;
+  client: { displayName: string; avatarUrl: string | null; rating: string | number | null; reviewCount: number };
+  approximateLocation: { latitude: number; longitude: number } | null;
 };
 
 const jobStatusLabels: Record<string, string> = {
@@ -80,6 +84,7 @@ export default function AuthenticatedHomePage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
+  const [popupOpportunity, setPopupOpportunity] = useState<Opportunity | null>(null);
   const [status, setStatus] = useState<"loading" | "ready" | "error">(
     "loading",
   );
@@ -120,6 +125,14 @@ export default function AuthenticatedHomePage() {
       setCategories(referenceBody.data.categories);
       setJobs(jobsBody.data);
       setOpportunities(providerOpportunities);
+      const newest = providerOpportunities[0];
+      if (newest) {
+        const popupKey = `kaila:home-opportunity:${newest.id}`;
+        if (window.sessionStorage.getItem(popupKey) !== "shown") {
+          window.sessionStorage.setItem(popupKey, "shown");
+          setPopupOpportunity(newest);
+        }
+      }
       setStatus("ready");
     } catch {
       setStatus("error");
@@ -162,7 +175,6 @@ export default function AuthenticatedHomePage() {
       job.role === (isProvider ? "provider" : "client") &&
       ["completed", "rated_closed", "cancelled"].includes(job.status),
   );
-  const latestOpportunity = opportunities[0];
   const primaryHref = isProvider ? "/opportunities" : "/post-job";
   const primaryLabel = isProvider ? "Find nearby work" : "Post a job";
 
@@ -258,7 +270,8 @@ export default function AuthenticatedHomePage() {
         </section>
       )}
 
-      <section className={styles.current} aria-labelledby="current-title">
+      {(!isProvider || activeJobs.length > 0 || opportunities.length === 0) && (
+      <section className={`${styles.current} ${opportunities.length === 0 ? styles.fullWidth : ""}`} aria-labelledby="current-title">
         <header>
           <div>
             <p className={styles.eyebrow}>
@@ -277,14 +290,14 @@ export default function AuthenticatedHomePage() {
         {activeJobs.length ? (
           <div className={styles.activeJobList}>
           {activeJobs.map((job) => <article className={styles.activityCard} key={job.id}>
-            <span className={styles.activityIcon}>
-              <ServiceCategoryIcon icon={job.category.icon} aria-hidden="true" />
+            <span className={`${styles.activityIcon} ${job.counterpart ? styles.personAvatar : ""}`}>
+              {job.counterpart?.avatarUrl ? <Image src={job.counterpart.avatarUrl} alt={`${job.counterpart.displayName} profile`} width={48} height={48} unoptimized /> : job.counterpart ? job.counterpart.displayName.charAt(0).toUpperCase() : <ServiceCategoryIcon icon={job.category.icon} aria-hidden="true" />}
             </span>
             <div>
-              <span>{job.status === "provider_traveling" && job.serviceLocationMode === "at_provider" ? "Client on the way" : jobStatusLabels[job.status] || "Hired job updated"}</span>
+              <span className={styles.opportunityCategory}><ServiceCategoryIcon icon={job.category.icon} aria-hidden="true" />{job.status === "provider_traveling" ? travelStatusLabel(job) : jobStatusLabels[job.status] || "Hired job updated"}</span>
               <h3>{job.title}</h3>
               <p><MapPin aria-hidden="true" />{job.area.name}</p>
-              {job.counterpart && <p className={styles.counterpart}><span className={styles.miniAvatar}>{job.counterpart.avatarUrl ? <Image src={job.counterpart.avatarUrl} alt="" width={24} height={24} unoptimized /> : job.counterpart.displayName.charAt(0).toUpperCase()}</span>With {job.counterpart.displayName} · {job.counterpart.rating === null ? "New" : `${Number(job.counterpart.rating).toFixed(1)} ★`}</p>}
+              {job.counterpart && <><p className={styles.clientName}>{job.counterpart.displayName}</p><p className={styles.clientReputation}><Star aria-hidden="true" />{job.counterpart.rating === null ? "New · No reviews" : `${Number(job.counterpart.rating).toFixed(1)} · ${job.counterpart.reviewCount} review${job.counterpart.reviewCount === 1 ? "" : "s"}`}</p></>}
               {job.status === "provider_traveling" && <p className={styles.routeMetrics}><Navigation aria-hidden="true" />{formatTravelDistance(job.travel?.distanceMeters ?? null)} · {formatTravelEta(job.travel?.etaSeconds ?? null)}</p>}
             </div>
             <Link href={job.status === "provider_traveling" ? `/jobs/${job.id}/hired/travel` : `/jobs/${job.id}`}>
@@ -293,24 +306,6 @@ export default function AuthenticatedHomePage() {
             </Link>
           </article>)}
           </div>
-        ) : isProvider && latestOpportunity ? (
-          <article className={styles.activityCard}>
-            <span className={styles.activityIcon}>
-              <ServiceCategoryIcon icon={latestOpportunity.category.icon} aria-hidden="true" />
-            </span>
-            <div>
-              <span>{latestOpportunity.category.name}</span>
-              <h3>{latestOpportunity.title}</h3>
-              <p>
-                <MapPin aria-hidden="true" />
-                {latestOpportunity.area.name}
-              </p>
-            </div>
-            <Link href={`/opportunities/${latestOpportunity.jobId}`}>
-              View
-              <ArrowRight aria-hidden="true" />
-            </Link>
-          </article>
         ) : (
           <div className={styles.empty}>
             <BriefcaseBusiness aria-hidden="true" />
@@ -326,6 +321,32 @@ export default function AuthenticatedHomePage() {
           </div>
         )}
       </section>
+      )}
+
+      {isProvider && opportunities.length > 0 && (
+        <section className={`${styles.opportunities} ${activeJobs.length === 0 ? styles.fullWidth : ""}`} aria-labelledby="matched-jobs-title">
+          <header>
+            <div><p className={styles.eyebrow}>MATCHED FOR YOU</p><h2 id="matched-jobs-title">Nearby jobs</h2></div>
+            <Link href="/opportunities">See all <ChevronRight aria-hidden="true" /></Link>
+          </header>
+          <div className={styles.opportunityList}>
+            {opportunities.map((opportunity) => (
+              <article className={styles.activityCard} key={opportunity.id}>
+                <span className={`${styles.activityIcon} ${styles.personAvatar}`}>{opportunity.client.avatarUrl ? <Image src={opportunity.client.avatarUrl} alt={`${opportunity.client.displayName} profile`} width={48} height={48} unoptimized /> : opportunity.client.displayName.charAt(0).toUpperCase()}</span>
+                <div>
+                  <span className={styles.opportunityCategory}><ServiceCategoryIcon icon={opportunity.category.icon} aria-hidden="true" />{opportunity.category.name}</span>
+                  <h3>{opportunity.title}</h3>
+                  <p><MapPin aria-hidden="true" />{opportunity.area.name}</p>
+                  <p className={styles.clientName}>{opportunity.client.displayName}</p>
+                  <p className={styles.clientReputation}><Star aria-hidden="true" />{opportunity.client.rating === null ? "New · No reviews" : `${Number(opportunity.client.rating).toFixed(1)} · ${opportunity.client.reviewCount} review${opportunity.client.reviewCount === 1 ? "" : "s"}`}</p>
+                  <p className={styles.routeMetrics}><Navigation aria-hidden="true" /><OpportunityRouteMetrics opportunityId={opportunity.id} location={opportunity.approximateLocation} /></p>
+                </div>
+                <Link href={`/opportunities/${opportunity.jobId}`}>View job <ArrowRight aria-hidden="true" /></Link>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className={styles.history} aria-labelledby="history-title" id="job-history">
           <header>
@@ -339,11 +360,12 @@ export default function AuthenticatedHomePage() {
             <div className={styles.historyList}>
               {jobHistory.map((job) => (
                 <Link href={`/jobs/${job.id}`} key={job.id}>
-                  <span className={styles.historyIcon}><ServiceCategoryIcon icon={job.category.icon} aria-hidden="true" /></span>
+                  <span className={`${styles.historyIcon} ${job.counterpart ? styles.personAvatar : ""}`}>{job.counterpart?.avatarUrl ? <Image src={job.counterpart.avatarUrl} alt={`${job.counterpart.displayName} profile`} width={48} height={48} unoptimized /> : job.counterpart ? job.counterpart.displayName.charAt(0).toUpperCase() : <ServiceCategoryIcon icon={job.category.icon} aria-hidden="true" />}</span>
                   <span>
                     <strong>{job.title}</strong>
+                    <small className={styles.historyCategory}><ServiceCategoryIcon icon={job.category.icon} aria-hidden="true" />{job.category.name}</small>
                     <small><MapPin aria-hidden="true" /> {job.area.name}</small>
-                    {job.counterpart && <small className={styles.counterpart}><span className={styles.miniAvatar}>{job.counterpart.avatarUrl ? <Image src={job.counterpart.avatarUrl} alt="" width={24} height={24} unoptimized /> : job.counterpart.displayName.charAt(0).toUpperCase()}</span>With {job.counterpart.displayName} · {job.counterpart.rating === null ? "New" : `${Number(job.counterpart.rating).toFixed(1)} ★`}</small>}
+                    {job.counterpart && <><small className={styles.historyName}>{job.counterpart.displayName}</small><small className={styles.jobRating}><Star aria-hidden="true" />{job.counterpart.rating === null ? "New · No reviews" : `${Number(job.counterpart.rating).toFixed(1)} · ${job.counterpart.reviewCount} review${job.counterpart.reviewCount === 1 ? "" : "s"}`}</small></>}
                     {job.ratingReceived && (
                       <small className={styles.jobRating}>
                         <Star aria-hidden="true" />
@@ -394,6 +416,21 @@ export default function AuthenticatedHomePage() {
           Account
         </Link>
       </nav>
+
+      {popupOpportunity && (
+        <aside className={styles.opportunityPopup} role="dialog" aria-modal="false" aria-labelledby="opportunity-popup-title">
+          <button type="button" aria-label="Close matched job" onClick={() => setPopupOpportunity(null)}><X aria-hidden="true" /></button>
+          <span className={styles.popupIcon}><ServiceCategoryIcon icon={popupOpportunity.category.icon} aria-hidden="true" /></span>
+          <div><p className={styles.eyebrow}>NEW MATCH NEAR YOU</p><h2 id="opportunity-popup-title">{popupOpportunity.title}</h2><span><MapPin aria-hidden="true" />{popupOpportunity.area.name}</span></div>
+          <Link href={`/opportunities/${popupOpportunity.jobId}`} onClick={() => setPopupOpportunity(null)}>View job <ArrowRight aria-hidden="true" /></Link>
+        </aside>
+      )}
     </main>
   );
+}
+
+function travelStatusLabel(job: Job): string {
+  const travelerRole = job.serviceLocationMode === "at_provider" ? "client" : "provider";
+  if (job.role === travelerRole) return "You’re on the way";
+  return travelerRole === "client" ? "Client on the way" : "Provider on the way";
 }

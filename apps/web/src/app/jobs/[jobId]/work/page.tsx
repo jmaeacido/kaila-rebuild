@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { FormEvent, use, useCallback, useEffect, useState } from "react";
 import {
   AlertTriangle,
@@ -10,11 +11,13 @@ import {
   Clock3,
   FileCheck2,
   Hammer,
+  MapPin,
   MessageCircle,
   Navigation,
   RefreshCw,
   RotateCcw,
   Star,
+  WalletCards,
   X,
 } from "lucide-react";
 import { Button, Feedback } from "@kaila/ui";
@@ -27,6 +30,7 @@ import {
   shouldShowReviewDeadline,
 } from "./work-copy";
 import styles from "./work.module.css";
+import { ServiceCategoryIcon } from "../../../../components/service-category-icon";
 
 type Evidence = {
   id: string;
@@ -40,6 +44,19 @@ type Work = {
   status: string;
   version: number;
   role: "client" | "provider";
+  job: {
+    title: string;
+    description: string;
+    category: { name: string; icon: string };
+    area: { name: string };
+    addressLabel: string | null;
+    scheduleType: string;
+    scheduledAt: string | null;
+    agreedAmountCentavos: number;
+    agreedScope: string | null;
+    estimatedDurationText: string | null;
+    counterpart: { displayName: string; avatarUrl: string | null; rating: string | number | null; reviewCount: number };
+  };
   workStartedAt: string | null;
   autoConfirmAt: string | null;
   completedAt: string | null;
@@ -338,6 +355,27 @@ export default function WorkPage({ params }: { params: Promise<{ jobId: string }
         <span>{primaryGuidance(data)}</span>
       </header>
 
+      <section className={styles.jobSummary} aria-labelledby="job-summary-title">
+        <header>
+          <span className={styles.serviceIcon}><ServiceCategoryIcon icon={data.job.category.icon} aria-hidden="true" /></span>
+          <div><p>{data.job.category.name}</p><h2 id="job-summary-title">{data.job.title}</h2></div>
+          <Link href={`/jobs/${jobId}`}>Full details</Link>
+        </header>
+        <p className={styles.jobDescription}>{data.job.description}</p>
+        <dl className={styles.jobFacts}>
+          <div><MapPin aria-hidden="true" /><dt>Location</dt><dd>{data.job.addressLabel || data.job.area.name}</dd></div>
+          <div><Clock3 aria-hidden="true" /><dt>Schedule</dt><dd>{workSchedule(data.job.scheduleType, data.job.scheduledAt)}</dd></div>
+          <div><WalletCards aria-hidden="true" /><dt>Agreed price</dt><dd>{formatMoney(data.job.agreedAmountCentavos)}</dd></div>
+        </dl>
+        <div className={styles.assignmentDetails}>
+          <div className={styles.counterpart}>
+            <span>{data.job.counterpart.avatarUrl ? <Image src={data.job.counterpart.avatarUrl} alt={`${data.job.counterpart.displayName} profile`} width={48} height={48} unoptimized /> : data.job.counterpart.displayName.charAt(0).toUpperCase()}</span>
+            <div><strong>{data.job.counterpart.displayName}</strong><small><Star aria-hidden="true" />{counterpartReputation(data.job.counterpart.rating, data.job.counterpart.reviewCount)}</small></div>
+          </div>
+          <div><small>Agreed scope</small><p>{data.job.agreedScope || "Complete the job described above."}</p>{data.job.estimatedDurationText && <small>Estimated duration: {data.job.estimatedDurationText}</small>}</div>
+        </div>
+      </section>
+
       <section className={styles.progressCard}>
         <LifecycleTimeline status={data.status} />
       </section>
@@ -562,4 +600,16 @@ function panelTitle(panel: Exclude<Panel, null>): string {
     cancel: "Request cancellation",
     dispute: "Open a support review",
   }[panel];
+}
+
+function formatMoney(centavos: number): string {
+  return `₱${(centavos / 100).toLocaleString()}`;
+}
+
+function workSchedule(type: string, scheduledAt: string | null): string {
+  return type === "asap" ? "As soon as possible" : scheduledAt ? new Date(scheduledAt).toLocaleString() : "Schedule to be confirmed";
+}
+
+function counterpartReputation(rating: string | number | null, reviewCount: number): string {
+  return rating === null ? "New · No reviews" : `${Number(rating).toFixed(1)} · ${reviewCount} review${reviewCount === 1 ? "" : "s"}`;
 }
