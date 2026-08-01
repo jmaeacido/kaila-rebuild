@@ -10,6 +10,7 @@ import {
   Check,
   ChevronRight,
   MapPin,
+  LifeBuoy,
   Settings,
   ShieldCheck,
   Star,
@@ -229,6 +230,12 @@ export default function AccountPage() {
           </span>
         </div>
       </section>
+
+      <Link className={styles.reputationCard} href="/support">
+        <span className={styles.reputationIcon}><LifeBuoy aria-hidden="true" /></span>
+        <div><p className={styles.eyebrow}>CUSTOMER CARE</p><h2>Support</h2><p>Ask a question or follow your support requests.</p></div>
+        <ChevronRight aria-hidden="true" />
+      </Link>
 
       <section className={styles.reputationCard} aria-labelledby="reputation-title">
         <span className={styles.reputationIcon}><Star aria-hidden="true" /></span>

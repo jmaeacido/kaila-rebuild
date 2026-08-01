@@ -4,6 +4,7 @@ use App\Http\Controllers\AdminDisputeController;
 use App\Http\Controllers\AdminMarketplaceController;
 use App\Http\Controllers\AdminPhaseNineController;
 use App\Http\Controllers\AdminReportController;
+use App\Http\Controllers\AdminSupportCaseController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\MobileSessionController;
 use App\Http\Controllers\Auth\PasswordRecoveryController;
@@ -34,6 +35,7 @@ use App\Http\Controllers\ReferenceDataController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\ServiceJobController;
+use App\Http\Controllers\SupportCaseController;
 use App\Http\Controllers\TravelController;
 use App\Http\Controllers\UserSessionController;
 use Illuminate\Http\Request;
@@ -135,6 +137,12 @@ Route::middleware('mobile.auth')->group(function (): void {
     Route::post('/auth/mobile/community', [CommunityController::class, 'store']);
     Route::put('/auth/mobile/community/{communityPost}/helpful', [CommunityController::class, 'react']);
     Route::post('/auth/mobile/katabang', KatabangController::class);
+    Route::get('/auth/mobile/support/cases', [SupportCaseController::class, 'index']);
+    Route::post('/auth/mobile/support/cases', [SupportCaseController::class, 'store']);
+    Route::get('/auth/mobile/support/cases/{supportCase}', [SupportCaseController::class, 'show']);
+    Route::post('/auth/mobile/support/cases/{supportCase}/messages', [SupportCaseController::class, 'reply']);
+    Route::post('/auth/mobile/support/cases/{supportCase}/close', [SupportCaseController::class, 'close']);
+    Route::post('/auth/mobile/support/cases/{supportCase}/reopen', [SupportCaseController::class, 'reopen']);
 });
 
 Route::middleware('auth')->group(function (): void {
@@ -224,7 +232,17 @@ Route::middleware('auth')->group(function (): void {
     Route::post('/community', [CommunityController::class, 'store']);
     Route::put('/community/{communityPost}/helpful', [CommunityController::class, 'react']);
     Route::post('/katabang', KatabangController::class);
+    Route::get('/support/cases', [SupportCaseController::class, 'index']);
+    Route::post('/support/cases', [SupportCaseController::class, 'store']);
+    Route::get('/support/cases/{supportCase}', [SupportCaseController::class, 'show']);
+    Route::post('/support/cases/{supportCase}/messages', [SupportCaseController::class, 'reply']);
+    Route::post('/support/cases/{supportCase}/close', [SupportCaseController::class, 'close']);
+    Route::post('/support/cases/{supportCase}/reopen', [SupportCaseController::class, 'reopen']);
     Route::middleware('admin')->prefix('admin/marketplace')->group(function (): void {
+        Route::get('/support/cases', [AdminSupportCaseController::class, 'index']);
+        Route::get('/support/cases/{supportCase}', [AdminSupportCaseController::class, 'show']);
+        Route::put('/support/cases/{supportCase}', [AdminSupportCaseController::class, 'update']);
+        Route::post('/support/cases/{supportCase}/messages', [AdminSupportCaseController::class, 'reply']);
         Route::get('/cases', [AdminDisputeController::class, 'index']);
         Route::get('/cases/{disputeCase}', [AdminDisputeController::class, 'show']);
         Route::post('/cases/{disputeCase}/assign', [AdminDisputeController::class, 'assign']);
