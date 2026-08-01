@@ -11,7 +11,9 @@ import {
   MicOff,
   Paperclip,
   Phone,
+  PhoneIncoming,
   PhoneOff,
+  PhoneOutgoing,
   Plus,
   Send,
   ShieldCheck,
@@ -45,7 +47,9 @@ type Conversation = {
   viewerUserId: number;
   otherParty: { id: number; name: string; avatarUrl: string | null };
   messages: Message[];
+  calls: CallLog[];
 };
+type CallLog = { id: string; media: "audio" | "video"; status: string; viewerDirection: "incoming" | "outgoing"; startedAt: string; answeredAt: string | null; endedAt: string | null; endedReason: string | null; durationSeconds: number | null };
 type CallSignal = {
   type: "ringing" | "offer" | "answer" | "candidate" | "hangup";
   callId: string;
@@ -76,7 +80,7 @@ export default function ConversationPage({ params }: { params: Promise<{ jobId: 
   const [state, setState] = useState<"loading" | "ready" | "sending" | "error">("loading");
   const [notice, setNotice] = useState("");
   const [showEmoji, setShowEmoji] = useState(false);
-  const [reactionMessageId, setReactionMessageId] = useState<string | null>(null);
+  const [reactionPicker, setReactionPicker] = useState<{ messageId: string; vertical: "above" | "below"; horizontal: "left" | "right" } | null>(null);
   const [selectedMediaId, setSelectedMediaId] = useState<string | null>(null);
   const [call, setCall] = useState<ActiveCall | null>(null);
   const [muted, setMuted] = useState(false);
@@ -103,7 +107,7 @@ export default function ConversationPage({ params }: { params: Promise<{ jobId: 
       setState("error");
     }
   }, [jobId]);
-  useRealtimeInvalidation(() => void load(), (event) => event.data.jobId === jobId);
+  useRealtimeInvalidation(() => void load(), (event) => event.data.jobId === jobId || event.data.contextId === jobId);
 
   useEffect(() => {
     const initial = window.setTimeout(() => void load(), 0);
@@ -261,6 +265,15 @@ export default function ConversationPage({ params }: { params: Promise<{ jobId: 
     if (response.ok) await load();
   }
 
+  function toggleReactionPicker(messageId: string, button: HTMLButtonElement) {
+    if (reactionPicker?.messageId === messageId) { setReactionPicker(null); return; }
+    const boundary = button.closest(`.${styles.messages}`)?.getBoundingClientRect();
+    const trigger = button.getBoundingClientRect();
+    const vertical = boundary && trigger.top - boundary.top < 190 ? "below" : "above";
+    const horizontal = boundary && trigger.left - boundary.left > boundary.width / 2 ? "right" : "left";
+    setReactionPicker({ messageId, vertical, horizontal });
+  }
+
   async function startCall(media: "audio" | "video") {
     setNotice("");
     const response = await fetch("/api/v1/calls", {
@@ -277,6 +290,7 @@ export default function ConversationPage({ params }: { params: Promise<{ jobId: 
         if (!connection.localDescription) throw new Error("The browser did not create a call offer.");
         await sendSignal(created.data.id, { type: "offer", description: connection.localDescription.toJSON() });
       } catch {
+        await fetch(`/api/v1/calls/${created.data.id}/transition`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "end", reason: "failed" }) }).catch(() => undefined);
         closeCall();
         setNotice("Microphone or camera access is required to start the call.");
       }
@@ -365,9 +379,14 @@ export default function ConversationPage({ params }: { params: Promise<{ jobId: 
   }
 
   const otherName = conversation?.otherParty.name || "Job participant";
+  const otherAvatar = conversation?.otherParty.avatarUrl || null;
   const conversationMedia = conversation?.messages.flatMap((message) => message.assets)
     .filter((asset): asset is Asset & { url: string } => asset.url !== null && asset.mimeType.startsWith("image/")) ?? [];
   const selectedMediaIndex = selectedMediaId === null ? -1 : conversationMedia.findIndex((asset) => asset.id === selectedMediaId);
+  const timeline = conversation ? [
+    ...conversation.messages.map((message) => ({ kind: "message" as const, at: message.createdAt, message })),
+    ...conversation.calls.map((callLog) => ({ kind: "call" as const, at: callLog.startedAt, callLog })),
+  ].sort((first, second) => new Date(first.at).getTime() - new Date(second.at).getTime()) : [];
   return (
     <main className={styles.chatShell}>
       <section className={styles.chatWindow}>
@@ -399,12 +418,14 @@ export default function ConversationPage({ params }: { params: Promise<{ jobId: 
           {state !== "loading" && conversation?.messages.length === 0 && (
             <div className={styles.chatEmpty}><Smile /><h2>Start the conversation</h2><p>Confirm timing, arrival, and anything needed for the job.</p></div>
           )}
-          {conversation?.messages.map((message) => {
-            const mine = message.senderUserId === conversation.viewerUserId;
+          {timeline.map((entry) => {
+            if (entry.kind === "call") return <CallLogCard call={entry.callLog} key={`call-${entry.callLog.id}`} />;
+            const message = entry.message;
+            const mine = message.senderUserId === conversation?.viewerUserId;
             const attachmentOnly = message.body === "Attachment" && message.assets.length > 0;
             return (
               <article className={`${styles.messageRow} ${mine ? styles.mine : ""}`} key={message.id}>
-                {!mine && <span className={styles.messageAvatar}>{conversation.otherParty.avatarUrl ? <img src={conversation.otherParty.avatarUrl} alt="" /> : otherName[0]}</span>}
+                {!mine && <span className={styles.messageAvatar}>{otherAvatar ? <img src={otherAvatar} alt="" /> : otherName[0]}</span>}
                 <div className={styles.messageContent}>
                   <div className={styles.bubble}>
                     {!attachmentOnly && message.body && <p>{message.body}</p>}
@@ -420,15 +441,15 @@ export default function ConversationPage({ params }: { params: Promise<{ jobId: 
                     ))}
                     <time>{new Date(message.createdAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</time>
                   </div>
-                  <div className={styles.messageReactions} data-open={reactionMessageId === message.id}>
+                  <div className={styles.messageReactions} data-open={reactionPicker?.messageId === message.id}>
                     {Object.entries(message.reactions).filter(([, count]) => count > 0).map(([reaction, count]) => (
                       <button className={message.viewerReactions.includes(reaction) ? styles.reacted : ""} key={reaction} type="button" onClick={() => void react(message.id, reaction)} aria-label={`React ${reaction}`}>
                         {reaction}<span>{count}</span>
                       </button>
                     ))}
-                    <button className={styles.reactionToggle} type="button" onClick={() => setReactionMessageId((current) => current === message.id ? null : message.id)} aria-label="Choose a reaction" aria-expanded={reactionMessageId === message.id}><Smile /></button>
-                    {reactionMessageId === message.id && <div className={styles.reactionTray}>{reactions.map((reaction) => (
-                      <button className={message.viewerReactions.includes(reaction) ? styles.reacted : ""} key={reaction} type="button" onClick={() => { void react(message.id, reaction); setReactionMessageId(null); }} aria-label={`React ${reaction}`}>{reaction}</button>
+                    <button className={styles.reactionToggle} type="button" onClick={(event) => toggleReactionPicker(message.id, event.currentTarget)} aria-label="Choose a reaction" aria-expanded={reactionPicker?.messageId === message.id}><Smile /></button>
+                    {reactionPicker?.messageId === message.id && <div className={styles.reactionTray} data-vertical={reactionPicker.vertical} data-horizontal={reactionPicker.horizontal}>{reactions.map((reaction) => (
+                      <button className={message.viewerReactions.includes(reaction) ? styles.reacted : ""} key={reaction} type="button" onClick={() => { void react(message.id, reaction); setReactionPicker(null); }} aria-label={`React ${reaction}`}>{reaction}</button>
                     ))}</div>}
                   </div>
                 </div>
@@ -478,4 +499,27 @@ export default function ConversationPage({ params }: { params: Promise<{ jobId: 
       </section>
     </main>
   );
+}
+
+function CallLogCard({ call }: { call: CallLog }) {
+  const incoming = call.viewerDirection === "incoming";
+  const title = callTitle(call);
+  return <article className={styles.callLog}>
+    <span>{incoming ? <PhoneIncoming aria-hidden="true" /> : <PhoneOutgoing aria-hidden="true" />}</span>
+    <div><strong>{title}</strong><small>{call.media === "video" ? "Video" : "Audio"} · {new Date(call.startedAt).toLocaleString()}</small>{call.durationSeconds !== null && <small>{formatCallDuration(call.durationSeconds)}</small>}</div>
+  </article>;
+}
+
+function callTitle(call: CallLog): string {
+  if (call.status === "active") return call.viewerDirection === "incoming" ? "Incoming call answered" : "Outgoing call answered";
+  if (call.status === "declined") return call.viewerDirection === "incoming" ? "Call declined" : "Call was declined";
+  if (call.endedReason === "failed") return "Call failed";
+  if (call.status === "ringing") return call.viewerDirection === "incoming" ? "Missed call" : "No answer";
+  return call.viewerDirection === "incoming" ? "Incoming call" : "Outgoing call";
+}
+
+function formatCallDuration(seconds: number): string {
+  const minutes = Math.floor(seconds / 60);
+  const remainder = seconds % 60;
+  return `Duration ${minutes}:${String(remainder).padStart(2, "0")}`;
 }

@@ -19,8 +19,18 @@ test("emoji picker is categorized, scrollable, and constrained to the composer",
   assert.match(conversation, /const reactions = \["👍", "👎", "❤️"/);
   assert.match(styles, /\.messageRow\.mine \.reactionTray\{left:auto;right:0\}/);
   assert.match(styles, /\.chatWindow \.messages\{overflow-x:hidden\}/);
+  assert.match(conversation, /toggleReactionPicker/);
+  assert.match(conversation, /trigger\.top - boundary\.top < 190/);
+  assert.match(styles, /data-vertical="below"/);
+  assert.match(styles, /data-horizontal="right"/);
   assert.match(conversation, /className=\{styles\.chatImage\}/);
   assert.match(conversation, /<MediaViewer assets=\{conversationMedia as ViewableMedia\[\]\}/);
+});
+
+test("job calls are rendered as ordered chat timeline events", () => {
+  assert.match(conversation, /conversation\.calls\.map/);
+  assert.match(conversation, /<CallLogCard call=\{entry\.callLog\}/);
+  assert.match(conversation, /Duration \$\{minutes\}/);
 });
 
 test("work status keeps the assignment identifiable", () => {

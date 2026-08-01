@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\CallSession;
 use App\Models\ConversationMessage;
 use App\Models\JobConversation;
 use App\Models\ProfileAsset;
@@ -73,6 +74,22 @@ class ConversationController extends Controller
             'viewerUserId' => $actor->id,
             'otherParty' => ['id' => $otherUser->id, 'name' => $otherUser->name, 'avatarUrl' => $avatar ? "/api/v1/profile-assets/{$avatar->id}" : null],
             'messages' => $messages,
+            'calls' => CallSession::query()
+                ->where('context_type', 'job')
+                ->where('context_id', $serviceJob->id)
+                ->oldest()
+                ->get()
+                ->map(fn (CallSession $call): array => [
+                    'id' => $call->id,
+                    'media' => $call->media,
+                    'status' => $call->status,
+                    'viewerDirection' => $call->caller_user_id === $actor->id ? 'outgoing' : 'incoming',
+                    'startedAt' => $call->created_at?->toIso8601String(),
+                    'answeredAt' => $call->answered_at?->toIso8601String(),
+                    'endedAt' => $call->ended_at?->toIso8601String(),
+                    'endedReason' => $call->ended_reason,
+                    'durationSeconds' => $call->answered_at && $call->ended_at ? $call->answered_at->diffInSeconds($call->ended_at) : null,
+                ]),
         ]]);
     }
 

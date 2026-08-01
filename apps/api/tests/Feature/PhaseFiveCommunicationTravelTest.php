@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Jobs\ScanMessageAsset;
 use App\Models\Area;
+use App\Models\CallSession;
 use App\Models\ProviderProfile;
 use App\Models\ServiceCategory;
 use App\Models\User;
@@ -78,6 +79,27 @@ class PhaseFiveCommunicationTravelTest extends TestCase
 
         Queue::assertPushed(ScanMessageAsset::class, fn (ScanMessageAsset $job): bool => $job->assetId === $asset);
         $this->get("/api/v1/message-assets/$asset")->assertNotFound();
+    }
+
+    public function test_job_calls_are_logged_in_the_conversation_for_both_participants(): void
+    {
+        [$job, $client, $provider] = $this->selectedJob();
+        CallSession::query()->create([
+            'context_type' => 'job', 'context_id' => $job,
+            'caller_user_id' => $provider->id, 'callee_user_id' => $client->id,
+            'media' => 'video', 'status' => 'ended', 'answered_at' => now()->subMinutes(2),
+            'ended_at' => now(), 'ended_reason' => 'completed',
+        ]);
+
+        $this->actingAs($provider)->getJson("/api/v1/jobs/$job/conversation")
+            ->assertOk()
+            ->assertJsonPath('data.calls.0.media', 'video')
+            ->assertJsonPath('data.calls.0.viewerDirection', 'outgoing')
+            ->assertJsonPath('data.calls.0.status', 'ended')
+            ->assertJsonPath('data.calls.0.durationSeconds', 120);
+        $this->actingAs($client)->getJson("/api/v1/jobs/$job/conversation")
+            ->assertOk()
+            ->assertJsonPath('data.calls.0.viewerDirection', 'incoming');
     }
 
     public function test_foreground_travel_is_provider_owned_reconciles_and_stops(): void

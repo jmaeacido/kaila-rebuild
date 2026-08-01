@@ -172,9 +172,17 @@
 .chatWindow .messages{overflow-x:hidden}
 .reactionTray{border-radius:var(--radius-card);bottom:calc(100% + var(--spacing-8));box-sizing:border-box;display:grid;grid-template-columns:repeat(6,var(--control-min-height));left:0;max-width:calc(100vw - var(--spacing-48));overflow:hidden;padding:var(--spacing-8);right:auto;width:calc(var(--control-min-height) * 6 + var(--spacing-16))}
 .messageRow.mine .reactionTray{left:auto;right:0}
+.messageRow .reactionTray[data-vertical="below"]{bottom:auto;top:calc(100% + var(--spacing-8))}
+.messageRow .reactionTray[data-vertical="above"]{bottom:calc(100% + var(--spacing-8));top:auto}
+.messageRow .reactionTray[data-horizontal="left"]{left:0;right:auto}
+.messageRow .reactionTray[data-horizontal="right"]{left:auto;right:0}
 @media(max-width:36rem){.messageReactions .reactionToggle{opacity:1}
 .reactionTray{grid-template-columns:repeat(5,var(--control-min-height));max-height:calc(var(--control-min-height) * 3 + var(--spacing-16));overflow-y:auto}
 }
 .chatImage{background:transparent;border:0;border-radius:var(--radius-card);cursor:pointer;display:block;max-width:min(22rem,70vw);overflow:hidden;padding:0}
 .chatImage img{display:block;height:auto;max-height:22rem;object-fit:cover;width:100%}
 .chatImage:focus-visible{outline:var(--focus-ring-width) solid var(--color-focus);outline-offset:var(--spacing-4)}
+.callLog{align-items:center;align-self:center;background:var(--color-surface);border:var(--control-border-width) solid var(--color-border);border-radius:var(--radius-pill);display:flex;gap:var(--spacing-8);max-width:calc(100% - var(--spacing-32));padding:var(--spacing-8) var(--spacing-16)}
+.callLog>span{align-items:center;background:color-mix(in srgb,var(--color-primary) 10%,var(--color-surface));border-radius:var(--radius-pill);color:var(--color-primary);display:flex;height:var(--spacing-32);justify-content:center;width:var(--spacing-32)}
+.callLog svg{height:var(--spacing-16);width:var(--spacing-16)}
+.callLog>div{display:grid;gap:var(--spacing-4)}.callLog strong{color:var(--color-ink);font-size:var(--font-small-size)}.callLog small{color:var(--color-text-secondary);font-size:var(--font-caption-size)}

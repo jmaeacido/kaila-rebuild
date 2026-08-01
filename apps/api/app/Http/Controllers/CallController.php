@@ -95,7 +95,7 @@ class CallController
             'candidate' => 'nullable|array',
         ]);
         $actor = $this->user($request);
-        abort_unless(in_array($actor->id, [$callSession->caller_user_id, $callSession->callee_user_id], true), 404);
+        abort_if($actor->id !== $callSession->caller_user_id && $actor->id !== $callSession->callee_user_id, 404);
         $recipient = $actor->id === $callSession->caller_user_id ? $callSession->callee_user_id : $callSession->caller_user_id;
         $description = isset($data['description'])
             ? $this->normalizeSessionDescription($data['description'])
@@ -121,7 +121,7 @@ class CallController
     public function signalState(Request $request, CallSession $callSession): JsonResponse
     {
         $actor = $this->user($request);
-        abort_unless(in_array($actor->id, [$callSession->caller_user_id, $callSession->callee_user_id], true), 404);
+        abort_if($actor->id !== $callSession->caller_user_id && $actor->id !== $callSession->callee_user_id, 404);
         $offer = Redis::get("kaila:calls:state:{$callSession->id}:offer");
         $answer = Redis::get("kaila:calls:state:{$callSession->id}:answer");
 
@@ -135,7 +135,7 @@ class CallController
     {
         $data = $request->validate(['action' => 'required|in:answer,decline,end', 'reason' => 'nullable|in:declined,completed,busy,failed']);
         $actor = $this->user($request);
-        abort_unless(in_array($actor->id, [$callSession->caller_user_id, $callSession->callee_user_id], true), 404);
+        abort_if($actor->id !== $callSession->caller_user_id && $actor->id !== $callSession->callee_user_id, 404);
         if ($data['action'] === 'answer') {
             abort_unless($actor->id === $callSession->callee_user_id, 409);
             abort_unless(in_array($callSession->status, ['ringing', 'active'], true), 409);
@@ -146,7 +146,7 @@ class CallController
             abort_unless(in_array($callSession->status, ['ringing', 'active'], true), 409);
             $callSession->update(['status' => $data['action'] === 'decline' ? 'declined' : 'ended', 'ended_at' => now(), 'ended_reason' => $data['reason'] ?? ($data['action'] === 'decline' ? 'declined' : 'completed')]);
         }
-        DB::transaction(fn () => $this->outbox->record('call.status.changed', 'call_session', $callSession->id, now()->getTimestamp(), ['rooms' => ["user:{$callSession->caller_user_id}", "user:{$callSession->callee_user_id}"], 'callId' => $callSession->id, 'status' => $callSession->status]));
+        DB::transaction(fn () => $this->outbox->record('call.status.changed', 'call_session', $callSession->id, now()->getTimestamp(), ['rooms' => ["user:{$callSession->caller_user_id}", "user:{$callSession->callee_user_id}"], 'callId' => $callSession->id, 'status' => $callSession->status, 'contextType' => $callSession->context_type, 'contextId' => $callSession->context_id, 'media' => $callSession->media]));
 
         return response()->json(['data' => $callSession]);
     }
