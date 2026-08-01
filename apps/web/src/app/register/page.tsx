@@ -19,6 +19,10 @@ import {
 } from "../auth-client";
 import styles from "../auth.module.css";
 import { SocialLogin } from "../social-login";
+import {
+  PasswordRequirements,
+  passwordMeetsRequirements,
+} from "../password-requirements";
 import { realtimeAuthChangedName } from "../realtime-provider";
 
 function RegisterForm() {
@@ -225,7 +229,8 @@ function RegisterForm() {
               <span className={styles.passwordControl}>
                 <input
                   autoComplete="new-password"
-                  minLength={12}
+                  maxLength={128}
+                  minLength={8}
                   onChange={(event) => update("password", event.target.value)}
                   required
                   type={showPassword ? "text" : "password"}
@@ -240,16 +245,14 @@ function RegisterForm() {
                   {showPassword ? <EyeOff aria-hidden="true" /> : <Eye aria-hidden="true" />}
                 </button>
               </span>
-              <span className={styles.fieldError}>
-                Use at least 12 characters.
-              </span>
             </label>
             <label>
               Confirm password
               <span className={styles.passwordControl}>
                 <input
                   autoComplete="new-password"
-                  minLength={12}
+                  maxLength={128}
+                  minLength={8}
                   onChange={(event) =>
                     update("passwordConfirmation", event.target.value)
                   }
@@ -278,6 +281,11 @@ function RegisterForm() {
               </span>
               {errors.password && <span className={styles.fieldError}>{errors.password[0]}</span>}
             </label>
+            <PasswordRequirements password={fields.password} />
+            {fields.passwordConfirmation &&
+              fields.password !== fields.passwordConfirmation && (
+                <span className={styles.fieldError}>Passwords do not match.</span>
+              )}
             <label className={styles.consent}>
               <input
                 checked={accepted}
@@ -301,7 +309,7 @@ function RegisterForm() {
                 !policy ||
                 !fields.name ||
                 !fields.email ||
-                fields.password.length < 12 ||
+                !passwordMeetsRequirements(fields.password) ||
                 fields.password !== fields.passwordConfirmation
               }
               isLoading={loading}

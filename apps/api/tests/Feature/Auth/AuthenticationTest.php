@@ -22,8 +22,8 @@ class AuthenticationTest extends TestCase
         $response = $this->postJson('/api/v1/auth/register', [
             'name' => 'Juan Dela Cruz',
             'email' => 'juan@example.test',
-            'password' => 'a-secure-password',
-            'password_confirmation' => 'a-secure-password',
+            'password' => 'Eight888',
+            'password_confirmation' => 'Eight888',
             'termsVersion' => config('policies.terms_version'),
             'privacyVersion' => config('policies.privacy_version'),
             'providerIntent' => true,
@@ -55,6 +55,19 @@ class AuthenticationTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.termsVersion', config('policies.terms_version'))
             ->assertJsonPath('data.privacyVersion', config('policies.privacy_version'));
+    }
+
+    public function test_registration_rejects_passwords_shorter_than_eight_characters(): void
+    {
+        $this->postJson('/api/v1/auth/register', [
+            'name' => 'Juan Dela Cruz',
+            'email' => 'juan@example.test',
+            'password' => 'seven77',
+            'password_confirmation' => 'seven77',
+            'termsVersion' => config('policies.terms_version'),
+            'privacyVersion' => config('policies.privacy_version'),
+        ])->assertUnprocessable()
+            ->assertJsonPath('error.fields.password.0', 'The password field must be at least 8 characters.');
     }
 
     public function test_session_status_is_public_and_reports_authentication_state(): void

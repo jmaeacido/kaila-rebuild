@@ -7,6 +7,10 @@ import { ArrowLeft, Eye, EyeOff, KeyRound } from "lucide-react";
 import { Button } from "@kaila/ui";
 import { ApiError, prepareCsrf } from "../auth-client";
 import { AuthFrame } from "../auth-frame";
+import {
+  PasswordRequirements,
+  passwordMeetsRequirements,
+} from "../password-requirements";
 import styles from "../auth.module.css";
 
 function ResetPasswordForm() {
@@ -21,11 +25,11 @@ function ResetPasswordForm() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const linkIsValid = Boolean(token && email);
-  const passwordsMatch = password === confirmation;
+  const passwordsMatch = confirmation.length > 0 && password === confirmation;
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!linkIsValid || password.length < 12 || !passwordsMatch) {
+    if (!linkIsValid || !passwordMeetsRequirements(password) || !passwordsMatch) {
       return;
     }
     setLoading(true);
@@ -69,7 +73,7 @@ function ResetPasswordForm() {
   return (
     <AuthFrame
       title="Choose a new password"
-      description="Use at least 12 characters that you don’t use on another account."
+      description="Create a secure password for your KAILA account."
     >
       <form className={styles.form} onSubmit={(event) => void submit(event)}>
         {!linkIsValid ? (
@@ -84,7 +88,8 @@ function ResetPasswordForm() {
               <span className={styles.passwordControl}>
                 <input
                   autoComplete="new-password"
-                  minLength={12}
+                  maxLength={128}
+                  minLength={8}
                   onChange={(event) => setPassword(event.target.value)}
                   required
                   type={showPassword ? "text" : "password"}
@@ -99,14 +104,14 @@ function ResetPasswordForm() {
                   {showPassword ? <EyeOff aria-hidden="true" /> : <Eye aria-hidden="true" />}
                 </button>
               </span>
-              <span className={styles.fieldError}>Use at least 12 characters.</span>
             </label>
             <label>
               Confirm new password
               <span className={styles.passwordControl}>
                 <input
                   autoComplete="new-password"
-                  minLength={12}
+                  maxLength={128}
+                  minLength={8}
                   onChange={(event) => setConfirmation(event.target.value)}
                   required
                   type={showConfirmation ? "text" : "password"}
@@ -121,10 +126,11 @@ function ResetPasswordForm() {
                   {showConfirmation ? <EyeOff aria-hidden="true" /> : <Eye aria-hidden="true" />}
                 </button>
               </span>
-              {confirmation && !passwordsMatch && (
-                <span className={styles.fieldError}>Passwords do not match.</span>
-              )}
             </label>
+            <PasswordRequirements password={password} />
+            {confirmation && !passwordsMatch && (
+              <span className={styles.fieldError}>Passwords do not match.</span>
+            )}
           </>
         )}
         {error && <p className={styles.formError} role="alert">{error}</p>}
@@ -132,7 +138,7 @@ function ResetPasswordForm() {
           {linkIsValid && (
             <Button
               className={styles.submit}
-              disabled={password.length < 12 || !passwordsMatch}
+              disabled={!passwordMeetsRequirements(password) || !passwordsMatch}
               isLoading={loading}
               type="submit"
             >

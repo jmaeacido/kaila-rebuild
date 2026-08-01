@@ -20,6 +20,9 @@ class SocialAuthenticationTest extends TestCase
         config()->set('services.google.client_id', 'google-client');
         config()->set('services.google.client_secret', 'google-secret');
         config()->set('services.google.redirect_uri', 'http://localhost/api/v1/auth/social/google/callback');
+        config()->set('services.facebook.client_id', 'facebook-client');
+        config()->set('services.facebook.client_secret', 'facebook-secret');
+        config()->set('services.facebook.redirect_uri', 'http://localhost/api/v1/auth/social/facebook/callback');
         config()->set('services.kaila.public_url', 'https://kaila.example.test');
     }
 

@@ -45,13 +45,13 @@ class PasswordRecoveryTest extends TestCase
         $payload = [
             'email' => $user->email,
             'token' => $token,
-            'password' => 'a-new-secure-password',
-            'password_confirmation' => 'a-new-secure-password',
+            'password' => 'A-new-secure-password1',
+            'password_confirmation' => 'A-new-secure-password1',
         ];
         $this->postJson('/api/v1/auth/password/reset', $payload)
             ->assertOk()->assertJsonPath('data.passwordReset', true);
 
-        $this->assertTrue(Hash::check('a-new-secure-password', $user->fresh()->password));
+        $this->assertTrue(Hash::check('A-new-secure-password1', $user->fresh()->password));
         $this->assertDatabaseMissing('sessions', ['user_id' => $user->getKey()]);
         $this->assertDatabaseHas('mobile_sessions', [
             'id' => $mobile['sessionId'],
@@ -73,10 +73,21 @@ class PasswordRecoveryTest extends TestCase
         $this->postJson('/api/v1/auth/password/reset', [
             'email' => $user->email,
             'token' => $token,
-            'password' => 'a-new-secure-password',
-            'password_confirmation' => 'a-new-secure-password',
+            'password' => 'A-new-secure-password1',
+            'password_confirmation' => 'A-new-secure-password1',
         ])->assertUnprocessable()->assertJsonPath('error.code', 'PASSWORD_RESET_INVALID');
         $this->assertTrue(Hash::check('password', $user->fresh()->password));
+    }
+
+    public function test_reset_rejects_passwords_shorter_than_eight_characters(): void
+    {
+        $this->postJson('/api/v1/auth/password/reset', [
+            'email' => 'juan@example.test',
+            'token' => 'unused-for-validation',
+            'password' => 'seven77',
+            'password_confirmation' => 'seven77',
+        ])->assertUnprocessable()
+            ->assertJsonPath('error.fields.password.0', 'The password field must be at least 8 characters.');
     }
 
     public function test_recovery_requests_are_rate_limited(): void

@@ -87,7 +87,10 @@ class SocialAuthenticationController extends Controller
                     $user = User::query()->where('email', $profile['email'])->lockForUpdate()->first();
                 }
 
-                if ($user && $user->auth_subject !== null && $user->auth_subject !== $subject) {
+                if ($user
+                    && $user->auth_subject !== null
+                    && $user->auth_subject !== $subject
+                    && $user->auth_provider !== $provider) {
                     throw new SocialAuthenticationException('That email is already connected to another sign-in provider.');
                 }
 

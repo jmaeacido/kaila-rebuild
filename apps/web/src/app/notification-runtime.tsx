@@ -41,13 +41,15 @@ export function NotificationRuntime() {
     if (!message.permissionPrompt) window.setTimeout(() => dismiss(id), 6_000);
   }, [dismiss]);
 
-  const registerBrowserPush = useCallback(async () => {
+  const registerBrowserPush = useCallback(async (showFeedback = true) => {
     if (!firebaseConfigured || isNativeAndroid() || !(await isSupported())) return;
     const permission = Notification.permission === "granted"
       ? "granted"
       : await Notification.requestPermission();
     if (permission !== "granted") {
-      show({ title: "Notifications are off", body: "Enable notifications in your browser settings to receive updates." });
+      if (showFeedback) {
+        show({ title: "Notifications are off", body: "Enable notifications in your browser settings to receive updates." });
+      }
       return;
     }
     const registration = await navigator.serviceWorker.register("/firebase-messaging-sw.js");
@@ -67,7 +69,9 @@ export function NotificationRuntime() {
     });
     if (!response.ok) throw new Error("PUSH_REGISTRATION_FAILED");
     setToasts((current) => current.filter((toast) => !toast.permissionPrompt));
-    show({ title: "Notifications enabled", body: "KAILA updates can now reach this browser." });
+    if (showFeedback) {
+      show({ title: "Notifications enabled", body: "KAILA updates can now reach this browser." });
+    }
   }, [show]);
 
   useEffect(() => {
@@ -122,9 +126,7 @@ export function NotificationRuntime() {
     void isSupported().then(async (supported) => {
       if (!supported) return;
       if (Notification.permission === "granted") {
-        await registerBrowserPush().catch(() => show({ title: "Push setup needs attention", body: "KAILA could not register this browser. Try again from Settings." }));
-      } else if (Notification.permission === "default") {
-        show({ title: "Get updates right away", body: "Enable browser notifications for messages, offers, calls, and job updates.", permissionPrompt: true });
+        await registerBrowserPush(false).catch(() => undefined);
       }
       const app = getApps()[0] ?? initializeApp(firebaseConfig);
       unsubscribe = onMessage(getMessaging(app), (payload) => {
