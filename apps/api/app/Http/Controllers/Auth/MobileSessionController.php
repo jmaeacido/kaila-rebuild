@@ -29,6 +29,9 @@ class MobileSessionController extends Controller
 
             return $this->unauthorized('The email or password is incorrect.', 422);
         }
+        if ($user->account_status === 'restricted' || $user->banned_at !== null) {
+            return $this->unauthorized('This account is restricted. Contact KAILA support.', 403);
+        }
 
         $tokens = $this->tokens->createSession($user, $request->string('deviceName')->toString());
         $this->audit->record($request, 'auth.mobile_login_succeeded', $user, 'mobile_session', $tokens['sessionId']);

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\ScanDisputeEvidence;
 use App\Models\AcceptedOfferSnapshot;
 use App\Models\CancellationRequest;
 use App\Models\CompletionEvidence;
@@ -18,7 +19,9 @@ use App\Support\JobLifecycleService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class JobLifecycleController extends Controller
 {
@@ -134,8 +137,24 @@ class JobLifecycleController extends Controller
             $f->storeAs('', $key, 'private');
             $values += ['disk' => 'private', 'object_key' => $key, 'original_name' => $f->getClientOriginalName(), 'mime_type' => $f->getMimeType(), 'size_bytes' => $f->getSize(), 'scan_status' => 'pending'];
         }$e = DisputeEvidence::query()->create($values);
+        if ($e->object_key) {
+            ScanDisputeEvidence::dispatch($e->id);
+        }
 
         return response()->json(['data' => ['id' => $e->id]], 201);
+    }
+
+    public function disputeEvidenceShow(Request $r, DisputeEvidence $disputeEvidence): StreamedResponse
+    {
+        $u = $this->user($r);
+        $case = DisputeCase::query()->findOrFail($disputeEvidence->dispute_case_id);
+        $job = ServiceJob::query()->findOrFail($case->service_job_id);
+        if (! $u->is_admin) {
+            $this->access->requireParticipant($job, $u);
+        }
+        abort_unless($disputeEvidence->scan_status === 'clean' && $disputeEvidence->object_key, 404);
+
+        return Storage::disk($disputeEvidence->disk)->response($disputeEvidence->object_key, $disputeEvidence->original_name, ['Content-Type' => $disputeEvidence->mime_type]);
     }
 
     private function user(Request $r): User
@@ -221,6 +240,10 @@ class JobLifecycleController extends Controller
                 'id' => $dispute->id,
                 'status' => $dispute->status,
                 'reason' => $dispute->reason,
+                'appealCount' => $dispute->appeal_count,
+                'decidedAt' => $dispute->decided_at?->toIso8601String(),
+                'canAppeal' => $dispute->status === 'resolved' && $dispute->appeal_count === 0 && $dispute->decided_at?->greaterThan(now()->subDays(7)),
+                'decision' => $dispute->actions()->where('action', 'decided')->latest('occurred_at')->first(['target_state', 'reason', 'occurred_at']),
                 'evidence' => $dispute->evidence()
                     ->get(['id', 'original_name', 'mime_type', 'scan_status']),
             ] : null,

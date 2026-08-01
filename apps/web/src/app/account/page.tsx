@@ -331,6 +331,11 @@ export default function AccountPage() {
       </form>
 
       <section className={styles.links} aria-label="Account destinations">
+        <Link href="/safety">
+          <span><ShieldCheck aria-hidden="true" /></span>
+          <div><strong>Trust and safety</strong><small>Report a concern and track its outcome</small></div>
+          <ChevronRight aria-hidden="true" />
+        </Link>
         <Link href="/settings">
           <span>
             <Bell aria-hidden="true" />

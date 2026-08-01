@@ -79,6 +79,10 @@ type Work = {
     id: string;
     status: string;
     reason: string;
+    appealCount: number;
+    decidedAt: string | null;
+    canAppeal: boolean;
+    decision: { target_state:string; reason:string; occurred_at:string } | null;
     evidence: Evidence[];
   } | null;
 };
@@ -312,6 +316,18 @@ export default function WorkPage({ params }: { params: Promise<{ jobId: string }
     }
   }
 
+  async function appealDispute() {
+    if (!data?.dispute) return;
+    const reason = window.prompt("Explain the new evidence or reason for appealing this decision.");
+    if (!reason || reason.trim().length < 10) return;
+    setRequestState("saving");
+    try {
+      const response = await fetch(`/api/v1/disputes/${data.dispute.id}/appeal`, {method:"POST",credentials:"include",headers:{"Content-Type":"application/json"},body:JSON.stringify({reason:reason.trim()})});
+      if(!response.ok) throw new Error();
+      await load(true); setNotice({kind:"success",message:"Your appeal was sent for review by a different support specialist."});
+    } catch { setRequestState("ready"); setNotice({kind:"error",message:"The appeal could not be submitted. The seven-day appeal window may have closed."}); }
+  }
+
   async function submitReview(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
@@ -397,6 +413,11 @@ export default function WorkPage({ params }: { params: Promise<{ jobId: string }
           Support is reviewing: {data.dispute.reason}
         </Feedback>
       )}
+      {data.dispute?.decision && data.dispute.status === "resolved" && (
+        <Feedback kind="info" title={`Support decision: ${data.dispute.decision.target_state.replaceAll("_", " ")}`}>
+          {data.dispute.decision.reason}
+        </Feedback>
+      )}
 
       <section className={styles.card}>
         <StatusIcon status={data.status} />
@@ -444,10 +465,14 @@ export default function WorkPage({ params }: { params: Promise<{ jobId: string }
       ) : null}
 
       {data.dispute?.evidence.length ? (
-        <EvidenceList title="Support review evidence" evidence={data.dispute.evidence} />
+        <EvidenceList title="Support review evidence" evidence={data.dispute.evidence} downloadable />
       ) : null}
 
       <div className={styles.actions}>
+        <Link href={`/safety?targetType=job&targetId=${jobId}`}><AlertTriangle/>Report this job</Link>
+        {data.dispute?.canAppeal && (
+          <Button variant="secondary" isLoading={requestState === "saving"} onClick={()=>void appealDispute()}><AlertTriangle/>Appeal support decision</Button>
+        )}
         {data.status === "provider_selected" && data.role === "provider" && (
           <Button onClick={() => location.assign(`/jobs/${jobId}/hired/travel`)}>
             <Navigation /> Start travel &amp; navigation
@@ -520,14 +545,14 @@ function CompletionForm({ saving, onSubmit }: { saving: boolean; onSubmit: (even
   );
 }
 
-function EvidenceList({ title, evidence }: { title: string; evidence: Evidence[] }) {
+function EvidenceList({ title, evidence, downloadable=false }: { title: string; evidence: Evidence[]; downloadable?:boolean }) {
   return (
     <section className={styles.evidence}>
       <h2>{title}</h2>
       {evidence.map((item) => (
         <div key={item.id}>
           <FileCheck2 aria-hidden="true" />
-          <span><strong>{item.original_name}</strong><small>Safety scan: {item.scan_status}</small></span>
+          <span>{downloadable && item.scan_status === "clean" ? <a href={`/api/v1/dispute-evidence/${item.id}`} target="_blank"><strong>{item.original_name}</strong></a> : <strong>{item.original_name}</strong>}<small>Safety scan: {item.scan_status}</small></span>
         </div>
       ))}
     </section>

@@ -97,6 +97,7 @@ class PhaseSixLifecycleTest extends TestCase
         $this->actingAs($client)->postJson("/api/v1/disputes/$caseId/appeal", ['reason' => 'New dated evidence changes the requested remedy.'])->assertOk();
         $this->actingAs($admin)->postJson("/api/v1/admin/marketplace/cases/$caseId/decision", ['targetState' => 'cancelled', 'reason' => 'Attempting the appeal with the same reviewer.'])->assertConflict();
         $other = User::factory()->create(['is_admin' => true]);
+        $this->actingAs($other)->getJson("/api/v1/admin/marketplace/cases/$caseId?accessReason=Reviewing%20new%20appeal%20evidence%20independently")->assertOk();
         $this->actingAs($other)->postJson("/api/v1/admin/marketplace/cases/$caseId/decision", ['targetState' => 'cancelled', 'reason' => 'The new evidence supports ending the engagement.'])->assertOk();
         $this->assertDatabaseHas('dispute_access_audits', ['staff_user_id' => $admin->id]);
         $this->assertSame(4, DisputeCase::query()->findOrFail($caseId)->actions()->count());

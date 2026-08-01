@@ -40,6 +40,12 @@ class AuthenticatedSessionController extends Controller
         $request->session()->regenerate();
         /** @var User $user */
         $user = $request->user();
+        if ($user->account_status === 'restricted' || $user->banned_at !== null) {
+            Auth::guard('web')->logout();
+            $request->session()->invalidate();
+
+            return response()->json(['error' => ['code' => 'ACCOUNT_RESTRICTED', 'message' => 'This account is restricted. Contact KAILA support.', 'fields' => (object) []]], 403);
+        }
         $this->audit->record($request, 'auth.login_succeeded', $user, 'user', (string) $user->getKey());
 
         return (new CurrentUserResource($user))->response();

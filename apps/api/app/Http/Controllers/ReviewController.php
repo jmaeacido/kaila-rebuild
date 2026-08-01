@@ -20,7 +20,7 @@ class ReviewController extends Controller
         abort_unless($user instanceof User, 401);
         $this->access->requireParticipant($serviceJob, $user);
         $data = [];
-        foreach (JobReview::query()->where('service_job_id', $serviceJob->id)->where(fn ($query) => $query->whereNotNull('published_at')->orWhere('author_user_id', $user->id))->get() as $review) {
+        foreach (JobReview::query()->where('service_job_id', $serviceJob->id)->whereNull('moderated_at')->where(fn ($query) => $query->whereNotNull('published_at')->orWhere('author_user_id', $user->id))->get() as $review) {
             $visible = $review->author_user_id === $user->id || $review->published_at !== null;
             $data[] = ['id' => $review->id, 'mine' => $review->author_user_id === $user->id, 'rating' => $visible ? $review->rating : null, 'comment' => $visible ? $review->comment : null, 'publishedAt' => $review->published_at?->toIso8601String()];
         }

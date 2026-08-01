@@ -114,6 +114,9 @@ class JobLifecycleService
             }
             $case->actions()->create(['actor_user_id' => $actor->id, 'action' => 'opened', 'reason' => $reason, 'metadata' => ['remainingAutoConfirmSeconds' => $remaining], 'occurred_at' => now()]);
             $this->transition($locked, 'disputed', $actor, 'dispute.opened', ['caseId' => $case->id]);
+            foreach (User::query()->where('is_admin', true)->pluck('id') as $staffId) {
+                $this->notifications->send($staffId, 'dispute.opened', 'New dispute case', 'A job dispute is ready for support review.', 'dispute_case', $case->id, ['caseId' => $case->id, 'jobId' => $locked->id], 'support');
+            }
 
             return $case;
         });

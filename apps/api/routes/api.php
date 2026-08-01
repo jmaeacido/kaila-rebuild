@@ -3,6 +3,7 @@
 use App\Http\Controllers\AdminDisputeController;
 use App\Http\Controllers\AdminMarketplaceController;
 use App\Http\Controllers\AdminPhaseNineController;
+use App\Http\Controllers\AdminReportController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\MobileSessionController;
 use App\Http\Controllers\Auth\PasswordRecoveryController;
@@ -30,6 +31,7 @@ use App\Http\Controllers\ProviderCredentialController;
 use App\Http\Controllers\PushDeviceController;
 use App\Http\Controllers\RealtimeTicketController;
 use App\Http\Controllers\ReferenceDataController;
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\ServiceJobController;
 use App\Http\Controllers\TravelController;
@@ -105,6 +107,11 @@ Route::middleware('mobile.auth')->group(function (): void {
     Route::post('/auth/mobile/jobs/{serviceJob}/cancel', [JobLifecycleController::class, 'cancel']);
     Route::post('/auth/mobile/jobs/{serviceJob}/disputes', [JobLifecycleController::class, 'dispute']);
     Route::post('/auth/mobile/disputes/{disputeCase}/evidence', [JobLifecycleController::class, 'disputeEvidence']);
+    Route::get('/auth/mobile/disputes/{disputeCase}', [AdminDisputeController::class, 'participantShow']);
+    Route::get('/auth/mobile/dispute-evidence/{disputeEvidence}', [JobLifecycleController::class, 'disputeEvidenceShow']);
+    Route::get('/auth/mobile/reports', [ReportController::class, 'index']);
+    Route::post('/auth/mobile/reports', [ReportController::class, 'store']);
+    Route::get('/auth/mobile/reports/{moderationReport}', [ReportController::class, 'show']);
     Route::get('/auth/mobile/jobs/{serviceJob}/reviews', [ReviewController::class, 'index']);
     Route::post('/auth/mobile/jobs/{serviceJob}/reviews', [ReviewController::class, 'store']);
     Route::post('/auth/mobile/disputes/{disputeCase}/appeal', [AdminDisputeController::class, 'appeal']);
@@ -189,7 +196,12 @@ Route::middleware('auth')->group(function (): void {
     Route::post('/jobs/{serviceJob}/cancel', [JobLifecycleController::class, 'cancel']);
     Route::post('/jobs/{serviceJob}/disputes', [JobLifecycleController::class, 'dispute']);
     Route::post('/disputes/{disputeCase}/evidence', [JobLifecycleController::class, 'disputeEvidence']);
+    Route::get('/disputes/{disputeCase}', [AdminDisputeController::class, 'participantShow']);
+    Route::get('/dispute-evidence/{disputeEvidence}', [JobLifecycleController::class, 'disputeEvidenceShow']);
     Route::post('/disputes/{disputeCase}/appeal', [AdminDisputeController::class, 'appeal']);
+    Route::get('/reports', [ReportController::class, 'index']);
+    Route::post('/reports', [ReportController::class, 'store']);
+    Route::get('/reports/{moderationReport}', [ReportController::class, 'show']);
     Route::get('/jobs/{serviceJob}/reviews', [ReviewController::class, 'index']);
     Route::post('/jobs/{serviceJob}/reviews', [ReviewController::class, 'store']);
     Route::get('/notifications', [DurableNotificationController::class, 'index']);
@@ -215,7 +227,12 @@ Route::middleware('auth')->group(function (): void {
     Route::middleware('admin')->prefix('admin/marketplace')->group(function (): void {
         Route::get('/cases', [AdminDisputeController::class, 'index']);
         Route::get('/cases/{disputeCase}', [AdminDisputeController::class, 'show']);
+        Route::post('/cases/{disputeCase}/assign', [AdminDisputeController::class, 'assign']);
         Route::post('/cases/{disputeCase}/decision', [AdminDisputeController::class, 'decide']);
+        Route::get('/reports', [AdminReportController::class, 'index']);
+        Route::get('/reports/{moderationReport}', [AdminReportController::class, 'show']);
+        Route::post('/reports/{moderationReport}/assign', [AdminReportController::class, 'assign']);
+        Route::post('/reports/{moderationReport}/decision', [AdminReportController::class, 'decide']);
         Route::get('/review-queue', [AdminMarketplaceController::class, 'queue']);
         Route::post('/categories', [AdminMarketplaceController::class, 'category']);
         Route::put('/categories/{serviceCategory}', [AdminMarketplaceController::class, 'category']);
