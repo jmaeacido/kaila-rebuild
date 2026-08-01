@@ -6,6 +6,7 @@ const conversation = readFileSync(new URL("./jobs/[jobId]/hired/conversation/pag
 const styles = readFileSync(new URL("./jobs/[jobId]/hired/hired.module.css", import.meta.url), "utf8");
 const travel = readFileSync(new URL("./jobs/[jobId]/hired/travel/page.tsx", import.meta.url), "utf8");
 const work = readFileSync(new URL("./jobs/[jobId]/work/page.tsx", import.meta.url), "utf8");
+const workStyles = readFileSync(new URL("./jobs/[jobId]/work/work.module.css", import.meta.url), "utf8");
 const jobDetails = readFileSync(new URL("./jobs/[jobId]/page.tsx", import.meta.url), "utf8");
 
 test("emoji picker is categorized, scrollable, and constrained to the composer", () => {
@@ -39,6 +40,11 @@ test("work status keeps the assignment identifiable", () => {
   assert.match(work, /data\.job\.agreedScope/);
   assert.match(work, /data\.job\.agreedAmountCentavos/);
   assert.match(work, /data\.job\.counterpart\.displayName/);
+});
+
+test("work actions keep workflow controls ahead of the full-width report link", () => {
+  assert.ok(work.indexOf("Submit completed work") < work.indexOf("Report this job"));
+  assert.match(workStyles, /\.actions>button:first-of-type:last-of-type,\.actions>a\{grid-column:1\/-1\}/);
 });
 
 test("clean hired-job media can be opened at full size", () => {

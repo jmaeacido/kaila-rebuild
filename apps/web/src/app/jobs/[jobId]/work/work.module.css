@@ -25,3 +25,7 @@
 .counterpart small{align-items:center;color:var(--color-warning);display:flex;font-weight:var(--font-weight-semibold);gap:var(--spacing-4)}
 .counterpart small svg{fill:currentColor;height:var(--spacing-16);width:var(--spacing-16)}
 @media(min-width:48rem){.jobFacts{grid-template-columns:repeat(3,minmax(0,1fr))}.assignmentDetails{grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr)}}
+
+.actions>a{align-items:center;color:var(--color-text-secondary);display:flex;font-size:var(--font-small-size);gap:var(--spacing-8);min-height:var(--control-min-height);width:max-content}
+.actions>a svg{height:var(--spacing-24);width:var(--spacing-24)}
+@media(min-width:48rem){.actions>button:first-of-type:last-of-type,.actions>a{grid-column:1/-1}}

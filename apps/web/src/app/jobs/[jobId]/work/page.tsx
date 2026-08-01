@@ -469,7 +469,6 @@ export default function WorkPage({ params }: { params: Promise<{ jobId: string }
       ) : null}
 
       <div className={styles.actions}>
-        <Link href={`/safety?targetType=job&targetId=${jobId}`}><AlertTriangle/>Report this job</Link>
         {data.dispute?.canAppeal && (
           <Button variant="secondary" isLoading={requestState === "saving"} onClick={()=>void appealDispute()}><AlertTriangle/>Appeal support decision</Button>
         )}
@@ -516,6 +515,7 @@ export default function WorkPage({ params }: { params: Promise<{ jobId: string }
         {canDispute && data.status !== "disputed" && (
           <Button variant="secondary" onClick={() => setPanel("dispute")}><AlertTriangle /> Get support</Button>
         )}
+        <Link href={`/safety?targetType=job&targetId=${jobId}`}><AlertTriangle/>Report this job</Link>
       </div>
 
       {panel && (
