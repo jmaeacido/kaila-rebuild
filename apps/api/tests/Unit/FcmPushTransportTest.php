@@ -5,6 +5,7 @@ namespace Tests\Unit;
 use App\Models\DurableNotification;
 use App\Models\PushDevice;
 use App\Support\FcmAccessTokenProvider;
+use App\Support\FcmDeliveryException;
 use App\Support\FcmPushTransport;
 use Illuminate\Support\Facades\Http;
 use Mockery;
@@ -59,5 +60,23 @@ class FcmPushTransportTest extends TestCase
                 && ! isset($request['message']['android']['notification']['sound'])
                 && $request['message']['android']['priority'] === 'normal',
         ]);
+    }
+
+    public function test_it_classifies_invalid_device_tokens_as_permanent_failures(): void
+    {
+        config()->set('services.fcm.project_id', 'kaila-test');
+        Http::fake(['https://fcm.googleapis.com/*' => Http::response(['error' => ['details' => [['errorCode' => 'UNREGISTERED']]]], 404)]);
+        $tokens = Mockery::mock(FcmAccessTokenProvider::class);
+        $tokens->shouldReceive('token')->once()->andReturn('oauth-token');
+        $notification = new DurableNotification(['title' => 'Title', 'body' => 'Body', 'resource_id' => 'resource', 'data' => []]);
+        $notification->id = 'notification-1';
+
+        try {
+            (new FcmPushTransport($tokens))->send(new PushDevice(['token_encrypted' => 'expired-token']), $notification);
+            $this->fail('Expected an FCM delivery exception.');
+        } catch (FcmDeliveryException $exception) {
+            $this->assertTrue($exception->invalidatesDevice());
+            $this->assertSame('UNREGISTERED', $exception->errorCode);
+        }
     }
 }

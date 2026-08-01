@@ -6,7 +6,6 @@ use App\Contracts\PushTransport;
 use App\Models\DurableNotification;
 use App\Models\PushDevice;
 use Illuminate\Support\Facades\Http;
-use RuntimeException;
 
 class FcmPushTransport implements PushTransport
 {
@@ -43,8 +42,7 @@ class FcmPushTransport implements PushTransport
         ]]);
         if (! $response->successful()) {
             $code = $response->json('error.details.0.errorCode') ?? $response->json('error.status');
-            $reason = is_string($code) && $code !== '' ? " ({$code})" : '';
-            throw new RuntimeException("FCM delivery failed with status {$response->status()}{$reason}.");
+            throw new FcmDeliveryException($response->status(), is_string($code) && $code !== '' ? $code : null);
         }
 
         return (string) $response->json('name');
