@@ -10,6 +10,7 @@ import {
   Home,
   MapPin,
   MessageCircle,
+  Navigation,
   Plus,
   Search,
   Settings,
@@ -19,6 +20,7 @@ import { Feedback } from "@kaila/ui";
 import { ServiceCategoryIcon } from "../../components/service-category-icon";
 import styles from "./home.module.css";
 import { useRealtimeInvalidation } from "../use-realtime-invalidation";
+import { formatTravelDistance, formatTravelEta, type TravelMetrics } from "../travel-metrics";
 
 type User = {
   name: string;
@@ -45,6 +47,7 @@ type Job = {
   category: Category;
   scheduledAt: string | null;
   counterpart: Counterpart | null;
+  travel: TravelMetrics | null;
   ratingReceived: { rating: number } | null;
   ratingGiven: { rating: number } | null;
 };
@@ -281,9 +284,10 @@ export default function AuthenticatedHomePage() {
               <h3>{job.title}</h3>
               <p><MapPin aria-hidden="true" />{job.area.name}</p>
               {job.counterpart && <p className={styles.counterpart}><span className={styles.miniAvatar}>{job.counterpart.avatarUrl ? <Image src={job.counterpart.avatarUrl} alt="" width={24} height={24} unoptimized /> : job.counterpart.displayName.charAt(0).toUpperCase()}</span>With {job.counterpart.displayName} · {job.counterpart.rating === null ? "New" : `${Number(job.counterpart.rating).toFixed(1)} ★`}</p>}
+              {job.status === "provider_traveling" && <p className={styles.routeMetrics}><Navigation aria-hidden="true" />{formatTravelDistance(job.travel?.distanceMeters ?? null)} · {formatTravelEta(job.travel?.etaSeconds ?? null)}</p>}
             </div>
             <Link href={`/jobs/${job.id}`}>
-              Continue
+              {job.role === "provider" && job.status === "provider_traveling" ? "Navigate to Client" : "Continue"}
               <ArrowRight aria-hidden="true" />
             </Link>
           </article>)}

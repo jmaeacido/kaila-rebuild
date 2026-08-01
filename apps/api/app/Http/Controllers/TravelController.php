@@ -123,6 +123,8 @@ class TravelController extends Controller
                     new GeoPoint((float) $sample->latitude, (float) $sample->longitude),
                     new GeoPoint($data['destination']['latitude'], $data['destination']['longitude']),
                 );
+                $data['distanceMeters'] = $route->distanceMeters;
+                $data['etaSeconds'] = $route->durationSeconds;
                 $data['routeGeometry'] = array_map(
                     fn (GeoPoint $point): array => ['latitude' => $point->latitude, 'longitude' => $point->longitude],
                     $route->geometry,
@@ -136,7 +138,12 @@ class TravelController extends Controller
                     'location' => ['latitude' => $step->location->latitude, 'longitude' => $step->location->longitude],
                 ], $route->steps);
             } catch (Throwable) {
-                // Distance and ETA already degrade safely when routing is unavailable.
+                [$data['distanceMeters'], $data['etaSeconds']] = $this->fallbackMetrics(
+                    (float) $sample->latitude,
+                    (float) $sample->longitude,
+                    $data['destination']['latitude'],
+                    $data['destination']['longitude'],
+                );
             }
         }
 

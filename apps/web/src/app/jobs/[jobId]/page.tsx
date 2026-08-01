@@ -28,6 +28,7 @@ import styles from "./job-details.module.css";
 import assetStyles from "./job-assets.module.css";
 import { useRealtimeInvalidation } from "../../use-realtime-invalidation";
 import { ServiceCategoryIcon } from "../../../components/service-category-icon";
+import { formatTravelDistance, formatTravelEta, type TravelMetrics } from "../../travel-metrics";
 
 type Reference = { id: number; name: string };
 type CategoryReference = Reference & { icon: string };
@@ -67,6 +68,7 @@ type Job = {
     rating: string | number | null;
     reviewCount: number;
   } | null;
+  travel: TravelMetrics | null;
 };
 
 const statusLabels: Record<string, string> = {
@@ -360,6 +362,13 @@ export default function JobDetailsPage({ params }: { params: Promise<{ jobId: st
         </section>
       )}
 
+      {isHired && job.status === "provider_traveling" && (
+        <section className={assetStyles.routeSummary} aria-labelledby="route-summary-title">
+          <div><Navigation aria-hidden="true" /><span><small>Distance to client</small><strong id="route-summary-title">{formatTravelDistance(job.travel?.distanceMeters ?? null)}</strong></span></div>
+          <div><Clock3 aria-hidden="true" /><span><small>Estimated arrival</small><strong>{formatTravelEta(job.travel?.etaSeconds ?? null)}</strong></span></div>
+        </section>
+      )}
+
       {editing ? (
         <form className={styles.editForm} onSubmit={(event) => void save(event)}>
           <header><h2>Edit job</h2><button type="button" onClick={() => setEditing(false)} aria-label="Close edit form"><X /></button></header>
@@ -501,7 +510,7 @@ export default function JobDetailsPage({ params }: { params: Promise<{ jobId: st
             {job.canEdit && <Button onClick={beginEditing}><Pencil /> Edit job</Button>}
             {["posted", "offers_received"].includes(job.status) && <Button variant="secondary" onClick={() => location.assign(`/jobs/${job.id}/offers`)}>View offers</Button>}
             {isHired && <Button onClick={() => location.assign(`/jobs/${job.id}/hired/conversation`)}><MessageCircle /> Message {job.role === "client" ? "provider" : "client"}</Button>}
-            {isHired && ["provider_selected", "provider_traveling"].includes(job.status) && <Button variant="secondary" onClick={() => location.assign(`/jobs/${job.id}/hired/travel`)}><Navigation /> {job.role === "provider" ? "Share travel" : "Track provider"}</Button>}
+            {isHired && ["provider_selected", "provider_traveling"].includes(job.status) && <Button variant="secondary" onClick={() => location.assign(`/jobs/${job.id}/hired/travel`)}><Navigation /> {job.role === "provider" ? "Navigate to Client" : "Track provider"}</Button>}
             {isHired && <Button variant="secondary" onClick={() => location.assign(`/jobs/${job.id}/work`)}><Hammer /> {job.status === "provider_selected" && job.role === "provider" ? "Start work" : "Work status"}</Button>}
             {job.canCancel && <Button variant="danger" onClick={() => setCancelling(true)}><Trash2 /> Cancel job</Button>}
           </div>

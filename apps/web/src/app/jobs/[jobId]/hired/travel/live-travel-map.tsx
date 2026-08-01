@@ -83,7 +83,7 @@ export function LiveTravelMap({ location, destination, route, heading, navigatio
     if (!providerMarker.current) {
       const element = document.createElement("div");
       element.className = styles.providerMarker;
-      element.setAttribute("aria-label", "Provider location");
+      element.setAttribute("aria-label", "Point A: provider location");
       element.innerHTML = `<span></span>`;
       providerMarker.current = new Marker({ element, rotationAlignment: "map" }).setLngLat([location.longitude, location.latitude]).addTo(map);
     } else {
@@ -99,7 +99,7 @@ export function LiveTravelMap({ location, destination, route, heading, navigatio
     if (!destinationMarker.current) {
       const element = document.createElement("div");
       element.className = styles.destinationMarker;
-      element.setAttribute("aria-label", "Job destination");
+      element.setAttribute("aria-label", "Point B: client job location");
       element.innerHTML = `<span></span>`;
       destinationMarker.current = new Marker({ element }).setLngLat([destination.longitude, destination.latitude]).addTo(map);
     } else destinationMarker.current.setLngLat([destination.longitude, destination.latitude]);

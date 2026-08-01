@@ -181,3 +181,50 @@
   color: var(--color-text-secondary);
   font-size: var(--font-small-size);
 }
+
+.routeSummary {
+  background: var(--color-surface);
+  border: var(--control-border-width) solid var(--color-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  display: grid;
+  gap: var(--spacing-12);
+  padding: var(--spacing-16);
+}
+
+.routeSummary > div {
+  align-items: center;
+  background: var(--color-background);
+  border-radius: var(--radius-input);
+  display: grid;
+  gap: var(--spacing-8);
+  grid-template-columns: var(--spacing-24) 1fr;
+  padding: var(--spacing-12);
+}
+
+.routeSummary svg {
+  color: var(--color-primary);
+  height: var(--spacing-24);
+  width: var(--spacing-24);
+}
+
+.routeSummary span {
+  display: grid;
+  gap: var(--spacing-4);
+}
+
+.routeSummary small {
+  color: var(--color-text-secondary);
+  font-size: var(--font-caption-size);
+}
+
+.routeSummary strong {
+  color: var(--color-ink);
+}
+
+@media (min-width: 48rem) {
+  .routeSummary {
+    align-items: center;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

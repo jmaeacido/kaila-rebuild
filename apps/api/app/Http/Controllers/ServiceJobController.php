@@ -7,6 +7,7 @@ use App\Models\JobReview;
 use App\Models\ProfileAsset;
 use App\Models\ProviderProfile;
 use App\Models\ServiceJob;
+use App\Models\TravelSession;
 use App\Models\User;
 use App\Support\JobPostingService;
 use App\Support\JobPresenter;
@@ -161,10 +162,19 @@ class ServiceJobController extends Controller
             ->get();
         $received = $reviews->firstWhere('subject_user_id', $user->id);
         $given = $reviews->firstWhere('author_user_id', $user->id);
+        $travel = AcceptedOfferSnapshot::query()->where('service_job_id', $job->id)->exists()
+            ? TravelSession::query()->where('service_job_id', $job->id)->latest('started_at')->first()
+            : null;
 
         return [
             'role' => $job->client_user_id === $user->id ? 'client' : 'provider',
             'counterpart' => $this->counterpart($job, $user),
+            'travel' => $travel ? [
+                'status' => $travel->status,
+                'distanceMeters' => $travel->last_distance_meters,
+                'etaSeconds' => $travel->last_eta_seconds,
+                'arrivedAt' => $travel->arrived_at?->toIso8601String(),
+            ] : null,
             'ratingReceived' => $received ? ['rating' => $received->rating] : null,
             'ratingGiven' => $given ? ['rating' => $given->rating] : null,
         ];

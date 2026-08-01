@@ -227,7 +227,7 @@ export default function TravelPage({ params }: { params: Promise<{ jobId: string
 
     <header className={styles.navigationTop}>
       <a href={`/jobs/${jobId}`} aria-label="Back to job"><ArrowLeft /></a>
-      <div><strong>{travel?.arrivedAt ? "Arrived" : active ? providerNavigating ? "Navigating to job" : "Provider on the way" : "Job navigation"}</strong><span>{lastUpdate ? `Updated ${lastUpdate.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}` : "Waiting for live location"}</span></div>
+      <div><strong>{travel?.arrivedAt ? "Arrived at client" : active ? providerNavigating ? "Navigating to client" : "Provider on the way" : "Client navigation"}</strong><span>{lastUpdate ? `Updated ${lastUpdate.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}` : "Waiting for provider GPS (point A)"}</span></div>
       <a href={`/jobs/${jobId}/hired/conversation`} aria-label="Message job participant"><MessageCircle /></a>
     </header>
 
@@ -242,20 +242,20 @@ export default function TravelPage({ params }: { params: Promise<{ jobId: string
       <div className={styles.sheetHandle} aria-hidden="true" />
       {errorMessage && <Feedback kind="error" title={travel ? "Live location needs attention" : "Live map is unavailable"}>{errorMessage}</Feedback>}
       {travel?.arrivedAt ? <div className={styles.arrival}><span><Check /></span><div><h1>Provider has arrived</h1><p>You can now continue to the job and start work.</p></div></div> : <div className={styles.routeSummary}>
-        <div><strong>{formatEta(eta)}</strong><span>ETA</span></div>
-        <div><strong>{formatDistance(distance)}</strong><span>remaining</span></div>
+        <div><strong>{formatEta(eta)}</strong><span>ETA to client</span></div>
+        <div><strong>{formatDistance(distance)}</strong><span>distance to client</span></div>
         <div><strong>{travel?.location?.accuracyMeters ? `±${travel.location.accuracyMeters} m` : "—"}</strong><span>GPS accuracy</span></div>
       </div>}
 
       {!active && !travel?.arrivedAt && <div className={styles.waitingCopy}>
         <Navigation aria-hidden="true" />
-        <div><h1>{travel?.canShareLocation ? "Ready to navigate?" : "Waiting for the provider"}</h1><p>{travel?.canShareLocation ? "KAILA will guide you to the job site and keep sharing progress when the app is minimized or your screen locks." : "The route and live ETA will appear as soon as travel starts."}</p></div>
+        <div><h1>{travel?.canShareLocation ? "Ready to navigate to your client?" : "Waiting for the provider"}</h1><p>{travel?.canShareLocation ? "Your GPS position is point A and the client’s job pin is point B. KAILA routes between them and keeps distance and ETA current." : "The point A to point B route, distance, and live ETA will appear as soon as the provider starts navigation."}</p></div>
       </div>}
 
       <div className={styles.navigationActions}>
         {travel?.canShareLocation && (active
           ? <Button variant="secondary" disabled={state === "sharing"} onClick={() => void stop()}><Square /> Stop navigation</Button>
-          : !travel.arrivedAt && <Button disabled={state === "sharing" || state === "loading"} onClick={() => void start()}><LocateFixed /> {state === "sharing" ? "Starting…" : "Start navigation"}</Button>)}
+          : !travel.arrivedAt && <Button disabled={state === "sharing" || state === "loading"} onClick={() => void start()}><LocateFixed /> {state === "sharing" ? "Starting…" : "Navigate to Client"}</Button>)}
         {!travel?.canShareLocation && <Button onClick={() => location.assign(`/jobs/${jobId}/hired/conversation`)}><MessageCircle /> Message provider</Button>}
         {state === "error" && <Button variant="secondary" onClick={() => void retry()}>Retry</Button>}
       </div>
