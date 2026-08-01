@@ -20,10 +20,25 @@ class FcmPushTransport implements PushTransport
         }
 
         $silent = ($notification->data['silent'] ?? null) === '1';
+        $channelId = $silent ? 'kaila_silent' : match ($notification->data['type'] ?? null) {
+            'call' => 'kaila_calls',
+            'message' => 'kaila_messages',
+            default => 'kaila_updates',
+        };
         $response = Http::withToken($this->tokens->token())->timeout(10)->post("https://fcm.googleapis.com/v1/projects/{$project}/messages:send", ['message' => [
             'token' => $device->token_encrypted,
             'notification' => ['title' => $notification->title, 'body' => $notification->body],
-            'android' => ['priority' => $silent ? 'normal' : 'high', 'notification' => ['default_sound' => ! $silent]],
+            'android' => [
+                'priority' => $silent ? 'normal' : 'high',
+                'ttl' => '86400s',
+                'notification' => [
+                    'channel_id' => $channelId,
+                    ...($silent ? [] : ['sound' => 'default']),
+                    'notification_priority' => $silent ? 'PRIORITY_DEFAULT' : 'PRIORITY_HIGH',
+                    'visibility' => 'PRIVATE',
+                    'tag' => "kaila-{$notification->id}",
+                ],
+            ],
             'data' => array_map('strval', array_merge($notification->data, ['notificationId' => $notification->id, 'resourceId' => $notification->resource_id])),
         ]]);
         if (! $response->successful()) {
