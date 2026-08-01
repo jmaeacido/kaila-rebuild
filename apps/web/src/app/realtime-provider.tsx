@@ -76,7 +76,8 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
         const nextSocket = io(realtimeUrl, {
           auth: { ticket: data.ticket },
           reconnection: false,
-          transports: ["websocket", "polling"],
+          transports: ["polling", "websocket"],
+          timeout: 10_000,
         });
         socket = nextSocket;
         nextSocket.on("connect", () => {
@@ -117,6 +118,7 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
       window.dispatchEvent(new Event(realtimeReconcileName));
     };
     window.addEventListener("online", recover);
+    window.addEventListener("focus", recover);
     window.addEventListener(realtimeAuthChangedName, recover);
     document.addEventListener("visibilitychange", recover);
     void connect();
@@ -125,6 +127,7 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
       disposed = true;
       if (retryTimer !== null) window.clearTimeout(retryTimer);
       window.removeEventListener("online", recover);
+      window.removeEventListener("focus", recover);
       window.removeEventListener(realtimeAuthChangedName, recover);
       document.removeEventListener("visibilitychange", recover);
       disconnectCleanly(socket);

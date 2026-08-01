@@ -4,7 +4,9 @@ import { useEffect, useRef } from "react";
 import {
   domainEventName,
   realtimeReconcileName,
+  realtimeStatusName,
   type DomainEvent,
+  type RealtimeStatus,
 } from "./realtime-provider";
 
 export function useRealtimeInvalidation(
@@ -21,6 +23,7 @@ export function useRealtimeInvalidation(
 
   useEffect(() => {
     let pending: number | null = null;
+    let realtimeConnected = false;
     const reconcile = () => {
       if (pending !== null) return;
       pending = window.setTimeout(() => {
@@ -32,14 +35,25 @@ export function useRealtimeInvalidation(
       const detail = (event as CustomEvent<DomainEvent>).detail;
       if (detail && matchesRef.current(detail)) reconcile();
     };
+    const statusChanged = (event: Event) => {
+      realtimeConnected = (event as CustomEvent<RealtimeStatus>).detail === "connected";
+    };
     window.addEventListener(domainEventName, domainEvent);
     window.addEventListener(realtimeReconcileName, reconcile);
+    window.addEventListener(realtimeStatusName, statusChanged);
     window.addEventListener("online", reconcile);
+    window.addEventListener("focus", reconcile);
+    const interval = window.setInterval(() => {
+      if (document.visibilityState === "visible" && !realtimeConnected) reconcile();
+    }, 10_000);
     return () => {
       if (pending !== null) window.clearTimeout(pending);
+      window.clearInterval(interval);
       window.removeEventListener(domainEventName, domainEvent);
       window.removeEventListener(realtimeReconcileName, reconcile);
+      window.removeEventListener(realtimeStatusName, statusChanged);
       window.removeEventListener("online", reconcile);
+      window.removeEventListener("focus", reconcile);
     };
   }, []);
 }

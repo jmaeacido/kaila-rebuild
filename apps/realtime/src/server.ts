@@ -73,6 +73,12 @@ await deliverySubscriber.subscribe(config.OUTBOX_REALTIME_CHANNEL, (message) => 
   const rooms = publication.recipientUserIds.map((userId) => `user:${userId}`);
   let target = io.to(rooms[0]);
   for (const room of rooms.slice(1)) target = target.to(room);
+  process.stdout.write(structuredLog("info", "realtime.event_published", {
+    eventId: publication.event.eventId,
+    eventType: publication.event.type,
+    recipientCount: publication.recipientUserIds.length,
+    connectedSocketCount: io.sockets.sockets.size,
+  }) + "\n");
   target.timeout(2_000).emit("domain.event", publication.event, (error: Error | null, responses: unknown[]) => {
     process.stdout.write(structuredLog(error ? "warn" : "info", "realtime.event_delivery", {
       eventId: publication.event.eventId,

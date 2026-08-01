@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Bell, ChevronRight } from "lucide-react";
+import { Bell, ChevronRight, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { notificationRoute, type NotificationRecord } from "./notification-route";
 import { useRealtimeInvalidation } from "./use-realtime-invalidation";
@@ -89,7 +89,10 @@ export function NotificationBell() {
       </button>
       {open && (
         <section className="notificationDropdown" id="notification-dropdown" aria-label="Recent notifications">
-          <header><strong>Notifications</strong><span>{unread} unread</span></header>
+          <header>
+            <div><strong>Notifications</strong><span>{unread} unread</span></div>
+            <button className="notificationDropdownClose" type="button" aria-label="Close notifications" onClick={() => setOpen(false)}><X aria-hidden="true" /></button>
+          </header>
           <div className="notificationDropdownList">
             {items.length === 0 ? <p className="notificationDropdownEmpty">You’re all caught up.</p> : items.map((item) => (
               <Link className={item.readAt ? "" : "unread"} href={notificationRoute(item)} key={item.id} onClick={(event) => { event.preventDefault(); void openNotification(item); }}>

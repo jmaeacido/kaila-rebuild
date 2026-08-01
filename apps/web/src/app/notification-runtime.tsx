@@ -20,7 +20,7 @@ const firebaseConfig = {
 
 const firebaseConfigured = Object.values(firebaseConfig).every((value) => typeof value === "string" && value !== "");
 
-type Toast = FeedbackMessage & { id: number; permissionPrompt?: boolean; persistent?: boolean };
+type Toast = FeedbackMessage & { id: number; eventKey?: string; permissionPrompt?: boolean; persistent?: boolean };
 
 function isNativeAndroid(): boolean {
   const capacitor = (window as Window & { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor;
@@ -30,16 +30,31 @@ function isNativeAndroid(): boolean {
 export function NotificationRuntime() {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const nextId = useRef(0);
+  const seenEventKeys = useRef(new Set<string>());
 
   const dismiss = useCallback((id: number) => {
     setToasts((current) => current.filter((toast) => toast.id !== id));
   }, []);
 
-  const show = useCallback((message: FeedbackMessage & { permissionPrompt?: boolean; persistent?: boolean }) => {
+  const show = useCallback((message: FeedbackMessage & { eventKey?: string; permissionPrompt?: boolean; persistent?: boolean }) => {
+    if (message.eventKey && seenEventKeys.current.has(message.eventKey)) return;
+    if (message.eventKey) {
+      seenEventKeys.current.add(message.eventKey);
+      if (seenEventKeys.current.size > 500) {
+        const oldest = seenEventKeys.current.values().next().value;
+        if (oldest) seenEventKeys.current.delete(oldest);
+      }
+    }
     const id = ++nextId.current;
-    setToasts((current) => [...current, { ...message, id }]);
-    if (!message.permissionPrompt && !message.persistent) window.setTimeout(() => dismiss(id), 6_000);
-  }, [dismiss]);
+    setToasts((current) => [...current.slice(-19), { ...message, id }]);
+  }, []);
+
+  useEffect(() => {
+    const active = toasts[0];
+    if (!active || active.permissionPrompt || active.persistent) return;
+    const timer = window.setTimeout(() => dismiss(active.id), 6_000);
+    return () => window.clearTimeout(timer);
+  }, [dismiss, toasts]);
 
   const registerBrowserPush = useCallback(async (showFeedback = true) => {
     if (!firebaseConfigured || isNativeAndroid() || !(await isSupported())) return;
@@ -76,8 +91,9 @@ export function NotificationRuntime() {
 
   useEffect(() => {
     const domainEvent = (event: Event) => {
-      const feedback = feedbackForDomainEvent((event as CustomEvent<DomainEvent>).detail);
-      if (feedback) show({ ...feedback, persistent: true });
+      const detail = (event as CustomEvent<DomainEvent>).detail;
+      const feedback = feedbackForDomainEvent(detail);
+      if (feedback) show({ ...feedback, eventKey: detail.eventId });
     };
     window.addEventListener(domainEventName, domainEvent);
     return () => window.removeEventListener(domainEventName, domainEvent);
