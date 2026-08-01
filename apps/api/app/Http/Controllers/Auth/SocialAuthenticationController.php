@@ -48,13 +48,10 @@ class SocialAuthenticationController extends Controller
             'client_id' => $settings['client_id'],
             'redirect_uri' => $settings['redirect_uri'],
             'response_type' => 'code',
-            'scope' => $provider === 'google' ? 'openid email profile' : 'email public_profile',
+            'scope' => 'openid email profile',
             'state' => $state,
+            'prompt' => 'select_account',
         ];
-
-        if ($provider === 'google') {
-            $parameters['prompt'] = 'select_account';
-        }
 
         return redirect()->away($settings['authorize_url'].'?'.http_build_query($parameters));
     }

@@ -6,6 +6,7 @@ import android.media.AudioAttributes;
 import android.media.RingtoneManager;
 import android.os.Build;
 import android.os.Bundle;
+import androidx.annotation.RequiresApi;
 import com.getcapacitor.BridgeActivity;
 
 public class MainActivity extends BridgeActivity {
@@ -59,6 +60,7 @@ public class MainActivity extends BridgeActivity {
         manager.createNotificationChannel(silent);
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     private NotificationChannel audibleChannel(
         String id,
         String name,
