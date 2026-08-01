@@ -14,6 +14,7 @@ Phase 9 repository implementation — isolated deferred modules — is complete 
 - Phase 7 repository evidence and external gates are recorded in the [Phase 7 acceptance report](docs/architecture/phase-7-acceptance-report.md).
 - Phase 8 repository evidence and external gates are recorded in the [Phase 8 acceptance report](docs/architecture/phase-8-acceptance-report.md) and [Android release runbook](docs/operations/phase-8-android-release.md).
 - Phase 9 repository evidence and external gates are recorded in the [Phase 9 acceptance report](docs/architecture/phase-9-acceptance-report.md) and [ADR-0023](docs/architecture/adr/0023-phase-9-deferred-modules.md).
+- Production Laravel queue supervision is documented in the [queue worker runbook](docs/operations/laravel-queue-worker.md).
 
 ## Applications
 
