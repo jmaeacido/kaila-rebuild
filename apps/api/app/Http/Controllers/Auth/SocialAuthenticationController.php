@@ -18,7 +18,7 @@ use Throwable;
 
 class SocialAuthenticationController extends Controller
 {
-    private const PROVIDERS = ['google', 'facebook'];
+    private const PROVIDERS = ['google'];
 
     public function __construct(
         private readonly AuditRecorder $audit,

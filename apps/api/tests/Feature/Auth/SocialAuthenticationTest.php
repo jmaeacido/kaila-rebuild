@@ -36,6 +36,12 @@ class SocialAuthenticationTest extends TestCase
         $this->assertSame('/jobs', session("social_auth.{$query['state']}.next"));
     }
 
+    public function test_facebook_login_is_disabled(): void
+    {
+        $this->get('/api/v1/auth/social/facebook/redirect')->assertNotFound();
+        $this->get('/api/v1/auth/social/facebook/callback')->assertNotFound();
+    }
+
     public function test_verified_google_profile_creates_and_authenticates_account(): void
     {
         $disk = (string) config('filesystems.private_assets_disk');

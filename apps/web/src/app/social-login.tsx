@@ -13,7 +13,7 @@ export function SocialLogin({
   destination,
   providerIntent = false,
 }: SocialLoginProps) {
-  const [loading, setLoading] = useState<"google" | "facebook" | null>(null);
+  const [loading, setLoading] = useState<"google" | null>(null);
 
   useEffect(() => {
     const browserClosed = () => setLoading(null);
@@ -21,7 +21,7 @@ export function SocialLogin({
     return () => window.removeEventListener("kaila:social-browser-closed", browserClosed);
   }, []);
 
-  async function continueWith(provider: "google" | "facebook") {
+  async function continueWith(provider: "google") {
     setLoading(provider);
     const query = new URLSearchParams({
       next: destination,
@@ -49,14 +49,6 @@ export function SocialLogin({
         >
           <span aria-hidden="true">G</span>
           {loading === "google" ? "Connecting…" : "Google"}
-        </button>
-        <button
-          disabled={loading !== null}
-          onClick={() => void continueWith("facebook")}
-          type="button"
-        >
-          <span aria-hidden="true">f</span>
-          {loading === "facebook" ? "Connecting…" : "Facebook"}
         </button>
       </div>
       <p>
