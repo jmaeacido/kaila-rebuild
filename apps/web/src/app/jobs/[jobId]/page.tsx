@@ -12,7 +12,6 @@ import {
   Navigation,
   Pencil,
   PhilippinePeso,
-  Tag,
   Hammer,
   ImageIcon,
   LocateFixed,
@@ -28,8 +27,10 @@ import { JobLocationMap, type JobLocation } from "../../post-job/job-location-ma
 import styles from "./job-details.module.css";
 import assetStyles from "./job-assets.module.css";
 import { useRealtimeInvalidation } from "../../use-realtime-invalidation";
+import { ServiceCategoryIcon } from "../../../components/service-category-icon";
 
 type Reference = { id: number; name: string };
+type CategoryReference = Reference & { icon: string };
 type TimelineEvent = { id: string; type: string; occurredAt: string };
 type LocationStatus = "idle" | "locating" | "resolving" | "pinned" | "error";
 type JobAsset = {
@@ -46,7 +47,7 @@ type Job = {
   status: string;
   title: string;
   description: string;
-  category: Reference;
+  category: CategoryReference;
   area: Reference & { parent_id: number | null };
   scheduleType: "asap" | "scheduled";
   scheduledAt: string | null;
@@ -326,7 +327,7 @@ export default function JobDetailsPage({ params }: { params: Promise<{ jobId: st
       </header>
 
       <section className={styles.hero}>
-        <p>{job.category.name}</p>
+        <p><ServiceCategoryIcon icon={job.category.icon} aria-hidden="true" />{job.category.name}</p>
         <h1>{job.title}</h1>
         <span>{job.postedAt ? `Posted ${new Date(job.postedAt).toLocaleString()}` : "Not posted yet"}</span>
       </section>
@@ -418,7 +419,7 @@ export default function JobDetailsPage({ params }: { params: Promise<{ jobId: st
             <h2>Job details</h2>
             <p className={styles.description}>{job.description}</p>
             <dl>
-              <div><Tag /><dt>Service</dt><dd>{job.category.name}</dd></div>
+              <div><ServiceCategoryIcon icon={job.category.icon} aria-hidden="true" /><dt>Service</dt><dd>{job.category.name}</dd></div>
               <div><MapPin /><dt>Area</dt><dd>{areaLabel}</dd></div>
               <div><CalendarClock /><dt>When</dt><dd>{job.scheduleType === "asap" ? "As soon as possible" : new Date(job.scheduledAt || "").toLocaleString()}</dd></div>
               <div><PhilippinePeso /><dt>Budget</dt><dd>{job.budgetMinCentavos === null && job.budgetMaxCentavos === null ? "Open" : `${pesos(job.budgetMinCentavos)} – ${pesos(job.budgetMaxCentavos)}`}</dd></div>

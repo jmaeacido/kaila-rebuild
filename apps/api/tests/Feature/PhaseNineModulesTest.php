@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 class PhaseNineModulesTest extends TestCase
@@ -52,14 +53,40 @@ class PhaseNineModulesTest extends TestCase
         $this->assertDatabaseHas('outbox_events', ['resource_id' => $post, 'event_type' => 'community.post.updated']);
     }
 
-    public function test_katabang_is_deterministic_redacts_input_and_never_decides_price(): void
+    public function test_katabang_uses_ai_redacts_input_and_never_decides_price(): void
     {
+        config(['services.katabang_ai.api_key' => 'test-key', 'services.katabang_ai.model' => 'openai/gpt-oss-120b']);
+        Http::fake(['api.groq.com/*' => Http::response([
+            'id' => 'resp_test',
+            'choices' => [['message' => ['content' => json_encode([
+                'intent' => 'offers',
+                'answer' => 'Compare timing, reviews, scope, and price. The final choice is yours.',
+                'action' => ['label' => 'View Jobs', 'href' => '/jobs'],
+                'escalated' => false,
+            ], JSON_THROW_ON_ERROR)]]],
+        ])]);
         $user = User::factory()->create();
-        $this->actingAs($user)->postJson('/api/v1/katabang', ['message' => 'Which offer and price should I choose?'])
+        $this->actingAs($user)->postJson('/api/v1/katabang', [
+            'message' => 'Which offer and price should I choose?',
+            'conversation' => [['role' => 'user', 'content' => 'I have two offers.']],
+        ])
             ->assertOk()->assertJsonPath('data.intent', 'offers')->assertJsonPath('data.action.href', '/jobs');
         $row = DB::table('assistant_interactions')->first();
         $this->assertStringNotContainsString('offer', (string) $row->input_redacted);
-        $this->assertSame('deterministic-v1', json_decode((string) $row->response_metadata, true, 512, JSON_THROW_ON_ERROR)['engine']);
+        $this->assertSame('groq-chat-completions', json_decode((string) $row->response_metadata, true, 512, JSON_THROW_ON_ERROR)['engine']);
+        Http::assertSent(fn ($request) => $request->hasHeader('Authorization', 'Bearer test-key')
+            && $request['messages'][1]['content'] === 'I have two offers.'
+            && $request['response_format']['json_schema']['strict'] === true);
+    }
+
+    public function test_katabang_fails_closed_when_ai_is_not_configured(): void
+    {
+        config(['services.katabang_ai.api_key' => null]);
+        $user = User::factory()->create();
+        $this->actingAs($user)->postJson('/api/v1/katabang', ['message' => 'Help me post a job'])
+            ->assertServiceUnavailable();
+        Http::assertNothingSent();
+        $this->assertDatabaseCount('assistant_interactions', 0);
     }
 
     public function test_calls_fail_closed_without_turn_and_admin_analytics_suppresses_small_cohorts(): void

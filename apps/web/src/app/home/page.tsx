@@ -6,7 +6,6 @@ import {
   ArrowRight,
   BriefcaseBusiness,
   ChevronRight,
-  Hammer,
   Home,
   MapPin,
   MessageCircle,
@@ -35,7 +34,7 @@ type Job = {
   status: string;
   title: string;
   area: Reference;
-  category: Reference;
+  category: Category;
   scheduledAt: string | null;
   ratingReceived: { rating: number } | null;
   ratingGiven: { rating: number } | null;
@@ -45,7 +44,7 @@ type Opportunity = {
   jobId: string;
   title: string;
   area: Reference;
-  category: Reference;
+  category: Category;
   scheduleType: string;
   scheduledAt: string | null;
 };
@@ -266,7 +265,7 @@ export default function AuthenticatedHomePage() {
           <div className={styles.activeJobList}>
           {activeJobs.map((job) => <article className={styles.activityCard} key={job.id}>
             <span className={styles.activityIcon}>
-              <Hammer aria-hidden="true" />
+              <ServiceCategoryIcon icon={job.category.icon} aria-hidden="true" />
             </span>
             <div>
               <span>{jobStatusLabels[job.status] || "Hired job updated"}</span>
@@ -282,7 +281,7 @@ export default function AuthenticatedHomePage() {
         ) : isProvider && latestOpportunity ? (
           <article className={styles.activityCard}>
             <span className={styles.activityIcon}>
-              <BriefcaseBusiness aria-hidden="true" />
+              <ServiceCategoryIcon icon={latestOpportunity.category.icon} aria-hidden="true" />
             </span>
             <div>
               <span>{latestOpportunity.category.name}</span>
@@ -325,7 +324,7 @@ export default function AuthenticatedHomePage() {
             <div className={styles.historyList}>
               {jobHistory.map((job) => (
                 <Link href={`/jobs/${job.id}`} key={job.id}>
-                  <span className={styles.historyIcon}><BriefcaseBusiness aria-hidden="true" /></span>
+                  <span className={styles.historyIcon}><ServiceCategoryIcon icon={job.category.icon} aria-hidden="true" /></span>
                   <span>
                     <strong>{job.title}</strong>
                     <small><MapPin aria-hidden="true" /> {job.area.name}</small>

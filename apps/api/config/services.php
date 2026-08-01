@@ -6,6 +6,13 @@ return [
         'public_url' => rtrim((string) env('KAILA_PUBLIC_URL', 'http://localhost:3000'), '/'),
     ],
 
+    'katabang_ai' => [
+        'api_key' => env('KATABANG_AI_API_KEY'),
+        'base_url' => env('KATABANG_AI_BASE_URL', 'https://api.groq.com/openai/v1'),
+        'model' => env('KATABANG_AI_MODEL', 'openai/gpt-oss-120b'),
+        'timeout_seconds' => (int) env('KATABANG_AI_TIMEOUT_SECONDS', 15),
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Third Party Services

@@ -7,6 +7,7 @@ import { Button, Feedback, TextField } from "@kaila/ui";
 import styles from "../../offers.module.css";
 import mediaStyles from "./opportunity-media.module.css";
 import { useRealtimeInvalidation } from "../../use-realtime-invalidation";
+import { ServiceCategoryIcon } from "../../../components/service-category-icon";
 
 type Opportunity = {
   jobId: string;
@@ -14,7 +15,7 @@ type Opportunity = {
   description: string;
   client: { displayName: string; avatarUrl: string | null; rating: string | null; reviewCount: number };
   area: { name: string };
-  category: { name: string };
+  category: { name: string; icon: string };
   scheduleType: string;
   scheduledAt: string | null;
   budgetMinCentavos: number | null;
@@ -147,7 +148,7 @@ export default function MakeOfferPage({ params }: { params: Promise<{ jobId: str
             <span className={styles.clientAvatar}>{opportunity.client.avatarUrl ? <img src={opportunity.client.avatarUrl} alt={`${opportunity.client.displayName} profile`} /> : opportunity.client.displayName[0]}</span>
             <span className={styles.clientText}><span>Posted by</span><strong>{opportunity.client.displayName}</strong><span className={styles.clientRating}><Star aria-hidden="true" />{reputation(opportunity.client.rating, opportunity.client.reviewCount)}</span></span>
           </div>
-          <div><span>{opportunity.category.name}</span>{offer && <strong>Offer sent · Revision {offer.latestRevisionNumber}</strong>}</div>
+          <div><span><ServiceCategoryIcon icon={opportunity.category.icon} aria-hidden="true" />{opportunity.category.name}</span>{offer && <strong>Offer sent · Revision {offer.latestRevisionNumber}</strong>}</div>
           <h1>{opportunity.title}</h1>
           <p>{opportunity.description}</p>
           <dl>

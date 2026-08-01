@@ -24,6 +24,25 @@ class MarketplaceReferenceSeederTest extends TestCase
                 'Home Improvement', 'General Handyman', 'Other Services'],
             ServiceCategory::query()->orderBy('sort_order')->pluck('name')->all(),
         );
+        $this->assertSame([
+            'Plumbing' => 'Wrench',
+            'Electrical' => 'Zap',
+            'Carpentry' => 'Hammer',
+            'Welding' => 'Flame',
+            'Aircon & Refrigeration' => 'Snowflake',
+            'Appliance Repair' => 'Cog',
+            'Computer & IT Services' => 'MonitorCog',
+            'Cellphone & Gadget Repair' => 'Smartphone',
+            'Cleaning Services' => 'Sparkles',
+            'Beauty Services' => 'Heart',
+            'Tutoring & Education' => 'BookOpen',
+            'Automotive Services' => 'Car',
+            'Motorcycle Services' => 'Bike',
+            'Photography & Videography' => 'Camera',
+            'Home Improvement' => 'House',
+            'General Handyman' => 'Drill',
+            'Other Services' => 'Ellipsis',
+        ], ServiceCategory::query()->orderBy('sort_order')->pluck('icon', 'name')->all());
 
         $this->assertSame(171, Area::query()->count());
         $this->assertSame(2, Area::query()->where('type', 'region')->count());

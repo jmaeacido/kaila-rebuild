@@ -15,6 +15,8 @@
 .client .reputation svg { color:var(--color-primary); height:var(--spacing-16); width:var(--spacing-16); }
 .title span { color:var(--color-primary); font-size:var(--font-caption-size); font-weight:var(--font-weight-semibold); }
 .title { display:grid; gap:var(--spacing-4); }
+.category { align-items:center; display:inline-flex; gap:var(--spacing-8); }
+.category svg { height:var(--spacing-24); width:var(--spacing-24); }
 .offerBadge { background:color-mix(in srgb,var(--color-success) 10%,var(--color-surface)); border-radius:var(--radius-pill); color:var(--color-success); font-size:var(--font-caption-size); justify-self:start; padding:var(--spacing-4) var(--spacing-8); }
 .list dl { display:grid; gap:var(--spacing-12); }
 .list dl div { align-items:center; display:grid; gap:var(--spacing-8); grid-template-columns:var(--spacing-24) 5rem 1fr; }

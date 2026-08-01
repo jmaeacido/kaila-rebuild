@@ -58,7 +58,13 @@ export function FloatingKatabang() {
           "Content-Type": "application/json",
           ...(token ? { "X-XSRF-TOKEN": token } : {}),
         },
-        body: JSON.stringify({ message: question }),
+        body: JSON.stringify({
+          message: question,
+          conversation: exchanges.slice(-3).flatMap((exchange) => [
+            { role: "user", content: exchange.question },
+            { role: "assistant", content: exchange.answer.answer },
+          ]),
+        }),
       });
       if (!response.ok) throw new Error("Katabang request failed.");
       const answer = ((await response.json()) as { data: Answer }).data;
