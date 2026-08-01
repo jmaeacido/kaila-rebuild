@@ -29,17 +29,33 @@ class OpenStreetMapProviderTest extends TestCase
 
     public function test_it_returns_provider_neutral_route_geometry(): void
     {
-        Http::fake(['http://osrm.test/route/v1/driving/*' => Http::response(['routes' => [[
-            'distance' => 1250.4,
-            'duration' => 302.2,
-            'geometry' => ['coordinates' => [[120.98, 14.59], [121.01, 14.62]]],
-        ]]])]);
+        Http::fake([
+            'http://osrm.test/route/v1/driving/*' => Http::response([
+                'routes' => [[
+                    'distance' => 1250.4,
+                    'duration' => 302.2,
+                    'geometry' => ['coordinates' => [[120.98, 14.59], [121.01, 14.62]]],
+                    'legs' => [[
+                        'steps' => [[
+                            'distance' => 800.2, 'duration' => 190.1, 'name' => 'Rizal Avenue',
+                            'maneuver' => ['type' => 'turn', 'modifier' => 'right', 'location' => [120.98, 14.59]],
+                        ], [
+                            'distance' => 0, 'duration' => 0, 'name' => '',
+                            'maneuver' => ['type' => 'arrive', 'location' => [121.01, 14.62]],
+                        ]],
+                    ]],
+                ]],
+            ]),
+        ]);
 
         $route = app(OpenStreetMapProvider::class)->route(new GeoPoint(14.59, 120.98), new GeoPoint(14.62, 121.01));
 
         $this->assertSame(1250, $route->distanceMeters);
         $this->assertSame(302, $route->durationSeconds);
         $this->assertEquals([new GeoPoint(14.59, 120.98), new GeoPoint(14.62, 121.01)], $route->geometry);
+        $this->assertSame('Turn right onto Rizal Avenue', $route->steps[0]->instruction);
+        $this->assertSame('Arrive at the job site', $route->steps[1]->instruction);
+        Http::assertSent(fn ($request) => $request['steps'] === 'true');
     }
 
     public function test_it_reverse_geocodes_a_pin_with_address_details(): void

@@ -5,6 +5,7 @@
   "type": "module",
   "exports": {
     "./oauth": "./src/oauth.ts",
+    "./background-navigation": "./src/background-navigation-plugin.ts",
     "./runtime": "./src/runtime.ts",
     "./session": "./src/session.ts"
   },

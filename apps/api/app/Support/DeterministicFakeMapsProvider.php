@@ -5,6 +5,7 @@ namespace App\Support;
 use App\Contracts\MapsProvider;
 use App\Domain\Maps\GeoPoint;
 use App\Domain\Maps\RouteEstimate;
+use App\Domain\Maps\RouteStep;
 
 class DeterministicFakeMapsProvider implements MapsProvider
 {
@@ -25,6 +26,9 @@ class DeterministicFakeMapsProvider implements MapsProvider
         $distance = (int) round(sqrt($latitudeMeters ** 2 + $longitudeMeters ** 2));
         $duration = (int) ceil($distance / 6.944444);
 
-        return new RouteEstimate($distance, $duration, [$origin, $destination]);
+        return new RouteEstimate($distance, $duration, [$origin, $destination], [
+            new RouteStep('Head toward the job site', 'depart', 'straight', $distance, $duration, $origin),
+            new RouteStep('Arrive at the job site', 'arrive', null, 0, 0, $destination),
+        ]);
     }
 }

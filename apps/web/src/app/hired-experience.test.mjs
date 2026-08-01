@@ -13,8 +13,10 @@ test("emoji picker is categorized, scrollable, and constrained to the composer",
   assert.match(styles, /overflow-y:auto/);
 });
 
-test("travel distinguishes location failures and permits watcher retry", () => {
+test("travel distinguishes location failures and can resume native background navigation", () => {
   assert.match(travel, /Live location needs attention/);
   assert.match(travel, /watchId\.current = null/);
-  assert.match(travel, /Retry live map/);
+  assert.match(travel, /BackgroundNavigation\.start/);
+  assert.match(travel, /void retry\(\)/);
+  assert.match(travel, /screen locks/);
 });

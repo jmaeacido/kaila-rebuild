@@ -5,6 +5,7 @@ namespace App\Support;
 use App\Contracts\MapsProvider;
 use App\Domain\Maps\GeoPoint;
 use App\Domain\Maps\RouteEstimate;
+use App\Domain\Maps\RouteStep;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
@@ -54,7 +55,7 @@ class OpenStreetMapProvider implements MapsProvider
         $response = $this->client()->get(rtrim((string) config('maps.osrm_url'), '/')."/route/v1/driving/{$coordinates}", [
             'overview' => 'full',
             'geometries' => 'geojson',
-            'steps' => 'false',
+            'steps' => 'true',
         ]);
 
         $distance = $response->json('routes.0.distance');
@@ -72,7 +73,47 @@ class OpenStreetMapProvider implements MapsProvider
             $geometry[] = new GeoPoint((float) $coordinate[1], (float) $coordinate[0]);
         }
 
-        return new RouteEstimate((int) round((float) $distance), (int) round((float) $duration), $geometry);
+        $steps = [];
+        foreach ((array) $response->json('routes.0.legs.0.steps', []) as $step) {
+            $maneuver = is_array($step['maneuver'] ?? null) ? $step['maneuver'] : [];
+            $stepLocation = $maneuver['location'] ?? null;
+            if (! is_array($stepLocation) || ! is_numeric($stepLocation[0] ?? null) || ! is_numeric($stepLocation[1] ?? null)) {
+                continue;
+            }
+            $type = is_string($maneuver['type'] ?? null) ? $maneuver['type'] : 'continue';
+            $modifier = is_string($maneuver['modifier'] ?? null) ? $maneuver['modifier'] : null;
+            $name = is_string($step['name'] ?? null) ? trim($step['name']) : '';
+            $steps[] = new RouteStep(
+                $this->instruction($type, $modifier, $name),
+                $type,
+                $modifier,
+                (int) round((float) ($step['distance'] ?? 0)),
+                (int) round((float) ($step['duration'] ?? 0)),
+                new GeoPoint((float) $stepLocation[1], (float) $stepLocation[0]),
+            );
+        }
+
+        return new RouteEstimate((int) round((float) $distance), (int) round((float) $duration), $geometry, $steps);
+    }
+
+    private function instruction(string $type, ?string $modifier, string $road): string
+    {
+        if ($type === 'arrive') {
+            return 'Arrive at the job site';
+        }
+
+        $direction = match ($modifier) {
+            'slight left' => 'Bear left',
+            'left' => 'Turn left',
+            'sharp left' => 'Make a sharp left',
+            'slight right' => 'Bear right',
+            'right' => 'Turn right',
+            'sharp right' => 'Make a sharp right',
+            'uturn' => 'Make a U-turn',
+            default => $type === 'depart' ? 'Head out' : 'Continue',
+        };
+
+        return $road === '' ? $direction : "$direction onto $road";
     }
 
     private function client(): PendingRequest

@@ -12,6 +12,7 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(SecureSessionPlugin.class);
+        registerPlugin(BackgroundNavigationPlugin.class);
         super.onCreate(savedInstanceState);
         createNotificationChannels();
     }

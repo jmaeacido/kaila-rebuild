@@ -104,6 +104,7 @@ class TravelController extends Controller
                     ? ['latitude' => (float) $serviceJob->latitude, 'longitude' => (float) $serviceJob->longitude]
                     : null,
                 'routeGeometry' => null,
+                'routeSteps' => [],
             ]]);
         }
 
@@ -115,6 +116,7 @@ class TravelController extends Controller
             ? ['latitude' => (float) $serviceJob->latitude, 'longitude' => (float) $serviceJob->longitude]
             : null;
         $data['routeGeometry'] = null;
+        $data['routeSteps'] = [];
         if ($sample && $data['destination']) {
             try {
                 $route = $this->maps->route(
@@ -125,6 +127,14 @@ class TravelController extends Controller
                     fn (GeoPoint $point): array => ['latitude' => $point->latitude, 'longitude' => $point->longitude],
                     $route->geometry,
                 );
+                $data['routeSteps'] = array_map(fn ($step): array => [
+                    'instruction' => $step->instruction,
+                    'maneuver' => $step->maneuver,
+                    'modifier' => $step->modifier,
+                    'distanceMeters' => $step->distanceMeters,
+                    'durationSeconds' => $step->durationSeconds,
+                    'location' => ['latitude' => $step->location->latitude, 'longitude' => $step->location->longitude],
+                ], $route->steps);
             } catch (Throwable) {
                 // Distance and ETA already degrade safely when routing is unavailable.
             }
