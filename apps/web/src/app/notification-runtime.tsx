@@ -20,7 +20,7 @@ const firebaseConfig = {
 
 const firebaseConfigured = Object.values(firebaseConfig).every((value) => typeof value === "string" && value !== "");
 
-type Toast = FeedbackMessage & { id: number; permissionPrompt?: boolean };
+type Toast = FeedbackMessage & { id: number; permissionPrompt?: boolean; persistent?: boolean };
 
 function isNativeAndroid(): boolean {
   const capacitor = (window as Window & { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor;
@@ -35,10 +35,10 @@ export function NotificationRuntime() {
     setToasts((current) => current.filter((toast) => toast.id !== id));
   }, []);
 
-  const show = useCallback((message: FeedbackMessage & { permissionPrompt?: boolean }) => {
+  const show = useCallback((message: FeedbackMessage & { permissionPrompt?: boolean; persistent?: boolean }) => {
     const id = ++nextId.current;
-    setToasts((current) => [...current.slice(-2), { ...message, id }]);
-    if (!message.permissionPrompt) window.setTimeout(() => dismiss(id), 6_000);
+    setToasts((current) => [...current, { ...message, id }]);
+    if (!message.permissionPrompt && !message.persistent) window.setTimeout(() => dismiss(id), 6_000);
   }, [dismiss]);
 
   const registerBrowserPush = useCallback(async (showFeedback = true) => {
@@ -77,7 +77,7 @@ export function NotificationRuntime() {
   useEffect(() => {
     const domainEvent = (event: Event) => {
       const feedback = feedbackForDomainEvent((event as CustomEvent<DomainEvent>).detail);
-      if (feedback) show(feedback);
+      if (feedback) show({ ...feedback, persistent: true });
     };
     window.addEventListener(domainEventName, domainEvent);
     return () => window.removeEventListener(domainEventName, domainEvent);
@@ -138,14 +138,14 @@ export function NotificationRuntime() {
 
   return (
     <aside className="toastViewport" aria-live="polite" aria-label="KAILA updates">
-      {toasts.map((toast) => (
-        <section className="appToast" key={toast.id}>
+      {toasts.slice(0, 1).map((toast) => (
+        <section className="appToast" key={toast.id} role="dialog" aria-modal="false" aria-labelledby={`realtime-update-${toast.id}`}>
           <span className="appToastIcon" aria-hidden="true">{toast.permissionPrompt ? <Bell /> : <CheckCircle2 />}</span>
-          <div><strong>{toast.title}</strong><p>{toast.body}</p>
+          <div><strong id={`realtime-update-${toast.id}`}>{toast.title}</strong><p>{toast.body}</p>
             {toast.permissionPrompt ? <button type="button" onClick={() => void registerBrowserPush().catch(() => show({ title: "Push setup failed", body: "Check browser notification permissions and try again." }))}>Enable notifications</button>
               : toast.href ? <Link href={toast.href}>View update</Link> : null}
           </div>
-          <button className="appToastClose" type="button" aria-label="Dismiss" onClick={() => dismiss(toast.id)}><X /></button>
+          <button className="appToastClose" type="button" aria-label={`Dismiss ${toast.title}`} onClick={() => dismiss(toast.id)}><X /></button>
         </section>
       ))}
     </aside>

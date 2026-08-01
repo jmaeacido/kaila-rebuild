@@ -60,6 +60,13 @@ type Job = {
   canCancel: boolean;
   timeline: TimelineEvent[];
   assets: JobAsset[];
+  counterpart: {
+    role: "client" | "provider";
+    displayName: string;
+    avatarUrl: string | null;
+    rating: string | number | null;
+    reviewCount: number;
+  } | null;
 };
 
 const statusLabels: Record<string, string> = {
@@ -336,6 +343,21 @@ export default function JobDetailsPage({ params }: { params: Promise<{ jobId: st
         <Feedback kind={notice.includes("could not") ? "error" : "success"} title="Job update">
           {notice}
         </Feedback>
+      )}
+
+      {job.counterpart && (
+        <section className={assetStyles.counterpart} aria-labelledby="counterpart-title">
+          <span className={assetStyles.counterpartAvatar}>
+            {job.counterpart.avatarUrl ? (
+              <Image src={job.counterpart.avatarUrl} alt={`${job.counterpart.displayName} profile`} fill sizes="48px" unoptimized />
+            ) : job.counterpart.displayName.charAt(0).toUpperCase()}
+          </span>
+          <div>
+            <p>{job.role === "client" ? "Your provider" : "Your client"}</p>
+            <h2 id="counterpart-title">{job.counterpart.displayName}</h2>
+            <span>{job.counterpart.rating === null ? "New · No published reviews" : `${Number(job.counterpart.rating).toFixed(1)} rating · ${job.counterpart.reviewCount} review${job.counterpart.reviewCount === 1 ? "" : "s"}`}</span>
+          </div>
+        </section>
       )}
 
       {editing ? (

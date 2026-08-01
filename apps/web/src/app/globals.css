@@ -260,6 +260,23 @@ a {
   position: relative;
 }
 
+.appSessionBar .notificationMenu { position: relative; }
+.appSessionBar button.notificationBell { color: var(--color-text); min-height: var(--control-min-height); min-width: var(--control-min-height); justify-content: center; }
+.notificationDropdown { position: absolute; right: 0; top: calc(100% + var(--spacing-8)); z-index: 1100; width: min(24rem, calc(100vw - (2 * var(--spacing-16)))); overflow: hidden; color: var(--color-ink); background: var(--color-surface); border: var(--control-border-width) solid var(--color-border); border-radius: var(--radius-card); box-shadow: var(--shadow-floating); }
+.notificationDropdown > header { display: flex; align-items: center; justify-content: space-between; gap: var(--spacing-8); padding: var(--spacing-16); border-bottom: var(--control-border-width) solid var(--color-border); }
+.notificationDropdown > header span { color: var(--color-text-secondary); font-size: var(--font-caption-size); }
+.notificationDropdownList { display: grid; max-height: 24rem; overflow-y: auto; }
+.appSessionBar .notificationDropdownList > a { display: grid; grid-template-columns: var(--spacing-8) 1fr; gap: var(--spacing-8); padding: var(--spacing-12) var(--spacing-16); color: var(--color-ink); border: 0; border-bottom: var(--control-border-width) solid var(--color-border); border-radius: 0; text-decoration: none; }
+.notificationDropdownList > a > span { width: var(--spacing-8); height: var(--spacing-8); margin-top: var(--spacing-8); border-radius: var(--radius-pill); background: transparent; }
+.notificationDropdownList > a.unread > span { background: var(--color-primary); }
+.notificationDropdownList > a div { min-width: 0; }
+.notificationDropdownList > a strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.notificationDropdownList > a p, .notificationDropdownList > a time, .notificationDropdownEmpty { color: var(--color-text-secondary); font-size: var(--font-caption-size); }
+.notificationDropdownList > a p { margin-top: var(--spacing-4); }
+.notificationDropdownList > a time { display: block; margin-top: var(--spacing-4); }
+.notificationDropdownEmpty { padding: var(--spacing-24); text-align: center; }
+.appSessionBar .notificationSeeAll { display: flex; justify-content: center; min-height: var(--control-min-height); padding: var(--spacing-12); color: var(--color-primary); border: 0; border-radius: 0; font-weight: var(--font-weight-semibold); text-decoration: none; }
+
 .appSessionBar .notificationBell > span {
   align-items: center;
   background: var(--color-danger);

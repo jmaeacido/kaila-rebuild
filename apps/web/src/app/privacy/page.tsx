@@ -17,7 +17,7 @@ const sections: LegalSection[] = [
   },
   {
     heading: "Location And Navigation",
-    body: "Users may pin a job site or share device location to estimate distance and show navigation. On Android, live tracking runs only after the provider starts navigation and continues while KAILA is minimized or the screen is locked. Android shows a persistent navigation notification with a stop action. Tracking stops when the provider stops navigation or the job leaves the traveling stage.",
+    body: "Users may pin a job site or share device location to estimate distance and show navigation. Before hiring, matched providers can see the job’s area and a neighborhood-level rounded location for distance estimates, but not the exact pin or landmark. On Android, live tracking runs only after the provider starts navigation and continues while KAILA is minimized or the screen is locked. Android shows a persistent navigation notification with a stop action. Tracking stops when the provider stops navigation or the job leaves the traveling stage.",
   },
   {
     heading: "Sharing",

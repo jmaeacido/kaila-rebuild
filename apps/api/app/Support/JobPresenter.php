@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Models\Area;
 use App\Models\ProfileAsset;
 use App\Models\ServiceJob;
 use App\Models\User;
@@ -44,6 +45,8 @@ class JobPresenter
     public function opportunity(ServiceJob $job, int $opportunityId, string $state): array
     {
         $job->loadMissing(['category:id,name,icon', 'area:id,name,type', 'assets' => fn ($query) => $query->where('scan_status', 'clean')->select('id', 'service_job_id', 'original_name', 'mime_type', 'size_bytes', 'scan_status')]);
+        $area = $job->area;
+        abort_unless($area instanceof Area, 404);
         $client = User::query()->findOrFail($job->client_user_id);
         $avatar = ProfileAsset::query()
             ->where('user_id', $job->client_user_id)
@@ -64,6 +67,11 @@ class JobPresenter
             'category' => $job->category, 'area' => $job->area, 'scheduleType' => $job->schedule_type,
             'scheduledAt' => $job->scheduled_at?->toIso8601String(), 'budgetMinCentavos' => $job->budget_min_centavos,
             'budgetMaxCentavos' => $job->budget_max_centavos,
+            'approximateAddress' => $area->name,
+            'approximateLocation' => $job->latitude !== null ? [
+                'latitude' => round((float) $job->latitude, 3),
+                'longitude' => round((float) $job->longitude, 3),
+            ] : null,
             'attachmentCount' => $job->assets->count(),
             'assets' => $job->assets->map(fn ($asset) => [
                 'id' => $asset->id,

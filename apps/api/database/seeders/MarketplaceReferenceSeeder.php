@@ -23,7 +23,7 @@ class MarketplaceReferenceSeeder extends Seeder
 
     /** @var list<array{string, string, string}> */
     private const LEGACY_SERVICES = [
-        ['Plumbing', 'plumbing', 'Wrench'],
+        ['Plumbing', 'plumbing', 'Droplets'],
         ['Electrical', 'electrical', 'Zap'],
         ['Carpentry', 'carpentry', 'Hammer'],
         ['Welding', 'welding', 'Flame'],

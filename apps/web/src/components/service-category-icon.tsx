@@ -5,6 +5,7 @@ import {
   Car,
   Cog,
   Drill,
+  Droplets,
   Ellipsis,
   Flame,
   Hammer,
@@ -26,6 +27,7 @@ const serviceCategoryIcons: Record<string, LucideIcon> = {
   Car,
   Cog,
   Drill,
+  Droplets,
   Ellipsis,
   Flame,
   Hammer,
@@ -39,10 +41,18 @@ const serviceCategoryIcons: Record<string, LucideIcon> = {
   Zap,
 };
 
+const normalizedServiceCategoryIcons = Object.fromEntries(
+  Object.entries(serviceCategoryIcons).map(([name, component]) => [
+    name.replaceAll(/[^a-z0-9]/gi, "").toLowerCase(),
+    component,
+  ]),
+);
+
 export function ServiceCategoryIcon({
   icon,
   ...props
 }: LucideProps & { icon: string }) {
-  const Icon = serviceCategoryIcons[icon] ?? Wrench;
+  const normalizedIcon = icon.replaceAll(/[^a-z0-9]/gi, "").toLowerCase();
+  const Icon = serviceCategoryIcons[icon] ?? normalizedServiceCategoryIcons[normalizedIcon] ?? Ellipsis;
   return <Icon {...props} />;
 }

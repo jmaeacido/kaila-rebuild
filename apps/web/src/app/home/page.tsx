@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   ArrowRight,
   BriefcaseBusiness,
@@ -28,6 +29,13 @@ type User = {
 
 type Reference = { id: number; name: string };
 type Category = Reference & { icon: string };
+type Counterpart = {
+  role: "client" | "provider";
+  displayName: string;
+  avatarUrl: string | null;
+  rating: string | number | null;
+  reviewCount: number;
+};
 type Job = {
   id: string;
   role: "client" | "provider";
@@ -36,6 +44,7 @@ type Job = {
   area: Reference;
   category: Category;
   scheduledAt: string | null;
+  counterpart: Counterpart | null;
   ratingReceived: { rating: number } | null;
   ratingGiven: { rating: number } | null;
 };
@@ -271,6 +280,7 @@ export default function AuthenticatedHomePage() {
               <span>{jobStatusLabels[job.status] || "Hired job updated"}</span>
               <h3>{job.title}</h3>
               <p><MapPin aria-hidden="true" />{job.area.name}</p>
+              {job.counterpart && <p className={styles.counterpart}><span className={styles.miniAvatar}>{job.counterpart.avatarUrl ? <Image src={job.counterpart.avatarUrl} alt="" width={24} height={24} unoptimized /> : job.counterpart.displayName.charAt(0).toUpperCase()}</span>With {job.counterpart.displayName} · {job.counterpart.rating === null ? "New" : `${Number(job.counterpart.rating).toFixed(1)} ★`}</p>}
             </div>
             <Link href={`/jobs/${job.id}`}>
               Continue
@@ -328,6 +338,7 @@ export default function AuthenticatedHomePage() {
                   <span>
                     <strong>{job.title}</strong>
                     <small><MapPin aria-hidden="true" /> {job.area.name}</small>
+                    {job.counterpart && <small className={styles.counterpart}><span className={styles.miniAvatar}>{job.counterpart.avatarUrl ? <Image src={job.counterpart.avatarUrl} alt="" width={24} height={24} unoptimized /> : job.counterpart.displayName.charAt(0).toUpperCase()}</span>With {job.counterpart.displayName} · {job.counterpart.rating === null ? "New" : `${Number(job.counterpart.rating).toFixed(1)} ★`}</small>}
                     {job.ratingReceived && (
                       <small className={styles.jobRating}>
                         <Star aria-hidden="true" />

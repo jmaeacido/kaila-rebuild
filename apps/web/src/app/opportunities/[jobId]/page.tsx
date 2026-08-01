@@ -8,6 +8,7 @@ import styles from "../../offers.module.css";
 import mediaStyles from "./opportunity-media.module.css";
 import { useRealtimeInvalidation } from "../../use-realtime-invalidation";
 import { ServiceCategoryIcon } from "../../../components/service-category-icon";
+import { JobRequestLocation } from "../../../components/job-request-location";
 
 type Opportunity = {
   jobId: string;
@@ -20,6 +21,8 @@ type Opportunity = {
   scheduledAt: string | null;
   budgetMinCentavos: number | null;
   budgetMaxCentavos: number | null;
+  approximateAddress: string;
+  approximateLocation: { latitude: number; longitude: number } | null;
   assets: {
     id: string;
     name: string;
@@ -151,6 +154,7 @@ export default function MakeOfferPage({ params }: { params: Promise<{ jobId: str
           <div><span><ServiceCategoryIcon icon={opportunity.category.icon} aria-hidden="true" />{opportunity.category.name}</span>{offer && <strong>Offer sent · Revision {offer.latestRevisionNumber}</strong>}</div>
           <h1>{opportunity.title}</h1>
           <p>{opportunity.description}</p>
+          <JobRequestLocation address={opportunity.approximateAddress} location={opportunity.approximateLocation} />
           <dl>
             <div><MapPin /><dt>Area</dt><dd>{opportunity.area.name}</dd></div>
             <div><Clock3 /><dt>When</dt><dd>{opportunity.scheduleType === "asap" ? "As soon as possible" : new Date(opportunity.scheduledAt || "").toLocaleString()}</dd></div>

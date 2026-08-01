@@ -91,7 +91,7 @@ class OfferController
     /** @return array<string, mixed> */
     private function present(OfferThread $thread, User $viewer): array
     {
-        $thread->loadMissing(['provider.credentials', 'revisions', 'job']);
+        $thread->loadMissing(['provider.credentials', 'provider.serviceAreas:id,name', 'revisions', 'job.area:id,name']);
         $provider = $thread->provider;
         $job = $thread->job;
         if (! $provider instanceof ProviderProfile || ! $job instanceof ServiceJob) {
@@ -108,7 +108,7 @@ class OfferController
         $rating = $reputation->value('average_rating') ?? $provider->rating;
         $reviewCount = (int) ($reputation->value('published_review_count') ?? 0);
 
-        return ['id' => $thread->id, 'jobId' => $thread->service_job_id, 'status' => $thread->status, 'provider' => ['id' => $provider->id, 'displayName' => $provider->display_name, 'avatarUrl' => $avatar ? "/api/v1/profile-assets/{$avatar->getKey()}" : null, 'rating' => $rating, 'reviewCount' => $reviewCount, 'completedJobs' => $provider->completed_jobs, 'responseMinutes' => $provider->response_minutes, 'verified' => $provider->credentials->contains('status', 'approved')], 'latestRevisionNumber' => $thread->latest_revision_number, 'revisions' => $thread->revisions->map(fn (OfferRevision $revision) => ['id' => $revision->id, 'revisionNumber' => $revision->revision_number, 'proposedBy' => $revision->proposed_by_user_id === $job->client_user_id ? 'client' : 'provider', 'amountCentavos' => $revision->amount_centavos, 'availabilityText' => $revision->availability_text, 'estimatedDurationText' => $revision->estimated_duration_text, 'scope' => $revision->scope, 'message' => $revision->message, 'expiresAt' => $revision->expires_at?->toIso8601String(), 'createdAt' => $revision->created_at->toIso8601String()])];
+        return ['id' => $thread->id, 'jobId' => $thread->service_job_id, 'status' => $thread->status, 'provider' => ['id' => $provider->id, 'displayName' => $provider->display_name, 'avatarUrl' => $avatar ? "/api/v1/profile-assets/{$avatar->getKey()}" : null, 'rating' => $rating, 'reviewCount' => $reviewCount, 'completedJobs' => $provider->completed_jobs, 'responseMinutes' => $provider->response_minutes, 'verified' => $provider->credentials->contains('status', 'approved'), 'address' => $provider->serviceAreas->pluck('name')->join(', '), 'distance' => $provider->serviceAreas->contains('id', $job->area_id) ? 'Serves this job area' : 'Distance unavailable'], 'latestRevisionNumber' => $thread->latest_revision_number, 'revisions' => $thread->revisions->map(fn (OfferRevision $revision) => ['id' => $revision->id, 'revisionNumber' => $revision->revision_number, 'proposedBy' => $revision->proposed_by_user_id === $job->client_user_id ? 'client' : 'provider', 'amountCentavos' => $revision->amount_centavos, 'availabilityText' => $revision->availability_text, 'estimatedDurationText' => $revision->estimated_duration_text, 'scope' => $revision->scope, 'message' => $revision->message, 'expiresAt' => $revision->expires_at?->toIso8601String(), 'createdAt' => $revision->created_at->toIso8601String()])];
     }
 
     private function user(Request $request): User

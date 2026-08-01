@@ -25,7 +25,7 @@ class MarketplaceReferenceSeederTest extends TestCase
             ServiceCategory::query()->orderBy('sort_order')->pluck('name')->all(),
         );
         $this->assertSame([
-            'Plumbing' => 'Wrench',
+            'Plumbing' => 'Droplets',
             'Electrical' => 'Zap',
             'Carpentry' => 'Hammer',
             'Welding' => 'Flame',

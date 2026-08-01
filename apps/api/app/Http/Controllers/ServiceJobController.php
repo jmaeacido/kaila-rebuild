@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\AcceptedOfferSnapshot;
 use App\Models\JobReview;
+use App\Models\ProfileAsset;
 use App\Models\ProviderProfile;
 use App\Models\ServiceJob;
 use App\Models\User;
@@ -163,8 +164,49 @@ class ServiceJobController extends Controller
 
         return [
             'role' => $job->client_user_id === $user->id ? 'client' : 'provider',
+            'counterpart' => $this->counterpart($job, $user),
             'ratingReceived' => $received ? ['rating' => $received->rating] : null,
             'ratingGiven' => $given ? ['rating' => $given->rating] : null,
+        ];
+    }
+
+    /** @return array{role: string, displayName: string, avatarUrl: string|null, rating: mixed, reviewCount: int}|null */
+    private function counterpart(ServiceJob $job, User $user): ?array
+    {
+        $snapshot = AcceptedOfferSnapshot::query()
+            ->where('service_job_id', $job->id)
+            ->first();
+
+        if (! $snapshot) {
+            return null;
+        }
+
+        if ($job->client_user_id === $user->id) {
+            $profile = ProviderProfile::query()->findOrFail($snapshot->provider_profile_id);
+            $counterpartUserId = $profile->user_id;
+            $role = 'provider';
+            $displayName = $profile->display_name;
+        } else {
+            $client = User::query()->findOrFail($job->client_user_id);
+            $counterpartUserId = $client->id;
+            $role = 'client';
+            $displayName = $client->name;
+        }
+
+        $avatar = ProfileAsset::query()
+            ->where('user_id', $counterpartUserId)
+            ->where('purpose', 'avatar')
+            ->where('scan_status', 'clean')
+            ->latest()
+            ->first();
+        $reputation = DB::table('reputation_projections')->where('user_id', $counterpartUserId);
+
+        return [
+            'role' => $role,
+            'displayName' => $displayName,
+            'avatarUrl' => $avatar ? "/api/v1/profile-assets/{$avatar->getKey()}" : null,
+            'rating' => $reputation->value('average_rating'),
+            'reviewCount' => (int) ($reputation->value('published_review_count') ?? 0),
         ];
     }
 

@@ -560,3 +560,29 @@
     opacity: var(--opacity-disabled);
   }
 }
+
+.historyList .counterpart,
+.activityCard .counterpart {
+  color: var(--color-ink);
+  font-weight: var(--font-weight-medium);
+}
+
+.miniAvatar {
+  align-items: center;
+  background: var(--gradient-primary);
+  border-radius: var(--radius-pill);
+  color: var(--color-on-primary);
+  display: inline-flex;
+  flex: 0 0 var(--spacing-24);
+  font-size: var(--font-caption-size);
+  height: var(--spacing-24);
+  justify-content: center;
+  overflow: hidden;
+  width: var(--spacing-24);
+}
+
+.miniAvatar img {
+  height: 100%;
+  object-fit: cover;
+  width: 100%;
+}

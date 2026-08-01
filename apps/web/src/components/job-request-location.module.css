@@ -1,0 +1,34 @@
+.location {
+  display: grid;
+  gap: var(--spacing-8);
+}
+
+.location p {
+  align-items: center;
+  background: var(--color-background);
+  border-radius: var(--radius-input);
+  display: grid;
+  gap: var(--spacing-8);
+  grid-template-columns: var(--spacing-24) 1fr;
+  padding: var(--spacing-12);
+}
+
+.location svg {
+  color: var(--color-primary);
+  height: var(--spacing-24);
+  width: var(--spacing-24);
+}
+
+.location span {
+  display: grid;
+  gap: var(--spacing-4);
+}
+
+.location small {
+  color: var(--color-text-secondary);
+  font-size: var(--font-caption-size);
+}
+
+.location strong {
+  color: var(--color-ink);
+}

@@ -90,10 +90,19 @@ class PhaseFourOffersTest extends TestCase
             ->assertOk()
             ->assertJsonCount(1, 'data')
             ->assertJsonPath('data.0.id', $jobId)
-            ->assertJsonPath('data.0.role', 'provider');
+            ->assertJsonPath('data.0.role', 'provider')
+            ->assertJsonPath('data.0.counterpart.role', 'client')
+            ->assertJsonPath('data.0.counterpart.displayName', $client->name);
         $this->getJson("/api/v1/jobs/$jobId")
             ->assertOk()
-            ->assertJsonPath('data.role', 'provider');
+            ->assertJsonPath('data.role', 'provider')
+            ->assertJsonPath('data.counterpart.displayName', $client->name);
+
+        $this->actingAs($client)
+            ->getJson("/api/v1/jobs/$jobId")
+            ->assertOk()
+            ->assertJsonPath('data.counterpart.role', 'provider')
+            ->assertJsonPath('data.counterpart.displayName', 'Trusted Provider');
     }
 
     public function test_only_provider_withdraws_and_only_client_declines(): void
