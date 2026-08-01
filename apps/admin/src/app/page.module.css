@@ -12,6 +12,10 @@
   margin-bottom: var(--spacing-32);
 }
 
+.page header nav {
+  display: none;
+}
+
 .eyebrow,
 .page header p {
   color: var(--color-primary);
@@ -65,26 +69,7 @@
 }
 
 .backButton {
-  align-items: center;
-  border: var(--control-border-width) solid var(--color-border);
-  border-radius: var(--radius-button);
-  color: var(--color-text);
-  display: inline-flex;
-  font-weight: var(--font-weight-semibold);
-  gap: var(--spacing-8);
-  justify-content: center;
-  padding: var(--spacing-8) var(--spacing-16);
-  text-decoration: none;
-}
-
-.backButton:hover {
-  border-color: var(--color-primary);
-  color: var(--color-primary);
-}
-
-.backButton svg {
-  height: var(--spacing-16);
-  width: var(--spacing-16);
+  display: none;
 }
 
 .page .logoutButton {
