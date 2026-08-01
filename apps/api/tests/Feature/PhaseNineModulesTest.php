@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class PhaseNineModulesTest extends TestCase
@@ -97,5 +98,21 @@ class PhaseNineModulesTest extends TestCase
         $this->actingAs($admin)->getJson('/api/v1/admin/marketplace/analytics')->assertOk()->assertJsonPath('data.privacy.suppressed', true)->assertJsonPath('data.marketplace', null);
         $this->getJson('/api/v1/admin/marketplace/operations-validation')->assertOk()->assertJsonPath('data.checks.phaseNineSchema', true);
         $this->actingAs($user)->getJson('/api/v1/admin/marketplace/analytics')->assertForbidden();
+    }
+
+    public function test_analytics_counts_jobs_that_advanced_to_rated_closed_as_completed(): void
+    {
+        config(['phase_nine.analytics_minimum_cohort' => 1]);
+        $admin = User::factory()->create(['is_admin' => true]);
+        $categoryId = DB::table('service_categories')->insertGetId(['name' => 'Analytics service', 'slug' => 'analytics-service', 'icon' => 'wrench', 'is_active' => true, 'created_at' => now(), 'updated_at' => now()]);
+        $areaId = DB::table('areas')->insertGetId(['name' => 'Analytics area', 'code' => 'ANALYTICS', 'type' => 'city', 'is_active' => true, 'created_at' => now(), 'updated_at' => now()]);
+        DB::table('service_jobs')->insert([
+            ['id' => (string) Str::uuid(), 'client_user_id' => $admin->id, 'service_category_id' => $categoryId, 'area_id' => $areaId, 'status' => 'rated_closed', 'title' => 'Finished', 'description' => 'Finished and rated', 'schedule_type' => 'asap', 'completed_at' => now(), 'created_at' => now(), 'updated_at' => now()],
+            ['id' => (string) Str::uuid(), 'client_user_id' => $admin->id, 'service_category_id' => $categoryId, 'area_id' => $areaId, 'status' => 'cancelled', 'title' => 'Cancelled', 'description' => 'Never completed', 'schedule_type' => 'asap', 'completed_at' => null, 'created_at' => now(), 'updated_at' => now()],
+        ]);
+
+        $this->actingAs($admin)->getJson('/api/v1/admin/marketplace/analytics')
+            ->assertOk()
+            ->assertJsonPath('data.marketplace.completedJobs', 1);
     }
 }

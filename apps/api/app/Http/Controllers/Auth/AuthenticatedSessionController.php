@@ -40,7 +40,7 @@ class AuthenticatedSessionController extends Controller
         $request->session()->regenerate();
         /** @var User $user */
         $user = $request->user();
-        if ($user->account_status === 'restricted' || $user->banned_at !== null) {
+        if (in_array($user->account_status, ['restricted', 'deleted'], true) || $user->banned_at !== null || $user->deleted_at !== null) {
             Auth::guard('web')->logout();
             $request->session()->invalidate();
 

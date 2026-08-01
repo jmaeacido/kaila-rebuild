@@ -13,6 +13,7 @@ import {
   MessageCircle,
   ShieldCheck,
   Smartphone,
+  Trash2,
 } from "lucide-react";
 import { Button, Feedback } from "@kaila/ui";
 import { prepareCsrf } from "../auth-client";
@@ -364,6 +365,11 @@ export default function SettingsPage() {
           Sign out
         </Button>
       </section>
+      <Link className={`${styles.card} ${settingsStyles.deleteCard}`} href="/account-deletion">
+        <span><Trash2 aria-hidden="true" /></span>
+        <div><h2>Delete your account</h2><p>Review what is removed and permanently close your account.</p></div>
+        <span className={settingsStyles.deleteAction}>Review deletion</span>
+      </Link>
     </main>
   );
 }

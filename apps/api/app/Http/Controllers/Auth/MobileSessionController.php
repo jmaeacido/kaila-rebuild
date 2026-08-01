@@ -29,7 +29,7 @@ class MobileSessionController extends Controller
 
             return $this->unauthorized('The email or password is incorrect.', 422);
         }
-        if ($user->account_status === 'restricted' || $user->banned_at !== null) {
+        if (in_array($user->account_status, ['restricted', 'deleted'], true) || $user->banned_at !== null || $user->deleted_at !== null) {
             return $this->unauthorized('This account is restricted. Contact KAILA support.', 403);
         }
 

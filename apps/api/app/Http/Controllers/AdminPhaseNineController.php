@@ -17,7 +17,7 @@ class AdminPhaseNineController
 
         return response()->json(['data' => [
             'privacy' => ['minimumCohort' => $minimum, 'suppressed' => $suppressed],
-            'marketplace' => $suppressed ? null : ['users' => $users, 'jobs' => DB::table('service_jobs')->count(), 'completedJobs' => DB::table('service_jobs')->whereIn('status', ['completed', 'rated'])->count(), 'offers' => DB::table('offer_threads')->count()],
+            'marketplace' => $suppressed ? null : ['users' => $users, 'jobs' => DB::table('service_jobs')->count(), 'completedJobs' => DB::table('service_jobs')->whereNotNull('completed_at')->count(), 'offers' => DB::table('offer_threads')->count()],
             'phaseNine' => ['directConversations' => DB::table('direct_conversations')->count(), 'communityPosts' => DB::table('community_posts')->where('moderation_status', 'published')->count(), 'assistantInteractions' => DB::table('assistant_interactions')->count(), 'calls' => DB::table('call_sessions')->count()],
         ]]);
     }

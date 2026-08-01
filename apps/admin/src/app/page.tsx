@@ -302,22 +302,8 @@ export default function AdminHome() {
     <main className={styles.page}>
       <header>
         <div>
-          <Image
-            className={styles.adminLogo}
-            src="/brand/kaila-wordmark.png"
-            alt="KAILA"
-            width={1102}
-            height={248}
-            priority
-          />
           <p>KAILA ADMINISTRATION</p>
           <h1>Marketplace review</h1>
-          <nav>
-            <Link href="/support">Customer support</Link> ·{" "}
-            <Link href="/cases">Disputes</Link> ·{" "}
-            <Link href="/reports">Safety reports</Link> ·{" "}
-            <Link href="/analytics">Analytics</Link>
-          </nav>
         </div>
         <div className={styles.headerActions}>
           <button disabled={loggingOut} onClick={() => void load()}>

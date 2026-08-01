@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\AccountDeletionController;
+use App\Http\Controllers\AdminAccountDeletionController;
 use App\Http\Controllers\AdminDisputeController;
 use App\Http\Controllers\AdminMarketplaceController;
 use App\Http\Controllers\AdminPhaseNineController;
@@ -60,6 +62,8 @@ Route::middleware('throttle:password-recovery')->group(function (): void {
 
 Route::middleware('mobile.auth')->group(function (): void {
     Route::get('/auth/mobile/me', [MobileSessionController::class, 'me']);
+    Route::get('/auth/mobile/account-deletion', [AccountDeletionController::class, 'show']);
+    Route::delete('/auth/mobile/account', [AccountDeletionController::class, 'destroy']);
     Route::post('/auth/mobile/logout', [MobileSessionController::class, 'destroyCurrent']);
     Route::get('/auth/mobile/sessions', [MobileSessionController::class, 'index']);
     Route::delete('/auth/mobile/sessions/{sessionId}', [MobileSessionController::class, 'destroy']);
@@ -147,6 +151,8 @@ Route::middleware('mobile.auth')->group(function (): void {
 
 Route::middleware('auth')->group(function (): void {
     Route::get('/me', CurrentUserController::class);
+    Route::get('/me/account-deletion', [AccountDeletionController::class, 'show']);
+    Route::delete('/me/account', [AccountDeletionController::class, 'destroy']);
     Route::get('/providers', [MarketplaceProfileController::class, 'discover']);
     Route::get('/providers/{providerProfile}', [MarketplaceProfileController::class, 'publicProfile']);
     Route::get('/community', [CommunityController::class, 'index']);
@@ -239,6 +245,7 @@ Route::middleware('auth')->group(function (): void {
     Route::post('/support/cases/{supportCase}/close', [SupportCaseController::class, 'close']);
     Route::post('/support/cases/{supportCase}/reopen', [SupportCaseController::class, 'reopen']);
     Route::middleware('admin')->prefix('admin/marketplace')->group(function (): void {
+        Route::get('/account-deletions', [AdminAccountDeletionController::class, 'index']);
         Route::get('/support/cases', [AdminSupportCaseController::class, 'index']);
         Route::get('/support/cases/{supportCase}', [AdminSupportCaseController::class, 'show']);
         Route::put('/support/cases/{supportCase}', [AdminSupportCaseController::class, 'update']);
