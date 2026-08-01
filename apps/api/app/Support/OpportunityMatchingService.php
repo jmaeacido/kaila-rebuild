@@ -18,6 +18,7 @@ class OpportunityMatchingService
         $matchingAreaIds = array_values(array_filter([$jobArea->id, $jobArea->parent_id]));
         $scheduledAt = $job->scheduled_at;
         $providers = ProviderProfile::query()->where('status', 'active')->where('user_id', '!=', $excludedUserId)
+            ->when($job->service_location_mode === 'at_provider', fn ($query) => $query->where('offers_at_shop', true)->whereNotNull('shop_latitude')->whereNotNull('shop_longitude'))
             ->whereHas('services', fn ($query) => $query->whereKey($job->service_category_id)->where('is_active', true))
             ->whereHas('serviceAreas', fn ($query) => $query->whereKey($matchingAreaIds)->where('is_active', true))
             ->when($scheduledAt, function ($query) use ($scheduledAt): void {
@@ -60,6 +61,9 @@ class OpportunityMatchingService
             ->get();
 
         foreach ($jobs as $job) {
+            if ($job->service_location_mode === 'at_provider' && ! $provider->offers_at_shop) {
+                continue;
+            }
             if ($job->scheduled_at !== null) {
                 $local = $job->scheduled_at->timezone(config('app.timezone'));
                 $available = $provider->availability()

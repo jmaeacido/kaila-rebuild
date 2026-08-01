@@ -6,9 +6,12 @@ import {
   ArrowLeft,
   CalendarClock,
   CheckCircle2,
+  House,
   LocateFixed,
   MapPinned,
   MapPin,
+  Store,
+  Video,
   Send,
   X,
 } from "lucide-react";
@@ -46,6 +49,7 @@ export default function PostJobPage() {
     categoryId: "",
     areaId: "",
     scheduleType: "asap",
+    serviceLocationMode: "at_client",
     scheduledAt: "",
     budgetMin: "",
     budgetMax: "",
@@ -191,6 +195,7 @@ export default function PostJobPage() {
       categoryId: Number(form.categoryId),
       areaId: Number(form.areaId),
       scheduleType: form.scheduleType,
+      serviceLocationMode: form.serviceLocationMode,
       scheduledAt:
         form.scheduleType === "scheduled" ? new Date(form.scheduledAt).toISOString() : null,
       budgetMinCentavos: form.budgetMin ? Math.round(Number(form.budgetMin) * 100) : null,
@@ -303,6 +308,21 @@ export default function PostJobPage() {
                   placeholder="Add the details a provider needs to understand the job."
                 />
               </label>
+              <fieldset className={styles.locationMode}>
+                <legend>Where will the service happen?</legend>
+                <label>
+                  <input type="radio" name="serviceLocationMode" checked={form.serviceLocationMode === "at_client"} onChange={() => field("serviceLocationMode", "at_client")} />
+                  <span><House aria-hidden="true" /><strong>At my location</strong><small>The provider travels to you.</small></span>
+                </label>
+                <label>
+                  <input type="radio" name="serviceLocationMode" checked={form.serviceLocationMode === "at_provider"} onChange={() => field("serviceLocationMode", "at_provider")} />
+                  <span><Store aria-hidden="true" /><strong>At the provider’s shop</strong><small>You travel to the selected provider.</small></span>
+                </label>
+                <label>
+                  <input type="radio" name="serviceLocationMode" checked={form.serviceLocationMode === "remote"} onChange={() => field("serviceLocationMode", "remote")} />
+                  <span><Video aria-hidden="true" /><strong>Online or remote</strong><small>No one needs to travel.</small></span>
+                </label>
+              </fieldset>
             </>
           )}
           {step === 2 && (
@@ -310,7 +330,7 @@ export default function PostJobPage() {
               <p className={styles.eyebrow}>
                 <MapPin aria-hidden="true" /> Nearby help
               </p>
-              <h1>Where is the job?</h1>
+              <h1>{form.serviceLocationMode === "at_client" ? "Where is the job?" : "Where are you starting from?"}</h1>
               <label>
                 Landmark <span className={styles.optionalLabel}>(optional)</span>
                 <input
@@ -322,11 +342,11 @@ export default function PostJobPage() {
               </label>
               <section className={styles.locationPicker} aria-labelledby="job-site-pin">
                 <div>
-                  <strong id="job-site-pin">Job site pin</strong>
+                  <strong id="job-site-pin">{form.serviceLocationMode === "at_client" ? "Job site pin" : "Your area pin"}</strong>
                   <p>
                     {pinnedLocation
                       ? "Pinned. Providers can see approximate distance."
-                      : "Use GPS only if you are already at the job site, or choose it on the map."}
+                      : form.serviceLocationMode === "at_client" ? "Use GPS only if you are already at the job site, or choose it on the map." : "This helps KAILA find suitable providers and estimate your trip."}
                   </p>
                 </div>
                 <div className={styles.locationActions}>
@@ -337,7 +357,7 @@ export default function PostJobPage() {
                     onClick={locate}
                   >
                     <LocateFixed aria-hidden="true" />
-                    {locationStatus === "locating" ? "Finding location…" : "I am at the job site"}
+                    {locationStatus === "locating" ? "Finding location…" : form.serviceLocationMode === "at_client" ? "I am at the job site" : "Use my location"}
                   </Button>
                   <Button type="button" variant="secondary" onClick={() => setShowMap(true)}>
                     <MapPinned aria-hidden="true" /> Pick on map
@@ -371,8 +391,7 @@ export default function PostJobPage() {
                 </p>
               </section>
               <p className={styles.privacy}>
-                Providers see only the pinned barangay before you hire. Your exact pin and landmark
-                stay private.
+                {form.serviceLocationMode === "at_client" ? "Providers see the approximate address before hiring; your exact pin is shared only after hiring." : "Providers see your approximate starting area. After hiring, navigation routes you to the provider’s saved shop location."}
               </p>
             </>
           )}

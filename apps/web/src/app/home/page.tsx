@@ -48,6 +48,7 @@ type Job = {
   scheduledAt: string | null;
   counterpart: Counterpart | null;
   travel: TravelMetrics | null;
+  serviceLocationMode: "at_client" | "at_provider" | "remote";
   ratingReceived: { rating: number } | null;
   ratingGiven: { rating: number } | null;
 };
@@ -280,14 +281,14 @@ export default function AuthenticatedHomePage() {
               <ServiceCategoryIcon icon={job.category.icon} aria-hidden="true" />
             </span>
             <div>
-              <span>{jobStatusLabels[job.status] || "Hired job updated"}</span>
+              <span>{job.status === "provider_traveling" && job.serviceLocationMode === "at_provider" ? "Client on the way" : jobStatusLabels[job.status] || "Hired job updated"}</span>
               <h3>{job.title}</h3>
               <p><MapPin aria-hidden="true" />{job.area.name}</p>
               {job.counterpart && <p className={styles.counterpart}><span className={styles.miniAvatar}>{job.counterpart.avatarUrl ? <Image src={job.counterpart.avatarUrl} alt="" width={24} height={24} unoptimized /> : job.counterpart.displayName.charAt(0).toUpperCase()}</span>With {job.counterpart.displayName} · {job.counterpart.rating === null ? "New" : `${Number(job.counterpart.rating).toFixed(1)} ★`}</p>}
               {job.status === "provider_traveling" && <p className={styles.routeMetrics}><Navigation aria-hidden="true" />{formatTravelDistance(job.travel?.distanceMeters ?? null)} · {formatTravelEta(job.travel?.etaSeconds ?? null)}</p>}
             </div>
-            <Link href={`/jobs/${job.id}`}>
-              {job.role === "provider" && job.status === "provider_traveling" ? "Navigate to Client" : "Continue"}
+            <Link href={job.status === "provider_traveling" ? `/jobs/${job.id}/hired/travel` : `/jobs/${job.id}`}>
+              {job.status === "provider_traveling" ? job.serviceLocationMode === "at_provider" ? job.role === "client" ? "Navigate to Shop" : "Track client" : job.role === "provider" ? "Navigate to Client" : "Track provider" : "Continue"}
               <ArrowRight aria-hidden="true" />
             </Link>
           </article>)}

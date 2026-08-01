@@ -16,6 +16,7 @@ use Illuminate\Support\Carbon;
  * @property int $service_category_id
  * @property int $area_id
  * @property string $status
+ * @property string $service_location_mode
  * @property string|null $completion_deadline_id
  * @property Carbon|null $work_started_at
  * @property Carbon|null $completed_at

@@ -65,14 +65,28 @@ class PhaseFiveCommunicationTravelTest extends TestCase
         $this->actingAs($provider)->postJson("/api/v1/jobs/$job/travel/stop")->assertOk()->assertJsonPath('data.status', 'stopped');
     }
 
-    private function selectedJob(): array
+    public function test_shop_service_travel_is_client_owned_and_routes_to_the_provider_shop(): void
+    {
+        [$job, $client, $provider] = $this->selectedJob('at_provider');
+
+        $this->actingAs($provider)->postJson("/api/v1/jobs/$job/travel/start", ['consentConfirmed' => true, 'foreground' => true])->assertNotFound();
+        $this->actingAs($client)->postJson("/api/v1/jobs/$job/travel/start", ['consentConfirmed' => true, 'foreground' => true])->assertOk();
+        $this->getJson("/api/v1/jobs/$job/travel")
+            ->assertOk()
+            ->assertJsonPath('data.serviceLocationMode', 'at_provider')
+            ->assertJsonPath('data.travelerRole', 'client')
+            ->assertJsonPath('data.destinationLabel', 'Trusted Provider Shop')
+            ->assertJsonPath('data.destination.latitude', 7.071);
+    }
+
+    private function selectedJob(string $serviceLocationMode = 'at_client'): array
     {
         $category = ServiceCategory::query()->create(['name' => 'Plumbing', 'slug' => 'plumbing', 'icon' => 'Wrench', 'is_active' => true]);
         $area = Area::query()->create(['type' => 'city', 'name' => 'Davao City', 'code' => 'DVO', 'is_active' => true]);
         $provider = $this->provider($category, $area);
         $outsider = $this->provider($category, $area);
         $client = User::factory()->create();
-        $draft = ['title' => 'Fix leaking tap', 'description' => 'The kitchen tap has a steady leak near the handle.', 'categoryId' => $category->id, 'areaId' => $area->id, 'scheduleType' => 'asap', 'scheduledAt' => null, 'budgetMinCentavos' => 50000, 'budgetMaxCentavos' => 120000, 'latitude' => 7.0707, 'longitude' => 125.6087, 'addressLabel' => 'Near the hall'];
+        $draft = ['title' => 'Fix leaking tap', 'description' => 'The kitchen tap has a steady leak near the handle.', 'categoryId' => $category->id, 'areaId' => $area->id, 'serviceLocationMode' => $serviceLocationMode, 'scheduleType' => 'asap', 'scheduledAt' => null, 'budgetMinCentavos' => 50000, 'budgetMaxCentavos' => 120000, 'latitude' => 7.0707, 'longitude' => 125.6087, 'addressLabel' => 'Near the hall'];
         $job = $this->actingAs($client)->withHeader('Idempotency-Key', 'phase5-job')->postJson('/api/v1/jobs', $draft)->json('data.id');
         $this->postJson("/api/v1/jobs/$job/post");
         $offer = $this->actingAs($provider)->postJson("/api/v1/jobs/$job/offers", ['amountCentavos' => 85000, 'availabilityText' => 'Today', 'estimatedDurationText' => 'Two hours', 'scope' => 'Labor and standard fittings included.', 'message' => 'Ready'])->json('data.revisions.0.id');
@@ -84,7 +98,7 @@ class PhaseFiveCommunicationTravelTest extends TestCase
     private function provider(ServiceCategory $category, Area $area): User
     {
         $user = User::factory()->create();
-        $profile = ProviderProfile::query()->create(['user_id' => $user->id, 'display_name' => 'Trusted Provider', 'bio' => 'Experienced provider for local household service work.', 'status' => 'active']);
+        $profile = ProviderProfile::query()->create(['user_id' => $user->id, 'display_name' => 'Trusted Provider', 'bio' => 'Experienced provider for local household service work.', 'status' => 'active', 'offers_at_shop' => true, 'shop_name' => 'Trusted Provider Shop', 'shop_address' => 'Trusted Provider Shop', 'shop_latitude' => 7.071, 'shop_longitude' => 125.609]);
         $profile->services()->attach($category);
         $profile->serviceAreas()->attach($area);
 

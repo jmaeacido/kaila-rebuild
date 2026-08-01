@@ -81,6 +81,7 @@ class ServiceJobController extends Controller
             || ($serviceJob->status === 'posted' && ! $serviceJob->offers()->exists());
         abort_unless($editable, 409, 'This job can no longer be edited because an offer or work agreement already exists.');
         $data = $this->validated($request);
+        $data['serviceLocationMode'] ??= $serviceJob->service_location_mode;
         if ($serviceJob->status === 'posted') {
             abort_unless(
                 $data['categoryId'] === $serviceJob->service_category_id,
@@ -119,7 +120,7 @@ class ServiceJobController extends Controller
     /** @return array<string, mixed> */
     private function validated(Request $request): array
     {
-        return $request->validate(['title' => ['required', 'string', 'max:120'], 'description' => ['required', 'string', 'min:10', 'max:3000'], 'categoryId' => ['required', 'integer', 'exists:service_categories,id'], 'areaId' => ['required', 'integer', 'exists:areas,id'], 'scheduleType' => ['required', Rule::in(['asap', 'scheduled'])], 'scheduledAt' => ['nullable', 'required_if:scheduleType,scheduled', 'date', 'after:now'], 'budgetMinCentavos' => ['nullable', 'integer', 'min:0', 'max:100000000'], 'budgetMaxCentavos' => ['nullable', 'integer', 'gte:budgetMinCentavos', 'max:100000000'], 'latitude' => ['nullable', 'numeric', 'between:-90,90'], 'longitude' => ['nullable', 'numeric', 'between:-180,180', 'required_with:latitude'], 'addressLabel' => ['nullable', 'string', 'max:180']]);
+        return $request->validate(['title' => ['required', 'string', 'max:120'], 'description' => ['required', 'string', 'min:10', 'max:3000'], 'categoryId' => ['required', 'integer', 'exists:service_categories,id'], 'areaId' => ['required', 'integer', 'exists:areas,id'], 'serviceLocationMode' => ['sometimes', Rule::in(['at_client', 'at_provider', 'remote'])], 'scheduleType' => ['required', Rule::in(['asap', 'scheduled'])], 'scheduledAt' => ['nullable', 'required_if:scheduleType,scheduled', 'date', 'after:now'], 'budgetMinCentavos' => ['nullable', 'integer', 'min:0', 'max:100000000'], 'budgetMaxCentavos' => ['nullable', 'integer', 'gte:budgetMinCentavos', 'max:100000000'], 'latitude' => ['nullable', 'numeric', 'between:-90,90'], 'longitude' => ['nullable', 'numeric', 'between:-180,180', 'required_with:latitude'], 'addressLabel' => ['nullable', 'string', 'max:180']]);
     }
 
     /**
@@ -128,7 +129,7 @@ class ServiceJobController extends Controller
      */
     private function attributes(array $data): array
     {
-        return ['title' => $data['title'], 'description' => $data['description'], 'service_category_id' => $data['categoryId'], 'area_id' => $data['areaId'], 'schedule_type' => $data['scheduleType'], 'scheduled_at' => $data['scheduleType'] === 'scheduled' ? $data['scheduledAt'] : null, 'budget_min_centavos' => $data['budgetMinCentavos'] ?? null, 'budget_max_centavos' => $data['budgetMaxCentavos'] ?? null, 'latitude' => $data['latitude'] ?? null, 'longitude' => $data['longitude'] ?? null, 'address_label' => $data['addressLabel'] ?? null];
+        return ['title' => $data['title'], 'description' => $data['description'], 'service_category_id' => $data['categoryId'], 'area_id' => $data['areaId'], 'service_location_mode' => $data['serviceLocationMode'] ?? 'at_client', 'schedule_type' => $data['scheduleType'], 'scheduled_at' => $data['scheduleType'] === 'scheduled' ? $data['scheduledAt'] : null, 'budget_min_centavos' => $data['budgetMinCentavos'] ?? null, 'budget_max_centavos' => $data['budgetMaxCentavos'] ?? null, 'latitude' => $data['latitude'] ?? null, 'longitude' => $data['longitude'] ?? null, 'address_label' => $data['addressLabel'] ?? null];
     }
 
     private function owns(Request $request, ServiceJob $job): void

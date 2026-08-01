@@ -56,12 +56,22 @@ class MarketplaceProfileController extends Controller
             'areaIds' => ['required', 'array', 'min:1'], 'areaIds.*' => ['integer', 'distinct', 'exists:areas,id'],
             'availability' => ['required', 'array', 'min:1'], 'availability.*.dayOfWeek' => ['required', 'integer', 'between:0,6'],
             'availability.*.startsAt' => ['required', 'date_format:H:i'], 'availability.*.endsAt' => ['required', 'date_format:H:i', 'after:availability.*.startsAt'],
+            'offersAtShop' => ['sometimes', 'boolean'],
+            'shopName' => ['nullable', 'required_if:offersAtShop,true', 'string', 'max:120'],
+            'shopAddress' => ['nullable', 'required_if:offersAtShop,true', 'string', 'max:180'],
+            'shopLatitude' => ['nullable', 'required_if:offersAtShop,true', 'numeric', 'between:-90,90'],
+            'shopLongitude' => ['nullable', 'required_if:offersAtShop,true', 'numeric', 'between:-180,180'],
         ]);
         /** @var User $user */ $user = $request->user();
         $profile = DB::transaction(function () use ($user, $data): ProviderProfile {
             $profile = ProviderProfile::query()->updateOrCreate(['user_id' => $user->id], [
                 'display_name' => $data['displayName'], 'bio' => $data['bio'], 'years_experience' => $data['yearsExperience'],
                 'status' => 'pending_review',
+                'offers_at_shop' => $data['offersAtShop'] ?? false,
+                'shop_name' => ($data['offersAtShop'] ?? false) ? $data['shopName'] : null,
+                'shop_address' => ($data['offersAtShop'] ?? false) ? $data['shopAddress'] : null,
+                'shop_latitude' => ($data['offersAtShop'] ?? false) ? $data['shopLatitude'] : null,
+                'shop_longitude' => ($data['offersAtShop'] ?? false) ? $data['shopLongitude'] : null,
             ]);
             $profile->services()->sync($data['serviceIds']);
             $profile->serviceAreas()->sync($data['areaIds']);
@@ -117,6 +127,9 @@ class MarketplaceProfileController extends Controller
             'completedJobs' => $profile->completed_jobs, 'responseMinutes' => $profile->response_minutes,
             'memberSince' => $profile->created_at?->toDateString(), 'verified' => $profile->credentials->isNotEmpty(),
             'services' => $profile->services, 'serviceAreas' => $profile->serviceAreas, 'availability' => $profile->relationLoaded('availability') ? $profile->availability : [],
+            'offersAtShop' => $profile->offers_at_shop, 'shopName' => $profile->offers_at_shop ? $profile->shop_name : null,
+            'shopAddress' => $profile->offers_at_shop ? $profile->shop_address : null,
+            'shopLocation' => $profile->offers_at_shop && $profile->shop_latitude !== null ? ['latitude' => (float) $profile->shop_latitude, 'longitude' => (float) $profile->shop_longitude] : null,
             'portfolio' => $profile->portfolio->map(fn (ProfileAsset $asset) => ['id' => $asset->id, 'caption' => $asset->caption, 'downloadPath' => "/api/v1/profile-assets/{$asset->id}"])];
     }
 }

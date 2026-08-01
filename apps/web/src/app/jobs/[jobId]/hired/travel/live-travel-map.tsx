@@ -14,13 +14,15 @@ type Props = {
   route: Point[] | null;
   heading: number | null;
   navigationMode: boolean;
+  travelerLabel: string;
+  destinationLabel: string;
 };
 
 function routeData(route: Point[]) {
   return { type: "Feature" as const, properties: {}, geometry: { type: "LineString" as const, coordinates: route.map((point) => [point.longitude, point.latitude]) } };
 }
 
-export function LiveTravelMap({ location, destination, route, heading, navigationMode }: Props) {
+export function LiveTravelMap({ location, destination, route, heading, navigationMode, travelerLabel, destinationLabel }: Props) {
   const container = useRef<HTMLDivElement>(null);
   const mapRef = useRef<Map | null>(null);
   const providerMarker = useRef<Marker | null>(null);
@@ -83,7 +85,7 @@ export function LiveTravelMap({ location, destination, route, heading, navigatio
     if (!providerMarker.current) {
       const element = document.createElement("div");
       element.className = styles.providerMarker;
-      element.setAttribute("aria-label", "Point A: provider location");
+      element.setAttribute("aria-label", `Point A: ${travelerLabel} location`);
       element.innerHTML = `<span></span>`;
       providerMarker.current = new Marker({ element, rotationAlignment: "map" }).setLngLat([location.longitude, location.latitude]).addTo(map);
     } else {
@@ -91,7 +93,7 @@ export function LiveTravelMap({ location, destination, route, heading, navigatio
     }
     providerMarker.current.setRotation(heading ?? 0);
     if (following) map.easeTo({ center: [location.longitude, location.latitude], zoom: navigationMode ? 17 : map.getZoom(), bearing: navigationMode ? (heading ?? map.getBearing()) : 0, pitch: navigationMode ? 48 : 0, duration: 250 });
-  }, [following, heading, location, navigationMode]);
+  }, [following, heading, location, navigationMode, travelerLabel]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -99,11 +101,11 @@ export function LiveTravelMap({ location, destination, route, heading, navigatio
     if (!destinationMarker.current) {
       const element = document.createElement("div");
       element.className = styles.destinationMarker;
-      element.setAttribute("aria-label", "Point B: client job location");
+      element.setAttribute("aria-label", `Point B: ${destinationLabel}`);
       element.innerHTML = `<span></span>`;
       destinationMarker.current = new Marker({ element }).setLngLat([destination.longitude, destination.latitude]).addTo(map);
     } else destinationMarker.current.setLngLat([destination.longitude, destination.latitude]);
-  }, [destination]);
+  }, [destination, destinationLabel]);
 
   useEffect(() => {
     const source = mapRef.current?.getSource("job-route") as GeoJSONSource | undefined;

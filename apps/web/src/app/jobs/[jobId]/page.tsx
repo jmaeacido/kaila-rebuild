@@ -69,6 +69,7 @@ type Job = {
     reviewCount: number;
   } | null;
   travel: TravelMetrics | null;
+  serviceLocationMode: "at_client" | "at_provider" | "remote";
 };
 
 const statusLabels: Record<string, string> = {
@@ -364,7 +365,7 @@ export default function JobDetailsPage({ params }: { params: Promise<{ jobId: st
 
       {isHired && job.status === "provider_traveling" && (
         <section className={assetStyles.routeSummary} aria-labelledby="route-summary-title">
-          <div><Navigation aria-hidden="true" /><span><small>Distance to client</small><strong id="route-summary-title">{formatTravelDistance(job.travel?.distanceMeters ?? null)}</strong></span></div>
+          <div><Navigation aria-hidden="true" /><span><small>Distance to {job.serviceLocationMode === "at_provider" ? "shop" : "client"}</small><strong id="route-summary-title">{formatTravelDistance(job.travel?.distanceMeters ?? null)}</strong></span></div>
           <div><Clock3 aria-hidden="true" /><span><small>Estimated arrival</small><strong>{formatTravelEta(job.travel?.etaSeconds ?? null)}</strong></span></div>
         </section>
       )}
@@ -510,7 +511,7 @@ export default function JobDetailsPage({ params }: { params: Promise<{ jobId: st
             {job.canEdit && <Button onClick={beginEditing}><Pencil /> Edit job</Button>}
             {["posted", "offers_received"].includes(job.status) && <Button variant="secondary" onClick={() => location.assign(`/jobs/${job.id}/offers`)}>View offers</Button>}
             {isHired && <Button onClick={() => location.assign(`/jobs/${job.id}/hired/conversation`)}><MessageCircle /> Message {job.role === "client" ? "provider" : "client"}</Button>}
-            {isHired && ["provider_selected", "provider_traveling"].includes(job.status) && <Button variant="secondary" onClick={() => location.assign(`/jobs/${job.id}/hired/travel`)}><Navigation /> {job.role === "provider" ? "Navigate to Client" : "Track provider"}</Button>}
+            {isHired && job.serviceLocationMode !== "remote" && ["provider_selected", "provider_traveling"].includes(job.status) && <Button variant="secondary" onClick={() => location.assign(`/jobs/${job.id}/hired/travel`)}><Navigation /> {job.serviceLocationMode === "at_provider" ? job.role === "client" ? "Navigate to Shop" : "Track client" : job.role === "provider" ? "Navigate to Client" : "Track provider"}</Button>}
             {isHired && <Button variant="secondary" onClick={() => location.assign(`/jobs/${job.id}/work`)}><Hammer /> {job.status === "provider_selected" && job.role === "provider" ? "Start work" : "Work status"}</Button>}
             {job.canCancel && <Button variant="danger" onClick={() => setCancelling(true)}><Trash2 /> Cancel job</Button>}
           </div>

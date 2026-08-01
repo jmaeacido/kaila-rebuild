@@ -22,7 +22,7 @@ class ProviderProfile extends Model
 
     protected function casts(): array
     {
-        return ['rating' => 'decimal:2'];
+        return ['rating' => 'decimal:2', 'offers_at_shop' => 'boolean', 'shop_latitude' => 'decimal:7', 'shop_longitude' => 'decimal:7'];
     }
 
     /** @return BelongsToMany<ServiceCategory, $this> */

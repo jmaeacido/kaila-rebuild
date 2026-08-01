@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { ArrowLeft, CheckCircle2, MapPin } from "lucide-react";
+import { ArrowLeft, CheckCircle2, LocateFixed, MapPin, Store } from "lucide-react";
 import { Button, Feedback, TextField } from "@kaila/ui";
 import Link from "next/link";
 import styles from "./profile.module.css";
@@ -23,6 +23,8 @@ export default function ProviderProfilePage() {
   const [coverageMode, setCoverageMode] = useState<"city" | "barangays">("city");
   const [barangayIds, setBarangayIds] = useState<string[]>([]);
   const [message, setMessage] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [offersAtShop, setOffersAtShop] = useState(false);
+  const [shopLocation, setShopLocation] = useState<{ latitude: number; longitude: number } | null>(null);
 
   const provinces = useMemo(
     () => areas.filter((area) => area.type === "province"),
@@ -91,7 +93,7 @@ export default function ProviderProfilePage() {
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const selectedAreaIds = coverageMode === "city" ? [cityId] : barangayIds;
-    if (!cityId || selectedAreaIds.length === 0) {
+    if (!cityId || selectedAreaIds.length === 0 || (offersAtShop && !shopLocation)) {
       setMessage("error");
       return;
     }
@@ -117,6 +119,11 @@ export default function ProviderProfilePage() {
         serviceIds: [Number(data.get("serviceId"))],
         areaIds: selectedAreaIds.map(Number),
         availability: [{ dayOfWeek: 1, startsAt: "08:00", endsAt: "17:00" }],
+        offersAtShop,
+        shopName: offersAtShop ? data.get("shopName") : null,
+        shopAddress: offersAtShop ? data.get("shopAddress") : null,
+        shopLatitude: offersAtShop ? shopLocation?.latitude : null,
+        shopLongitude: offersAtShop ? shopLocation?.longitude : null,
       }),
     });
     setMessage(response.ok ? "saved" : "error");
@@ -247,6 +254,21 @@ export default function ProviderProfilePage() {
                 )}
               </div>
             )}
+          </fieldset>
+          <fieldset className={styles.shopService}>
+            <legend><Store aria-hidden="true" /> Shop service</legend>
+            <label className={styles.shopToggle}>
+              <input type="checkbox" checked={offersAtShop} onChange={(event) => setOffersAtShop(event.target.checked)} />
+              <span><strong>Clients can also come to my shop</strong><small>Keep this enabled alongside your home-service coverage if you offer both.</small></span>
+            </label>
+            {offersAtShop && <div className={styles.shopFields}>
+              <TextField id="shopName" name="shopName" label="Shop name" required />
+              <TextField id="shopAddress" name="shopAddress" label="Shop address or landmark" required />
+              <Button type="button" variant="secondary" onClick={() => navigator.geolocation?.getCurrentPosition((position) => setShopLocation({ latitude: position.coords.latitude, longitude: position.coords.longitude }), () => setMessage("error"), { enableHighAccuracy: true })}>
+                <LocateFixed aria-hidden="true" /> {shopLocation ? "Shop pin saved" : "Pin my current shop location"}
+              </Button>
+              <p>{shopLocation ? `${shopLocation.latitude.toFixed(5)}, ${shopLocation.longitude.toFixed(5)}` : "Use this while physically at the shop. Clients receive this destination only when they hire you for shop service."}</p>
+            </div>}
           </fieldset>
           <Button type="submit" isLoading={message === "saving"}>
             Submit for review

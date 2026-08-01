@@ -108,13 +108,21 @@ class OfferService
                 $thread = OfferThread::query()->lockForUpdate()->with('provider')->findOrFail($revision->offer_thread_id);
                 abort_unless($thread->service_job_id === $locked->id && $thread->status === 'active' && $thread->latest_revision_number === $revision->revision_number, 409, 'Select the current active revision.');
                 abort_if($revision->expires_at?->isPast() === true, 409, 'This revision has expired.');
-                $snapshot = AcceptedOfferSnapshot::query()->create(['service_job_id' => $locked->id, 'offer_thread_id' => $thread->id, 'offer_revision_id' => $revision->id, 'provider_profile_id' => $thread->provider_profile_id, 'amount_centavos' => $revision->amount_centavos, 'availability_text' => $revision->availability_text, 'estimated_duration_text' => $revision->estimated_duration_text, 'scope' => $revision->scope, 'message' => $revision->message, 'accepted_at' => now()]);
+                $provider = ProviderProfile::query()->findOrFail($thread->provider_profile_id);
+                if ($locked->service_location_mode === 'at_provider') {
+                    abort_unless($provider->offers_at_shop && $provider->shop_latitude !== null && $provider->shop_longitude !== null && $provider->shop_address, 409, 'This provider must add a shop location before accepting shop visits.');
+                }
+                $destination = match ($locked->service_location_mode) {
+                    'at_provider' => [$provider->shop_address, $provider->shop_latitude, $provider->shop_longitude],
+                    'remote' => [null, null, null],
+                    default => [$locked->address_label, $locked->latitude, $locked->longitude],
+                };
+                $snapshot = AcceptedOfferSnapshot::query()->create(['service_job_id' => $locked->id, 'offer_thread_id' => $thread->id, 'offer_revision_id' => $revision->id, 'provider_profile_id' => $thread->provider_profile_id, 'service_location_mode' => $locked->service_location_mode, 'destination_label' => $destination[0], 'destination_latitude' => $destination[1], 'destination_longitude' => $destination[2], 'amount_centavos' => $revision->amount_centavos, 'availability_text' => $revision->availability_text, 'estimated_duration_text' => $revision->estimated_duration_text, 'scope' => $revision->scope, 'message' => $revision->message, 'accepted_at' => now()]);
                 $thread->update(['status' => 'accepted']);
                 OfferThread::query()->where('service_job_id', $locked->id)->whereKeyNot($thread->id)->where('status', 'active')->update(['status' => 'rejected']);
                 JobOpportunity::query()->where('service_job_id', $locked->id)->where('provider_profile_id', '!=', $thread->provider_profile_id)->update(['state' => 'dismissed', 'decided_at' => now()]);
                 $locked->update(['status' => 'provider_selected', 'version' => $locked->version + 1]);
                 $locked->timeline()->create(['id' => (string) Str::uuid(), 'actor_user_id' => $actor->id, 'event_type' => 'offer.selected', 'job_version' => $locked->version, 'metadata' => ['offerRevisionId' => $revision->id, 'providerProfileId' => $thread->provider_profile_id], 'occurred_at' => now()]);
-                $provider = ProviderProfile::query()->findOrFail($thread->provider_profile_id);
                 $this->notify($provider->user_id, 'offer.selected', 'You were hired', 'The client selected your offer.', $locked, $revision);
                 $this->outbox->record('offer.selected', 'service_job', $locked->id, $locked->version, ['rooms' => ["user:{$actor->id}", "user:{$provider->user_id}"], 'jobId' => $locked->id, 'offerRevisionId' => $revision->id]);
 

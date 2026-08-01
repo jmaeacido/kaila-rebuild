@@ -19,6 +19,7 @@ class JobPresenter
         return [
             'id' => $job->id, 'status' => $job->status, 'title' => $job->title, 'description' => $job->description,
             'category' => $job->category, 'area' => $job->area, 'scheduleType' => $job->schedule_type,
+            'serviceLocationMode' => $job->service_location_mode,
             'scheduledAt' => $job->scheduled_at?->toIso8601String(), 'budgetMinCentavos' => $job->budget_min_centavos,
             'budgetMaxCentavos' => $job->budget_max_centavos, 'addressLabel' => $job->address_label,
             'location' => $job->latitude !== null ? ['latitude' => $job->latitude, 'longitude' => $job->longitude] : null,
@@ -65,6 +66,7 @@ class JobPresenter
                 'reviewCount' => (int) ($reputation->value('published_review_count') ?? 0),
             ],
             'category' => $job->category, 'area' => $job->area, 'scheduleType' => $job->schedule_type,
+            'serviceLocationMode' => $job->service_location_mode,
             'scheduledAt' => $job->scheduled_at?->toIso8601String(), 'budgetMinCentavos' => $job->budget_min_centavos,
             'budgetMaxCentavos' => $job->budget_max_centavos,
             'approximateAddress' => $area->name,

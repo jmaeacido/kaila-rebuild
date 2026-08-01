@@ -22,6 +22,9 @@ type Travel = {
   destination: Point | null;
   routeGeometry: Point[] | null;
   routeSteps: RouteStep[];
+  serviceLocationMode: "at_client" | "at_provider" | "remote";
+  travelerRole: "client" | "provider" | null;
+  destinationLabel: string | null;
 };
 
 function straightLineMeters(from: Point | null, to: Point | null) {
@@ -216,22 +219,25 @@ export default function TravelPage({ params }: { params: Promise<{ jobId: string
   const distance = travel?.distanceMeters ?? fallbackDistance;
   const eta = travel?.etaSeconds ?? (fallbackDistance === null ? null : Math.max(60, Math.ceil(fallbackDistance / 6.1)));
   const active = travel?.status === "active";
-  const providerNavigating = Boolean(travel?.canShareLocation && active);
+  const travelerNavigating = Boolean(travel?.canShareLocation && active);
+  const shopService = travel?.serviceLocationMode === "at_provider";
+  const travelerName = shopService ? "client" : "provider";
+  const destinationName = shopService ? "provider’s shop" : "client";
   const steps = travel?.routeSteps ?? [];
   const nextStep = steps.find((step) => step.maneuver !== "depart") ?? steps[0] ?? null;
   const instructionDistance = straightLineMeters(travel?.location ?? null, nextStep?.location ?? null);
   const lastUpdate = travel?.location?.capturedAt ? new Date(travel.location.capturedAt) : null;
 
   return <main className={styles.navigationShell}>
-    <LiveTravelMap key={providerNavigating ? "navigation" : "tracking"} location={travel?.location ?? null} destination={travel?.destination ?? null} route={travel?.routeGeometry ?? null} heading={heading} navigationMode={providerNavigating} />
+    <LiveTravelMap key={travelerNavigating ? "navigation" : "tracking"} location={travel?.location ?? null} destination={travel?.destination ?? null} route={travel?.routeGeometry ?? null} heading={heading} navigationMode={travelerNavigating} travelerLabel={travelerName} destinationLabel={destinationName} />
 
     <header className={styles.navigationTop}>
       <a href={`/jobs/${jobId}`} aria-label="Back to job"><ArrowLeft /></a>
-      <div><strong>{travel?.arrivedAt ? "Arrived at client" : active ? providerNavigating ? "Navigating to client" : "Provider on the way" : "Client navigation"}</strong><span>{lastUpdate ? `Updated ${lastUpdate.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}` : "Waiting for provider GPS (point A)"}</span></div>
+      <div><strong>{travel?.arrivedAt ? `Arrived at ${destinationName}` : active ? travelerNavigating ? `Navigating to ${destinationName}` : `${shopService ? "Client" : "Provider"} on the way` : "Navigation"}</strong><span>{lastUpdate ? `Updated ${lastUpdate.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}` : `Waiting for ${travelerName} GPS (point A)`}</span></div>
       <a href={`/jobs/${jobId}/hired/conversation`} aria-label="Message job participant"><MessageCircle /></a>
     </header>
 
-    {providerNavigating && <section className={styles.turnCard} aria-live="polite">
+    {travelerNavigating && <section className={styles.turnCard} aria-live="polite">
       <div className={styles.maneuver}><ManeuverIcon step={nextStep} /></div>
       <div><span>{formatDistance(instructionDistance)}</span><strong>{nextStep?.instruction ?? "Follow the highlighted route"}</strong></div>
     </section>}
@@ -241,22 +247,22 @@ export default function TravelPage({ params }: { params: Promise<{ jobId: string
     <section className={styles.navigationSheet} aria-label="Travel progress">
       <div className={styles.sheetHandle} aria-hidden="true" />
       {errorMessage && <Feedback kind="error" title={travel ? "Live location needs attention" : "Live map is unavailable"}>{errorMessage}</Feedback>}
-      {travel?.arrivedAt ? <div className={styles.arrival}><span><Check /></span><div><h1>Provider has arrived</h1><p>You can now continue to the job and start work.</p></div></div> : <div className={styles.routeSummary}>
-        <div><strong>{formatEta(eta)}</strong><span>ETA to client</span></div>
-        <div><strong>{formatDistance(distance)}</strong><span>distance to client</span></div>
+      {travel?.arrivedAt ? <div className={styles.arrival}><span><Check /></span><div><h1>{shopService ? "Client has arrived" : "Provider has arrived"}</h1><p>You can now continue with the service.</p></div></div> : <div className={styles.routeSummary}>
+        <div><strong>{formatEta(eta)}</strong><span>ETA to {destinationName}</span></div>
+        <div><strong>{formatDistance(distance)}</strong><span>distance to {destinationName}</span></div>
         <div><strong>{travel?.location?.accuracyMeters ? `±${travel.location.accuracyMeters} m` : "—"}</strong><span>GPS accuracy</span></div>
       </div>}
 
       {!active && !travel?.arrivedAt && <div className={styles.waitingCopy}>
         <Navigation aria-hidden="true" />
-        <div><h1>{travel?.canShareLocation ? "Ready to navigate to your client?" : "Waiting for the provider"}</h1><p>{travel?.canShareLocation ? "Your GPS position is point A and the client’s job pin is point B. KAILA routes between them and keeps distance and ETA current." : "The point A to point B route, distance, and live ETA will appear as soon as the provider starts navigation."}</p></div>
+        <div><h1>{travel?.canShareLocation ? `Ready to navigate to ${destinationName}?` : `Waiting for the ${travelerName}`}</h1><p>{travel?.canShareLocation ? `Your GPS position is point A and the ${destinationName} pin is point B. KAILA keeps the route, distance, and ETA current.` : `The point A to point B route, distance, and live ETA will appear when the ${travelerName} starts navigation.`}</p></div>
       </div>}
 
       <div className={styles.navigationActions}>
         {travel?.canShareLocation && (active
           ? <Button variant="secondary" disabled={state === "sharing"} onClick={() => void stop()}><Square /> Stop navigation</Button>
-          : !travel.arrivedAt && <Button disabled={state === "sharing" || state === "loading"} onClick={() => void start()}><LocateFixed /> {state === "sharing" ? "Starting…" : "Navigate to Client"}</Button>)}
-        {!travel?.canShareLocation && <Button onClick={() => location.assign(`/jobs/${jobId}/hired/conversation`)}><MessageCircle /> Message provider</Button>}
+          : !travel.arrivedAt && <Button disabled={state === "sharing" || state === "loading"} onClick={() => void start()}><LocateFixed /> {state === "sharing" ? "Starting…" : shopService ? "Navigate to Shop" : "Navigate to Client"}</Button>)}
+        {!travel?.canShareLocation && <Button onClick={() => location.assign(`/jobs/${jobId}/hired/conversation`)}><MessageCircle /> Message {travelerName}</Button>}
         {state === "error" && <Button variant="secondary" onClick={() => void retry()}>Retry</Button>}
       </div>
 
