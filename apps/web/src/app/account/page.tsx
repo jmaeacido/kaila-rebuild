@@ -10,7 +10,6 @@ import {
   Check,
   ChevronRight,
   MapPin,
-  LifeBuoy,
   Settings,
   ShieldCheck,
   Star,
@@ -232,7 +231,7 @@ export default function AccountPage() {
       </section>
 
       <Link className={styles.reputationCard} href="/support">
-        <span className={styles.reputationIcon}><LifeBuoy aria-hidden="true" /></span>
+        <Image src="/support/support-icon.png" alt="" width={64} height={64} />
         <div><p className={styles.eyebrow}>CUSTOMER CARE</p><h2>Support</h2><p>Ask a question or follow your support requests.</p></div>
         <ChevronRight aria-hidden="true" />
       </Link>
