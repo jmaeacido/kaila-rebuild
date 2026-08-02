@@ -6,6 +6,7 @@ import { IncomingCall } from "./incoming-call-plugin";
 import { deepLinkRoute, incomingCallRoute, notificationRoute } from "./routes";
 import { closeMobileSocialBrowser } from "./oauth";
 import { loadSession } from "./session";
+import { callStatusEndsMedia } from "./call-status";
 
 type DomainEvent = {
   type?: string;
@@ -46,7 +47,7 @@ export async function initializeMobileRuntime(options: {
         callerName: detail.data.callerName,
       });
     }
-    if (detail?.type === "call.status.changed") {
+    if (detail?.type === "call.status.changed" && callStatusEndsMedia(detail.data?.status)) {
       void IncomingCall.cancelIncoming().catch(() => undefined);
       if (detail.data?.callId) {
         dispatchNativeCall({

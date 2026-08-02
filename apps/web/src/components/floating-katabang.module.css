@@ -233,3 +233,12 @@
     display: none;
   }
 }
+
+:global(html[data-keyboard-open]) .launcher {
+  display: none;
+}
+
+:global(html[data-keyboard-open]) .panel {
+  bottom: max(var(--spacing-8), env(safe-area-inset-bottom));
+  height: calc(var(--kaila-viewport-height, 100dvh) - var(--spacing-16));
+}

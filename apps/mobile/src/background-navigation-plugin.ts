@@ -9,7 +9,7 @@ type BackgroundNavigationPlugin = {
     refreshToken?: string;
   }): Promise<void>;
   stop(): Promise<void>;
-  status(): Promise<{ active: boolean }>;
+  status(): Promise<{ active: boolean; preciseLocation: boolean; locationEnabled: boolean }>;
 };
 
 export const BackgroundNavigation = registerPlugin<BackgroundNavigationPlugin>("BackgroundNavigation");

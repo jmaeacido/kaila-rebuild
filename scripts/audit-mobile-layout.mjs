@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
 
 const origin = "http://127.0.0.1:3011";
@@ -41,9 +42,9 @@ const nextCli = new URL(
 );
 const server = spawn(
   process.execPath,
-  [nextCli, "start", "-p", "3011"],
+  [fileURLToPath(nextCli), "start", "-p", "3011"],
   {
-    cwd: new URL("..", import.meta.url),
+    cwd: fileURLToPath(new URL("../apps/web/", import.meta.url)),
     env: process.env,
     stdio: ["ignore", "pipe", "pipe"],
   },

@@ -193,7 +193,19 @@ export default function TravelPage({ params }: { params: Promise<{ jobId: string
       return;
     }
     try {
-      const { active: serviceActive } = await BackgroundNavigation.status();
+      const { active: serviceActive, preciseLocation, locationEnabled } = await BackgroundNavigation.status();
+      if (!preciseLocation) {
+        setErrorMessage("Allow precise location for KAILA in Android Settings, then try again.");
+        setState("error");
+        stopWebWatch();
+        return;
+      }
+      if (!locationEnabled) {
+        setErrorMessage("Turn on Android Location, then try again.");
+        setState("error");
+        stopWebWatch();
+        return;
+      }
       if (serviceActive) {
         nativeNavigation.current = true;
         stopWebWatch();
@@ -220,7 +232,21 @@ export default function TravelPage({ params }: { params: Promise<{ jobId: string
     void ensureSharing();
     if (!isNativePlatform()) return;
     const timer = window.setInterval(() => {
-      void BackgroundNavigation.status().then(({ active: serviceActive }) => {
+      void BackgroundNavigation.status().then(({ active: serviceActive, preciseLocation, locationEnabled }) => {
+        if (!preciseLocation) {
+          nativeNavigation.current = false;
+          stopWebWatch();
+          setErrorMessage("Allow precise location for KAILA in Android Settings, then try again.");
+          setState("error");
+          return;
+        }
+        if (!locationEnabled) {
+          nativeNavigation.current = false;
+          stopWebWatch();
+          setErrorMessage("Turn on Android Location, then try again.");
+          setState("error");
+          return;
+        }
         if (serviceActive) {
           nativeNavigation.current = true;
           stopWebWatch();

@@ -15,6 +15,29 @@ export function NativeRuntime() {
   const router = useRouter();
 
   useEffect(() => {
+    const viewport = window.visualViewport;
+    const updateViewport = () => {
+      const height = viewport?.height ?? window.innerHeight;
+      document.documentElement.style.setProperty("--kaila-viewport-height", `${Math.round(height)}px`);
+      document.documentElement.toggleAttribute(
+        "data-keyboard-open",
+        Boolean(viewport && window.innerHeight - viewport.height > 120),
+      );
+    };
+    updateViewport();
+    viewport?.addEventListener("resize", updateViewport);
+    viewport?.addEventListener("scroll", updateViewport);
+    window.addEventListener("orientationchange", updateViewport);
+    return () => {
+      viewport?.removeEventListener("resize", updateViewport);
+      viewport?.removeEventListener("scroll", updateViewport);
+      window.removeEventListener("orientationchange", updateViewport);
+      document.documentElement.style.removeProperty("--kaila-viewport-height");
+      document.documentElement.removeAttribute("data-keyboard-open");
+    };
+  }, []);
+
+  useEffect(() => {
     if (!("serviceWorker" in navigator)) {
       return;
     }

@@ -78,14 +78,19 @@ public class NavigationLocationService extends Service implements LocationListen
         refreshUrl = intent.getStringExtra(EXTRA_REFRESH_URL);
         accessToken = intent.getStringExtra(EXTRA_ACCESS_TOKEN);
         refreshToken = intent.getStringExtra(EXTRA_REFRESH_TOKEN);
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            active = false;
+            stopSelf();
+            return START_NOT_STICKY;
+        }
         startAsForeground();
         active = true;
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-            // GPS-only avoids NETWORK/GPS clock skew that used to 409 and tear down the service.
+        // GPS-only avoids NETWORK/GPS clock skew that used to 409 and tear down the service.
+        if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
             locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 3000L, 5f, this);
-            if (locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
-                locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 8000L, 25f, this);
-            }
+        }
+        if (locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
+            locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 8000L, 25f, this);
         }
         return START_REDELIVER_INTENT;
     }

@@ -7,18 +7,28 @@
 }
 
 html {
+  min-height: 100%;
   max-width: 100%;
   overflow-x: clip;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 body {
   min-height: 100vh;
+  min-height: 100dvh;
   max-width: 100%;
   overflow-x: clip;
   color: var(--color-text);
   background: var(--color-background);
   font-family: Inter, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
+}
+
+@supports (height: 100dvh) {
+  body {
+    min-height: var(--kaila-viewport-height, 100dvh);
+  }
 }
 
 body > *,

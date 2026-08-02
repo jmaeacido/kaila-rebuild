@@ -3,6 +3,7 @@ package com.kaila.marketplace;
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.location.LocationManager;
 import androidx.core.content.ContextCompat;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.PermissionState;
@@ -24,7 +25,7 @@ public class BackgroundNavigationPlugin extends Plugin {
 
     @PluginMethod
     public void start(PluginCall call) {
-        if (getPermissionState("location") != PermissionState.GRANTED) {
+        if (!hasPreciseLocation()) {
             pendingStart = call;
             requestPermissionForAlias("location", call, "locationPermissionResult");
             return;
@@ -36,7 +37,7 @@ public class BackgroundNavigationPlugin extends Plugin {
     private void locationPermissionResult(PluginCall call) {
         PluginCall target = pendingStart == null ? call : pendingStart;
         pendingStart = null;
-        if (getPermissionState("location") != PermissionState.GRANTED) {
+        if (!hasPreciseLocation()) {
             target.reject("Precise location permission is required for navigation");
             return;
         }
@@ -44,6 +45,10 @@ public class BackgroundNavigationPlugin extends Plugin {
     }
 
     private void startService(PluginCall call) {
+        if (!isLocationEnabled()) {
+            call.reject("Turn on Android Location to start navigation");
+            return;
+        }
         String locationUrl = call.getString("locationUrl");
         String stopUrl = call.getString("stopUrl");
         String refreshUrl = call.getString("refreshUrl");
@@ -80,6 +85,21 @@ public class BackgroundNavigationPlugin extends Plugin {
     public void status(PluginCall call) {
         JSObject result = new JSObject();
         result.put("active", NavigationLocationService.isActive());
+        result.put("preciseLocation", hasPreciseLocation());
+        result.put("locationEnabled", isLocationEnabled());
         call.resolve(result);
+    }
+
+    private boolean hasPreciseLocation() {
+        return ContextCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_FINE_LOCATION)
+            == PackageManager.PERMISSION_GRANTED;
+    }
+
+    private boolean isLocationEnabled() {
+        LocationManager manager = (LocationManager) getContext().getSystemService(android.content.Context.LOCATION_SERVICE);
+        return manager != null && (
+            manager.isProviderEnabled(LocationManager.GPS_PROVIDER)
+                || manager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
+        );
     }
 }
