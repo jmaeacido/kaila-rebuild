@@ -111,17 +111,6 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     return children;
   }
 
-  if (allowedPath !== pathname) {
-    return (
-      <>
-        <BrandedLoader label="Checking your KAILA session…" />
-        <div hidden aria-hidden="true">
-          {children}
-        </div>
-      </>
-    );
-  }
-
   async function signOut() {
     setLoggingOut(true);
     try {
@@ -145,37 +134,43 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 
   return (
     <CallProvider>
-      <PullToRefresh />
-      <header className="appSessionBar">
-        <Link href="/home" aria-label="KAILA home" prefetch={false}>
-          <BrandMark className="sessionLogo" priority />
-        </Link>
-        <div>
-          <Link
-            className="sessionAvatar"
-            href="/account"
-            aria-label="Open account"
-            prefetch={false}
-          >
-            <span aria-hidden="true">{userName.charAt(0).toUpperCase()}</span>
-            {avatarUrl ? (
-              <Image
-                src={avatarUrl}
-                alt=""
-                width={44}
-                height={44}
-                unoptimized
-              />
-            ) : null}
-          </Link>
-          <span className="sessionName">{userName}</span>
-          <NotificationBell />
-          <SessionMenu loggingOut={loggingOut} onSignOut={() => void signOut()} />
-        </div>
-      </header>
-      <AreaMismatchBanner />
-      {children}
-      {pathname !== "/help/katabang" && <FloatingKatabang />}
+      {allowedPath !== pathname ? (
+        <BrandedLoader label="Checking your KAILA session…" />
+      ) : (
+        <>
+          <PullToRefresh />
+          <header className="appSessionBar">
+            <Link href="/home" aria-label="KAILA home" prefetch={false}>
+              <BrandMark className="sessionLogo" priority />
+            </Link>
+            <div>
+              <Link
+                className="sessionAvatar"
+                href="/account"
+                aria-label="Open account"
+                prefetch={false}
+              >
+                <span aria-hidden="true">{userName.charAt(0).toUpperCase()}</span>
+                {avatarUrl ? (
+                  <Image
+                    src={avatarUrl}
+                    alt=""
+                    width={44}
+                    height={44}
+                    unoptimized
+                  />
+                ) : null}
+              </Link>
+              <span className="sessionName">{userName}</span>
+              <NotificationBell />
+              <SessionMenu loggingOut={loggingOut} onSignOut={() => void signOut()} />
+            </div>
+          </header>
+          <AreaMismatchBanner />
+          {children}
+          {pathname !== "/help/katabang" && <FloatingKatabang />}
+        </>
+      )}
     </CallProvider>
   );
 }

@@ -17,7 +17,9 @@ final class KailaSoundChannels {
     static final String UPDATES = "kaila_updates_v1";
     static final String TRAVEL = "kaila_travel_v1";
     static final String SUPPORT = "kaila_support_v1";
-    static final String CALLS = "kaila_calls_v3";
+    // Channel behavior is immutable after creation. Bump when call presentation
+    // changes so existing Android installs receive the required high importance.
+    static final String CALLS = "kaila_calls_v4";
     static final String SILENT = "kaila_silent";
 
     private KailaSoundChannels() {}

@@ -116,6 +116,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
     peerCallId.current = null;
     localStream.current?.getTracks().forEach((track) => track.stop());
     localStream.current = null;
+    callRef.current = null;
     setCall(null);
     setMuted(false);
     hadConnected.current = false;
@@ -186,21 +187,21 @@ export function CallProvider({ children }: { children: ReactNode }) {
     contextType?: string;
     contextId?: string;
   }) => {
-    setCall((current) => {
-      if (current) return current;
-      endCue.current = "ended";
-      startRingtone();
-      return {
-        id: signal.callId,
-        media: signal.media,
-        direction: "incoming",
-        status: "ringing",
-        contextType: signal.contextType || "job",
-        contextId: signal.contextId || "",
-        peerName: signal.callerName || "Incoming call",
-        peerAvatarUrl: signal.callerAvatarUrl || null,
-      };
-    });
+    if (callRef.current) return;
+    const incoming: ActiveCall = {
+      id: signal.callId,
+      media: signal.media,
+      direction: "incoming",
+      status: "ringing",
+      contextType: signal.contextType || "job",
+      contextId: signal.contextId || "",
+      peerName: signal.callerName || "Incoming call",
+      peerAvatarUrl: signal.callerAvatarUrl || null,
+    };
+    endCue.current = "ended";
+    callRef.current = incoming;
+    startRingtone();
+    setCall(incoming);
   }, [startRingtone]);
 
   useEffect(() => {

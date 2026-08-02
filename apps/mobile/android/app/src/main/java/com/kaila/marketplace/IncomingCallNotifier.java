@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
+import androidx.core.app.Person;
 
 public final class IncomingCallNotifier {
     public static final String CHANNEL_ID = KailaSoundChannels.CALLS;
@@ -44,9 +45,13 @@ public final class IncomingCallNotifier {
             PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
         );
 
-        PendingIntent answer = actionPending(context, ACTION_ANSWER, extras, 2);
-        PendingIntent decline = actionPending(context, ACTION_DECLINE, extras, 3);
-        PendingIntent open = actionPending(context, ACTION_OPEN, extras, 4);
+        PendingIntent answer = activityPending(context, "answer", extras, 2);
+        PendingIntent decline = broadcastPending(context, ACTION_DECLINE, extras, 3);
+        PendingIntent open = activityPending(context, "open", extras, 4);
+        Person caller = new Person.Builder()
+            .setName(callerName)
+            .setImportant(true)
+            .build();
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.mipmap.ic_launcher)
@@ -59,8 +64,7 @@ public final class IncomingCallNotifier {
             .setAutoCancel(false)
             .setContentIntent(open)
             .setFullScreenIntent(fullScreenPending, true)
-            .addAction(0, "Answer", answer)
-            .addAction(0, "Decline", decline)
+            .setStyle(NotificationCompat.CallStyle.forIncomingCall(caller, decline, answer))
             .setTimeoutAfter(60_000L);
 
         NotificationManagerCompat.from(context).notify(NOTIFICATION_ID, builder.build());
@@ -70,7 +74,20 @@ public final class IncomingCallNotifier {
         NotificationManagerCompat.from(context).cancel(NOTIFICATION_ID);
     }
 
-    private static PendingIntent actionPending(Context context, String action, Bundle extras, int requestCode) {
+    private static PendingIntent activityPending(Context context, String action, Bundle extras, int requestCode) {
+        Intent intent = new Intent(context, MainActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        intent.putExtras(extras);
+        intent.putExtra(EXTRA_ACTION, action);
+        return PendingIntent.getActivity(
+            context,
+            requestCode,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+        );
+    }
+
+    private static PendingIntent broadcastPending(Context context, String action, Bundle extras, int requestCode) {
         Intent intent = new Intent(context, IncomingCallActionReceiver.class);
         intent.setAction(action);
         intent.putExtras(extras);
