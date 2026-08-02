@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { notifyAdminAuthenticated, notifyAdminSignedOut } from "./admin-session-events";
 import styles from "./page.module.css";
 import { revokeAdminPushDevice } from "./components/admin-push-runtime";
 
@@ -108,10 +109,12 @@ export default function AdminHome() {
 
         if (!body.data.authenticated) {
           setState("signed-out");
+          notifyAdminSignedOut();
           return;
         }
 
         applyQueueResult(await requestQueue());
+        notifyAdminAuthenticated();
       })
       .catch(() => setState("error"));
   }, [applyQueueResult, requestQueue]);
@@ -145,7 +148,7 @@ export default function AdminHome() {
 
       setPassword("");
       await load();
-      window.dispatchEvent(new Event("kaila:admin-authenticated"));
+      notifyAdminAuthenticated();
     } catch {
       setLoginMessage("Sign in is unavailable right now. Please try again.");
     } finally {
@@ -185,6 +188,7 @@ export default function AdminHome() {
 
     if (response.status === 401) {
       setState("signed-out");
+      notifyAdminSignedOut();
       return;
     }
 
@@ -213,6 +217,7 @@ export default function AdminHome() {
       setEmail("");
       setPassword("");
       setState("signed-out");
+      notifyAdminSignedOut();
     } catch {
       setLogoutMessage("You could not be signed out. Please try again.");
     } finally {

@@ -5,6 +5,7 @@ import { Capacitor } from "@capacitor/core";
 import { PushNotifications } from "@capacitor/push-notifications";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { adminAuthenticatedEvent } from "../admin-session-events";
 import { adminNotificationRoute } from "../admin-notification-routes";
 import { adminPushMessagingAvailable } from "./admin-push-guard";
 
@@ -105,8 +106,8 @@ export function AdminPushRuntime() {
         }),
       );
       const requestRegistration = () => void register();
-      window.addEventListener("kaila:admin-authenticated", requestRegistration);
-      handles.push({ remove: async () => window.removeEventListener("kaila:admin-authenticated", requestRegistration) });
+      window.addEventListener(adminAuthenticatedEvent, requestRegistration);
+      handles.push({ remove: async () => window.removeEventListener(adminAuthenticatedEvent, requestRegistration) });
       await register();
     })();
 
