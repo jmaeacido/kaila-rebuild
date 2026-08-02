@@ -21,6 +21,7 @@ import {
   X,
 } from "lucide-react";
 import { Button, Feedback } from "@kaila/ui";
+import { ActionModal } from "../../../../components/action-modal";
 import { LifecycleTimeline } from "./lifecycle-timeline";
 import { useJobRealtime } from "./use-job-realtime";
 import { AttachmentPicker, attachmentFiles } from "../../../../components/attachment-picker";
@@ -87,7 +88,7 @@ type Work = {
   } | null;
 };
 
-type Panel = "completion" | "revision" | "review" | "cancel" | "dispute" | null;
+type Panel = "completion" | "revision" | "review" | "cancel" | "dispute" | "appeal" | null;
 type RequestState = "loading" | "ready" | "saving" | "error";
 
 const statusLabels: Record<string, string> = {
@@ -316,16 +317,29 @@ export default function WorkPage({ params }: { params: Promise<{ jobId: string }
     }
   }
 
-  async function appealDispute() {
+  async function appealDispute(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
     if (!data?.dispute) return;
-    const reason = window.prompt("Explain the new evidence or reason for appealing this decision.");
-    if (!reason || reason.trim().length < 10) return;
+    const form = new FormData(event.currentTarget);
+    const reason = String(form.get("reason") || "").trim();
+    if (reason.length < 10) return;
     setRequestState("saving");
+    setNotice(null);
     try {
-      const response = await fetch(`/api/v1/disputes/${data.dispute.id}/appeal`, {method:"POST",credentials:"include",headers:{"Content-Type":"application/json"},body:JSON.stringify({reason:reason.trim()})});
-      if(!response.ok) throw new Error();
-      await load(true); setNotice({kind:"success",message:"Your appeal was sent for review by a different support specialist."});
-    } catch { setRequestState("ready"); setNotice({kind:"error",message:"The appeal could not be submitted. The seven-day appeal window may have closed."}); }
+      const response = await fetch(`/api/v1/disputes/${data.dispute.id}/appeal`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({ reason }),
+      });
+      if (!response.ok) throw new Error();
+      await load(true);
+      setPanel(null);
+      setNotice({ kind: "success", message: "Your appeal was sent for review by a different support specialist." });
+    } catch {
+      setRequestState("ready");
+      setNotice({ kind: "error", message: "The appeal could not be submitted. The seven-day appeal window may have closed." });
+    }
   }
 
   async function submitReview(event: FormEvent<HTMLFormElement>) {
@@ -470,7 +484,7 @@ export default function WorkPage({ params }: { params: Promise<{ jobId: string }
 
       <div className={styles.actions}>
         {data.dispute?.canAppeal && (
-          <Button variant="secondary" isLoading={requestState === "saving"} onClick={()=>void appealDispute()}><AlertTriangle/>Appeal support decision</Button>
+          <Button variant="secondary" isLoading={requestState === "saving"} onClick={() => setPanel("appeal")}><AlertTriangle/>Appeal support decision</Button>
         )}
         {data.status === "provider_selected" && data.role === "provider" && (
           <Button onClick={() => location.assign(`/jobs/${jobId}/hired/travel`)}>
@@ -519,17 +533,19 @@ export default function WorkPage({ params }: { params: Promise<{ jobId: string }
       </div>
 
       {panel && (
-        <section className={styles.sheet} aria-labelledby="action-title">
-          <header>
-            <div><p>{panelEyebrow(panel)}</p><h2 id="action-title">{panelTitle(panel)}</h2></div>
-            <button type="button" onClick={() => setPanel(null)} aria-label="Close"><X /></button>
-          </header>
+        <ActionModal
+          eyebrow={panelEyebrow(panel)}
+          title={panelTitle(panel)}
+          danger={panel === "cancel" || panel === "dispute" || panel === "appeal"}
+          onClose={() => setPanel(null)}
+        >
           {panel === "completion" && <CompletionForm saving={requestState === "saving"} onSubmit={submitCompletion} />}
           {panel === "revision" && <ReasonForm type="revision" saving={requestState === "saving"} onSubmit={(event) => void submitReason(event, "revision")} />}
           {panel === "cancel" && <ReasonForm type="cancel" saving={requestState === "saving"} onSubmit={(event) => void submitReason(event, "cancel")} />}
           {panel === "dispute" && <ReasonForm type="dispute" saving={requestState === "saving"} onSubmit={(event) => void submitReason(event, "dispute")} />}
           {panel === "review" && <ReviewForm saving={requestState === "saving"} onSubmit={submitReview} />}
-        </section>
+          {panel === "appeal" && <AppealForm saving={requestState === "saving"} onSubmit={(event) => void appealDispute(event)} />}
+        </ActionModal>
       )}
     </main>
   );
@@ -602,6 +618,25 @@ function ReviewForm({ saving, onSubmit }: { saving: boolean; onSubmit: (event: F
   );
 }
 
+function AppealForm({ saving, onSubmit }: { saving: boolean; onSubmit: (event: FormEvent<HTMLFormElement>) => void }) {
+  return (
+    <form className={styles.form} onSubmit={onSubmit}>
+      <label>
+        Why are you appealing?
+        <textarea
+          name="reason"
+          required
+          minLength={10}
+          maxLength={2000}
+          placeholder="Explain the new evidence or reason for appealing this decision."
+        />
+      </label>
+      <p className={styles.hint}><CircleAlert /> A different support specialist will review your appeal.</p>
+      <Button variant="danger" isLoading={saving}><AlertTriangle /> Submit appeal</Button>
+    </form>
+  );
+}
+
 function StatusIcon({ status }: { status: string }) {
   if (status === "completed" || status === "rated_closed") return <CheckCircle2 aria-hidden="true" />;
   if (status === "disputed") return <AlertTriangle aria-hidden="true" />;
@@ -623,7 +658,7 @@ function primaryGuidance(data: Work): string {
 }
 
 function panelEyebrow(panel: Exclude<Panel, null>): string {
-  return panel === "review" ? "FINAL STEP" : panel === "dispute" ? "KAILA SUPPORT" : "JOB UPDATE";
+  return panel === "review" ? "FINAL STEP" : panel === "dispute" || panel === "appeal" ? "KAILA SUPPORT" : "JOB UPDATE";
 }
 
 function panelTitle(panel: Exclude<Panel, null>): string {
@@ -633,6 +668,7 @@ function panelTitle(panel: Exclude<Panel, null>): string {
     review: "Rate this job",
     cancel: "Request cancellation",
     dispute: "Open a support review",
+    appeal: "Appeal support decision",
   }[panel];
 }
 

@@ -11,7 +11,13 @@ import {
   MatchOpportunityDetails,
   MatchOpportunityPrompt,
 } from "./match-opportunity-prompt";
-import { feedbackForDomainEvent, type FeedbackMessage } from "./notification-feedback";
+import {
+  feedbackForDomainEvent,
+  isEphemeralRealtimeEvent,
+  isNotificationBackedRealtimeEvent,
+  type FeedbackMessage,
+} from "./notification-feedback";
+import { playNotificationSound, soundForNotification, unlockNotificationSounds } from "./notification-sounds";
 import { domainEventName, realtimeStatusName, type DomainEvent, type RealtimeStatus } from "./realtime-provider";
 
 const firebaseConfig = {
@@ -100,8 +106,34 @@ export function NotificationRuntime() {
   }, [show]);
 
   useEffect(() => {
+    const unlock = () => unlockNotificationSounds();
+    window.addEventListener("pointerdown", unlock, { once: true });
+    window.addEventListener("keydown", unlock, { once: true });
+    return () => {
+      window.removeEventListener("pointerdown", unlock);
+      window.removeEventListener("keydown", unlock);
+    };
+  }, []);
+
+  useEffect(() => {
     const domainEvent = (event: Event) => {
       const detail = (event as CustomEvent<DomainEvent>).detail;
+      if (detail.type === "notification.created") {
+        const notification = detail.data.notification;
+        if (notification && typeof notification === "object") {
+          const record = notification as { type?: string; data?: { type?: string; hideFromInbox?: string | boolean } };
+          if (record.data?.hideFromInbox !== "1" && record.data?.hideFromInbox !== true && typeof record.type === "string") {
+            playNotificationSound(soundForNotification(record.type, typeof record.data?.type === "string" ? record.data.type : null));
+          }
+        }
+      } else if (
+        !detail.type.startsWith("call.")
+        && !isEphemeralRealtimeEvent(detail.type)
+        && !isNotificationBackedRealtimeEvent(detail.type)
+      ) {
+        // Typing/reacts are conversation-scoped; durable events chime via notification.created.
+        playNotificationSound(soundForNotification(detail.type));
+      }
       const feedback = feedbackForDomainEvent(detail);
       if (feedback) show({ ...feedback, eventKey: detail.eventId });
     };

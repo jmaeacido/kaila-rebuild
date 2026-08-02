@@ -3,6 +3,8 @@ package com.kaila.marketplace;
 import android.app.Activity;
 import android.app.KeyguardManager;
 import android.content.Intent;
+import android.media.AudioAttributes;
+import android.media.MediaPlayer;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.WindowManager;
@@ -11,6 +13,8 @@ import android.widget.TextView;
 import androidx.annotation.Nullable;
 
 public class IncomingCallActivity extends Activity {
+    private MediaPlayer ringtone;
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -41,13 +45,17 @@ public class IncomingCallActivity extends Activity {
         title.setText(callerName);
         subtitle.setText("Incoming " + media + " call");
 
+        startRingtone();
+
         Button answer = findViewById(R.id.incomingCallAnswer);
         Button decline = findViewById(R.id.incomingCallDecline);
         answer.setOnClickListener(v -> {
+            stopRingtone();
             launchMain(IncomingCallNotifier.ACTION_ANSWER, extras);
             finish();
         });
         decline.setOnClickListener(v -> {
+            stopRingtone();
             Intent declineIntent = new Intent(this, IncomingCallActionReceiver.class);
             declineIntent.setAction(IncomingCallNotifier.ACTION_DECLINE);
             declineIntent.putExtras(extras);
@@ -55,6 +63,38 @@ public class IncomingCallActivity extends Activity {
             IncomingCallNotifier.cancel(this);
             finish();
         });
+    }
+
+    @Override
+    protected void onDestroy() {
+        stopRingtone();
+        super.onDestroy();
+    }
+
+    private void startRingtone() {
+        try {
+            ringtone = MediaPlayer.create(this, R.raw.kaila_call_ring);
+            if (ringtone == null) return;
+            ringtone.setAudioAttributes(new AudioAttributes.Builder()
+                .setUsage(AudioAttributes.USAGE_NOTIFICATION_RINGTONE)
+                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                .build());
+            ringtone.setLooping(true);
+            ringtone.start();
+        } catch (Exception ignored) {
+            ringtone = null;
+        }
+    }
+
+    private void stopRingtone() {
+        if (ringtone == null) return;
+        try {
+            if (ringtone.isPlaying()) ringtone.stop();
+        } catch (Exception ignored) {
+            // Best-effort stop.
+        }
+        ringtone.release();
+        ringtone = null;
     }
 
     private void launchMain(String action, Bundle extras) {

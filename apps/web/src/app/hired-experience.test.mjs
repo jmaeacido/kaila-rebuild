@@ -47,6 +47,17 @@ test("work actions keep workflow controls ahead of the full-width report link", 
   assert.match(workStyles, /\.actions>button:first-of-type:last-of-type,\.actions>a\{grid-column:1\/-1\}/);
 });
 
+test("work and job cancel forms open in a modal overlay instead of an inline panel", () => {
+  assert.match(work, /<ActionModal/);
+  assert.match(work, /setPanel\("completion"\)/);
+  assert.match(work, /setPanel\("revision"\)/);
+  assert.match(work, /setPanel\("review"\)/);
+  assert.doesNotMatch(work, /window\.prompt/);
+  assert.match(jobDetails, /<ActionModal/);
+  assert.match(jobDetails, /Cancel this job\?/);
+  assert.doesNotMatch(jobDetails, /cancelPanel/);
+});
+
 test("clean hired-job media can be opened at full size", () => {
   assert.match(jobDetails, /aria-label=\{`Preview \$\{asset\.name\}`\}/);
   assert.match(jobDetails, /className=\{assetStyles\.openAsset\}/);

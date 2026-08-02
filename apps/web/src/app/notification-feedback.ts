@@ -68,6 +68,11 @@ export function isEphemeralRealtimeEvent(type: string): boolean {
   return ephemeralEventTypes.has(type);
 }
 
+/** Events that also emit `notification.created` — sound/toast once via that path. */
+export function isNotificationBackedRealtimeEvent(type: string): boolean {
+  return notificationBackedEventTypes.has(type);
+}
+
 export function feedbackForDomainEvent(event: DomainEvent): FeedbackMessage | null {
   if (isEphemeralRealtimeEvent(event.type)) return null;
   // Global CallProvider owns incoming/active call UX; avoid duplicate toasts.

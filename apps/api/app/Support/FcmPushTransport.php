@@ -22,11 +22,7 @@ class FcmPushTransport implements PushTransport
         $silent = ($data['silent'] ?? null) === '1';
         $isCall = ($data['type'] ?? null) === 'call';
         $isCallCancel = $isCall && (($data['action'] ?? null) === 'cancel' || in_array((string) ($data['status'] ?? ''), ['declined', 'ended', 'active'], true));
-        $channelId = $silent && ! $isCall ? 'kaila_silent' : match ($data['type'] ?? null) {
-            'call' => 'kaila_calls_v2',
-            'message' => 'kaila_messages',
-            default => 'kaila_updates',
-        };
+        [$channelId, $sound] = $this->channelAndSound($notification, $silent, $isCall);
 
         $payloadData = array_map('strval', array_merge($data, [
             'notificationId' => $notification->id,
@@ -34,6 +30,7 @@ class FcmPushTransport implements PushTransport
             'title' => $notification->title,
             'body' => $notification->body,
             'channelId' => $channelId,
+            'sound' => $sound ?? '',
         ]));
         if ($isCallCancel) {
             $payloadData['action'] = 'cancel';
@@ -54,7 +51,7 @@ class FcmPushTransport implements PushTransport
             $message['notification'] = ['title' => $notification->title, 'body' => $notification->body];
             $message['android']['notification'] = [
                 'channel_id' => $channelId,
-                ...($silent ? [] : ['sound' => 'default']),
+                ...($silent || $sound === null ? [] : ['sound' => $sound]),
                 'notification_priority' => $silent ? 'PRIORITY_DEFAULT' : 'PRIORITY_HIGH',
                 'visibility' => 'PRIVATE',
                 'tag' => "kaila-{$notification->id}",
@@ -71,5 +68,28 @@ class FcmPushTransport implements PushTransport
         }
 
         return (string) $response->json('name');
+    }
+
+    /** @return array{0: string, 1: ?string} */
+    private function channelAndSound(DurableNotification $notification, bool $silent, bool $isCall): array
+    {
+        if ($silent && ! $isCall) {
+            return ['kaila_silent', null];
+        }
+
+        $routeType = (string) (($notification->data['type'] ?? null) ?: 'job');
+        $eventType = (string) (($notification->data['eventType'] ?? null) ?: $notification->type);
+
+        return match (true) {
+            $isCall || $routeType === 'call' => ['kaila_calls_v3', 'kaila_call_ring'],
+            $routeType === 'message' => ['kaila_messages_v1', 'kaila_message'],
+            $eventType === 'opportunity.matched' => ['kaila_match_v1', 'kaila_job_match'],
+            $eventType === 'offer.selected' => ['kaila_hired_v1', 'kaila_job_hired'],
+            $eventType === 'offer.revised' => ['kaila_counters_v1', 'kaila_counter_offer'],
+            $routeType === 'offer' => ['kaila_offers_v1', 'kaila_offer'],
+            $routeType === 'travel' => ['kaila_travel_v1', 'kaila_travel'],
+            $routeType === 'support' || $routeType === 'dispute' => ['kaila_support_v1', 'kaila_support'],
+            default => ['kaila_updates_v1', 'kaila_job_update'],
+        };
     }
 }

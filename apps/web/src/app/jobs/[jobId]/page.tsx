@@ -23,6 +23,7 @@ import {
 import { Button, Feedback } from "@kaila/ui";
 import { areaPathLabel, type AreaReference } from "../../address-hierarchy";
 import { AttachmentPicker, attachmentFiles } from "../../../components/attachment-picker";
+import { ActionModal } from "../../../components/action-modal";
 import { JobLocationMap, type JobLocation } from "../../post-job/job-location-map";
 import styles from "./job-details.module.css";
 import assetStyles from "./job-assets.module.css";
@@ -522,14 +523,21 @@ export default function JobDetailsPage({ params }: { params: Promise<{ jobId: st
       )}
 
       {cancelling && (
-        <section className={styles.cancelPanel} aria-labelledby="cancel-title">
-          <header><div><p>Important action</p><h2 id="cancel-title">Cancel this job?</h2></div><button type="button" onClick={() => setCancelling(false)} aria-label="Close cancellation"><X /></button></header>
-          <p>This preserves the job history. Tell us why you need to cancel.</p>
-          <form onSubmit={(event) => void cancelJob(event)}>
+        <ActionModal
+          eyebrow="Important action"
+          title="Cancel this job?"
+          danger
+          onClose={() => setCancelling(false)}
+        >
+          <p className={styles.cancelCopy}>This preserves the job history. Tell us why you need to cancel.</p>
+          <form className={styles.cancelForm} onSubmit={(event) => void cancelJob(event)}>
             <label>Reason<textarea required minLength={10} maxLength={1000} value={cancelReason} onChange={(event) => setCancelReason(event.target.value)} placeholder="Briefly explain what changed." /></label>
-            <div><Button type="button" variant="secondary" onClick={() => setCancelling(false)}>Keep job</Button><Button variant="danger" disabled={cancelReason.trim().length < 10 || status === "saving"}>Confirm cancellation</Button></div>
+            <div>
+              <Button type="button" variant="secondary" onClick={() => setCancelling(false)}>Keep job</Button>
+              <Button variant="danger" disabled={cancelReason.trim().length < 10 || status === "saving"}>Confirm cancellation</Button>
+            </div>
           </form>
-        </section>
+        </ActionModal>
       )}
       {selectedMediaIndex !== null && <MediaViewer assets={viewableMedia as ViewableMedia[]} initialIndex={selectedMediaIndex} onClose={() => setSelectedMediaIndex(null)} />}
     </main>

@@ -1,9 +1,33 @@
 /* eslint-disable @next/next/no-html-link-for-pages, @next/next/no-img-element */
 "use client";
 
-import { FormEvent, use, useCallback, useEffect, useRef, useState } from "react";
-import { ArrowLeft, ChevronLeft, ChevronRight, Clock3, ImageIcon, MapPin, PhilippinePeso, RotateCcw, ShieldCheck, Star, Video, X, ZoomIn, ZoomOut } from "lucide-react";
-import { Button, Feedback, TextField } from "@kaila/ui";
+import { use, useCallback, useEffect, useRef, useState } from "react";
+import {
+  ArrowLeft,
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  Clock3,
+  ImageIcon,
+  MapPin,
+  PhilippinePeso,
+  RotateCcw,
+  ShieldCheck,
+  Star,
+  Video,
+  X,
+  ZoomIn,
+  ZoomOut,
+} from "lucide-react";
+import { Button, Feedback } from "@kaila/ui";
+import { ActionModal } from "../../../components/action-modal";
+import {
+  OfferTermsForm,
+  suggestedAmountCentavos,
+  suggestedAvailability,
+  type OfferTermsDefaults,
+  type OfferTermsPayload,
+} from "../../../components/offer-terms-form";
 import styles from "../../offers.module.css";
 import mediaStyles from "./opportunity-media.module.css";
 import { useRealtimeInvalidation } from "../../use-realtime-invalidation";
@@ -51,6 +75,7 @@ export default function MakeOfferPage({ params }: { params: Promise<{ jobId: str
   const [opportunity, setOpportunity] = useState<Opportunity | null>(null);
   const [offer, setOffer] = useState<Offer | null>(null);
   const [status, setStatus] = useState<"loading" | "idle" | "sending" | "success" | "error">("loading");
+  const [offerOpen, setOfferOpen] = useState(false);
   const [selectedMediaIndex, setSelectedMediaIndex] = useState<number | null>(null);
   const [mediaZoomed, setMediaZoomed] = useState(false);
   const closeMediaButton = useRef<HTMLButtonElement>(null);
@@ -66,9 +91,9 @@ export default function MakeOfferPage({ params }: { params: Promise<{ jobId: str
       const offers = (await offersResponse.json()) as { data: Offer[] };
       setOpportunity(opportunities.data.find((item) => item.jobId === jobId) ?? null);
       setOffer(offers.data[0] ?? null);
-      setStatus("idle");
+      setStatus((current) => (current === "sending" ? current : "idle"));
     } catch {
-      setStatus("error");
+      setStatus((current) => (current === "sending" ? current : "error"));
     }
   }, [jobId]);
   useRealtimeInvalidation(() => void load(), (event) => event.data.jobId === jobId);
@@ -109,23 +134,13 @@ export default function MakeOfferPage({ params }: { params: Promise<{ jobId: str
     };
   }, [closeMedia, moveMedia, selectedMediaIndex]);
 
-  async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function submitOffer(payload: OfferTermsPayload) {
     setStatus("sending");
-    const data = new FormData(event.currentTarget);
-    const payload = {
-      amountCentavos: Math.round(Number(data.get("amount")) * 100),
-      availabilityText: data.get("availability"),
-      estimatedDurationText: data.get("duration") || null,
-      scope: data.get("scope") || null,
-      message: data.get("message") || null,
-      expiresAt: null,
-    };
     const response = await fetch(
       offer ? `/api/v1/offers/${offer.id}/revisions` : `/api/v1/jobs/${jobId}/offers`,
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
         body: JSON.stringify(payload),
       },
     );
@@ -134,16 +149,29 @@ export default function MakeOfferPage({ params }: { params: Promise<{ jobId: str
       return;
     }
     setOffer(((await response.json()) as { data: Offer }).data);
+    setOfferOpen(false);
     setStatus("success");
   }
 
   const latest = offer?.revisions.at(-1);
+  const canOffer = !offer || offer.status === "active";
+  const defaults: OfferTermsDefaults = latest
+    ? latest
+    : {
+        amountCentavos: opportunity
+          ? suggestedAmountCentavos(opportunity.budgetMinCentavos, opportunity.budgetMaxCentavos)
+          : null,
+        availabilityText: opportunity
+          ? suggestedAvailability(opportunity.scheduleType, opportunity.scheduledAt)
+          : "",
+      };
+
   if (status === "loading") {
     return <main className={styles.shell}><div className={styles.skeletons}><span /></div></main>;
   }
 
   return (
-    <main className={styles.shell}>
+    <main className={`${styles.shell} ${styles.offerShell}`}>
       <a className={styles.back} href="/opportunities"><ArrowLeft aria-hidden="true" />Opportunities</a>
       {opportunity && (
         <section className={styles.requestSummary}>
@@ -189,24 +217,63 @@ export default function MakeOfferPage({ params }: { params: Promise<{ jobId: str
           <small>The exact address stays private until the client hires.</small>
         </section>
       )}
-      <header>
-        <p>{offer ? "Your proposal" : "One clear proposal"}</p>
-        <h2>{offer ? "Review or revise your offer" : "Make an offer"}</h2>
-        <span>{offer ? "Your complete revision history is preserved." : "Your terms become part of an immutable negotiation history."}</span>
-      </header>
-      {status === "success" && <Feedback kind="success" title={offer && offer.latestRevisionNumber > 1 ? "Offer revised" : "Offer sent"}><ShieldCheck aria-hidden="true" />The client can review your latest price, timing, and details.</Feedback>}
-      {status === "error" && <Feedback kind="error" title="Your offer wasn’t saved">Review your details and try again.</Feedback>}
-      {(!offer || offer.status === "active") && (
-        <form className={styles.form} onSubmit={(event) => void submit(event)}>
-          <TextField id="offer-amount" label="Price in pesos" name="amount" type="number" min="1" step="0.01" required defaultValue={latest ? latest.amountCentavos / 100 : undefined} />
-          <TextField id="offer-availability" label="When can you start?" name="availability" placeholder="Today at 2 PM" required defaultValue={latest?.availabilityText} />
-          <TextField id="offer-duration" label="Estimated duration" name="duration" placeholder="About two hours" defaultValue={latest?.estimatedDurationText ?? undefined} />
-          <label>What’s included? <span>Optional</span><textarea name="scope" maxLength={2000} defaultValue={latest?.scope ?? undefined} /></label>
-          <label>Message to the client <span>Optional</span><textarea name="message" maxLength={1000} defaultValue={latest?.message ?? undefined} /></label>
-          <div className={styles.summary}><PhilippinePeso aria-hidden="true" /><p><strong>Price stays exact</strong><span>The client accepts this specific revision.</span></p><Clock3 aria-hidden="true" /><p><strong>You can revise later</strong><span>Earlier versions remain visible to both of you.</span></p></div>
-          <Button type="submit" disabled={status === "sending"}>{status === "sending" ? "Saving…" : offer ? "Send revised offer" : "Send Offer"}</Button>
-        </form>
+
+      {status === "success" && (
+        <Feedback kind="success" title={offer && offer.latestRevisionNumber > 1 ? "Offer revised" : "Offer sent"}>
+          <ShieldCheck aria-hidden="true" />The client can compare your price and timing with other providers.
+        </Feedback>
       )}
+      {status === "error" && <Feedback kind="error" title="Your offer wasn’t saved">Check your connection and try again.</Feedback>}
+
+      {latest && (
+        <section className={styles.sentOffer} aria-labelledby="sent-offer-title">
+          <header>
+            <p>Your latest offer</p>
+            <h2 id="sent-offer-title">₱{(latest.amountCentavos / 100).toLocaleString()}</h2>
+          </header>
+          <dl>
+            <div><Clock3 aria-hidden="true" /><dt>Available</dt><dd>{latest.availabilityText}</dd></div>
+            {latest.estimatedDurationText && <div><RotateCcw aria-hidden="true" /><dt>Duration</dt><dd>{latest.estimatedDurationText}</dd></div>}
+          </dl>
+          {(latest.scope || latest.message) && (
+            <div className={styles.scope}>
+              {latest.scope && <><strong>What’s included</strong><p>{latest.scope}</p></>}
+              {latest.message && <blockquote>{latest.message}</blockquote>}
+            </div>
+          )}
+          <p className={styles.history}>Revision {offer?.latestRevisionNumber} preserved in negotiation history</p>
+        </section>
+      )}
+
+      {canOffer && (
+        <div className={styles.offerDock}>
+          <div>
+            <p>{offer ? "Still competing" : "Move fast"}</p>
+            <span>{offer ? "Send a revised price or timing in seconds." : "Other providers may already be offering. Price and timing are enough."}</span>
+          </div>
+          <Button onClick={() => setOfferOpen(true)}>
+            {offer ? <RotateCcw aria-hidden="true" /> : <CheckCircle2 aria-hidden="true" />}
+            {offer ? "Revise offer" : "Send offer"}
+          </Button>
+        </div>
+      )}
+
+      {offerOpen && canOffer && (
+        <ActionModal
+          eyebrow={offer ? "Quick revision" : "Quick offer"}
+          title={offer ? "Revise your offer" : "Send your offer"}
+          onClose={() => setOfferOpen(false)}
+        >
+          <OfferTermsForm
+            key={offer?.latestRevisionNumber ?? "new"}
+            defaults={defaults}
+            saving={status === "sending"}
+            submitLabel={status === "sending" ? "Sending…" : offer ? "Send revised offer" : "Send offer"}
+            onSubmit={submitOffer}
+          />
+        </ActionModal>
+      )}
+
       {selectedMediaIndex !== null && opportunity?.assets[selectedMediaIndex] && (
         <div className={mediaStyles.viewer} role="dialog" aria-modal="true" aria-labelledby="media-viewer-title" onMouseDown={(event) => { if (event.target === event.currentTarget) closeMedia(); }}>
           <section className={mediaStyles.viewerPanel}>

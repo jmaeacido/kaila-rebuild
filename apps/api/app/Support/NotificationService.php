@@ -33,7 +33,7 @@ class NotificationService
             'body' => $body,
             'resource_type' => $resourceType,
             'resource_id' => $resourceId,
-            'data' => [...$data, 'type' => $routeType],
+            'data' => [...$data, 'type' => $routeType, 'eventType' => $type],
         ]);
 
         if ($this->allowsPush($userId, $channel)) {

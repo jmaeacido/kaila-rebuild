@@ -11,6 +11,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { playUiSound, UI_SOUNDS } from "../notification-sounds";
 import { domainEventName, realtimeAuthChangedName, type DomainEvent } from "../realtime-provider";
 import {
   createCallSession,
@@ -26,6 +27,10 @@ import type { ActiveCall, CallMedia, CallSignal, StartCallInput } from "./types"
 function isNativeAndroid(): boolean {
   const capacitor = (window as Window & { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor;
   return capacitor?.isNativePlatform?.() === true;
+}
+
+function prefersReducedMotion(): boolean {
+  return typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
 type CallContextValue = {
@@ -60,12 +65,52 @@ export function CallProvider({ children }: { children: ReactNode }) {
   const remoteAudio = useRef<HTMLAudioElement>(null);
   const localVideo = useRef<HTMLVideoElement>(null);
   const callRef = useRef<ActiveCall | null>(null);
+  const ringtone = useRef<HTMLAudioElement | null>(null);
+  const ringback = useRef<HTMLAudioElement | null>(null);
+  const hadConnected = useRef(false);
+  const endCue = useRef<"none" | "ended" | "failed">("none");
 
   useEffect(() => {
     callRef.current = call;
   }, [call]);
 
-  const closeMedia = useCallback(() => {
+  const stopLoop = useCallback((ref: { current: HTMLAudioElement | null }) => {
+    if (!ref.current) return;
+    ref.current.pause();
+    ref.current.currentTime = 0;
+    ref.current = null;
+  }, []);
+
+  const stopRingtone = useCallback(() => stopLoop(ringtone), [stopLoop]);
+  const stopRingback = useCallback(() => stopLoop(ringback), [stopLoop]);
+
+  const startRingtone = useCallback(() => {
+    // Native Android IncomingCallActivity owns the incoming ringtone.
+    if (isNativeAndroid() || prefersReducedMotion()) return;
+    stopRingtone();
+    stopRingback();
+    const audio = new Audio("/sounds/kaila_call_ring.wav");
+    audio.loop = true;
+    audio.volume = 0.7;
+    ringtone.current = audio;
+    void audio.play().catch(() => undefined);
+  }, [stopRingback, stopRingtone]);
+
+  const startRingback = useCallback(() => {
+    // Outgoing wait tone plays in WebView on both web and Capacitor.
+    if (prefersReducedMotion()) return;
+    stopRingtone();
+    stopRingback();
+    const audio = new Audio(UI_SOUNDS.callRingback);
+    audio.loop = true;
+    audio.volume = 0.42;
+    ringback.current = audio;
+    void audio.play().catch(() => undefined);
+  }, [stopRingback, stopRingtone]);
+
+  const closeMedia = useCallback((cue: "none" | "ended" | "failed" = endCue.current) => {
+    stopRingtone();
+    stopRingback();
     peer.current?.close();
     peer.current = null;
     peerCallId.current = null;
@@ -73,11 +118,15 @@ export function CallProvider({ children }: { children: ReactNode }) {
     localStream.current = null;
     setCall(null);
     setMuted(false);
+    hadConnected.current = false;
+    if (cue === "ended") playUiSound("callEnded");
+    if (cue === "failed") playUiSound("callFailed");
+    endCue.current = "none";
     if (isNativeAndroid()) {
       void IncomingCallNative.stopActiveCall().catch(() => undefined);
       void IncomingCallNative.cancelIncoming().catch(() => undefined);
     }
-  }, []);
+  }, [stopRingback, stopRingtone]);
 
   const sendSignal = useCallback(async (callId: string, payload: Omit<CallSignal, "callId" | "media">) => {
     await sendCallSignal(callId, payload);
@@ -104,13 +153,21 @@ export function CallProvider({ children }: { children: ReactNode }) {
     };
     connection.onconnectionstatechange = () => {
       if (connection.connectionState === "connected") {
+        stopRingtone();
+        stopRingback();
+        if (!hadConnected.current) {
+          hadConnected.current = true;
+          playUiSound("callAnswered");
+        }
         setCall((current) => (current?.id === callId ? { ...current, status: "active" } : current));
         setNotice("");
         if (isNativeAndroid()) {
           void IncomingCallNative.startActiveCall({ media }).catch(() => undefined);
         }
       } else if (connection.connectionState === "failed") {
+        endCue.current = "none";
         setNotice("The call connection failed. End the call and try again on a stable network.");
+        playUiSound("callFailed");
       }
     };
     peer.current = connection;
@@ -119,7 +176,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
       if (localVideo.current) localVideo.current.srcObject = stream;
     }, 0);
     return connection;
-  }, [sendSignal]);
+  }, [sendSignal, stopRingback, stopRingtone]);
 
   const applyIncomingRing = useCallback((signal: {
     callId: string;
@@ -128,17 +185,22 @@ export function CallProvider({ children }: { children: ReactNode }) {
     contextType?: string;
     contextId?: string;
   }) => {
-    setCall((current) => current || {
-      id: signal.callId,
-      media: signal.media,
-      direction: "incoming",
-      status: "ringing",
-      contextType: signal.contextType || "job",
-      contextId: signal.contextId || "",
-      peerName: signal.callerName || "Incoming call",
-      peerAvatarUrl: null,
+    setCall((current) => {
+      if (current) return current;
+      endCue.current = "ended";
+      startRingtone();
+      return {
+        id: signal.callId,
+        media: signal.media,
+        direction: "incoming",
+        status: "ringing",
+        contextType: signal.contextType || "job",
+        contextId: signal.contextId || "",
+        peerName: signal.callerName || "Incoming call",
+        peerAvatarUrl: null,
+      };
     });
-  }, []);
+  }, [startRingtone]);
 
   useEffect(() => {
     let active = true;
@@ -177,7 +239,8 @@ export function CallProvider({ children }: { children: ReactNode }) {
           } else if (signal.type === "hangup") {
             setCall((current) => {
               if (current?.id !== signal.callId) return current;
-              window.setTimeout(closeMedia, 0);
+              if (endCue.current === "none") endCue.current = "ended";
+              window.setTimeout(() => closeMedia(), 0);
               return current;
             });
           }
@@ -213,14 +276,16 @@ export function CallProvider({ children }: { children: ReactNode }) {
         if (["declined", "ended"].includes(status)) {
           setCall((current) => {
             if (current?.id !== callId) return current;
-            window.setTimeout(closeMedia, 0);
+            endCue.current = "ended";
+            window.setTimeout(() => closeMedia(), 0);
             return current;
           });
         }
       }
     };
     const onAuthChanged = () => {
-      closeMedia();
+      endCue.current = "none";
+      closeMedia("none");
       setNotice("");
     };
     window.addEventListener(domainEventName, onDomain);
@@ -233,6 +298,8 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
   const startCall = useCallback(async (input: StartCallInput) => {
     setNotice("");
+    endCue.current = "ended";
+    hadConnected.current = false;
     try {
       const created = await createCallSession(input);
       setCall({
@@ -245,6 +312,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
         peerName: input.peerName || "Calling…",
         peerAvatarUrl: input.peerAvatarUrl ?? null,
       });
+      startRingback();
       const connection = await createPeer(created.id, input.media);
       await connection.setLocalDescription();
       if (!connection.localDescription) throw new Error("The browser did not create a call offer.");
@@ -254,10 +322,10 @@ export function CallProvider({ children }: { children: ReactNode }) {
       if (currentId) {
         await transitionCall(currentId, "end", "failed").catch(() => undefined);
       }
-      closeMedia();
+      closeMedia("failed");
       setNotice(error instanceof Error ? error.message : "Microphone or camera access is required to start the call.");
     }
-  }, [closeMedia, createPeer, sendSignal]);
+  }, [closeMedia, createPeer, sendSignal, startRingback]);
 
   const answerCall = useCallback(async () => {
     const current = callRef.current;
@@ -295,6 +363,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
       await sendSignal(current.id, { type: "answer", description: connection.localDescription.toJSON() });
       stage = "confirming the answered call";
       await transitionCall(current.id, "answer");
+      stopRingtone();
       setCall({ ...current, status: "connecting" });
       if (isNativeAndroid()) {
         void IncomingCallNative.cancelIncoming().catch(() => undefined);
@@ -306,6 +375,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
       localStream.current?.getTracks().forEach((track) => track.stop());
       localStream.current = null;
       setCall({ ...current, status: "ringing" });
+      playUiSound("callFailed");
       if (error instanceof DOMException && ["NotAllowedError", "SecurityError"].includes(error.name)) {
         setNotice(`Allow ${current.media === "video" ? "camera and microphone" : "microphone"} access in your browser, then answer again.`);
       } else if (error instanceof DOMException && error.name === "NotFoundError") {
@@ -317,14 +387,15 @@ export function CallProvider({ children }: { children: ReactNode }) {
     } finally {
       answering.current = false;
     }
-  }, [createPeer, sendSignal]);
+  }, [createPeer, sendSignal, stopRingtone]);
 
   const endCall = useCallback(async (action: "decline" | "end" = "end") => {
     const current = callRef.current;
     if (!current) return;
+    endCue.current = "ended";
     await sendSignal(current.id, { type: "hangup" }).catch(() => undefined);
     await transitionCall(current.id, action, action === "decline" ? "declined" : "completed").catch(() => undefined);
-    closeMedia();
+    closeMedia("ended");
   }, [closeMedia, sendSignal]);
 
   useEffect(() => {
@@ -367,7 +438,8 @@ export function CallProvider({ children }: { children: ReactNode }) {
       if (detail.action === "cancel") {
         setCall((current) => {
           if (current && current.id !== detail.callId) return current;
-          window.setTimeout(closeMedia, 0);
+          endCue.current = "ended";
+          window.setTimeout(() => closeMedia(), 0);
           return current;
         });
       }

@@ -3,11 +3,7 @@ package com.kaila.marketplace;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.Intent;
-import android.media.AudioAttributes;
-import android.media.RingtoneManager;
-import android.os.Build;
 import android.os.Bundle;
-import androidx.annotation.RequiresApi;
 import com.getcapacitor.BridgeActivity;
 
 public class MainActivity extends BridgeActivity {
@@ -17,7 +13,9 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(BackgroundNavigationPlugin.class);
         registerPlugin(IncomingCallPlugin.class);
         super.onCreate(savedInstanceState);
-        createNotificationChannels();
+        KailaSoundChannels.ensureAll(this);
+        // Keep legacy channels registered so older installs do not crash; new pushes use v1/v3 IDs.
+        createLegacyChannels();
         routeIncomingCallIntent(getIntent());
     }
 
@@ -47,7 +45,6 @@ public class MainActivity extends BridgeActivity {
             + "callerName:" + jsonString(callerName == null ? "" : callerName)
             + "}}));";
         getBridge().getWebView().post(() -> getBridge().getWebView().evaluateJavascript(script, null));
-        // Also navigate to the conversation so the job context is available.
         if (contextId != null && !contextId.isEmpty() && "job".equals(contextType == null ? "job" : contextType)) {
             String path = "/jobs/" + contextId + "/hired/conversation?callId=" + encode(callId)
                 + "&callAction=" + encode(action)
@@ -62,6 +59,25 @@ public class MainActivity extends BridgeActivity {
         }
     }
 
+    private void createLegacyChannels() {
+        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.O) return;
+        NotificationManager manager = getSystemService(NotificationManager.class);
+        for (String[] channel : new String[][] {
+            {"kaila_updates", "Jobs, offers, and updates (legacy)"},
+            {"kaila_messages", "Messages (legacy)"},
+            {"kaila_calls", "Incoming calls (legacy)"},
+            {"kaila_calls_v2", "Incoming calls (legacy ringtone)"},
+        }) {
+            if (manager.getNotificationChannel(channel[0]) != null) continue;
+            NotificationChannel legacy = new NotificationChannel(
+                channel[0],
+                channel[1],
+                NotificationManager.IMPORTANCE_HIGH
+            );
+            manager.createNotificationChannel(legacy);
+        }
+    }
+
     private static String jsonString(String value) {
         return "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"") + "\"";
     }
@@ -72,63 +88,5 @@ public class MainActivity extends BridgeActivity {
         } catch (Exception error) {
             return value;
         }
-    }
-
-    private void createNotificationChannels() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
-            return;
-        }
-
-        NotificationManager manager = getSystemService(NotificationManager.class);
-        AudioAttributes soundAttributes = new AudioAttributes.Builder()
-            .setUsage(AudioAttributes.USAGE_NOTIFICATION)
-            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-            .build();
-
-        manager.createNotificationChannel(audibleChannel(
-            "kaila_updates",
-            "Jobs, offers, and updates",
-            "Job requests, offers, status changes, and reminders",
-            soundAttributes
-        ));
-        manager.createNotificationChannel(audibleChannel(
-            "kaila_messages",
-            "Messages",
-            "New marketplace messages",
-            soundAttributes
-        ));
-        manager.createNotificationChannel(audibleChannel(
-            "kaila_calls",
-            "Incoming calls (legacy)",
-            "Legacy incoming call alerts",
-            soundAttributes
-        ));
-        IncomingCallNotifier.ensureChannel(this);
-
-        NotificationChannel silent = new NotificationChannel(
-            "kaila_silent",
-            "Quiet notifications",
-            NotificationManager.IMPORTANCE_DEFAULT
-        );
-        silent.setDescription("Notifications delivered silently during your quiet hours");
-        silent.setSound(null, null);
-        silent.enableVibration(false);
-        silent.setLockscreenVisibility(android.app.Notification.VISIBILITY_PRIVATE);
-        manager.createNotificationChannel(silent);
-    }
-
-    @RequiresApi(Build.VERSION_CODES.O)
-    private NotificationChannel audibleChannel(
-        String id,
-        String name,
-        String description,
-        AudioAttributes soundAttributes
-    ) {
-        NotificationChannel channel = new NotificationChannel(id, name, NotificationManager.IMPORTANCE_HIGH);
-        channel.setDescription(description);
-        channel.setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION), soundAttributes);
-        channel.enableVibration(true);
-        channel.setLockscreenVisibility(android.app.Notification.VISIBILITY_PRIVATE);
-        return channel;
     }
 }

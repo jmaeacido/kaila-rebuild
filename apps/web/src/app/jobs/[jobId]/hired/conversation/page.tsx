@@ -23,6 +23,7 @@ import { AttachmentSourceActions } from "../../../../../components/attachment-pi
 import { useCall } from "../../../../calls/call-provider";
 import { domainEventName, type DomainEvent } from "../../../../realtime-provider";
 import { isEphemeralRealtimeEvent } from "../../../../notification-feedback";
+import { playUiSound } from "../../../../notification-sounds";
 import { useRealtimeInvalidation } from "../../../../use-realtime-invalidation";
 import { MediaViewer, type ViewableMedia } from "../../../../../components/media-viewer";
 
@@ -119,13 +120,26 @@ export default function ConversationPage({ params }: { params: Promise<{ jobId: 
   useEffect(() => {
     const onDomainEvent = (event: Event) => {
       const detail = (event as CustomEvent<DomainEvent>).detail;
-      if (!detail || detail.type !== "conversation.typing.changed" || detail.data.jobId !== jobId) return;
-      if (detail.data.actorUserId === conversation?.viewerUserId) return;
-      const active = detail.data.active === true;
-      setPeerTyping(active);
-      if (peerTypingIdle.current !== null) window.clearTimeout(peerTypingIdle.current);
-      if (active) {
-        peerTypingIdle.current = window.setTimeout(() => setPeerTyping(false), 4_000);
+      if (!detail || detail.data.jobId !== jobId) return;
+      const viewerId = conversation?.viewerUserId;
+
+      if (detail.type === "conversation.typing.changed") {
+        if (detail.data.actorUserId === viewerId) return;
+        const active = detail.data.active === true;
+        setPeerTyping((wasTyping) => {
+          if (active && !wasTyping) playUiSound("typing");
+          return active;
+        });
+        if (peerTypingIdle.current !== null) window.clearTimeout(peerTypingIdle.current);
+        if (active) {
+          peerTypingIdle.current = window.setTimeout(() => setPeerTyping(false), 4_000);
+        }
+        return;
+      }
+
+      if (detail.type === "message.reacted") {
+        if (detail.data.actorUserId === viewerId) return;
+        if (detail.data.active === true) playUiSound("react");
       }
     };
     window.addEventListener(domainEventName, onDomainEvent);
@@ -193,6 +207,7 @@ export default function ConversationPage({ params }: { params: Promise<{ jobId: 
     }
     setText("");
     setState("ready");
+    playUiSound("messageSent");
     if (typingIdle.current !== null) window.clearTimeout(typingIdle.current);
     void publishTyping(false);
     await load();
@@ -204,7 +219,14 @@ export default function ConversationPage({ params }: { params: Promise<{ jobId: 
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ reaction }),
     });
-    if (response.ok) await load();
+    if (!response.ok) return;
+    try {
+      const payload = (await response.json()) as { data?: { active?: boolean } };
+      if (payload.data?.active === true) playUiSound("react");
+    } catch {
+      // Reload below still reconciles reaction state.
+    }
+    await load();
   }
 
   function toggleReactionPicker(messageId: string, button: HTMLButtonElement) {
