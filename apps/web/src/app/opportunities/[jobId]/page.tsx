@@ -46,6 +46,7 @@ type Opportunity = {
   scheduledAt: string | null;
   budgetMinCentavos: number | null;
   budgetMaxCentavos: number | null;
+  directRequest: boolean;
   approximateAddress: string;
   approximateLocation: { latitude: number; longitude: number } | null;
   assets: {
@@ -153,6 +154,23 @@ export default function MakeOfferPage({ params }: { params: Promise<{ jobId: str
     setStatus("success");
   }
 
+  async function acceptDirectRequest() {
+    if (!opportunity) return;
+    const amountCentavos = opportunity.budgetMaxCentavos ?? opportunity.budgetMinCentavos;
+    if (!amountCentavos) { setOfferOpen(true); return; }
+    setStatus("sending");
+    const response = await fetch(`/api/v1/jobs/${jobId}/direct-request/accept`, { method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify({ amountCentavos, availabilityText: suggestedAvailability(opportunity.scheduleType, opportunity.scheduledAt), scope: opportunity.description }) });
+    if (!response.ok) { setStatus("error"); return; }
+    location.assign(`/jobs/${jobId}`);
+  }
+
+  async function declineDirectRequest() {
+    setStatus("sending");
+    const response = await fetch(`/api/v1/jobs/${jobId}/direct-request/decline`, { method: "POST" });
+    if (!response.ok) { setStatus("error"); return; }
+    location.assign("/opportunities");
+  }
+
   const latest = offer?.revisions.at(-1);
   const canOffer = !offer || offer.status === "active";
   const defaults: OfferTermsDefaults = latest
@@ -248,12 +266,14 @@ export default function MakeOfferPage({ params }: { params: Promise<{ jobId: str
       {canOffer && (
         <div className={styles.offerDock}>
           <div>
-            <p>{offer ? "Still competing" : "Move fast"}</p>
-            <span>{offer ? "Send a revised price or timing in seconds." : "Other providers may already be offering. Price and timing are enough."}</span>
+            <p>{opportunity?.directRequest ? "Requested directly" : offer ? "Still competing" : "Move fast"}</p>
+            <span>{opportunity?.directRequest ? "Accept the customer’s budget, decline, or send different terms." : offer ? "Send a revised price or timing in seconds." : "Other providers may already be offering. Price and timing are enough."}</span>
           </div>
+          {opportunity?.directRequest && !offer && <Button variant="secondary" onClick={() => void declineDirectRequest()}>Decline</Button>}
+          {opportunity?.directRequest && !offer && <Button onClick={() => void acceptDirectRequest()}><CheckCircle2 aria-hidden="true" />{opportunity.budgetMaxCentavos || opportunity.budgetMinCentavos ? "Accept request" : "Accept & set price"}</Button>}
           <Button onClick={() => setOfferOpen(true)}>
             {offer ? <RotateCcw aria-hidden="true" /> : <CheckCircle2 aria-hidden="true" />}
-            {offer ? "Revise offer" : "Send offer"}
+            {offer ? "Revise offer" : opportunity?.directRequest ? "Counteroffer" : "Send offer"}
           </Button>
         </div>
       )}

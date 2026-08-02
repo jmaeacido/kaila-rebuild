@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Area;
 use App\Models\ClientProfile;
+use App\Models\JobReview;
 use App\Models\ProfileAsset;
 use App\Models\ProviderProfile;
 use App\Models\User;
@@ -88,13 +89,14 @@ class MarketplaceProfileController extends Controller
 
     public function discover(Request $request): JsonResponse
     {
-        $data = $request->validate(['categoryId' => ['required', 'integer', 'exists:service_categories,id'], 'areaId' => ['required', 'integer', 'exists:areas,id']]);
-        $area = Area::query()->whereKey($data['areaId'])->firstOrFail();
-        $matchingAreaIds = array_values(array_filter([$area->id, $area->parent_id]));
+        $data = $request->validate(['categoryId' => ['nullable', 'integer', 'exists:service_categories,id'], 'areaId' => ['nullable', 'integer', 'exists:areas,id'], 'query' => ['nullable', 'string', 'max:100']]);
+        $area = isset($data['areaId']) ? Area::query()->whereKey($data['areaId'])->firstOrFail() : null;
+        $matchingAreaIds = $area ? array_values(array_filter([$area->id, $area->parent_id])) : [];
         $profiles = ProviderProfile::query()->where('status', 'active')
-            ->whereHas('services', fn ($q) => $q->whereKey($data['categoryId'])->where('is_active', true))
-            ->whereHas('serviceAreas', fn ($q) => $q->whereKey($matchingAreaIds)->where('is_active', true))
-            ->with(['services:id,name,slug,icon', 'serviceAreas:id,name,type,code', 'portfolio:id,user_id,caption,sort_order', 'credentials' => fn ($q) => $q->where('review_status', 'approved')])
+            ->when(isset($data['categoryId']), fn ($q) => $q->whereHas('services', fn ($service) => $service->whereKey($data['categoryId'])->where('is_active', true)))
+            ->when($area, fn ($q) => $q->whereHas('serviceAreas', fn ($serviceArea) => $serviceArea->whereKey($matchingAreaIds)->where('is_active', true)))
+            ->when(trim($data['query'] ?? '') !== '', fn ($q) => $q->where(fn ($name) => $name->where('display_name', 'like', '%'.trim($data['query']).'%')->orWhere('shop_name', 'like', '%'.trim($data['query']).'%')))
+            ->with(['services:id,name,slug,icon', 'serviceAreas:id,name,type,code', 'availability', 'portfolio:id,user_id,caption,sort_order', 'credentials' => fn ($q) => $q->where('review_status', 'approved')])
             ->orderByDesc('rating')->orderBy('id')->paginate(20);
 
         return response()->json(['data' => $profiles->getCollection()->map(fn (ProviderProfile $profile) => $this->publicProvider($profile)), 'meta' => ['currentPage' => $profiles->currentPage(), 'lastPage' => $profiles->lastPage()]]);
@@ -123,13 +125,15 @@ class MarketplaceProfileController extends Controller
             'rating' => $reputation?->average_rating !== null
                 ? (float) $reputation->average_rating
                 : ($profile->rating !== null ? (float) $profile->rating : null),
-            'reviewCount' => (int) ($reputation->published_review_count ?? 0),
+            'reviewCount' => (int) ($reputation?->published_review_count ?? 0),
             'completedJobs' => $profile->completed_jobs, 'responseMinutes' => $profile->response_minutes,
             'memberSince' => $profile->created_at?->toDateString(), 'verified' => $profile->credentials->isNotEmpty(),
             'services' => $profile->services, 'serviceAreas' => $profile->serviceAreas, 'availability' => $profile->relationLoaded('availability') ? $profile->availability : [],
+            'availabilityStatus' => $profile->relationLoaded('availability') && $profile->availability->contains('is_available', true) ? 'available' : 'unavailable',
             'offersAtShop' => $profile->offers_at_shop, 'shopName' => $profile->offers_at_shop ? $profile->shop_name : null,
             'shopAddress' => $profile->offers_at_shop ? $profile->shop_address : null,
             'shopLocation' => $profile->offers_at_shop && $profile->shop_latitude !== null ? ['latitude' => (float) $profile->shop_latitude, 'longitude' => (float) $profile->shop_longitude] : null,
+            'reviews' => JobReview::query()->where('subject_user_id', $profile->user_id)->whereNotNull('published_at')->latest('published_at')->limit(10)->get()->map(fn (JobReview $review) => ['id' => $review->id, 'rating' => $review->rating, 'comment' => $review->comment, 'publishedAt' => $review->published_at?->toDateString()]),
             'portfolio' => $profile->portfolio->map(fn (ProfileAsset $asset) => ['id' => $asset->id, 'caption' => $asset->caption, 'downloadPath' => "/api/v1/profile-assets/{$asset->id}"])];
     }
 }

@@ -22,6 +22,7 @@ use App\Http\Controllers\CommunityController;
 use App\Http\Controllers\ConversationController;
 use App\Http\Controllers\CurrentUserController;
 use App\Http\Controllers\DirectConversationController;
+use App\Http\Controllers\DirectServiceRequestController;
 use App\Http\Controllers\DurableNotificationController;
 use App\Http\Controllers\JobAreaController;
 use App\Http\Controllers\JobAssetController;
@@ -165,6 +166,7 @@ Route::middleware('auth')->group(function (): void {
     Route::delete('/me/account', [AccountDeletionController::class, 'destroy']);
     Route::get('/providers', [MarketplaceProfileController::class, 'discover']);
     Route::get('/providers/{providerProfile}', [MarketplaceProfileController::class, 'publicProfile']);
+    Route::post('/providers/{providerProfile}/direct-requests', [DirectServiceRequestController::class, 'store']);
     Route::get('/community', [CommunityController::class, 'index']);
     Route::get('/profile-assets/{profileAsset}', [ProfileAssetController::class, 'show']);
     Route::post('/auth/logout', [AuthenticatedSessionController::class, 'destroy']);
@@ -189,6 +191,8 @@ Route::middleware('auth')->group(function (): void {
     Route::get('/jobs/{serviceJob}', [ServiceJobController::class, 'show']);
     Route::put('/jobs/{serviceJob}', [ServiceJobController::class, 'update']);
     Route::post('/jobs/{serviceJob}/post', [ServiceJobController::class, 'post']);
+    Route::post('/jobs/{serviceJob}/direct-request/accept', [DirectServiceRequestController::class, 'accept']);
+    Route::post('/jobs/{serviceJob}/direct-request/decline', [DirectServiceRequestController::class, 'decline']);
     Route::post('/jobs/{serviceJob}/assets', [JobAssetController::class, 'store']);
     Route::get('/job-assets/{jobAsset}', [JobAssetController::class, 'show']);
     Route::delete('/job-assets/{jobAsset}', [JobAssetController::class, 'destroy']);

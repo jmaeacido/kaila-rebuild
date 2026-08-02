@@ -30,8 +30,11 @@ class ServiceJobController extends Controller
         $hiredJobIds = $provider
             ? AcceptedOfferSnapshot::query()->where('provider_profile_id', $provider->id)->pluck('service_job_id')
             : collect();
+        $directJobIds = $provider
+            ? ServiceJob::query()->where('direct_provider_profile_id', $provider->id)->pluck('id')
+            : collect();
         $jobs = ServiceJob::query()
-            ->where(fn ($query) => $query->where('client_user_id', $user->id)->orWhereIn('id', $hiredJobIds))
+            ->where(fn ($query) => $query->where('client_user_id', $user->id)->orWhereIn('id', $hiredJobIds)->orWhereIn('id', $directJobIds))
             ->latest()
             ->get();
 
@@ -148,6 +151,10 @@ class ServiceJobController extends Controller
             return null;
         }
 
+        if ($job->direct_provider_profile_id === $provider->id) {
+            return 'provider';
+        }
+
         return AcceptedOfferSnapshot::query()
             ->where('service_job_id', $job->id)
             ->where('provider_profile_id', $provider->id)
@@ -188,12 +195,12 @@ class ServiceJobController extends Controller
             ->where('service_job_id', $job->id)
             ->first();
 
-        if (! $snapshot) {
+        if (! $snapshot && $job->direct_provider_profile_id === null) {
             return null;
         }
 
         if ($job->client_user_id === $user->id) {
-            $profile = ProviderProfile::query()->findOrFail($snapshot->provider_profile_id);
+            $profile = ProviderProfile::query()->findOrFail($snapshot?->provider_profile_id ?? $job->direct_provider_profile_id);
             $counterpartUserId = $profile->user_id;
             $role = 'provider';
             $displayName = $profile->display_name;

@@ -242,7 +242,7 @@ export default function AuthenticatedHomePage() {
             </div>
             <Link href="/post-job">
               <Search aria-hidden="true" />
-              View all
+              Post a job
             </Link>
           </header>
           <div className={styles.categoryGrid}>
@@ -260,6 +260,7 @@ export default function AuthenticatedHomePage() {
               );
             })}
           </div>
+          <Link className={styles.primaryAction} href="/providers"><Search aria-hidden="true" />Find a specific provider<ArrowRight aria-hidden="true" /></Link>
         </section>
       )}
 

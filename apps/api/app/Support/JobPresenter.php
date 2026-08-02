@@ -69,6 +69,7 @@ class JobPresenter
             'serviceLocationMode' => $job->service_location_mode,
             'scheduledAt' => $job->scheduled_at?->toIso8601String(), 'budgetMinCentavos' => $job->budget_min_centavos,
             'budgetMaxCentavos' => $job->budget_max_centavos,
+            'directRequest' => $job->direct_provider_profile_id !== null,
             'approximateAddress' => $area->name,
             'approximateLocation' => $job->latitude !== null ? [
                 'latitude' => round((float) $job->latitude, 3),

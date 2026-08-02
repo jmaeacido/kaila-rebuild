@@ -100,7 +100,8 @@ class ConversationController extends Controller
         abort_unless($actor instanceof User, 401);
         $participants = $this->access->requireParticipant($serviceJob, $actor);
         abort_if($this->access->blocked($participants), 409, 'Messaging is unavailable because one participant blocked the other.');
-        abort_unless(in_array($serviceJob->status, ['provider_selected', 'provider_traveling', 'working', 'completion_submitted'], true), 409, 'Messaging is unavailable in this job state.');
+        $pendingDirectRequest = $serviceJob->direct_provider_profile_id !== null && in_array($serviceJob->status, ['posted', 'offers_received'], true);
+        abort_unless($pendingDirectRequest || in_array($serviceJob->status, ['provider_selected', 'provider_traveling', 'working', 'completion_submitted'], true), 409, 'Messaging is unavailable in this job state.');
         $message = DB::transaction(function () use ($serviceJob, $actor, $data, $participants) {
             $conversation = JobConversation::query()->firstOrCreate(['service_job_id' => $serviceJob->id], ['id' => (string) Str::uuid()]);
             $existing = ConversationMessage::query()->where('sender_user_id', $actor->id)->where('client_command_id', $data['commandId'])->first();

@@ -33,6 +33,8 @@ type Step = 1 | 2 | 3;
 type LocationStatus = "idle" | "locating" | "resolving" | "pinned" | "error";
 
 export default function PostJobPage() {
+  const [directProvider, setDirectProvider] = useState<{ id: number; displayName: string } | null>(null);
+  const [createdJobId, setCreatedJobId] = useState<string | null>(null);
   const [step, setStep] = useState<Step>(1);
   const [categories, setCategories] = useState<Category[]>([]);
   const [status, setStatus] = useState<"loading" | "ready" | "saving" | "success" | "error">(
@@ -72,11 +74,18 @@ export default function PostJobPage() {
         };
         setCategories(body.data.categories);
         const requestedCategory = new URLSearchParams(window.location.search).get("categoryId");
+        const requestedProvider = new URLSearchParams(window.location.search).get("providerId");
         if (
           requestedCategory &&
           body.data.categories.some((category) => String(category.id) === requestedCategory)
         ) {
           setForm((current) => ({ ...current, categoryId: requestedCategory }));
+        }
+        if (requestedProvider) {
+          const providerResponse = await fetch(`/api/v1/providers/${requestedProvider}`, { cache: "no-store" });
+          if (!providerResponse.ok) throw new Error();
+          const providerBody = (await providerResponse.json()) as { data: { id: number; displayName: string } };
+          setDirectProvider(providerBody.data);
         }
         setStatus("ready");
       })
@@ -205,13 +214,14 @@ export default function PostJobPage() {
       longitude: form.longitude ? Number(form.longitude) : null,
     };
     try {
-      const created = await fetch("/api/v1/jobs", {
+      const created = await fetch(directProvider ? `/api/v1/providers/${directProvider.id}/direct-requests` : "/api/v1/jobs", {
         method: "POST",
         headers: { "Content-Type": "application/json", "Idempotency-Key": createKey.current },
         body: JSON.stringify(payload),
       });
       if (!created.ok) throw new Error();
       const body = (await created.json()) as { data: { id: string } };
+      setCreatedJobId(body.data.id);
       for (const file of attachments) {
         const upload = new FormData();
         upload.set("file", file);
@@ -223,8 +233,10 @@ export default function PostJobPage() {
           throw new Error("ATTACHMENT_UPLOAD_FAILED");
         }
       }
-      const posted = await fetch(`/api/v1/jobs/${body.data.id}/post`, { method: "POST" });
-      if (!posted.ok) throw new Error();
+      if (!directProvider) {
+        const posted = await fetch(`/api/v1/jobs/${body.data.id}/post`, { method: "POST" });
+        if (!posted.ok) throw new Error();
+      }
       setStatus("success");
     } catch (error) {
       setStatus("error");
@@ -248,9 +260,9 @@ export default function PostJobPage() {
       <main className={styles.shell}>
         <section className={styles.success}>
           <CheckCircle2 aria-hidden="true" />
-          <h1>Your job is posted</h1>
-          <p>We’re alerting matching providers nearby.</p>
-          <Button onClick={() => location.assign("/home")}>Back to Home</Button>
+          <h1>{directProvider ? "Request sent" : "Your job is posted"}</h1>
+          <p>{directProvider ? `${directProvider.displayName} received your private request. Your conversation is ready.` : "We’re alerting matching providers nearby."}</p>
+          <Button onClick={() => location.assign(directProvider && createdJobId ? `/jobs/${createdJobId}/hired/conversation` : "/home")}>{directProvider ? "Open conversation" : "Back to Home"}</Button>
         </section>
       </main>
     );
@@ -273,8 +285,8 @@ export default function PostJobPage() {
         <section className={styles.card}>
           {step === 1 && (
             <>
-              <p className={styles.eyebrow}>Tell us what you need</p>
-              <h1>What can we help with?</h1>
+              <p className={styles.eyebrow}>{directProvider ? `Requesting ${directProvider.displayName}` : "Tell us what you need"}</p>
+              <h1>{directProvider ? "What service do you need?" : "What can we help with?"}</h1>
               <label>
                 Service
                 <CategorySelect
