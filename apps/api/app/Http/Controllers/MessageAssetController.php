@@ -9,6 +9,7 @@ use App\Models\MessageAsset;
 use App\Models\ServiceJob;
 use App\Models\User;
 use App\Support\HiredJobAccess;
+use App\Support\JobRealtimePublisher;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -18,7 +19,10 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class MessageAssetController extends Controller
 {
-    public function __construct(private readonly HiredJobAccess $access) {}
+    public function __construct(
+        private readonly HiredJobAccess $access,
+        private readonly JobRealtimePublisher $realtime,
+    ) {}
 
     public function store(Request $request, ConversationMessage $conversationMessage): JsonResponse
     {
@@ -33,7 +37,10 @@ class MessageAssetController extends Controller
         $id = (string) Str::uuid();
         $key = "messages/{$conversation->id}/$id";
         Storage::disk((string) config('filesystems.private_assets_disk'))->put($key, $file->getContent());
-        DB::table('message_assets')->insert(['id' => $id, 'message_id' => $conversationMessage->id, 'owner_user_id' => $actor->id, 'disk' => config('filesystems.private_assets_disk'), 'object_key' => $key, 'original_name' => $file->getClientOriginalName(), 'mime_type' => $file->getMimeType(), 'size_bytes' => $file->getSize(), 'scan_status' => 'pending', 'created_at' => now(), 'updated_at' => now()]);
+        DB::transaction(function () use ($id, $conversationMessage, $actor, $key, $file, $job): void {
+            DB::table('message_assets')->insert(['id' => $id, 'message_id' => $conversationMessage->id, 'owner_user_id' => $actor->id, 'disk' => config('filesystems.private_assets_disk'), 'object_key' => $key, 'original_name' => $file->getClientOriginalName(), 'mime_type' => $file->getMimeType(), 'size_bytes' => $file->getSize(), 'scan_status' => 'pending', 'created_at' => now(), 'updated_at' => now()]);
+            $this->realtime->record('message.asset.updated', $job, 'message_asset', $id, 1, ['scanStatus' => 'pending', 'messageId' => $conversationMessage->id]);
+        });
         ScanMessageAsset::dispatch($id);
 
         return response()->json(['data' => ['id' => $id, 'name' => $file->getClientOriginalName(), 'mimeType' => $file->getMimeType(), 'scanStatus' => 'pending']], 201);
@@ -55,7 +62,16 @@ class MessageAssetController extends Controller
     public function review(Request $request, MessageAsset $messageAsset): JsonResponse
     {
         $data = $request->validate(['scanStatus' => 'required|in:clean,rejected']);
-        $messageAsset->update(['scan_status' => $data['scanStatus']]);
+        DB::transaction(function () use ($messageAsset, $data): void {
+            $messageAsset->update(['scan_status' => $data['scanStatus']]);
+            $message = ConversationMessage::query()->findOrFail($messageAsset->message_id);
+            $conversation = JobConversation::query()->findOrFail($message->conversation_id);
+            $job = ServiceJob::query()->findOrFail($conversation->service_job_id);
+            $this->realtime->record('message.asset.updated', $job, 'message_asset', $messageAsset->id, 1, [
+                'scanStatus' => $messageAsset->scan_status,
+                'messageId' => $message->id,
+            ]);
+        });
 
         return response()->json(['data' => ['id' => $messageAsset->id, 'scanStatus' => $messageAsset->scan_status]]);
     }

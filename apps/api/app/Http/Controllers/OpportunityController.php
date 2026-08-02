@@ -10,14 +10,20 @@ use App\Models\ProviderProfile;
 use App\Models\ServiceJob;
 use App\Models\User;
 use App\Support\JobPresenter;
+use App\Support\OutboxRecorder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use RuntimeException;
 
 class OpportunityController
 {
-    public function __construct(private readonly JobPresenter $presenter, private readonly MapsProvider $maps) {}
+    public function __construct(
+        private readonly JobPresenter $presenter,
+        private readonly MapsProvider $maps,
+        private readonly OutboxRecorder $outbox,
+    ) {}
 
     public function index(Request $request): JsonResponse
     {
@@ -50,9 +56,18 @@ class OpportunityController
     public function decide(Request $request, JobOpportunity $opportunity): JsonResponse
     {
         $data = $request->validate(['decision' => ['required', Rule::in(['passed', 'dismissed'])]]);
-        $provider = ProviderProfile::query()->where('user_id', $this->user($request)->id)->first();
+        $user = $this->user($request);
+        $provider = ProviderProfile::query()->where('user_id', $user->id)->first();
         abort_unless($provider && $opportunity->provider_profile_id === $provider->id, 404);
-        $opportunity->update(['state' => $data['decision'], 'decided_at' => now()]);
+        DB::transaction(function () use ($opportunity, $data, $user): void {
+            $opportunity->update(['state' => $data['decision'], 'decided_at' => now()]);
+            $this->outbox->record('opportunity.updated', 'job_opportunity', (string) $opportunity->id, (int) now()->format('U'), [
+                'rooms' => ["user:{$user->id}"],
+                'jobId' => $opportunity->service_job_id,
+                'opportunityId' => $opportunity->id,
+                'state' => $opportunity->state,
+            ]);
+        });
 
         return response()->json(['data' => ['id' => $opportunity->id, 'state' => $opportunity->state]]);
     }

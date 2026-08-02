@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { jobDraftInputSchema } from "./marketplace-jobs.js";
 
-import { realtimeEventEnvelopeSchema } from "./realtime.js";
+import { marketplaceRealtimeEventTypeSchema, realtimeEventEnvelopeSchema } from "./realtime.js";
 
 describe("realtime event envelope", () => {
   it("rejects an invalid event identifier", () => {
@@ -16,6 +16,20 @@ describe("realtime event envelope", () => {
     });
 
     expect(result.success).toBe(false);
+  });
+
+  it("accepts the extended marketplace realtime event catalog", () => {
+    for (const type of [
+      "opportunity.updated",
+      "message.reacted",
+      "message.asset.updated",
+      "offer.rejected",
+      "notification.read",
+      "support.case.created",
+      "support.message.created",
+    ] as const) {
+      expect(marketplaceRealtimeEventTypeSchema.safeParse(type).success).toBe(true);
+    }
   });
 });
 

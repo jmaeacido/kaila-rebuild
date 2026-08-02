@@ -4,8 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\ProfileAsset;
 use App\Models\User;
+use App\Support\OutboxRecorder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -13,6 +15,8 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ProfileAssetController extends Controller
 {
+    public function __construct(private readonly OutboxRecorder $outbox) {}
+
     public function store(Request $request): JsonResponse
     {
         $data = $request->validate(['purpose' => ['required', Rule::in(['avatar', 'portfolio', 'credential'])], 'file' => ['required', 'file', 'mimes:jpg,jpeg,png,webp,pdf', 'max:10240'], 'caption' => ['nullable', 'string', 'max:180']]);
@@ -23,8 +27,18 @@ class ProfileAssetController extends Controller
         $extension = $file->guessExtension() ?: 'bin';
         $key = "profiles/{$user->id}/{$data['purpose']}/{$id}.{$extension}";
         Storage::disk($disk)->putFileAs(dirname($key), $file, basename($key));
-        $asset = ProfileAsset::query()->create(['id' => $id, 'user_id' => $user->id, 'purpose' => $data['purpose'], 'disk' => $disk, 'object_key' => $key,
-            'original_name' => $file->getClientOriginalName(), 'mime_type' => $file->getMimeType() ?? 'application/octet-stream', 'size_bytes' => $file->getSize(), 'scan_status' => 'pending', 'caption' => $data['caption'] ?? null]);
+        $asset = DB::transaction(function () use ($id, $user, $data, $disk, $key, $file): ProfileAsset {
+            $asset = ProfileAsset::query()->create(['id' => $id, 'user_id' => $user->id, 'purpose' => $data['purpose'], 'disk' => $disk, 'object_key' => $key,
+                'original_name' => $file->getClientOriginalName(), 'mime_type' => $file->getMimeType() ?? 'application/octet-stream', 'size_bytes' => $file->getSize(), 'scan_status' => 'pending', 'caption' => $data['caption'] ?? null]);
+            $this->outbox->record('profile.media.updated', 'profile_asset', $asset->id, 1, [
+                'rooms' => ["user:{$user->id}"],
+                'profileAssetId' => $asset->id,
+                'purpose' => $asset->purpose,
+                'scanStatus' => $asset->scan_status,
+            ]);
+
+            return $asset;
+        });
 
         return response()->json(['data' => $asset->only(['id', 'purpose', 'original_name', 'scan_status', 'caption'])], 201);
     }

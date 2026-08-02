@@ -88,6 +88,13 @@ class OfferService
             $locked->update(['status' => $outcome]);
             $recipient = $actor->id === $job->client_user_id ? $provider->user_id : $job->client_user_id;
             $this->notify($recipient, 'offer.'.$outcome, 'Offer '.($outcome === 'rejected' ? 'declined' : 'withdrawn'), 'The negotiation has closed.', $job, null);
+            $this->outbox->record(
+                $outcome === 'rejected' ? 'offer.rejected' : 'offer.withdrawn',
+                'offer_thread',
+                $locked->id,
+                $locked->latest_revision_number,
+                ['rooms' => ["user:{$job->client_user_id}", "user:{$provider->user_id}"], 'jobId' => $job->id, 'offerThreadId' => $locked->id, 'status' => $outcome],
+            );
 
             return $locked->refresh();
         });
@@ -120,11 +127,31 @@ class OfferService
                 $snapshot = AcceptedOfferSnapshot::query()->create(['service_job_id' => $locked->id, 'offer_thread_id' => $thread->id, 'offer_revision_id' => $revision->id, 'provider_profile_id' => $thread->provider_profile_id, 'service_location_mode' => $locked->service_location_mode, 'destination_label' => $destination[0], 'destination_latitude' => $destination[1], 'destination_longitude' => $destination[2], 'amount_centavos' => $revision->amount_centavos, 'availability_text' => $revision->availability_text, 'estimated_duration_text' => $revision->estimated_duration_text, 'scope' => $revision->scope, 'message' => $revision->message, 'accepted_at' => now()]);
                 $thread->update(['status' => 'accepted']);
                 OfferThread::query()->where('service_job_id', $locked->id)->whereKeyNot($thread->id)->where('status', 'active')->update(['status' => 'rejected']);
+                $dismissedProfileIds = JobOpportunity::query()
+                    ->where('service_job_id', $locked->id)
+                    ->where('provider_profile_id', '!=', $thread->provider_profile_id)
+                    ->pluck('provider_profile_id');
                 JobOpportunity::query()->where('service_job_id', $locked->id)->where('provider_profile_id', '!=', $thread->provider_profile_id)->update(['state' => 'dismissed', 'decided_at' => now()]);
                 $locked->update(['status' => 'provider_selected', 'version' => $locked->version + 1]);
                 $locked->timeline()->create(['id' => (string) Str::uuid(), 'actor_user_id' => $actor->id, 'event_type' => 'offer.selected', 'job_version' => $locked->version, 'metadata' => ['offerRevisionId' => $revision->id, 'providerProfileId' => $thread->provider_profile_id], 'occurred_at' => now()]);
                 $this->notify($provider->user_id, 'offer.selected', 'You were hired', 'The client selected your offer.', $locked, $revision);
-                $this->outbox->record('offer.selected', 'service_job', $locked->id, $locked->version, ['rooms' => ["user:{$actor->id}", "user:{$provider->user_id}"], 'jobId' => $locked->id, 'offerRevisionId' => $revision->id]);
+                $recipientUserIds = ProviderProfile::query()
+                    ->whereIn('id', $dismissedProfileIds)
+                    ->pluck('user_id')
+                    ->map(static fn (mixed $id): string => (string) $id)
+                    ->push((string) $actor->id)
+                    ->push((string) $provider->user_id)
+                    ->unique()
+                    ->values()
+                    ->all();
+                $this->outbox->record('offer.selected', 'service_job', $locked->id, $locked->version, [
+                    'recipientUserIds' => $recipientUserIds,
+                    'data' => ['jobId' => $locked->id, 'offerRevisionId' => $revision->id],
+                ]);
+                $this->outbox->record('job.state.changed', 'service_job', $locked->id, $locked->version, [
+                    'recipientUserIds' => $recipientUserIds,
+                    'data' => ['jobId' => $locked->id, 'status' => $locked->status, 'version' => $locked->version],
+                ]);
 
                 return $snapshot;
             });

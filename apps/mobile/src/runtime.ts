@@ -77,12 +77,18 @@ export async function initializeMobileRuntime(options: {
       options.navigate(path);
     }),
     await App.addListener("appStateChange", ({ isActive }) => {
-      if (isActive) void Network.getStatus().then(({ connected }) => options.onConnectivity(connected));
+      if (!isActive) return;
+      void Network.getStatus().then(({ connected }) => options.onConnectivity(connected));
+      window.dispatchEvent(new Event("kaila:realtime-reconcile"));
     }),
-    await Network.addListener("networkStatusChange", ({ connected }) => options.onConnectivity(connected)),
+    await Network.addListener("networkStatusChange", ({ connected }) => {
+      options.onConnectivity(connected);
+      if (connected) window.dispatchEvent(new Event("kaila:realtime-reconcile"));
+    }),
     await PushNotifications.addListener("pushNotificationActionPerformed", ({ notification }) => {
       const data = notification.data as Record<string, string | undefined>;
       options.navigate(notificationRoute(data));
+      window.dispatchEvent(new Event("kaila:realtime-reconcile"));
       if (data.type === "call" && data.callId) {
         dispatchNativeCall({
           callId: data.callId,
@@ -96,6 +102,7 @@ export async function initializeMobileRuntime(options: {
     }),
     await PushNotifications.addListener("pushNotificationReceived", ({ data }) => {
       const payload = data as Record<string, string | undefined>;
+      window.dispatchEvent(new Event("kaila:realtime-reconcile"));
       if (payload.type !== "call" || !payload.callId) return;
       if (payload.action === "cancel") {
         void IncomingCall.cancelIncoming().catch(() => undefined);

@@ -1,7 +1,7 @@
 /* eslint-disable @next/next/no-html-link-for-pages, @next/next/no-img-element */
 "use client";
 
-import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
+import { FormEvent, use, useCallback, useEffect, useRef, useState } from "react";
 import { ArrowLeft, ChevronLeft, ChevronRight, Clock3, ImageIcon, MapPin, PhilippinePeso, RotateCcw, ShieldCheck, Star, Video, X, ZoomIn, ZoomOut } from "lucide-react";
 import { Button, Feedback, TextField } from "@kaila/ui";
 import styles from "../../offers.module.css";
@@ -47,6 +47,7 @@ type Offer = {
 };
 
 export default function MakeOfferPage({ params }: { params: Promise<{ jobId: string }> }) {
+  const { jobId } = use(params);
   const [opportunity, setOpportunity] = useState<Opportunity | null>(null);
   const [offer, setOffer] = useState<Offer | null>(null);
   const [status, setStatus] = useState<"loading" | "idle" | "sending" | "success" | "error">("loading");
@@ -56,7 +57,6 @@ export default function MakeOfferPage({ params }: { params: Promise<{ jobId: str
 
   const load = useCallback(async () => {
     try {
-      const { jobId } = await params;
       const [opportunitiesResponse, offersResponse] = await Promise.all([
         fetch("/api/v1/opportunities", { cache: "no-store" }),
         fetch(`/api/v1/jobs/${jobId}/offers`, { cache: "no-store" }),
@@ -70,8 +70,8 @@ export default function MakeOfferPage({ params }: { params: Promise<{ jobId: str
     } catch {
       setStatus("error");
     }
-  }, [params]);
-  useRealtimeInvalidation(() => void load(), (event) => event.data.jobId === opportunity?.jobId);
+  }, [jobId]);
+  useRealtimeInvalidation(() => void load(), (event) => event.data.jobId === jobId);
 
   useEffect(() => {
     const initial = window.setTimeout(() => void load(), 0);
@@ -113,7 +113,6 @@ export default function MakeOfferPage({ params }: { params: Promise<{ jobId: str
     event.preventDefault();
     setStatus("sending");
     const data = new FormData(event.currentTarget);
-    const { jobId } = await params;
     const payload = {
       amountCentavos: Math.round(Number(data.get("amount")) * 100),
       availabilityText: data.get("availability"),

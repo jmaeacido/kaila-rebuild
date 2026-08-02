@@ -41,19 +41,19 @@ test("job matches use the shared non-blocking dialog copy", () => {
   });
 });
 
-test("turns every realtime domain event into visible feedback", () => {
-  assert.deepEqual(feedbackForDomainEvent({
+test("suppresses notification-backed domain events to avoid dual toasts", () => {
+  assert.equal(feedbackForDomainEvent({
     eventId: "event-2", type: "job.state.changed", occurredAt: new Date().toISOString(),
     resourceType: "service_job", resourceId: "job-1", version: 2,
     data: { jobId: "job-1" },
-  }), { title: "Job State Changed", body: "This update is now reflected in your job.", href: "/jobs/job-1", actionLabel: "View update" });
+  }), null);
 });
 
-test("shows internal realtime events without inventing a route", () => {
-  assert.deepEqual(feedbackForDomainEvent({
+test("suppresses silent domain events without inventing toast copy", () => {
+  assert.equal(feedbackForDomainEvent({
     eventId: "event-2", type: "job.updated", occurredAt: new Date().toISOString(),
     resourceType: "service_job", resourceId: "job-1", version: 2, data: {},
-  }), { title: "Job Updated", body: "This update is now reflected in your job.", href: undefined, actionLabel: undefined });
+  }), null);
 });
 
 test("suppresses call ringing feedback owned by CallProvider", () => {
@@ -98,6 +98,9 @@ test("realtime feedback advances a bounded non-blocking queue", () => {
 
 test("realtime starts with resilient polling and reconciles visible screens", () => {
   assert.match(realtime, /transports: \["polling", "websocket"\]/);
+  assert.match(realtime, /PUBLIC_PATHS/);
+  assert.match(realtime, /getRealtimeStatus/);
+  assert.match(invalidation, /getRealtimeStatus\(\) === "connected"/);
   assert.match(invalidation, /document\.visibilityState === "visible" && !realtimeConnected/);
   assert.match(invalidation, /10_000/);
 });
@@ -106,5 +109,6 @@ test("home reconciles quietly and ignores ephemeral travel or typing noise", () 
   assert.match(home, /load\(true\)/);
   assert.match(home, /if \(!quiet\) setStatus\("loading"\)/);
   assert.match(home, /isEphemeralRealtimeEvent\(event\.type\)/);
+  assert.match(home, /job_asset/);
   assert.doesNotMatch(home, /setPopupOpportunity/);
 });

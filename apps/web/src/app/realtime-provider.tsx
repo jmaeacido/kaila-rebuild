@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { usePathname } from "next/navigation";
 import { io, type Socket } from "socket.io-client";
 
 export type DomainEvent = {
@@ -20,24 +21,49 @@ export const realtimeAuthChangedName = "kaila:realtime-auth-changed";
 
 export type RealtimeStatus = "connecting" | "connected" | "disconnected";
 
+const PUBLIC_PATHS = new Set([
+  "/",
+  "/forgot-password",
+  "/login",
+  "/privacy",
+  "/register",
+  "/reset-password",
+  "/terms",
+  "/account-deletion",
+]);
+
+let latestRealtimeStatus: RealtimeStatus = "disconnected";
+
+export function getRealtimeStatus(): RealtimeStatus {
+  return latestRealtimeStatus;
+}
+
 type TicketResponse = { data: { ticket: string } };
 
 export function RealtimeProvider({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
   const seenEventIds = useRef(new Set<string>());
+  const isPublic = PUBLIC_PATHS.has(pathname);
 
   useEffect(() => {
+    const publishStatus = (status: RealtimeStatus) => {
+      latestRealtimeStatus = status;
+      window.dispatchEvent(
+        new CustomEvent<RealtimeStatus>(realtimeStatusName, { detail: status }),
+      );
+    };
+
+    if (isPublic) {
+      publishStatus("disconnected");
+      return;
+    }
+
     const realtimeUrl = process.env.NEXT_PUBLIC_REALTIME_URL || window.location.origin;
 
     let socket: Socket | null = null;
     let retryTimer: number | null = null;
     let retryAttempt = 0;
     let disposed = false;
-
-    const publishStatus = (status: RealtimeStatus) => {
-      window.dispatchEvent(
-        new CustomEvent<RealtimeStatus>(realtimeStatusName, { detail: status }),
-      );
-    };
 
     const disconnectCleanly = (target: Socket | null) => {
       if (!target) return;
@@ -133,7 +159,7 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
       disconnectCleanly(socket);
       publishStatus("disconnected");
     };
-  }, []);
+  }, [isPublic]);
 
   return children;
 }

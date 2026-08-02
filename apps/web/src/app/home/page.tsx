@@ -130,7 +130,7 @@ export default function AuthenticatedHomePage() {
     }
   }, []);
   useRealtimeInvalidation(() => void load(true), (event) =>
-    ["service_job", "offer_thread", "notification", "job_conversation", "travel_session"].includes(event.resourceType)
+    ["service_job", "offer_thread", "notification", "job_conversation", "travel_session", "job_asset", "job_opportunity", "message_asset"].includes(event.resourceType)
     && !isEphemeralRealtimeEvent(event.type),
   );
 

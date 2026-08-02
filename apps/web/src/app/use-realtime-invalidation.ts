@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import {
   domainEventName,
+  getRealtimeStatus,
   realtimeReconcileName,
   realtimeStatusName,
   type DomainEvent,
@@ -23,7 +24,7 @@ export function useRealtimeInvalidation(
 
   useEffect(() => {
     let pending: number | null = null;
-    let realtimeConnected = false;
+    let realtimeConnected = getRealtimeStatus() === "connected";
     const reconcile = () => {
       if (pending !== null) return;
       pending = window.setTimeout(() => {

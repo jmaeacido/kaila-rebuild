@@ -22,6 +22,46 @@ export type FeedbackMessage = {
 const ephemeralEventTypes = new Set([
   "conversation.typing.changed",
   "travel.location.changed",
+  "message.read",
+  "message.reacted",
+  "message.asset.updated",
+  "profile.media.updated",
+  "opportunity.updated",
+  "notification.read",
+  "notification.read_all",
+]);
+
+/** Domain mutations that also emit `notification.created` must not toast twice. */
+const notificationBackedEventTypes = new Set([
+  "job.posted",
+  "job.updated",
+  "job.draft_updated",
+  "job.media.updated",
+  "job.state.changed",
+  "opportunity.matched",
+  "offer.created",
+  "offer.revised",
+  "offer.selected",
+  "offer.rejected",
+  "offer.withdrawn",
+  "message.created",
+  "travel.started",
+  "travel.arrival.changed",
+  "travel.stopped",
+  "direct.conversation.requested",
+  "direct.conversation.accepted",
+  "direct.message.created",
+  "community.post.published",
+  "community.post.updated",
+  "profile.updated",
+  "support.case.created",
+  "support.message.created",
+  "support.case.updated",
+  "support.case.open",
+  "support.case.waiting_for_support",
+  "support.case.waiting_for_customer",
+  "support.case.resolved",
+  "support.case.closed",
 ]);
 
 export function isEphemeralRealtimeEvent(type: string): boolean {
@@ -32,6 +72,7 @@ export function feedbackForDomainEvent(event: DomainEvent): FeedbackMessage | nu
   if (isEphemeralRealtimeEvent(event.type)) return null;
   // Global CallProvider owns incoming/active call UX; avoid duplicate toasts.
   if (event.type === "call.ringing" || event.type === "call.status.changed") return null;
+  if (notificationBackedEventTypes.has(event.type)) return null;
 
   if (event.type === "notification.created") {
     const notification = event.data.notification;
@@ -39,6 +80,7 @@ export function feedbackForDomainEvent(event: DomainEvent): FeedbackMessage | nu
     const record = notification as RealtimeNotification;
     if (typeof record.title !== "string" || typeof record.body !== "string") return null;
     if (record.type.startsWith("call.") || record.data.type === "call") return null;
+    if (record.data.hideFromInbox === "1" || record.data.hideFromInbox === true) return null;
     const matched = record.type === "opportunity.matched";
     const jobId = typeof record.data.jobId === "string" ? record.data.jobId : String(record.resourceId);
     return {
@@ -52,15 +94,7 @@ export function feedbackForDomainEvent(event: DomainEvent): FeedbackMessage | nu
     };
   }
 
-  const jobId = typeof event.data.jobId === "string" ? event.data.jobId : null;
-  const href = jobId
-    ? event.type.startsWith("message.")
-      ? `/jobs/${jobId}/hired/conversation`
-      : `/jobs/${jobId}`
-    : undefined;
-  const title = event.type.split(".").map((part) => `${part.charAt(0).toUpperCase()}${part.slice(1)}`).join(" ");
-
-  return { title: title || "KAILA update", body: "This update is now reflected in your job.", href, actionLabel: href ? "View update" : undefined };
+  return null;
 }
 
 function realtimeNotificationRoute(notification: RealtimeNotification): string {

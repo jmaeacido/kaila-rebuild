@@ -11,7 +11,7 @@ type Opportunity = { id:number; jobId:string; state:string; title:string; descri
 export default function OpportunitiesPage() {
   const [items,setItems]=useState<Opportunity[]>([]); const [status,setStatus]=useState<"loading"|"ready"|"error">("loading");
   const load=useCallback(async()=>{try{const response=await fetch("/api/v1/opportunities",{cache:"no-store"});if(!response.ok)throw new Error();const body=await response.json() as {data:Opportunity[]};setItems(body.data);setStatus("ready");}catch{setStatus("error");}},[]);
-  useRealtimeInvalidation(()=>void load(),event=>["opportunity.matched","job.updated","job.media.updated","offer.created","offer.revised","offer.selected"].includes(event.type));
+  useRealtimeInvalidation(()=>void load(),event=>["opportunity.matched","opportunity.updated","job.updated","job.media.updated","job.state.changed","offer.created","offer.revised","offer.selected","offer.rejected","offer.withdrawn","notification.created"].includes(event.type));
   useEffect(()=>{const initial=window.setTimeout(()=>void load(),0);const reconcile=()=>void load();window.addEventListener("online",reconcile);return()=>{window.clearTimeout(initial);window.removeEventListener("online",reconcile);};},[load]);
   async function dismiss(id:number){const response=await fetch(`/api/v1/opportunities/${id}`,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({decision:"dismissed"})});if(response.ok)setItems(current=>current.filter(row=>row.id!==id));else setStatus("error");}
   return <main className={styles.shell}><header><div><p>Provider mode</p><h1>Opportunities</h1></div><Button variant="secondary" onClick={()=>void load()}><RefreshCw aria-hidden="true"/>Refresh</Button></header>

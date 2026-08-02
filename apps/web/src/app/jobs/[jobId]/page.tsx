@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
+import { FormEvent, use, useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -100,6 +100,7 @@ function localDateTime(value: string | null): string {
 }
 
 export default function JobDetailsPage({ params }: { params: Promise<{ jobId: string }> }) {
+  const { jobId } = use(params);
   const [job, setJob] = useState<Job | null>(null);
   const [categories, setCategories] = useState<Reference[]>([]);
   const [areas, setAreas] = useState<AreaReference[]>([]);
@@ -120,7 +121,6 @@ export default function JobDetailsPage({ params }: { params: Promise<{ jobId: st
   const load = useCallback(async () => {
     setStatus("loading");
     try {
-      const { jobId } = await params;
       const [jobResponse, referenceResponse] = await Promise.all([
         fetch(`/api/v1/jobs/${jobId}`, { cache: "no-store" }),
         fetch("/api/v1/marketplace/reference-data", { cache: "no-store" }),
@@ -136,10 +136,10 @@ export default function JobDetailsPage({ params }: { params: Promise<{ jobId: st
     } catch {
       setStatus("error");
     }
-  }, [params]);
+  }, [jobId]);
   useRealtimeInvalidation(() => void load(), (event) =>
-    (event.resourceType === "service_job" && event.resourceId === job?.id)
-    || event.data.jobId === job?.id,
+    (event.resourceType === "service_job" && event.resourceId === jobId)
+    || event.data.jobId === jobId,
   );
 
   useEffect(() => {

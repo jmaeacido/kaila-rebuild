@@ -85,6 +85,8 @@ class PhaseFourOffersTest extends TestCase
         $this->assertDatabaseHas('offer_threads', ['id' => $secondOffer->json('data.id'), 'status' => 'rejected']);
         $this->assertDatabaseHas('service_jobs', ['id' => $jobId, 'status' => 'provider_selected']);
         $this->assertDatabaseHas('durable_notifications', ['user_id' => $first->id, 'type' => 'offer.selected']);
+        $this->assertDatabaseHas('outbox_events', ['event_type' => 'offer.selected', 'resource_id' => $jobId]);
+        $this->assertDatabaseHas('outbox_events', ['event_type' => 'job.state.changed', 'resource_id' => $jobId]);
         $this->actingAs($first)
             ->getJson('/api/v1/jobs')
             ->assertOk()
@@ -112,6 +114,7 @@ class PhaseFourOffersTest extends TestCase
         $this->actingAs($client)->postJson("/api/v1/offers/$thread/withdraw")->assertNotFound();
         $this->actingAs($provider)->postJson("/api/v1/offers/$thread/decline")->assertNotFound();
         $this->postJson("/api/v1/offers/$thread/withdraw")->assertOk()->assertJsonPath('data.status', 'withdrawn');
+        $this->assertDatabaseHas('outbox_events', ['event_type' => 'offer.withdrawn', 'resource_id' => $thread]);
         $this->postJson("/api/v1/offers/$thread/revisions", $this->terms(80000))->assertConflict();
     }
 

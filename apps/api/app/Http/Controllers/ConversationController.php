@@ -126,10 +126,19 @@ class ConversationController extends Controller
         $data = $request->validate(['sequence' => 'required|integer|min:0']);
         $actor = $request->user();
         abort_unless($actor instanceof User, 401);
-        $this->access->requireParticipant($serviceJob, $actor);
+        $participants = $this->access->requireParticipant($serviceJob, $actor);
         $conversation = JobConversation::query()->where('service_job_id', $serviceJob->id)->firstOrFail();
         abort_if($data['sequence'] > $conversation->version, 422);
-        DB::table('conversation_reads')->upsert([['conversation_id' => $conversation->id, 'user_id' => $actor->id, 'last_read_sequence' => $data['sequence'], 'read_at' => now()]], ['conversation_id', 'user_id'], ['last_read_sequence', 'read_at']);
+        DB::transaction(function () use ($conversation, $actor, $data, $serviceJob, $participants): void {
+            DB::table('conversation_reads')->upsert([['conversation_id' => $conversation->id, 'user_id' => $actor->id, 'last_read_sequence' => $data['sequence'], 'read_at' => now()]], ['conversation_id', 'user_id'], ['last_read_sequence', 'read_at']);
+            $this->outbox->record('message.read', 'job_conversation', $conversation->id, (int) $data['sequence'], [
+                'rooms' => ["user:{$participants['clientId']}", "user:{$participants['providerId']}"],
+                'jobId' => $serviceJob->id,
+                'conversationId' => $conversation->id,
+                'readerUserId' => $actor->id,
+                'lastReadSequence' => $data['sequence'],
+            ]);
+        });
 
         return response()->json(['data' => ['lastReadSequence' => $data['sequence']]]);
     }
@@ -154,15 +163,28 @@ class ConversationController extends Controller
         abort_unless($actor instanceof User, 401);
         $conversation = JobConversation::query()->findOrFail($conversationMessage->conversation_id);
         $job = ServiceJob::query()->findOrFail($conversation->service_job_id);
-        $this->access->requireParticipant($job, $actor);
+        $participants = $this->access->requireParticipant($job, $actor);
         $key = ['message_id' => $conversationMessage->id, 'user_id' => $actor->id, 'reaction' => $data['reaction']];
-        $existing = DB::table('message_reactions')->where($key)->exists();
-        if ($existing) {
-            DB::table('message_reactions')->where($key)->delete();
-        } else {
-            DB::table('message_reactions')->insert($key + ['created_at' => now(), 'updated_at' => now()]);
-        }
+        $active = DB::transaction(function () use ($key, $job, $conversation, $conversationMessage, $actor, $data, $participants): bool {
+            $existing = DB::table('message_reactions')->where($key)->exists();
+            if ($existing) {
+                DB::table('message_reactions')->where($key)->delete();
+            } else {
+                DB::table('message_reactions')->insert($key + ['created_at' => now(), 'updated_at' => now()]);
+            }
+            $this->outbox->record('message.reacted', 'job_conversation', $conversation->id, (int) now()->format('U'), [
+                'rooms' => ["user:{$participants['clientId']}", "user:{$participants['providerId']}"],
+                'jobId' => $job->id,
+                'conversationId' => $conversation->id,
+                'messageId' => $conversationMessage->id,
+                'actorUserId' => $actor->id,
+                'reaction' => $data['reaction'],
+                'active' => ! $existing,
+            ]);
 
-        return response()->json(['data' => ['reaction' => $data['reaction'], 'active' => ! $existing]]);
+            return ! $existing;
+        });
+
+        return response()->json(['data' => ['reaction' => $data['reaction'], 'active' => $active]]);
     }
 }

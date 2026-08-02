@@ -36,6 +36,7 @@ class PhaseThreeJobsTest extends TestCase
         $this->assertDatabaseCount('job_opportunities', 1);
         $this->assertDatabaseHas('job_opportunities', ['provider_profile_id' => $eligible->id]);
         $this->assertDatabaseHas('durable_notifications', ['user_id' => $eligible->user_id, 'type' => 'opportunity.matched']);
+        $this->assertDatabaseHas('outbox_events', ['event_type' => 'opportunity.matched']);
         $this->assertDatabaseCount('job_timeline_events', 2);
     }
 

@@ -155,48 +155,52 @@ class CallController
         $data = $request->validate(['action' => 'required|in:answer,decline,end', 'reason' => 'nullable|in:declined,completed,busy,failed']);
         $actor = $this->user($request);
         abort_if($actor->id !== $callSession->caller_user_id && $actor->id !== $callSession->callee_user_id, 404);
-        if ($data['action'] === 'answer') {
-            abort_unless($actor->id === $callSession->callee_user_id, 409);
-            abort_unless(in_array($callSession->status, ['ringing', 'active'], true), 409);
-            if ($callSession->status === 'ringing') {
-                $callSession->update(['status' => 'active', 'answered_at' => now()]);
+        $updated = DB::transaction(function () use ($callSession, $actor, $data): CallSession {
+            $locked = CallSession::query()->lockForUpdate()->findOrFail($callSession->id);
+            if ($data['action'] === 'answer') {
+                abort_unless($actor->id === $locked->callee_user_id, 409);
+                abort_unless(in_array($locked->status, ['ringing', 'active'], true), 409);
+                if ($locked->status === 'ringing') {
+                    $locked->update(['status' => 'active', 'answered_at' => now()]);
+                }
+            } else {
+                abort_unless(in_array($locked->status, ['ringing', 'active'], true), 409);
+                $locked->update(['status' => $data['action'] === 'decline' ? 'declined' : 'ended', 'ended_at' => now(), 'ended_reason' => $data['reason'] ?? ($data['action'] === 'decline' ? 'declined' : 'completed')]);
             }
-        } else {
-            abort_unless(in_array($callSession->status, ['ringing', 'active'], true), 409);
-            $callSession->update(['status' => $data['action'] === 'decline' ? 'declined' : 'ended', 'ended_at' => now(), 'ended_reason' => $data['reason'] ?? ($data['action'] === 'decline' ? 'declined' : 'completed')]);
-        }
-        DB::transaction(function () use ($callSession) {
-            $this->outbox->record('call.status.changed', 'call_session', $callSession->id, now()->getTimestamp(), [
-                'rooms' => ["user:{$callSession->caller_user_id}", "user:{$callSession->callee_user_id}"],
-                'callId' => $callSession->id,
-                'status' => $callSession->status,
-                'contextType' => $callSession->context_type,
-                'contextId' => $callSession->context_id,
-                'media' => $callSession->media,
+            $locked->refresh();
+            $this->outbox->record('call.status.changed', 'call_session', $locked->id, now()->getTimestamp(), [
+                'rooms' => ["user:{$locked->caller_user_id}", "user:{$locked->callee_user_id}"],
+                'callId' => $locked->id,
+                'status' => $locked->status,
+                'contextType' => $locked->context_type,
+                'contextId' => $locked->context_id,
+                'media' => $locked->media,
             ]);
             // Ephemeral cancel pushes clear native ringing UI without inbox clutter.
-            foreach ([$callSession->caller_user_id, $callSession->callee_user_id] as $userId) {
+            foreach ([$locked->caller_user_id, $locked->callee_user_id] as $userId) {
                 $this->notifications->send(
                     $userId,
                     'call.status.changed',
                     'Call update',
                     'The call status changed.',
                     'call_session',
-                    $callSession->id,
+                    $locked->id,
                     [
-                        'callId' => $callSession->id,
-                        'contextType' => $callSession->context_type,
-                        'contextId' => $callSession->context_id,
-                        'media' => $callSession->media,
-                        'status' => $callSession->status,
+                        'callId' => $locked->id,
+                        'contextType' => $locked->context_type,
+                        'contextId' => $locked->context_id,
+                        'media' => $locked->media,
+                        'status' => $locked->status,
                         'action' => 'cancel',
                         'hideFromInbox' => '1',
                     ],
                 );
             }
+
+            return $locked;
         });
 
-        return response()->json(['data' => $callSession]);
+        return response()->json(['data' => $updated]);
     }
 
     private function callee(string $contextType, string $contextId, User $actor): int

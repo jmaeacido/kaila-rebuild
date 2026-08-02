@@ -107,6 +107,7 @@
 .messageReactions button:hover,.messageReactions .reacted{border-color:var(--color-primary)}
 .messageReactions span{margin-left:2px}
 .chatEmpty,.chatLoading{align-items:center;color:var(--color-text-secondary);display:flex;flex-direction:column;gap:var(--spacing-8);margin:auto;text-align:center}
+.typingIndicator{color:var(--color-text-secondary);font-size:var(--font-caption-size);margin:0;padding-inline:var(--spacing-8)}
 .chatEmpty svg{color:var(--color-primary);height:var(--spacing-48);width:var(--spacing-48)}
 .chatEmpty h2{color:var(--color-ink)}
 .chatLoading svg{animation:spin 1s linear infinite}

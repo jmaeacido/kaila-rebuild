@@ -10,7 +10,10 @@ use Illuminate\Support\Facades\DB;
 
 class OpportunityMatchingService
 {
-    public function __construct(private readonly NotificationService $notifications) {}
+    public function __construct(
+        private readonly NotificationService $notifications,
+        private readonly OutboxRecorder $outbox,
+    ) {}
 
     public function matchJob(ServiceJob $job, int $excludedUserId): void
     {
@@ -30,7 +33,11 @@ class OpportunityMatchingService
             })->select(['id', 'user_id'])->orderBy('id')->get();
 
         foreach ($providers as $provider) {
-            $this->createOpportunity($job, $provider);
+            if (DB::transactionLevel() < 1) {
+                DB::transaction(fn () => $this->createOpportunity($job, $provider));
+            } else {
+                $this->createOpportunity($job, $provider);
+            }
         }
     }
 
@@ -91,6 +98,13 @@ class OpportunityMatchingService
         }
 
         $this->notifications->send($provider->user_id, 'opportunity.matched', 'New job near you', $job->title, 'service_job', $job->id, [
+            'jobId' => $job->id,
+            'opportunityId' => $opportunity->id,
+            'areaId' => $job->area_id,
+            'categoryId' => $job->service_category_id,
+        ]);
+        $this->outbox->record('opportunity.matched', 'job_opportunity', $opportunity->id, 1, [
+            'rooms' => ["user:{$provider->user_id}"],
             'jobId' => $job->id,
             'opportunityId' => $opportunity->id,
             'areaId' => $job->area_id,

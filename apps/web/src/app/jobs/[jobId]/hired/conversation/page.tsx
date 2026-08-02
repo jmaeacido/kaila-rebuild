@@ -21,6 +21,8 @@ import {
 import styles from "../hired.module.css";
 import { AttachmentSourceActions } from "../../../../../components/attachment-picker";
 import { useCall } from "../../../../calls/call-provider";
+import { domainEventName, type DomainEvent } from "../../../../realtime-provider";
+import { isEphemeralRealtimeEvent } from "../../../../notification-feedback";
 import { useRealtimeInvalidation } from "../../../../use-realtime-invalidation";
 import { MediaViewer, type ViewableMedia } from "../../../../../components/media-viewer";
 
@@ -85,7 +87,11 @@ export default function ConversationPage({ params }: { params: Promise<{ jobId: 
   const [showAttach, setShowAttach] = useState(false);
   const [reactionPicker, setReactionPicker] = useState<{ messageId: string; vertical: "above" | "below"; horizontal: "left" | "right" } | null>(null);
   const [selectedMediaId, setSelectedMediaId] = useState<string | null>(null);
+  const [peerTyping, setPeerTyping] = useState(false);
   const end = useRef<HTMLDivElement>(null);
+  const typingIdle = useRef<number | null>(null);
+  const typingActive = useRef(false);
+  const peerTypingIdle = useRef<number | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -98,7 +104,10 @@ export default function ConversationPage({ params }: { params: Promise<{ jobId: 
       setState("error");
     }
   }, [jobId]);
-  useRealtimeInvalidation(() => void load(), (event) => event.data.jobId === jobId || event.data.contextId === jobId);
+  useRealtimeInvalidation(() => void load(), (event) =>
+    !isEphemeralRealtimeEvent(event.type)
+    && (event.data.jobId === jobId || event.data.contextId === jobId),
+  );
 
   useEffect(() => {
     const initial = window.setTimeout(() => void load(), 0);
@@ -106,6 +115,59 @@ export default function ConversationPage({ params }: { params: Promise<{ jobId: 
       window.clearTimeout(initial);
     };
   }, [load]);
+
+  useEffect(() => {
+    const onDomainEvent = (event: Event) => {
+      const detail = (event as CustomEvent<DomainEvent>).detail;
+      if (!detail || detail.type !== "conversation.typing.changed" || detail.data.jobId !== jobId) return;
+      if (detail.data.actorUserId === conversation?.viewerUserId) return;
+      const active = detail.data.active === true;
+      setPeerTyping(active);
+      if (peerTypingIdle.current !== null) window.clearTimeout(peerTypingIdle.current);
+      if (active) {
+        peerTypingIdle.current = window.setTimeout(() => setPeerTyping(false), 4_000);
+      }
+    };
+    window.addEventListener(domainEventName, onDomainEvent);
+    return () => {
+      window.removeEventListener(domainEventName, onDomainEvent);
+      if (peerTypingIdle.current !== null) window.clearTimeout(peerTypingIdle.current);
+    };
+  }, [conversation?.viewerUserId, jobId]);
+
+  async function publishTyping(active: boolean) {
+    if (typingActive.current === active) return;
+    typingActive.current = active;
+    try {
+      await fetch(`/api/v1/jobs/${jobId}/conversation/typing`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ active }),
+      });
+    } catch {
+      typingActive.current = !active;
+    }
+  }
+
+  function onComposerChange(value: string) {
+    setText(value);
+    void publishTyping(true);
+    if (typingIdle.current !== null) window.clearTimeout(typingIdle.current);
+    typingIdle.current = window.setTimeout(() => {
+      void publishTyping(false);
+    }, 1_500);
+  }
+
+  useEffect(() => () => {
+    if (typingIdle.current !== null) window.clearTimeout(typingIdle.current);
+    if (!typingActive.current) return;
+    typingActive.current = false;
+    void fetch(`/api/v1/jobs/${jobId}/conversation/typing`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ active: false }),
+    }).catch(() => undefined);
+  }, [jobId]);
 
   async function send(event: FormEvent) {
     event.preventDefault();
@@ -131,6 +193,8 @@ export default function ConversationPage({ params }: { params: Promise<{ jobId: 
     }
     setText("");
     setState("ready");
+    if (typingIdle.current !== null) window.clearTimeout(typingIdle.current);
+    void publishTyping(false);
     await load();
   }
 
@@ -242,6 +306,7 @@ export default function ConversationPage({ params }: { params: Promise<{ jobId: 
               </article>
             );
           })}
+          {peerTyping && <p className={styles.typingIndicator} aria-live="polite">{otherName} is typing…</p>}
           <div ref={end} />
         </section>
 
@@ -274,7 +339,7 @@ export default function ConversationPage({ params }: { params: Promise<{ jobId: 
               <Plus />
             </button>
             <button type="button" onClick={() => { setShowEmoji((shown) => !shown); setShowAttach(false); }} aria-label="Add emoji"><Smile /></button>
-            <input value={text} maxLength={12000} onChange={(event) => setText(event.target.value)} placeholder="Message" aria-label="Message" />
+            <input value={text} maxLength={12000} onChange={(event) => onComposerChange(event.target.value)} placeholder="Message" aria-label="Message" />
             <button className={styles.sendButton} type="submit" disabled={state === "sending" || (!text.trim() && !file)} aria-label="Send message"><Send /></button>
           </div>
         </form>
