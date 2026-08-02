@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, Suspense, useEffect, useState } from "react";
-import Image from "next/image";
+import { BrandMark } from "../../components/brand-mark";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -145,13 +145,7 @@ function RegisterForm() {
     <main className={styles.page}>
       <aside className={styles.brandPanel}>
         <div>
-          <Image
-            src="/brand/kaila-wordmark.png"
-            alt="KAILA"
-            width={1102}
-            height={248}
-            priority
-          />
+          <BrandMark className={styles.brandLogo} variant="onDark" priority />
           <h2>One account. Two ways to get things done.</h2>
           <p>
             Find trusted help as a client or turn your skills into nearby work
@@ -163,13 +157,7 @@ function RegisterForm() {
         <div className={styles.card}>
           <header className={styles.cardHeader}>
             <Link href="/" aria-label="Back to KAILA home">
-              <Image
-                src="/brand/kaila-wordmark.png"
-                alt="KAILA"
-                width={1102}
-                height={248}
-                priority
-              />
+              <BrandMark className={styles.brandLogo} priority />
             </Link>
             <h1>Create your KAILA account</h1>
             <p>Choose how you want to begin. You can switch modes later.</p>

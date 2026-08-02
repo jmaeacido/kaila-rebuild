@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorPrimary">#3B82FF</color>
+    <color name="colorPrimaryDark">#1463FF</color>
+    <color name="colorAccent">#4EC8FF</color>
+    <color name="kailaBackground">#0C1524</color>
+</resources>

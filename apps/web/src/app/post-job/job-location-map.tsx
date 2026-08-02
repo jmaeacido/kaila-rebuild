@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { Map as MapIcon, Satellite } from "lucide-react";
 import { Map as MapLibreMap, Marker, type StyleSpecification } from "maplibre-gl";
 import { addMissingStyleImageFallback } from "../../lib/maplibre-style-images";
+import { mapStyleForTheme } from "../../lib/map-theme";
+import { useTheme } from "../theme-provider";
 import styles from "./page.module.css";
 
 export type JobLocation = {
@@ -13,7 +15,6 @@ export type JobLocation = {
 
 const defaultCenter: JobLocation = { latitude: 8.826, longitude: 125.117 };
 const maplibreStylesheetUrl = "https://unpkg.com/maplibre-gl@5.12.0/dist/maplibre-gl.css";
-const streetStyle = "https://tiles.openfreemap.org/styles/liberty";
 const satelliteStyle: StyleSpecification = {
   version: 8,
   sources: {
@@ -38,17 +39,20 @@ export function JobLocationMap({
   location: JobLocation | null;
   onChange: (location: JobLocation) => void;
 }) {
+  const { resolved } = useTheme();
   const container = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const markerRef = useRef<Marker | null>(null);
   const onChangeRef = useRef(onChange);
   const initialLocation = useRef(location);
+  const layerRef = useRef<MapLayer>("map");
   const [layer, setLayer] = useState<MapLayer>("map");
 
   function changeLayer(nextLayer: MapLayer) {
     if (nextLayer === layer) return;
     setLayer(nextLayer);
-    mapRef.current?.setStyle(nextLayer === "satellite" ? satelliteStyle : streetStyle);
+    layerRef.current = nextLayer;
+    mapRef.current?.setStyle(nextLayer === "satellite" ? satelliteStyle : mapStyleForTheme(resolved));
   }
 
   useEffect(() => {
@@ -71,7 +75,7 @@ export function JobLocationMap({
     const center = initialLocation.current ?? defaultCenter;
     const map = new MapLibreMap({
       container: container.current,
-      style: streetStyle,
+      style: mapStyleForTheme(resolved),
       center: [center.longitude, center.latitude],
       zoom: initialLocation.current ? 16 : 12,
     });
@@ -87,7 +91,14 @@ export function JobLocationMap({
       mapRef.current = null;
       map.remove();
     };
+    // Initial map only — theme updates handled below.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (layerRef.current !== "map") return;
+    mapRef.current?.setStyle(mapStyleForTheme(resolved));
+  }, [resolved]);
 
   useEffect(() => {
     const map = mapRef.current;

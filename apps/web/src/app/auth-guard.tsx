@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import { BrandMark } from "../components/brand-mark";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Home, LogOut } from "lucide-react";
@@ -12,6 +13,8 @@ import { CallProvider } from "./calls/call-provider";
 import { NotificationBell } from "./notification-bell";
 import { PullToRefresh } from "./pull-to-refresh";
 import { realtimeAuthChangedName } from "./realtime-provider";
+import { useTheme } from "./theme-provider";
+import { isThemePreference } from "./theme";
 
 const PUBLIC_PATHS = new Set([
   "/",
@@ -27,6 +30,7 @@ const PUBLIC_PATHS = new Set([
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  const { applyAccountTheme } = useTheme();
   const [allowedPath, setAllowedPath] = useState<string | null>(null);
   const [userName, setUserName] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -70,10 +74,13 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
           throw new Error("Current user request failed.");
         }
         const userBody = (await userResponse.json()) as {
-          data: { name: string; avatarUrl: string | null };
+          data: { name: string; avatarUrl: string | null; appearanceTheme?: string };
         };
         setUserName(userBody.data.name);
         setAvatarUrl(userBody.data.avatarUrl);
+        if (isThemePreference(userBody.data.appearanceTheme)) {
+          applyAccountTheme(userBody.data.appearanceTheme);
+        }
         setAllowedPath(pathname);
       })
       .catch(() => {
@@ -85,7 +92,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     return () => {
       active = false;
     };
-  }, [isPublic, pathname, router]);
+  }, [applyAccountTheme, isPublic, pathname, router]);
 
   if (isPublic) {
     return children;
@@ -127,14 +134,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
       <PullToRefresh />
       <header className="appSessionBar">
         <Link href="/home" aria-label="KAILA home" prefetch={false}>
-          <Image
-            className="sessionLogo"
-            src="/brand/kaila-wordmark.png"
-            alt="KAILA"
-            width={1102}
-            height={248}
-            priority
-          />
+          <BrandMark className="sessionLogo" priority />
         </Link>
         <div>
           <Link

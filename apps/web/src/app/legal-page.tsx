@@ -1,4 +1,4 @@
-import Image from "next/image";
+import { BrandMark } from "../components/brand-mark";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import styles from "./legal-page.module.css";
@@ -28,13 +28,7 @@ export function LegalPage({
       <div className={styles.shell}>
         <nav className={styles.topbar} aria-label="Legal page navigation">
           <Link className={styles.brand} href="/" aria-label="KAILA home">
-            <Image
-              src="/brand/kaila-wordmark.png"
-              alt="KAILA"
-              width={1102}
-              height={248}
-              priority
-            />
+            <BrandMark priority />
           </Link>
           <Link className={styles.back} href="/">
             <ArrowLeft aria-hidden="true" />

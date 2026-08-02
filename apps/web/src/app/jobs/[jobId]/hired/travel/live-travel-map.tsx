@@ -4,6 +4,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { LngLatBounds, Map, Marker, type GeoJSONSource } from "maplibre-gl";
 import { LocateFixed, Minus, Plus } from "lucide-react";
 import { addMissingStyleImageFallback } from "../../../../../lib/maplibre-style-images";
+import { mapStyleForTheme } from "../../../../../lib/map-theme";
+import { useTheme } from "../../../../theme-provider";
 import styles from "../hired.module.css";
 
 type Point = { latitude: number; longitude: number };
@@ -23,6 +25,7 @@ function routeData(route: Point[]) {
 }
 
 export function LiveTravelMap({ location, destination, route, heading, navigationMode, travelerLabel, destinationLabel }: Props) {
+  const { resolved } = useTheme();
   const container = useRef<HTMLDivElement>(null);
   const mapRef = useRef<Map | null>(null);
   const providerMarker = useRef<Marker | null>(null);
@@ -50,7 +53,7 @@ export function LiveTravelMap({ location, destination, route, heading, navigatio
     try {
       const map = new Map({
         container: container.current,
-        style: "https://tiles.openfreemap.org/styles/liberty",
+        style: mapStyleForTheme(resolved),
         center: [center.longitude, center.latitude],
         zoom: 15,
         attributionControl: {},
@@ -77,7 +80,29 @@ export function LiveTravelMap({ location, destination, route, heading, navigatio
     } catch {
       queueMicrotask(() => setFailed(true));
     }
+    // Theme style swaps are handled separately so the map instance stays alive.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [destination, location, route]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const reapplyOverlays = () => {
+      if (map.getSource("job-route")) {
+        (map.getSource("job-route") as GeoJSONSource).setData(routeData(route ?? []));
+      } else {
+        map.addSource("job-route", { type: "geojson", data: routeData(route ?? []) });
+      }
+      const primary = getComputedStyle(document.documentElement).getPropertyValue("--color-primary").trim();
+      const surface = getComputedStyle(document.documentElement).getPropertyValue("--color-surface").trim();
+      if (map.getLayer("job-route")) map.removeLayer("job-route");
+      if (map.getLayer("job-route-casing")) map.removeLayer("job-route-casing");
+      map.addLayer({ id: "job-route-casing", type: "line", source: "job-route", paint: { "line-color": surface, "line-width": 9, "line-opacity": 0.9 } });
+      map.addLayer({ id: "job-route", type: "line", source: "job-route", paint: { "line-color": primary, "line-width": 6, "line-opacity": 0.95 } });
+    };
+    map.setStyle(mapStyleForTheme(resolved));
+    map.once("style.load", reapplyOverlays);
+  }, [resolved, route]);
 
   useEffect(() => {
     const map = mapRef.current;

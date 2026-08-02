@@ -33,6 +33,9 @@ class CurrentUserResource extends JsonResource
             'email' => $this->resource->email,
             'modes' => ['client', 'provider'],
             'activeMode' => $this->resource->active_mode,
+            'appearanceTheme' => in_array((string) ($this->resource->appearance_theme ?: 'system'), ['light', 'dark', 'system'], true)
+                ? (string) ($this->resource->appearance_theme ?: 'system')
+                : 'system',
             'providerEligible' => $providerEligible,
             'avatarUrl' => $avatar ? "/api/v1/profile-assets/{$avatar->getKey()}" : null,
             'reputation' => [

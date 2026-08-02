@@ -19,7 +19,7 @@ import {
   Wrench,
 } from "lucide-react";
 import { Button, Feedback } from "@kaila/ui";
-import Image from "next/image";
+import { BrandMark } from "../components/brand-mark";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signedInHome, SignedInUser } from "./auth-client";
@@ -141,14 +141,7 @@ export default function HomePage() {
     <main className={styles.page}>
       <header className={styles.topbar}>
         <Link className={styles.brand} href="/" aria-label="KAILA home">
-          <Image
-            className={styles.brandLogo}
-            src="/brand/kaila-wordmark.png"
-            alt="KAILA"
-            width={1102}
-            height={248}
-            priority
-          />
+          <BrandMark className={styles.brandLogo} priority />
         </Link>
         <nav className={styles.primaryNav} aria-label="Main navigation">
           <a href="#find-help">Find help</a>
@@ -455,13 +448,7 @@ export default function HomePage() {
 
       <footer className={styles.footer}>
         <Link className={styles.brand} href="/">
-          <Image
-            className={styles.brandLogo}
-            src="/brand/kaila-wordmark.png"
-            alt="KAILA"
-            width={1102}
-            height={248}
-          />
+          <BrandMark className={styles.brandLogo} />
         </Link>
         <p>Nearby help, made simple.</p>
         <nav aria-label="Footer navigation">

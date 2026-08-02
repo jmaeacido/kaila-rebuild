@@ -11,14 +11,19 @@ import {
   LockKeyhole,
   LogOut,
   MessageCircle,
+  Monitor,
+  Moon,
   ShieldCheck,
   Smartphone,
+  Sun,
   Trash2,
 } from "lucide-react";
 import { Button, Feedback } from "@kaila/ui";
 import { prepareCsrf } from "../auth-client";
 import styles from "../account/account.module.css";
 import settingsStyles from "./settings.module.css";
+import { useTheme } from "../theme-provider";
+import type { ThemePreference } from "../theme";
 
 type Preferences = {
   muteMessages: boolean;
@@ -37,6 +42,7 @@ type Session = {
 
 export default function SettingsPage() {
   const router = useRouter();
+  const { preference, setPreference, syncStatus } = useTheme();
   const [preferences, setPreferences] = useState<Preferences | null>(null);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [status, setStatus] = useState<
@@ -171,7 +177,7 @@ export default function SettingsPage() {
         <div>
           <p className={styles.eyebrow}>PREFERENCES AND SECURITY</p>
           <h1>Settings</h1>
-          <p>Control routine alerts and review where your account is signed in.</p>
+          <p>Control appearance, routine alerts, and where your account is signed in.</p>
         </div>
         <Link href="/account">
           <ArrowLeft aria-hidden="true" />
@@ -187,6 +193,48 @@ export default function SettingsPage() {
           {notice}
         </Feedback>
       )}
+
+      <section className={`${styles.card} ${settingsStyles.preferences}`} aria-label="Appearance">
+        <div className={settingsStyles.sectionTitle}>
+          <div>
+            <p className={styles.eyebrow}>APPEARANCE</p>
+            <h2>Light, dark, or system</h2>
+          </div>
+          <Monitor aria-hidden="true" />
+        </div>
+        <p className={settingsStyles.appearanceHint}>
+          Your choice syncs with your KAILA account on every device you sign in to.
+        </p>
+        <div className={settingsStyles.themeOptions} role="radiogroup" aria-label="Theme">
+          {([
+            { id: "light", label: "Light", icon: Sun },
+            { id: "dark", label: "Dark", icon: Moon },
+            { id: "system", label: "System", icon: Monitor },
+          ] as const).map((option) => {
+            const Icon = option.icon;
+            const selected = preference === option.id;
+            return (
+              <button
+                key={option.id}
+                type="button"
+                role="radio"
+                aria-checked={selected}
+                className={selected ? settingsStyles.themeOptionActive : settingsStyles.themeOption}
+                onClick={() => void setPreference(option.id as ThemePreference)}
+              >
+                <Icon aria-hidden="true" />
+                <span>{option.label}</span>
+              </button>
+            );
+          })}
+        </div>
+        {syncStatus === "saving" && <p className={settingsStyles.appearanceStatus}>Saving to your account…</p>}
+        {syncStatus === "error" && (
+          <p className={settingsStyles.appearanceStatusError}>
+            Couldn’t save appearance. Your selection stays on this device until sync succeeds.
+          </p>
+        )}
+      </section>
 
       <section className={`${styles.card} ${settingsStyles.preferences}`}>
         <div className={settingsStyles.sectionTitle}>

@@ -20,7 +20,7 @@
 }
 
 .media > video:first-child {
-  background: #000;
+  background: var(--color-call-backdrop);
   border-radius: var(--radius-card);
   height: 100%;
   object-fit: cover;

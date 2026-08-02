@@ -349,6 +349,25 @@ Design dark mode independently; do not mechanically invert light mode.
 - Preserve visual hierarchy and brand recognition.
 - Recheck contrast, elevation, maps, imagery, and semantic states in the dark theme.
 
+### Appearance preference
+
+Users choose **Light**, **Dark**, or **System** in Settings. The preference is stored on the account (`appearance_theme`) and applied on every signed-in device. The document root receives `data-theme="light"` or `data-theme="dark"` (System resolves from the OS).
+
+### Dark token summary
+
+| Token | Dark value |
+| --- | --- |
+| `--color-background` | `#0c1524` |
+| `--color-surface` | `#152033` |
+| `--color-ink` | `#f4f7fb` |
+| `--color-text` | `#d7dee8` |
+| `--color-text-secondary` | `#9aa8bc` |
+| `--color-border` | `#2a3a51` |
+| `--color-primary` | `#3b82ff` |
+| `--color-accent` | `#4ec8ff` |
+
+Brand wordmarks switch between ink and on-dark assets. Maps use OpenFreeMap liberty (light) and dark styles.
+
 ## 26. Accessibility
 
 - Maintain a minimum `44px` touch target.

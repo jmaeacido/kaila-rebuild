@@ -1,6 +1,5 @@
-import Image from "next/image";
-import Link from "next/link";
 import { CheckCircle2 } from "lucide-react";
+import { BrandMark } from "../components/brand-mark";
 import styles from "./auth.module.css";
 
 export function AuthFrame({
@@ -16,13 +15,7 @@ export function AuthFrame({
     <main className={styles.page}>
       <aside className={styles.brandPanel}>
         <div>
-          <Image
-            src="/brand/kaila-wordmark.png"
-            alt="KAILA"
-            width={1102}
-            height={248}
-            priority
-          />
+          <BrandMark className={styles.brandLogo} variant="onDark" priority />
           <h2>Local work starts with trust.</h2>
           <p>
             One secure account for clients finding help and providers growing
@@ -38,15 +31,7 @@ export function AuthFrame({
       <section className={styles.formSide}>
         <div className={styles.card}>
           <header className={styles.cardHeader}>
-            <Link href="/" aria-label="Back to KAILA home" prefetch={false}>
-              <Image
-                src="/brand/kaila-wordmark.png"
-                alt="KAILA"
-                width={1102}
-                height={248}
-                priority
-              />
-            </Link>
+            <BrandMark className={styles.brandLogo} priority />
             <h1>{title}</h1>
             <p>{description}</p>
           </header>

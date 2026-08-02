@@ -20,6 +20,7 @@ use Illuminate\Notifications\Notifiable;
     'privacy_accepted_version',
     'provider_intent',
     'active_mode',
+    'appearance_theme',
     'is_admin',
     'role',
     'area',

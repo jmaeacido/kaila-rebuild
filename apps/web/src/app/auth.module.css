@@ -24,11 +24,12 @@
 }
 
 .brandPanel img,
-.cardHeader img {
-  background: var(--color-on-primary);
-  border-radius: var(--radius-input);
+.cardHeader img,
+.brandLogo {
+  background: transparent;
+  border-radius: 0;
   height: auto;
-  padding: var(--spacing-4) var(--spacing-8);
+  padding: 0;
   width: 8rem;
 }
 

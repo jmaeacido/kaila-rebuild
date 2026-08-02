@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AccountDeletionController;
+use App\Http\Controllers\AppearanceController;
 use App\Http\Controllers\AdminAccountDeletionController;
 use App\Http\Controllers\AdminDisputeController;
 use App\Http\Controllers\AdminMarketplaceController;
@@ -70,6 +71,8 @@ Route::middleware('mobile.auth')->group(function (): void {
     Route::post('/auth/mobile/realtime-ticket', [RealtimeTicketController::class, 'mobile']);
     Route::get('/auth/mobile/notification-preferences', [NotificationPreferenceController::class, 'show']);
     Route::put('/auth/mobile/notification-preferences', [NotificationPreferenceController::class, 'update']);
+    Route::get('/auth/mobile/appearance', [AppearanceController::class, 'show']);
+    Route::put('/auth/mobile/appearance', [AppearanceController::class, 'update']);
     Route::get('/auth/mobile/marketplace-profile', [MarketplaceProfileController::class, 'show']);
     Route::put('/auth/mobile/active-mode', [MarketplaceProfileController::class, 'mode']);
     Route::put('/auth/mobile/client-profile', [MarketplaceProfileController::class, 'client']);
@@ -164,6 +167,8 @@ Route::middleware('auth')->group(function (): void {
     Route::post('/realtime/ticket', [RealtimeTicketController::class, 'browser']);
     Route::get('/me/notification-preferences', [NotificationPreferenceController::class, 'show']);
     Route::put('/me/notification-preferences', [NotificationPreferenceController::class, 'update']);
+    Route::get('/me/appearance', [AppearanceController::class, 'show']);
+    Route::put('/me/appearance', [AppearanceController::class, 'update']);
     Route::get('/me/marketplace-profile', [MarketplaceProfileController::class, 'show']);
     Route::put('/me/active-mode', [MarketplaceProfileController::class, 'mode']);
     Route::put('/me/client-profile', [MarketplaceProfileController::class, 'client']);
