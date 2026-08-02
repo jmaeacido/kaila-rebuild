@@ -15,6 +15,7 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import styles from "./page.module.css";
+import { revokeAdminPushDevice } from "./components/admin-push-runtime";
 
 type Provider = { id: number; display_name: string; bio: string };
 type Credential = { id: number; label: string; type: string };
@@ -144,6 +145,7 @@ export default function AdminHome() {
 
       setPassword("");
       await load();
+      window.dispatchEvent(new Event("kaila:admin-authenticated"));
     } catch {
       setLoginMessage("Sign in is unavailable right now. Please try again.");
     } finally {
@@ -194,6 +196,7 @@ export default function AdminHome() {
     setLogoutMessage("");
 
     try {
+      await revokeAdminPushDevice();
       await fetch("/api/v1/auth/csrf", { credentials: "include" });
       const token = csrfToken();
       const response = await fetch("/api/v1/auth/logout", {

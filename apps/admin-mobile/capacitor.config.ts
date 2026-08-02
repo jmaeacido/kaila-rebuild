@@ -24,6 +24,11 @@ const config: CapacitorConfig = {
     cleartext: false,
     allowNavigation: [parsedOrigin.hostname],
   },
+  plugins: {
+    PushNotifications: {
+      presentationOptions: ["badge", "sound", "alert"],
+    },
+  },
 };
 
 export default config;

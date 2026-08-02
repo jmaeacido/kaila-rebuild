@@ -3,6 +3,7 @@ import "./globals.css";
 import { AdminShellNav } from "./components/admin-shell-nav";
 import { AdminMaintenanceBanner } from "./components/admin-maintenance-banner";
 import { AppearanceSwitcher } from "./components/appearance-switcher";
+import { AdminPushRuntime } from "./components/admin-push-runtime";
 
 const appearanceScript = `(() => {
   try {
@@ -35,6 +36,7 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: appearanceScript }} />
       </head>
       <body>
+        <AdminPushRuntime />
         <AdminShellNav />
         <AdminMaintenanceBanner />
         {children}

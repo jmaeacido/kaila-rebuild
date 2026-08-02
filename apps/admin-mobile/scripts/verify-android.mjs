@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, statSync } from "node:fs";
 
 const read = (path) => readFileSync(path, "utf8");
 const checks = [
@@ -8,6 +8,11 @@ const checks = [
   [read("android/app/build.gradle").includes("minifyEnabled true"), "Release minification must be enabled."],
   [read("android/app/build.gradle").includes("shrinkResources true"), "Release resource shrinking must be enabled."],
   [read("android/app/src/main/res/values/strings.xml").includes("KAILA Admin"), "Android app label must identify the admin app."],
+  [read("android/app/src/main/AndroidManifest.xml").includes("android.permission.POST_NOTIFICATIONS"), "Android notification permission must be declared."],
+  [read("package.json").includes('"@capacitor/push-notifications"'), "The Capacitor push plugin must be packaged."],
+  [read("android/app/src/main/AndroidManifest.xml").includes('android:icon="@mipmap/ic_launcher"'), "The launcher icon must be configured."],
+  [read("android/app/src/main/AndroidManifest.xml").includes('android:roundIcon="@mipmap/ic_launcher_round"'), "The round launcher icon must be configured."],
+  [statSync("android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png").size > 10_000, "The high-resolution branded launcher icon must be present."],
 ];
 
 const failures = checks.filter(([passes]) => !passes).map(([, message]) => message);

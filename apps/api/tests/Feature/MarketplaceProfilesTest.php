@@ -41,6 +41,7 @@ class MarketplaceProfilesTest extends TestCase
     {
         [$category, $area] = $this->referenceData();
         $user = User::factory()->create();
+        $admin = User::factory()->create(['is_admin' => true]);
 
         $this->actingAs($user)->putJson('/api/v1/me/active-mode', ['activeMode' => 'provider'])
             ->assertOk()->assertJsonPath('data.activeMode', 'provider');
@@ -51,6 +52,11 @@ class MarketplaceProfilesTest extends TestCase
         $this->getJson('/api/v1/admin/marketplace/review-queue')->assertForbidden();
         $this->assertDatabaseHas('provider_services', ['service_category_id' => $category->id]);
         $this->assertDatabaseHas('provider_service_areas', ['area_id' => $area->id]);
+        $this->assertDatabaseHas('durable_notifications', [
+            'user_id' => $admin->id,
+            'type' => 'admin.review.provider_submitted',
+            'resource_type' => 'provider_profile',
+        ]);
     }
 
     public function test_discovery_is_deterministic_and_excludes_ineligible_or_out_of_area_profiles(): void

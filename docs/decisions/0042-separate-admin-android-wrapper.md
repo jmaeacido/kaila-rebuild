@@ -21,13 +21,15 @@ defaults to `https://admin.kaila-app.com`, disables cleartext traffic and backup
 and includes a token-based offline recovery shell.
 
 The first release uses the admin application's existing secure cookie session. It
-does not inherit consumer push, location, camera, microphone, call, or secure-token
-plugins. Release signing uses admin-specific environment variables and credentials.
+includes FCM push registration and privacy-safe routing for actionable review,
+report, dispute, and support notifications. It does not inherit consumer location,
+camera, microphone, call, or secure-token plugins. Release signing and Firebase
+registration use admin-specific credentials.
 
 ## Consequences
 
 - Consumer and administrative Android releases can be installed and managed independently.
-- The admin application receives only Internet permission.
+- The admin application receives only Internet and notification permissions.
 - The managed web deployment must remain compatible with released WebView wrappers.
 - Production acceptance requires an admin-specific signing identity, Digital Asset
   Links entry, physical-device authentication tests, and distribution-policy review.

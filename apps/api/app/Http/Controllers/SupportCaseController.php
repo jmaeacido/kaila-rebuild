@@ -6,6 +6,7 @@ use App\Models\ServiceJob;
 use App\Models\SupportCase;
 use App\Models\SupportMessage;
 use App\Models\User;
+use App\Support\AdminNotificationService;
 use App\Support\HiredJobAccess;
 use App\Support\OutboxRecorder;
 use Illuminate\Http\JsonResponse;
@@ -15,7 +16,11 @@ use Illuminate\Support\Str;
 
 class SupportCaseController extends Controller
 {
-    public function __construct(private readonly OutboxRecorder $outbox, private readonly HiredJobAccess $jobAccess) {}
+    public function __construct(
+        private readonly OutboxRecorder $outbox,
+        private readonly HiredJobAccess $jobAccess,
+        private readonly AdminNotificationService $adminNotifications,
+    ) {}
 
     public function index(Request $request): JsonResponse
     {
@@ -42,6 +47,14 @@ class SupportCaseController extends Controller
 
             return $case;
         });
+        $this->adminNotifications->send(
+            'support.case.created',
+            'New support request',
+            "{$case->reference} is waiting for support.",
+            'support_case',
+            (string) $case->id,
+            ['caseId' => $case->id],
+        );
 
         return response()->json(['data' => $this->present($case->load(['messages.sender', 'assignee']))], 201);
     }
@@ -66,6 +79,14 @@ class SupportCaseController extends Controller
             $supportCase->update(['status' => 'waiting_for_support', 'staff_read_at' => null, 'customer_read_at' => now(), 'last_message_at' => now(), 'version' => $supportCase->version + 1]);
             $this->publish($supportCase, 'support.message.created');
         });
+        $this->adminNotifications->send(
+            'support.message.created',
+            'Support request updated',
+            "{$supportCase->reference} has a new customer reply.",
+            'support_case',
+            (string) $supportCase->id,
+            ['caseId' => $supportCase->id],
+        );
 
         return response()->json(['data' => $this->present($supportCase->refresh()->load(['messages.sender', 'assignee']))]);
     }

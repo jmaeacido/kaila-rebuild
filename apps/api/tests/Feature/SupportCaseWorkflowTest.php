@@ -25,6 +25,11 @@ class SupportCaseWorkflowTest extends TestCase
 
         $this->assertDatabaseHas('support_cases', ['id' => $id, 'customer_user_id' => $customer->id]);
         $this->assertDatabaseHas('outbox_events', ['event_type' => 'support.case.created']);
+        $this->assertDatabaseHas('durable_notifications', [
+            'user_id' => $staff->id,
+            'type' => 'support.case.created',
+            'resource_type' => 'support_case',
+        ]);
 
         $this->actingAs($staff)->getJson("/api/v1/admin/marketplace/support/cases/$id")
             ->assertOk()->assertJsonPath('data.messages.0.senderRole', 'customer');

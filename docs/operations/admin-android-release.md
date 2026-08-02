@@ -27,6 +27,11 @@ Set `KAILA_ADMIN_ANDROID_KEYSTORE`, `KAILA_ADMIN_ANDROID_STORE_PASSWORD`,
 `KAILA_ADMIN_ANDROID_KEY_ALIAS`, `KAILA_ADMIN_ANDROID_KEY_PASSWORD`,
 `KAILA_ADMIN_VERSION_CODE`, and `KAILA_ADMIN_VERSION_NAME`, then run:
 
+Create a Firebase Android app for package `com.kaila.admin` in the production FCM
+project and place its organization-owned configuration at
+`apps/admin-mobile/android/app/google-services.json`. Do not reuse the consumer
+app's package configuration.
+
 ```bash
 pnpm --filter @kaila/admin-mobile android:bundle
 ```

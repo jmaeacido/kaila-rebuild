@@ -13,13 +13,15 @@ class PushDeviceController
 {
     public function store(Request $request): JsonResponse
     {
-        $data = $request->validate(['platform' => ['required', Rule::in(['android', 'web'])], 'token' => ['required', 'string', 'max:4096']]);
+        $data = $request->validate(['platform' => ['required', Rule::in(['android', 'admin_android', 'web'])], 'token' => ['required', 'string', 'max:4096']]);
+        $user = $this->user($request);
+        abort_if($data['platform'] === 'admin_android' && ! $user->is_admin, 403);
         $hash = hash('sha256', $data['token']);
         $device = PushDevice::query()->firstOrNew(['token_hash' => $hash]);
         if (! $device->exists) {
             $device->id = (string) Str::uuid();
         }
-        $device->fill(['user_id' => $this->user($request)->id, 'platform' => $data['platform'], 'token_encrypted' => $data['token'], 'last_seen_at' => now(), 'revoked_at' => null])->save();
+        $device->fill(['user_id' => $user->id, 'platform' => $data['platform'], 'token_encrypted' => $data['token'], 'last_seen_at' => now(), 'revoked_at' => null])->save();
 
         return response()->json(['data' => ['id' => $device->id, 'platform' => $device->platform]], 201);
     }

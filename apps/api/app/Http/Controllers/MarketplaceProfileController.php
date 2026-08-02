@@ -8,6 +8,7 @@ use App\Models\JobReview;
 use App\Models\ProfileAsset;
 use App\Models\ProviderProfile;
 use App\Models\User;
+use App\Support\AdminNotificationService;
 use App\Support\OpportunityMatchingService;
 use App\Support\OutboxRecorder;
 use Illuminate\Http\JsonResponse;
@@ -17,7 +18,11 @@ use Illuminate\Validation\Rule;
 
 class MarketplaceProfileController extends Controller
 {
-    public function __construct(private readonly OpportunityMatchingService $matching, private readonly OutboxRecorder $outbox) {}
+    public function __construct(
+        private readonly OpportunityMatchingService $matching,
+        private readonly OutboxRecorder $outbox,
+        private readonly AdminNotificationService $adminNotifications,
+    ) {}
 
     public function show(Request $request): JsonResponse
     {
@@ -83,6 +88,14 @@ class MarketplaceProfileController extends Controller
             return $profile;
         });
         $this->matching->reconcileProvider($profile);
+        $this->adminNotifications->send(
+            'admin.review.provider_submitted',
+            'Provider profile needs review',
+            "{$profile->display_name} submitted a provider profile.",
+            'provider_profile',
+            (string) $profile->id,
+            ['providerProfileId' => $profile->id],
+        );
 
         return response()->json(['data' => $profile->load(['services:id,name,slug,icon', 'serviceAreas:id,name,type,code', 'availability'])]);
     }

@@ -1,6 +1,7 @@
 import { spawnSync } from "node:child_process";
 import { platform } from "node:process";
 import { resolve } from "node:path";
+import { existsSync } from "node:fs";
 
 const mode = process.argv[2];
 if (mode !== "debug" && mode !== "release") {
@@ -17,6 +18,9 @@ if (mode === "release") {
     "KAILA_ADMIN_VERSION_CODE",
     "KAILA_ADMIN_VERSION_NAME",
   );
+  if (!existsSync("android/app/google-services.json")) {
+    throw new Error("android/app/google-services.json for com.kaila.admin is required for release push notifications.");
+  }
 }
 
 const missing = requiredVariables.filter((name) => !process.env[name]);

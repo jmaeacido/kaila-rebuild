@@ -25,6 +25,15 @@ importers:
 
   apps/admin:
     dependencies:
+      '@capacitor/app':
+        specifier: 8.1.0
+        version: 8.1.0(@capacitor/core@8.4.2)
+      '@capacitor/core':
+        specifier: 8.4.2
+        version: 8.4.2
+      '@capacitor/push-notifications':
+        specifier: 8.1.1
+        version: 8.1.1(@capacitor/core@8.4.2)
       '@kaila/design-tokens':
         specifier: workspace:*
         version: link:../../packages/design-tokens
@@ -59,12 +68,21 @@ importers:
       typescript:
         specifier: ^5
         version: 5.9.3
+      vitest:
+        specifier: ^4.1.10
+        version: 4.1.10(@types/node@24.13.3)(jsdom@29.1.1)(vite@7.3.6(@types/node@24.13.3)(tsx@4.23.1))
 
   apps/admin-mobile:
     dependencies:
+      '@capacitor/app':
+        specifier: 8.1.0
+        version: 8.1.0(@capacitor/core@8.4.2)
       '@capacitor/core':
         specifier: 8.4.2
         version: 8.4.2
+      '@capacitor/push-notifications':
+        specifier: 8.1.1
+        version: 8.1.1(@capacitor/core@8.4.2)
       '@kaila/design-tokens':
         specifier: workspace:*
         version: link:../../packages/design-tokens

@@ -7,10 +7,13 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --test src/app/appearance-default.test.mjs",
+    "test": "node --test src/app/appearance-default.test.mjs && vitest run src/app/admin-notification-routes.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@capacitor/app": "8.1.0",
+    "@capacitor/core": "8.4.2",
+    "@capacitor/push-notifications": "8.1.1",
     "@kaila/design-tokens": "workspace:*",
     "next": "16.2.11",
     "react": "19.2.4",
@@ -23,6 +26,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.11",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.10"
   }
 }
