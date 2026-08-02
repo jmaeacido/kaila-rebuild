@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "166695993606",
+    "project_id": "kaila-a50f5",
+    "storage_bucket": "kaila-a50f5.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:166695993606:android:f4670c04e046b50d0f5e87",
+        "android_client_info": {
+          "package_name": "com.kaila.marketplace"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCamLZUHWIzU5SIxpFH_Pr7g2oWjxur6HQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

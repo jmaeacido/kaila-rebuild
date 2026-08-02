@@ -62,7 +62,10 @@ captures/
 .cxx/
 
 # Google Services (e.g. APIs or Firebase)
+# The app-level Firebase client configuration is intentionally committed so
+# Android builds register with the same project used by the KAILA API.
 google-services.json
+!app/google-services.json
 
 # Freeline
 freeline.py
