@@ -120,8 +120,14 @@ class MarketplaceProfileController extends Controller
         $reputation = DB::table('reputation_projections')
             ->where('user_id', $profile->user_id)
             ->first(['average_rating', 'published_review_count']);
+        $avatar = ProfileAsset::query()
+            ->where('user_id', $profile->user_id)
+            ->where('purpose', 'avatar')
+            ->where('scan_status', 'clean')
+            ->latest()
+            ->first();
 
-        return ['id' => $profile->id, 'displayName' => $profile->display_name, 'bio' => $profile->bio, 'yearsExperience' => $profile->years_experience,
+        return ['id' => $profile->id, 'displayName' => $profile->display_name, 'avatarUrl' => $avatar ? "/api/v1/profile-assets/{$avatar->id}" : null, 'bio' => $profile->bio, 'yearsExperience' => $profile->years_experience,
             'rating' => $reputation?->average_rating !== null
                 ? (float) $reputation->average_rating
                 : ($profile->rating !== null ? (float) $profile->rating : null),
