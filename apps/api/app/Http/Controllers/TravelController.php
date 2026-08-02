@@ -60,7 +60,7 @@ class TravelController extends Controller
         $participants = $this->access->requireParticipant($serviceJob, $actor);
         abort_unless($participants['travelerId'] !== null && $actor->id === $participants['travelerId'], 404);
         abort_if($participants['serviceLocationMode'] === 'remote', 409, 'Remote services do not use navigation.');
-        abort_unless(in_array($serviceJob->status, ['provider_selected', 'provider_traveling'], true), 409);
+        abort_unless(in_array($serviceJob->status, ['provider_selected', 'provider_traveling', 'working', 'completion_submitted', 'revision_requested'], true), 409);
         abort_if($participants['destinationLatitude'] === null || $participants['destinationLongitude'] === null, 422, 'The destination is not pinned.');
 
         try {

@@ -423,12 +423,12 @@ function ActiveJobRouteMetrics({ job }: { job: Job }) {
   const isTraveler = job.role === (job.serviceLocationMode === "at_provider" ? "client" : "provider");
   const preview = useHiredRouteEstimate(
     job.id,
-    isTraveler && job.status === "provider_selected" && job.serviceLocationMode !== "remote" && job.travel === null,
+    isTraveler && job.serviceLocationMode !== "remote",
   );
   if (job.serviceLocationMode === "remote") {
     return "Distance: Not applicable · ETA: Not applicable";
   }
-  const distance = job.travel?.distanceMeters ?? preview?.distanceMeters;
-  const eta = job.travel?.etaSeconds ?? preview?.etaSeconds;
+  const distance = preview?.distanceMeters ?? job.travel?.distanceMeters;
+  const eta = preview?.etaSeconds ?? job.travel?.etaSeconds;
   return `Distance: ${distance == null ? "—" : formatTravelDistance(distance)} · ETA: ${eta == null ? "—" : formatTravelEta(eta)}`;
 }
