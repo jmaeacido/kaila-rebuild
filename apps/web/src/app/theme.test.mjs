@@ -1,6 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { isThemePreference, resolveTheme } from "./theme.ts";
+import {
+  isThemePreference,
+  readStoredThemePreference,
+  resolveTheme,
+  themeBootstrapScript,
+} from "./theme.ts";
 
 test("accepts only light, dark, and system preferences", () => {
   assert.equal(isThemePreference("light"), true);
@@ -18,4 +23,9 @@ test("resolves forced themes without consulting the OS", () => {
 test("resolves system from the provided OS flag", () => {
   assert.equal(resolveTheme("system", true), "dark");
   assert.equal(resolveTheme("system", false), "light");
+});
+
+test("public browsing defaults to light without a stored preference", () => {
+  assert.equal(readStoredThemePreference(), "light");
+  assert.match(themeBootstrapScript, /\? stored : "light"/);
 });

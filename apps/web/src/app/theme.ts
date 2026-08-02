@@ -19,14 +19,14 @@ export function isThemePreference(value: unknown): value is ThemePreference {
 }
 
 export function readStoredThemePreference(): ThemePreference {
-  if (typeof window === "undefined") return "system";
+  if (typeof window === "undefined") return "light";
   try {
     const stored = window.localStorage.getItem(THEME_STORAGE_KEY);
     if (isThemePreference(stored)) return stored;
   } catch {
-    // Private mode / blocked storage still allows System.
+    // Private mode / blocked storage still receives the public light default.
   }
-  return "system";
+  return "light";
 }
 
 export function writeStoredThemePreference(preference: ThemePreference): void {
@@ -89,7 +89,7 @@ export const themeBootstrapScript = `(() => {
   try {
     const key = ${JSON.stringify(THEME_STORAGE_KEY)};
     const stored = localStorage.getItem(key);
-    const preference = stored === "light" || stored === "dark" || stored === "system" ? stored : "system";
+    const preference = stored === "light" || stored === "dark" || stored === "system" ? stored : "light";
     const systemDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
     const resolved = preference === "light" ? "light" : preference === "dark" ? "dark" : systemDark ? "dark" : "light";
     const root = document.documentElement;
