@@ -11,6 +11,9 @@ test("attachment picker exposes camera, video, and library sources", () => {
   assert.match(picker, /Record video/);
   assert.match(picker, /Choose files/);
   assert.match(picker, /capture=\{facingMode\}/);
+  assert.match(picker, /captureNativeMedia\(kind\)/);
+  assert.match(picker, /accept="image\/\*"/);
+  assert.match(picker, /accept="video\/\*"/);
   assert.match(styles, /\.actions/);
 });
 

@@ -3,6 +3,7 @@
 import { ChangeEvent, useEffect, useId, useRef, useState } from "react";
 import { Camera, FolderOpen, ImageIcon, Paperclip, Video, X } from "lucide-react";
 import Image from "next/image";
+import { captureNativeMedia, nativeMediaCaptureAvailable } from "@kaila/mobile/media-capture";
 import mediaStyles from "./attachment-media.module.css";
 import styles from "./attachment-picker.module.css";
 
@@ -67,16 +68,33 @@ export function AttachmentSourceActions({
     if (files.length) onFiles(files);
   }
 
+  async function capture(kind: "photo" | "video") {
+    if (!nativeMediaCaptureAvailable()) {
+      (kind === "photo" ? photoInput : videoInput).current?.click();
+      return;
+    }
+    try {
+      const file = await captureNativeMedia(kind);
+      if (file && allowed.has(file.type) && file.size > 0 && file.size <= maxBytes) onFiles([file]);
+    } catch (error) {
+      const code = typeof error === "object" && error !== null && "code" in error ? String(error.code) : "";
+      if (code !== "CAPTURE_CANCELLED") {
+        // Older installed builds do not have the native bridge yet; retain direct HTML capture.
+        (kind === "photo" ? photoInput : videoInput).current?.click();
+      }
+    }
+  }
+
   return (
     <div className={compact ? styles.actionsCompact : styles.actions} role="group" aria-label="Add media">
       {allowImage && (
-        <button type="button" className={styles.action} disabled={disabled} onClick={() => photoInput.current?.click()}>
+        <button type="button" className={styles.action} disabled={disabled} onClick={() => void capture("photo")}>
           <Camera aria-hidden="true" />
           <span>Take photo</span>
         </button>
       )}
       {allowVideo && (
-        <button type="button" className={styles.action} disabled={disabled} onClick={() => videoInput.current?.click()}>
+        <button type="button" className={styles.action} disabled={disabled} onClick={() => void capture("video")}>
           <Video aria-hidden="true" />
           <span>Record video</span>
         </button>
@@ -90,7 +108,7 @@ export function AttachmentSourceActions({
           ref={photoInput}
           className={styles.hiddenInput}
           type="file"
-          accept={mimeByKind.image.join(",")}
+          accept="image/*"
           capture={facingMode}
           disabled={disabled}
           onChange={take}
@@ -101,7 +119,7 @@ export function AttachmentSourceActions({
           ref={videoInput}
           className={styles.hiddenInput}
           type="file"
-          accept={mimeByKind.video.join(",")}
+          accept="video/*"
           capture={facingMode}
           disabled={disabled}
           onChange={take}
