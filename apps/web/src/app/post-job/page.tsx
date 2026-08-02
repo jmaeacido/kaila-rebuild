@@ -441,7 +441,7 @@ export default function PostJobPage() {
               <AttachmentPicker
                 name="attachments"
                 label="Add job photos or videos"
-                hint="Optional. Add up to 5 files, 10 MB each. Providers see them after a safety scan."
+                hint="Optional. Take a photo/video or choose up to 5 files, 10 MB each. Providers see them after a safety scan."
               />
             </>
           )}

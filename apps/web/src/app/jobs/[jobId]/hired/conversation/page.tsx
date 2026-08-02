@@ -19,6 +19,7 @@ import {
   X,
 } from "lucide-react";
 import styles from "../hired.module.css";
+import { AttachmentSourceActions } from "../../../../../components/attachment-picker";
 import { useCall } from "../../../../calls/call-provider";
 import { useRealtimeInvalidation } from "../../../../use-realtime-invalidation";
 import { MediaViewer, type ViewableMedia } from "../../../../../components/media-viewer";
@@ -81,9 +82,9 @@ export default function ConversationPage({ params }: { params: Promise<{ jobId: 
   const [state, setState] = useState<"loading" | "ready" | "sending" | "error">("loading");
   const [notice, setNotice] = useState("");
   const [showEmoji, setShowEmoji] = useState(false);
+  const [showAttach, setShowAttach] = useState(false);
   const [reactionPicker, setReactionPicker] = useState<{ messageId: string; vertical: "above" | "below"; horizontal: "left" | "right" } | null>(null);
   const [selectedMediaId, setSelectedMediaId] = useState<string | null>(null);
-  const fileInput = useRef<HTMLInputElement>(null);
   const end = useRef<HTMLDivElement>(null);
 
   const load = useCallback(async () => {
@@ -246,11 +247,33 @@ export default function ConversationPage({ params }: { params: Promise<{ jobId: 
 
         <form className={styles.composer} onSubmit={(event) => void send(event)}>
           {file && <div className={styles.filePreview}><Paperclip /><span>{file.name}</span><button type="button" onClick={() => setFile(null)} aria-label="Remove attachment"><X /></button></div>}
+          {showAttach && (
+            <div className={styles.attachTray} aria-label="Add photo or video">
+              <AttachmentSourceActions
+                compact
+                kinds={["image", "video", "pdf"]}
+                onFiles={(files) => {
+                  setFile(files[0] || null);
+                  setShowAttach(false);
+                  setShowEmoji(false);
+                }}
+              />
+            </div>
+          )}
           {showEmoji && <div className={styles.emojiPicker} aria-label="Choose emoji">{emojiGroups.map((group) => <section key={group.label}><h2>{group.label}</h2><div>{group.emojis.map((emoji) => <button type="button" key={emoji} aria-label={`Add ${emoji}`} onClick={() => setText((current) => current + emoji)}>{emoji}</button>)}</div></section>)}</div>}
           <div className={styles.composerBar}>
-            <button type="button" onClick={() => fileInput.current?.click()} aria-label="Attach image or PDF"><Plus /></button>
-            <input ref={fileInput} hidden type="file" accept="image/jpeg,image/png,image/webp,application/pdf" onChange={(event) => setFile(event.target.files?.[0] || null)} />
-            <button type="button" onClick={() => setShowEmoji((shown) => !shown)} aria-label="Add emoji"><Smile /></button>
+            <button
+              type="button"
+              onClick={() => {
+                setShowAttach((shown) => !shown);
+                setShowEmoji(false);
+              }}
+              aria-label="Attach photo, video, or PDF"
+              aria-expanded={showAttach}
+            >
+              <Plus />
+            </button>
+            <button type="button" onClick={() => { setShowEmoji((shown) => !shown); setShowAttach(false); }} aria-label="Add emoji"><Smile /></button>
             <input value={text} maxLength={12000} onChange={(event) => setText(event.target.value)} placeholder="Message" aria-label="Message" />
             <button className={styles.sendButton} type="submit" disabled={state === "sending" || (!text.trim() && !file)} aria-label="Send message"><Send /></button>
           </div>

@@ -442,7 +442,7 @@ export default function JobDetailsPage({ params }: { params: Promise<{ jobId: st
             <AttachmentPicker
               name="attachments"
               maxFiles={Math.max(0, 5 - (job.assets.length - removedAssetIds.length))}
-              hint={`${Math.max(0, 5 - (job.assets.length - removedAssetIds.length))} file slots available, 10 MB each.`}
+              hint={`${Math.max(0, 5 - (job.assets.length - removedAssetIds.length))} file slots available, 10 MB each. Take a photo/video or choose from your gallery.`}
             />
           </section>
           {!isDraft && <p className={styles.lockNote}>The service is locked after posting. Moving the job updates the matched providers.</p>}

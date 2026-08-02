@@ -55,7 +55,7 @@ class JobLifecycleController extends Controller
         $p = $this->access->requireParticipant($job, $u);
         abort_unless($u->id === $p['providerId'], 404);
         abort_unless($completionSubmission->evidence()->count() < 5, 422, 'A completion can have up to 5 evidence files.');
-        $d = $r->validate(['file' => 'required|file|max:10240|mimes:jpg,jpeg,png,webp,pdf']);
+        $d = $r->validate(['file' => 'required|file|max:10240|mimes:jpg,jpeg,png,webp,pdf,mp4,webm,mov']);
         $file = $d['file'];
         $id = (string) Str::uuid();
         $key = "completion/{$job->id}/{$id}";
@@ -88,7 +88,7 @@ class JobLifecycleController extends Controller
         abort_unless($serviceJob->status === 'revision_requested', 409);
         $submission = CompletionSubmission::query()->where('service_job_id', $serviceJob->id)->latest('cycle')->firstOrFail();
         abort_unless(RevisionEvidence::query()->where('completion_submission_id', $submission->id)->count() < 5, 422, 'A revision request can have up to 5 evidence files.');
-        $data = $r->validate(['file' => 'required|file|max:10240|mimes:jpg,jpeg,png,webp,pdf']);
+        $data = $r->validate(['file' => 'required|file|max:10240|mimes:jpg,jpeg,png,webp,pdf,mp4,webm,mov']);
         $file = $data['file'];
         $id = (string) Str::uuid();
         $key = "revisions/{$serviceJob->id}/{$id}";
@@ -128,7 +128,7 @@ class JobLifecycleController extends Controller
         $this->access->requireParticipant($job, $u);
         abort_unless(in_array($disputeCase->status, ['open', 'assigned', 'appealed'], true), 409);
         abort_unless($disputeCase->evidence()->count() < 5, 422, 'A dispute can have up to 5 evidence files.');
-        $d = $r->validate(['note' => 'nullable|string|max:2000', 'file' => 'nullable|file|max:10240|mimes:jpg,jpeg,png,webp,pdf']);
+        $d = $r->validate(['note' => 'nullable|string|max:2000', 'file' => 'nullable|file|max:10240|mimes:jpg,jpeg,png,webp,pdf,mp4,webm,mov']);
         abort_unless(filled($d['note'] ?? null) || $r->hasFile('file'), 422);
         $values = ['id' => (string) Str::uuid(), 'dispute_case_id' => $disputeCase->id, 'submitted_by_user_id' => $u->id, 'note' => $d['note'] ?? null];
         if ($r->hasFile('file')) {

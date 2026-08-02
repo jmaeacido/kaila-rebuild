@@ -1,12 +1,11 @@
 "use client";
 
-import { ChangeEvent, FormEvent, useCallback, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
   Bell,
   BriefcaseBusiness,
-  Camera,
   Check,
   ChevronRight,
   MapPin,
@@ -16,6 +15,7 @@ import {
   UserRound,
 } from "lucide-react";
 import { Button, Feedback } from "@kaila/ui";
+import { AttachmentSourceActions } from "../../components/attachment-picker";
 import { prepareCsrf } from "../auth-client";
 import { AddressHierarchy, type AreaReference } from "../address-hierarchy";
 import styles from "./account.module.css";
@@ -110,9 +110,7 @@ export default function AccountPage() {
     }
   }
 
-  async function uploadAvatar(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  async function uploadAvatarFile(file: File) {
     setStatus("uploading");
     setNotice("");
     try {
@@ -136,8 +134,6 @@ export default function AccountPage() {
     } catch {
       setStatus("error");
       setNotice("We couldn’t upload that picture. Use JPG, PNG, or WebP.");
-    } finally {
-      event.target.value = "";
     }
   }
 
@@ -209,20 +205,22 @@ export default function AccountPage() {
               unoptimized
             />
           ) : null}
-          <label>
-            <Camera aria-hidden="true" />
-            <span className={styles.visuallyHidden}>Change profile picture</span>
-            <input
-              accept="image/jpeg,image/png,image/webp"
-              disabled={status === "uploading"}
-              onChange={(event) => void uploadAvatar(event)}
-              type="file"
-            />
-          </label>
         </div>
         <div>
           <h2 id="identity-title">{user.name}</h2>
           <p>{user.email}</p>
+          <div className={styles.avatarActions}>
+            <AttachmentSourceActions
+              kinds={["image"]}
+              facingMode="user"
+              compact
+              disabled={status === "uploading"}
+              onFiles={(files) => {
+                const next = files[0];
+                if (next) void uploadAvatarFile(next);
+              }}
+            />
+          </div>
           <span className={styles.safetyNote}>
             <ShieldCheck aria-hidden="true" />
             Pictures are checked before they appear

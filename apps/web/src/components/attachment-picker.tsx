@@ -1,42 +1,147 @@
 "use client";
 
-import { ChangeEvent, useEffect, useRef, useState } from "react";
-import { ImageIcon, Paperclip, X } from "lucide-react";
+import { ChangeEvent, useEffect, useId, useRef, useState } from "react";
+import { Camera, FolderOpen, ImageIcon, Paperclip, Video, X } from "lucide-react";
 import Image from "next/image";
 import mediaStyles from "./attachment-media.module.css";
 import styles from "./attachment-picker.module.css";
 
 const defaultMaxFiles = 5;
 const maxBytes = 10 * 1024 * 1024;
-const acceptedTypes = new Set([
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-  "video/mp4",
-  "video/webm",
-  "video/quicktime",
-]);
+
+export type AttachmentKind = "image" | "video" | "pdf";
+
+const mimeByKind: Record<AttachmentKind, string[]> = {
+  image: ["image/jpeg", "image/png", "image/webp"],
+  video: ["video/mp4", "video/webm", "video/quicktime"],
+  pdf: ["application/pdf"],
+};
 
 type SelectedAttachment = {
   file: File;
   previewUrl: string | null;
 };
 
+function acceptFor(kinds: AttachmentKind[]): string {
+  return kinds.flatMap((kind) => mimeByKind[kind]).join(",");
+}
+
+function allowedTypes(kinds: AttachmentKind[]): Set<string> {
+  return new Set(kinds.flatMap((kind) => mimeByKind[kind]));
+}
+
+function typeLabel(kinds: AttachmentKind[]): string {
+  const labels: string[] = [];
+  if (kinds.includes("image")) labels.push("JPG", "PNG", "WebP");
+  if (kinds.includes("video")) labels.push("MP4", "WebM", "MOV");
+  if (kinds.includes("pdf")) labels.push("PDF");
+  return labels.join(", ");
+}
+
+export function AttachmentSourceActions({
+  kinds = ["image", "video"],
+  disabled = false,
+  facingMode = "environment",
+  onFiles,
+  compact = false,
+}: {
+  kinds?: AttachmentKind[];
+  disabled?: boolean;
+  facingMode?: "user" | "environment";
+  onFiles: (files: File[]) => void;
+  compact?: boolean;
+}) {
+  const photoInput = useRef<HTMLInputElement>(null);
+  const videoInput = useRef<HTMLInputElement>(null);
+  const libraryInput = useRef<HTMLInputElement>(null);
+  const allowImage = kinds.includes("image");
+  const allowVideo = kinds.includes("video");
+  const accept = acceptFor(kinds);
+  const allowed = allowedTypes(kinds);
+
+  function take(event: ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(event.target.files ?? []).filter(
+      (file) => allowed.has(file.type) && file.size <= maxBytes && file.size > 0,
+    );
+    event.target.value = "";
+    if (files.length) onFiles(files);
+  }
+
+  return (
+    <div className={compact ? styles.actionsCompact : styles.actions} role="group" aria-label="Add media">
+      {allowImage && (
+        <button type="button" className={styles.action} disabled={disabled} onClick={() => photoInput.current?.click()}>
+          <Camera aria-hidden="true" />
+          <span>Take photo</span>
+        </button>
+      )}
+      {allowVideo && (
+        <button type="button" className={styles.action} disabled={disabled} onClick={() => videoInput.current?.click()}>
+          <Video aria-hidden="true" />
+          <span>Record video</span>
+        </button>
+      )}
+      <button type="button" className={styles.action} disabled={disabled} onClick={() => libraryInput.current?.click()}>
+        {compact ? <Paperclip aria-hidden="true" /> : <FolderOpen aria-hidden="true" />}
+        <span>{compact ? "Files" : "Choose files"}</span>
+      </button>
+      {allowImage && (
+        <input
+          ref={photoInput}
+          className={styles.hiddenInput}
+          type="file"
+          accept={mimeByKind.image.join(",")}
+          capture={facingMode}
+          disabled={disabled}
+          onChange={take}
+        />
+      )}
+      {allowVideo && (
+        <input
+          ref={videoInput}
+          className={styles.hiddenInput}
+          type="file"
+          accept={mimeByKind.video.join(",")}
+          capture={facingMode}
+          disabled={disabled}
+          onChange={take}
+        />
+      )}
+      <input
+        ref={libraryInput}
+        className={styles.hiddenInput}
+        type="file"
+        accept={accept}
+        multiple={!compact}
+        disabled={disabled}
+        onChange={take}
+      />
+    </div>
+  );
+}
+
 export function AttachmentPicker({
   name = "evidence",
   label = "Add photos or videos",
-  hint = "Up to 5 files, 10 MB each.",
+  hint,
   maxFiles = defaultMaxFiles,
+  kinds = ["image", "video"],
+  facingMode = "environment",
 }: {
   name?: string;
   label?: string;
   hint?: string;
   maxFiles?: number;
+  kinds?: AttachmentKind[];
+  facingMode?: "user" | "environment";
 }) {
-  const input = useRef<HTMLInputElement>(null);
+  const formInputId = useId();
+  const formInput = useRef<HTMLInputElement>(null);
   const attachmentsRef = useRef<SelectedAttachment[]>([]);
   const [attachments, setAttachments] = useState<SelectedAttachment[]>([]);
   const [error, setError] = useState("");
+  const allowed = allowedTypes(kinds);
+  const resolvedHint = hint ?? `Up to ${maxFiles} files, 10 MB each. Use the camera or choose from your gallery.`;
 
   useEffect(
     () => () => {
@@ -50,7 +155,7 @@ export function AttachmentPicker({
   function commit(next: File[]) {
     const transfer = new DataTransfer();
     next.forEach((file) => transfer.items.add(file));
-    if (input.current) input.current.files = transfer.files;
+    if (formInput.current) formInput.current.files = transfer.files;
 
     attachmentsRef.current.forEach(({ previewUrl }) => {
       if (previewUrl) URL.revokeObjectURL(previewUrl);
@@ -66,39 +171,53 @@ export function AttachmentPicker({
     setAttachments(selected);
   }
 
-  function select(event: ChangeEvent<HTMLInputElement>) {
-    const next = Array.from(event.target.files ?? []);
-    if (next.length > maxFiles) {
-      setError(`Choose no more than ${maxFiles} files.`);
-      commit(next.slice(0, maxFiles));
+  function addFiles(incoming: File[]) {
+    if (!incoming.length) {
+      setError(`Choose a ${typeLabel(kinds)} file no larger than 10 MB.`);
       return;
     }
-    const invalid = next.find((file) => !acceptedTypes.has(file.type) || file.size > maxBytes);
+    const existing = attachmentsRef.current.map(({ file }) => file);
+    const room = Math.max(0, maxFiles - existing.length);
+    if (room === 0) {
+      setError(`You already selected ${maxFiles} files.`);
+      return;
+    }
+    const valid = incoming.filter((file) => allowed.has(file.type) && file.size <= maxBytes);
+    const invalid = incoming.find((file) => !allowed.has(file.type) || file.size > maxBytes);
     if (invalid) {
-      setError(`${invalid.name} must be a JPG, PNG, WebP, MP4, WebM, or MOV no larger than 10 MB.`);
-      commit(next.filter((file) => acceptedTypes.has(file.type) && file.size <= maxBytes));
-      return;
+      setError(`${invalid.name} must be a ${typeLabel(kinds)} file no larger than 10 MB.`);
+    } else {
+      setError("");
     }
-    setError("");
+    const next = [...existing, ...valid].slice(0, maxFiles);
+    if (existing.length + valid.length > maxFiles) {
+      setError(`Choose no more than ${maxFiles} files.`);
+    }
     commit(next);
   }
 
   return (
     <div className={styles.picker}>
-      <label className={styles.control}>
-        <Paperclip aria-hidden="true" />
-        <span>{label}</span>
-        <input
-          ref={input}
-          name={name}
-          type="file"
-          multiple
-          accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime"
-          disabled={maxFiles === 0}
-          onChange={select}
-        />
-      </label>
-      <p className={styles.hint}>{hint}</p>
+      <p className={styles.label}>{label}</p>
+      <AttachmentSourceActions
+        kinds={kinds}
+        facingMode={facingMode}
+        disabled={maxFiles === 0 || attachments.length >= maxFiles}
+        onFiles={addFiles}
+      />
+      <input
+        id={formInputId}
+        ref={formInput}
+        className={styles.hiddenInput}
+        name={name}
+        type="file"
+        multiple
+        accept={acceptFor(kinds)}
+        tabIndex={-1}
+        aria-hidden="true"
+        onChange={() => undefined}
+      />
+      <p className={styles.hint}>{resolvedHint}</p>
       {error && <p className={styles.error} role="alert">{error}</p>}
       {attachments.length > 0 && (
         <ul className={styles.files} aria-label="Selected attachments">
@@ -134,7 +253,7 @@ export function AttachmentPicker({
                 className={styles.remove}
                 type="button"
                 onClick={() =>
-                  commit(attachments.filter((_, item) => item !== index).map(({ file }) => file))
+                  commit(attachments.filter((_, item) => item !== index).map(({ file: current }) => current))
                 }
                 aria-label={`Remove ${file.name}`}
               >

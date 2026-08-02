@@ -539,7 +539,10 @@ function CompletionForm({ saving, onSubmit }: { saving: boolean; onSubmit: (even
   return (
     <form className={styles.form} onSubmit={onSubmit}>
       <label>What did you complete?<textarea name="summary" required minLength={10} maxLength={2000} placeholder="Describe the finished work and anything the client should check." /></label>
-      <AttachmentPicker hint="Optional. Up to 5 files, 10 MB each. The client can confirm, request a correction, or contact support." />
+      <AttachmentPicker
+        kinds={["image", "video", "pdf"]}
+        hint="Optional. Up to 5 photos, videos, or PDFs, 10 MB each. Take a photo/video or choose from your gallery."
+      />
       <Button isLoading={saving}><CheckCircle2 /> Send for client review</Button>
     </form>
   );
@@ -568,7 +571,13 @@ function ReasonForm({ type, saving, onSubmit }: { type: "revision" | "cancel" | 
   return (
     <form className={styles.form} onSubmit={onSubmit}>
       <label>{copy[0]}<textarea name="reason" required minLength={10} maxLength={type === "dispute" ? 2000 : 1000} placeholder={copy[1]} /></label>
-      {(type === "revision" || type === "dispute") && <AttachmentPicker label={type === "revision" ? "Add photos showing what needs correction" : "Add support evidence"} />}
+      {(type === "revision" || type === "dispute") && (
+        <AttachmentPicker
+          kinds={["image", "video", "pdf"]}
+          label={type === "revision" ? "Add photos or video showing what needs correction" : "Add support evidence"}
+          hint="Optional. Take a photo/video or choose files. Up to 5 files, 10 MB each."
+        />
+      )}
       {type === "dispute" && <p className={styles.hint}><CircleAlert /> Work and completion timers pause while support reviews the case.</p>}
       <Button variant={type === "cancel" ? "danger" : "primary"} isLoading={saving}>{copy[2]}</Button>
     </form>

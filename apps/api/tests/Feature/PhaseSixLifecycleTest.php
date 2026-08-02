@@ -49,7 +49,7 @@ class PhaseSixLifecycleTest extends TestCase
         ])->assertCreated()->json('data.id');
 
         $this->postJson("/api/v1/completions/$submission/evidence", [
-            'file' => UploadedFile::fake()->image('finished.jpg'),
+            'file' => UploadedFile::fake()->create('walkthrough.mp4', 100, 'video/mp4'),
         ])->assertCreated()->assertJsonPath('data.scanStatus', 'pending');
 
         $this->actingAs($client)->postJson("/api/v1/jobs/$id/completion/revision", [

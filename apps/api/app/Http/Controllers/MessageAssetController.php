@@ -22,7 +22,7 @@ class MessageAssetController extends Controller
 
     public function store(Request $request, ConversationMessage $conversationMessage): JsonResponse
     {
-        $data = $request->validate(['file' => 'required|file|max:10240|mimetypes:image/jpeg,image/png,image/webp,application/pdf']);
+        $data = $request->validate(['file' => 'required|file|max:10240|mimetypes:image/jpeg,image/png,image/webp,application/pdf,video/mp4,video/webm,video/quicktime']);
         $actor = $request->user();
         abort_unless($actor instanceof User, 401);
         $conversation = JobConversation::query()->findOrFail($conversationMessage->conversation_id);
