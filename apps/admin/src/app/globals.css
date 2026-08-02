@@ -6,16 +6,44 @@
   padding: 0;
 }
 
-html {
-  color-scheme: light dark;
-}
-
 body {
   min-height: 100vh;
   color: var(--color-text);
   background: var(--color-background);
   font-family: Inter, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
+}
+
+[data-theme-wordmark] {
+  display: inline-grid;
+}
+
+[data-theme-wordmark] img {
+  grid-area: 1 / 1;
+  height: auto;
+  width: 100%;
+}
+
+.themeWordmarkDark {
+  visibility: hidden;
+}
+
+html[data-theme="dark"] .themeWordmarkLight {
+  visibility: hidden;
+}
+
+html[data-theme="dark"] .themeWordmarkDark {
+  visibility: visible;
+}
+
+@media (prefers-color-scheme: dark) {
+  html:not([data-theme]) .themeWordmarkLight {
+    visibility: hidden;
+  }
+
+  html:not([data-theme]) .themeWordmarkDark {
+    visibility: visible;
+  }
 }
 
 button,

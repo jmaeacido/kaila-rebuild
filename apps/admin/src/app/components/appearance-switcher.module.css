@@ -1,0 +1,65 @@
+.switcher {
+  background: color-mix(in srgb, var(--color-surface) 94%, transparent);
+  border: var(--control-border-width) solid var(--color-border);
+  border-radius: var(--radius-pill);
+  bottom: var(--spacing-16);
+  box-shadow: var(--shadow-floating);
+  display: flex;
+  gap: var(--spacing-4);
+  padding: var(--spacing-4);
+  position: fixed;
+  right: var(--spacing-16);
+  z-index: var(--z-toast);
+}
+
+.choice {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-pill);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  font-size: var(--font-small-size);
+  font-weight: var(--font-weight-semibold);
+  gap: var(--spacing-8);
+  justify-content: center;
+  min-height: var(--control-min-height);
+  padding: var(--spacing-8) var(--spacing-12);
+  transition:
+    background var(--duration-fast) ease-out,
+    color var(--duration-fast) ease-out;
+}
+
+.choice:hover {
+  color: var(--color-ink);
+}
+
+.choice[aria-checked="true"] {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.choice svg {
+  height: var(--spacing-16);
+  width: var(--spacing-16);
+}
+
+@media (max-width: 30rem) {
+  .choice span {
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    height: 1px;
+    overflow: hidden;
+    position: absolute;
+    white-space: nowrap;
+    width: 1px;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .switcher {
+    background: var(--color-surface);
+  }
+}

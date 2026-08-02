@@ -1,0 +1,12 @@
+html { color-scheme: light; }
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --primary: #3b82ff;
+  --accent: #4ec8ff;
+  --ink: #f4f7fb;
+  --muted: #9aa8bc;
+  --bg: #0c1524;
+}
+.wordmark-dark { display: none; }
+html[data-theme="dark"] .wordmark-light { display: none; }
+html[data-theme="dark"] .wordmark-dark { display: inline-block; }

@@ -166,7 +166,7 @@
 
 .authIcon {
   align-items: center;
-  background: var(--color-on-primary);
+  background: color-mix(in srgb, var(--color-surface) 88%, var(--color-primary));
   border-radius: var(--radius-card);
   color: var(--color-on-primary);
   display: flex;

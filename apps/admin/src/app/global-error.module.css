@@ -1,0 +1,43 @@
+.body {
+  background: var(--color-background);
+  color: var(--color-ink);
+  display: grid;
+  font-family: Inter, system-ui, sans-serif;
+  margin: 0;
+  min-height: 100vh;
+  padding: var(--spacing-32) var(--spacing-16);
+  place-items: center;
+}
+
+.panel {
+  max-width: 28rem;
+  text-align: center;
+}
+
+.brand {
+  margin-bottom: var(--spacing-16);
+  width: 8rem;
+}
+
+.panel h1 {
+  font-size: var(--font-heading-size);
+}
+
+.panel p {
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-body);
+  margin-top: var(--spacing-12);
+}
+
+.panel button {
+  background: var(--gradient-primary);
+  border: 0;
+  border-radius: var(--radius-button);
+  color: var(--color-on-primary);
+  cursor: pointer;
+  font: inherit;
+  font-weight: var(--font-weight-semibold);
+  margin-top: var(--spacing-24);
+  min-height: var(--control-min-height);
+  padding: var(--spacing-8) var(--spacing-16);
+}

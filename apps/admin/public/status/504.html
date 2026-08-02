@@ -3,6 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="/status/theme.js"></script>
+  <link rel="stylesheet" href="/status/theme.css" />
   <title>The server took too long · KAILA</title>
   <style>
     :root {
@@ -63,7 +65,8 @@
 </head>
 <body>
   <main>
-    <img alt="KAILA" src="/brand/kaila-wordmark.png" width="176" height="40" />
+    <img class="wordmark-light" alt="KAILA" src="/brand/kaila-wordmark.png" width="176" height="40" />
+    <img class="wordmark-dark" alt="" aria-hidden="true" src="/brand/kaila-wordmark-on-dark.png" width="176" height="40" />
     <div class="badge">504 Gateway timeout</div>
     <h1>The server took too long</h1>
     <p>A gateway timed out before KAILA could finish. Try again in a moment.</p>

@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import {
   AlertTriangle,
@@ -16,6 +15,7 @@ import {
   WifiOff,
 } from "lucide-react";
 import styles from "./status-page.module.css";
+import { ThemeWordmark } from "../app/components/theme-wordmark";
 
 export type StatusCode =
   | 400
@@ -138,14 +138,7 @@ export function StatusPage({
   return (
     <main className={styles.page}>
       <div className={styles.panel}>
-        <Image
-          alt="KAILA"
-          className={styles.brand}
-          height={248}
-          priority
-          src="/brand/kaila-wordmark.png"
-          width={1102}
-        />
+        <ThemeWordmark className={styles.brand} priority />
         <span className={styles.badge}>
           <Icon aria-hidden="true" />
           {copy.badge}

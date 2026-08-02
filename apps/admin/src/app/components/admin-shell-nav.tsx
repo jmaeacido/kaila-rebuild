@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BarChart3, Construction, FileCheck2, HeartHandshake, Scale, ShieldAlert, UserRoundX, Users } from "lucide-react";
 import styles from "./admin-shell-nav.module.css";
+import { ThemeWordmark } from "./theme-wordmark";
 
 const authPaths = new Set(["/forgot-password", "/reset-password"]);
 const destinations = [
@@ -41,7 +41,7 @@ export function AdminShellNav() {
   return <header className={styles.shell}>
     <div className={styles.bar}>
       <Link className={styles.brand} href="/" aria-label="KAILA administration home">
-        <Image src="/brand/kaila-wordmark.png" alt="KAILA" width={1102} height={248} priority />
+        <ThemeWordmark priority />
         <span>Operations</span>
       </Link>
       <nav aria-label="Administration">
