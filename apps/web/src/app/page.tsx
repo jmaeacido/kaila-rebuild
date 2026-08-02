@@ -150,9 +150,9 @@ export default function HomePage() {
           <Link href="/community">Community</Link>
         </nav>
         <div className={styles.headerActions}>
-          <ThemeToggle />
+          <ThemeToggle className={styles.headerTheme} />
           <Link className={styles.providerLink} href="/login" prefetch={false}>
-            Sign in
+            Log in
           </Link>
           <Link className={styles.headerCta} href="/register" prefetch={false}>
             Get started
