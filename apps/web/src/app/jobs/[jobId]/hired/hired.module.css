@@ -70,7 +70,7 @@
 @keyframes navPuckPulse{0%,100%{opacity:.5;transform:translate(-50%,-50%) scale(1)}50%{opacity:.18;transform:translate(-50%,-50%) scale(1.18)}}
 @media(min-width:48rem){.navigationTop,.turnCard{left:var(--spacing-24);max-width:30rem;right:auto;width:calc(100% - var(--spacing-48))}.navigationSheet{border-radius:var(--radius-sheet);bottom:var(--spacing-24);left:var(--spacing-24);max-height:calc(100dvh - 14rem);right:auto;width:30rem}.mapControls{right:var(--spacing-24);top:var(--spacing-24)}}
 
-.chatShell{height:calc(100dvh - 5rem);margin:auto;max-width:64rem;padding:var(--spacing-12)}
+.chatShell{height:calc(var(--kaila-viewport-height,100dvh) - var(--spacing-64) - env(safe-area-inset-top));margin:auto;max-width:64rem;padding:var(--spacing-12)}
 .chatWindow{background:var(--color-surface);border:var(--control-border-width) solid var(--color-border);border-radius:var(--radius-card);box-shadow:var(--shadow-card);display:grid;grid-template-rows:auto auto auto minmax(0,1fr) auto;height:100%;overflow:hidden}
 .chatHeader{align-items:center;border-bottom:var(--control-border-width) solid var(--color-border);display:grid;gap:var(--spacing-12);grid-template-columns:var(--control-min-height) var(--spacing-48) 1fr auto;padding:var(--spacing-12) var(--spacing-16)}
 .chatHeader>a,.chatHeader nav button{align-items:center;background:transparent;border:0;border-radius:var(--radius-pill);color:var(--color-primary);display:flex;height:var(--control-min-height);justify-content:center;width:var(--control-min-height)}
@@ -113,7 +113,7 @@
 .chatEmpty svg{color:var(--color-primary);height:var(--spacing-48);width:var(--spacing-48)}
 .chatEmpty h2{color:var(--color-ink)}
 .chatLoading svg{animation:spin 1s linear infinite}
-.chatWindow .composer{background:var(--color-surface);border-top:var(--control-border-width) solid var(--color-border);display:grid;grid-template-columns:1fr;padding:var(--spacing-8) var(--spacing-12);position:relative}
+.chatWindow .composer{background:var(--color-surface);border-top:var(--control-border-width) solid var(--color-border);display:grid;grid-template-columns:1fr;padding:var(--spacing-8) var(--spacing-12) max(var(--spacing-8),env(safe-area-inset-bottom));position:relative}
 .composerBar{align-items:center;background:var(--color-background);border:var(--control-border-width) solid var(--color-border);border-radius:var(--radius-pill);display:flex;gap:var(--spacing-4);padding:var(--spacing-4)}
 .attachTray{background:var(--color-surface);border:var(--control-border-width) solid var(--color-border);border-radius:var(--radius-card);bottom:calc(100% + var(--spacing-8));box-shadow:var(--shadow-floating);left:var(--spacing-12);padding:var(--spacing-8);position:absolute;right:var(--spacing-12);z-index:4}
 .composerBar>button,.filePreview button,.emojiPicker button{align-items:center;background:transparent;border:0;border-radius:var(--radius-pill);color:var(--color-text-secondary);display:flex;flex:0 0 auto;height:var(--control-min-height);justify-content:center;width:var(--control-min-height)}
@@ -129,7 +129,7 @@
 .emojiPicker h2{color:var(--color-text-secondary);font-size:var(--font-caption-size);font-weight:var(--font-weight-semibold)}
 .emojiPicker section>div{display:grid;grid-template-columns:repeat(7,minmax(var(--control-min-height),1fr))}
 .emojiPicker button{font-size:var(--font-card-title-size)}
-@media(max-width:36rem){.chatShell{height:calc(100dvh - 4.5rem);padding:0}
+@media(max-width:36rem){.chatShell{height:calc(var(--kaila-viewport-height,100dvh) - var(--spacing-64) - env(safe-area-inset-top));padding:0}
 .chatWindow{border-left:0;border-radius:0;border-right:0}
 .chatHeader{grid-template-columns:var(--control-min-height) var(--spacing-48) 1fr auto;padding:var(--spacing-8)}
 .chatAvatar{height:var(--spacing-48);width:var(--spacing-48)}
