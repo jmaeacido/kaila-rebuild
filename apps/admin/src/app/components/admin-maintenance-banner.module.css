@@ -1,0 +1,116 @@
+.scheduled,
+.active {
+  align-items: flex-start;
+  border-bottom: var(--control-border-width) solid var(--color-border);
+  display: grid;
+  gap: var(--spacing-12);
+  grid-template-columns: 44px 1fr auto;
+  padding: var(--spacing-12) var(--spacing-16);
+}
+
+.scheduled {
+  background: color-mix(in srgb, var(--color-warning) 14%, var(--color-surface));
+  color: var(--color-ink);
+}
+
+.active {
+  background: color-mix(in srgb, var(--color-danger) 14%, var(--color-surface));
+  color: var(--color-ink);
+}
+
+.icon {
+  align-items: center;
+  background: color-mix(in srgb, var(--color-primary) 12%, var(--color-surface));
+  border-radius: var(--radius-pill);
+  color: var(--color-primary);
+  display: grid;
+  height: 44px;
+  justify-content: center;
+  width: 44px;
+}
+
+.active .icon {
+  background: color-mix(in srgb, var(--color-danger) 14%, var(--color-surface));
+  color: var(--color-danger);
+}
+
+.icon svg {
+  height: var(--spacing-20, 1.25rem);
+  width: var(--spacing-20, 1.25rem);
+}
+
+.copy {
+  display: grid;
+  gap: var(--spacing-4);
+  min-width: 0;
+}
+
+.copy strong {
+  color: var(--color-ink);
+}
+
+.copy p {
+  color: var(--color-text-secondary);
+  font-size: var(--font-small-size);
+  margin: 0;
+}
+
+.countdown {
+  color: var(--color-ink) !important;
+  font-size: var(--font-body-size) !important;
+}
+
+.countdown strong {
+  font-variant-numeric: tabular-nums;
+}
+
+.actions {
+  align-items: center;
+  display: flex;
+  gap: var(--spacing-8);
+}
+
+.actions a,
+.actions button {
+  align-items: center;
+  background: var(--color-surface);
+  border: var(--control-border-width) solid var(--color-border);
+  border-radius: var(--radius-button);
+  color: var(--color-ink);
+  display: inline-flex;
+  font: inherit;
+  font-size: var(--font-small-size);
+  font-weight: var(--font-weight-semibold);
+  gap: var(--spacing-8);
+  justify-content: center;
+  min-height: 44px;
+  min-width: 44px;
+  padding: var(--spacing-8) var(--spacing-12);
+  text-decoration: none;
+}
+
+.actions a {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.actions button {
+  cursor: pointer;
+}
+
+.actions svg {
+  height: var(--spacing-16);
+  width: var(--spacing-16);
+}
+
+@media (max-width: 40rem) {
+  .scheduled,
+  .active {
+    grid-template-columns: 44px 1fr;
+  }
+
+  .actions {
+    grid-column: 1 / -1;
+  }
+}

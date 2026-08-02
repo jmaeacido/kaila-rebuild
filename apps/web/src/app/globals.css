@@ -251,22 +251,22 @@ a {
   text-decoration: none;
 }
 
-.appSessionBar button {
-  color: var(--color-danger);
-}
-
-.appSessionBar .sessionThemeToggle button {
+.appSessionBar .sessionMenu button {
   color: var(--color-ink);
-  background: var(--color-surface);
 }
 
-.appSessionBar .sessionThemeToggle .sessionThemeMenuOption,
-.appSessionBar .sessionThemeToggle button[role="menuitemradio"] {
-  color: var(--color-text);
-  background: transparent;
+.appSessionBar .sessionMenu button[role="menuitem"],
+.appSessionBar .sessionMenu a[role="menuitem"],
+.appSessionBar .sessionMenu button[role="menuitemradio"] {
   border: 0;
-  width: 100%;
+  color: var(--color-text);
   justify-content: flex-start;
+  width: 100%;
+}
+
+.appSessionBar .sessionMenu button[role="menuitem"].danger,
+.appSessionBar .sessionMenu .sessionMenuDanger {
+  color: var(--color-danger);
 }
 
 .appSessionBar .notificationBell {
@@ -338,16 +338,6 @@ a {
   width: 100%;
 }
 
-.appSessionBar .sessionMobileSignOut {
-  align-items: center;
-  display: inline-flex;
-  flex: 0 0 var(--control-min-height);
-  height: var(--control-min-height);
-  justify-content: center;
-  padding: 0;
-  width: var(--control-min-height);
-}
-
 @media (max-width: 63.999rem) {
   .appSessionBar {
     gap: var(--spacing-8);
@@ -355,10 +345,6 @@ a {
 
   .appSessionBar .sessionLogo {
     width: calc(var(--spacing-64) + var(--spacing-32));
-  }
-
-  .appSessionBar .sessionDesktopAction {
-    display: none;
   }
 
   .appSessionBar > a {
@@ -370,7 +356,8 @@ a {
     flex: 0 0 auto;
   }
 
-  .appSessionBar .notificationBell {
+  .appSessionBar .notificationBell,
+  .appSessionBar .sessionMenu > button {
     align-items: center;
     display: inline-flex;
     flex: 0 0 var(--control-min-height);
@@ -397,7 +384,7 @@ a {
 
   .appSessionBar .sessionAvatar,
   .appSessionBar .notificationBell,
-  .appSessionBar .sessionMobileSignOut {
+  .appSessionBar .sessionMenu > button {
     flex-basis: var(--control-min-height);
     height: var(--control-min-height);
     min-height: var(--control-min-height);
@@ -414,11 +401,11 @@ a {
   .appSessionBar .sessionName {
     display: inline;
   }
-}
 
-@media (min-width: 64rem) {
-  .appSessionBar .sessionMobileSignOut {
-    display: none;
+  .appSessionBar .sessionMenu > button {
+    flex: 0 0 auto;
+    padding: 0 var(--spacing-12);
+    width: auto;
   }
 }
 
@@ -521,9 +508,10 @@ a {
   }
 }
 /* Global realtime and confirmation feedback */
-.toastViewport { position: fixed; left: var(--spacing-16); right: var(--spacing-16); bottom: calc(76px + var(--spacing-16)); z-index: 1000; display: grid; gap: var(--spacing-8); width: auto; max-width: 28rem; margin-inline: auto; pointer-events: none; }
+.toastViewport { position: fixed; left: var(--spacing-16); right: var(--spacing-16); bottom: calc(76px + var(--spacing-16)); z-index: 1200; display: grid; gap: var(--spacing-8); width: auto; max-width: 28rem; margin-inline: auto; pointer-events: none; }
 .appToast { display: grid; grid-template-columns: 44px 1fr 44px; gap: var(--spacing-8); align-items: start; padding: var(--spacing-12); color: var(--color-ink); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-card); box-shadow: var(--shadow-floating); pointer-events: auto; animation: toast-in var(--duration-fast) ease-out; }
 .appToastDialog { border: var(--control-border-width) solid var(--color-primary); border-radius: var(--radius-dialog); padding: var(--spacing-16); }
+.appToastPinned { grid-template-columns: 44px 1fr; }
 .appToastIcon { display: grid; place-items: center; width: 44px; height: 44px; color: var(--color-primary); background: color-mix(in srgb, var(--color-primary) 10%, var(--color-surface)); border-radius: 999px; overflow: hidden; }
 .appToastAvatar { font-size: var(--font-body-size); font-weight: var(--font-weight-semibold); }
 .appToastAvatar img { display: block; height: 100%; object-fit: cover; width: 100%; }
@@ -531,6 +519,8 @@ a {
 .appToastEyebrow { margin: 0 0 var(--spacing-4); color: var(--color-primary); font-size: var(--font-small-size); font-weight: var(--font-weight-semibold); letter-spacing: 0.04em; text-transform: uppercase; }
 .appToast strong { display: block; margin-block: 2px var(--spacing-4); }
 .appToast p { margin: 0; color: var(--color-text-secondary); font-size: 14px; }
+.appToastCountdown { margin-top: var(--spacing-8) !important; color: var(--color-ink) !important; font-size: var(--font-body-size) !important; }
+.appToastCountdown strong { display: inline; margin: 0; font-variant-numeric: tabular-nums; }
 .appToastMatchMeta { display: grid; gap: var(--spacing-4); margin-top: var(--spacing-8); }
 .appToastMatchMeta > span { align-items: center; color: var(--color-text-secondary); display: flex; font-size: var(--font-small-size); gap: var(--spacing-4); min-height: var(--spacing-20); }
 .appToastMatchMeta svg { flex: 0 0 auto; height: var(--spacing-16); width: var(--spacing-16); color: var(--color-primary); }

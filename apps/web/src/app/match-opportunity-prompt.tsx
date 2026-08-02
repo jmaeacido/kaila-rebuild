@@ -1,5 +1,7 @@
 "use client";
 
+/* eslint-disable react-hooks/set-state-in-effect */
+
 import { useEffect, useState, type ReactNode } from "react";
 import { MapPin, Navigation, PhilippinePeso } from "lucide-react";
 import { OpportunityRouteMetrics } from "../components/job-request-location";

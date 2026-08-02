@@ -3,19 +3,20 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { BrandMark } from "../components/brand-mark";
-import { ThemeToggle } from "../components/theme-toggle";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Home, LogOut } from "lucide-react";
 import { prepareCsrf } from "./auth-client";
 import { BrandedLoader } from "./branded-loader";
 import { FloatingKatabang } from "../components/floating-katabang";
+import { SessionMenu } from "../components/session-menu";
+import { AreaMismatchBanner } from "../components/area-mismatch-banner";
 import { CallProvider } from "./calls/call-provider";
 import { NotificationBell } from "./notification-bell";
 import { PullToRefresh } from "./pull-to-refresh";
 import { realtimeAuthChangedName } from "./realtime-provider";
 import { useTheme } from "./theme-provider";
 import { isThemePreference } from "./theme";
+import { clearSession, ensureMobileSession } from "@kaila/mobile/session";
 
 const PUBLIC_PATHS = new Set([
   "/",
@@ -26,7 +27,14 @@ const PUBLIC_PATHS = new Set([
   "/reset-password",
   "/terms",
   "/account-deletion",
+  "/maintenance",
+  "/faqs",
 ]);
+
+function isPublicPath(pathname: string): boolean {
+  if (PUBLIC_PATHS.has(pathname)) return true;
+  return pathname.startsWith("/status/");
+}
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -36,7 +44,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const [userName, setUserName] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [loggingOut, setLoggingOut] = useState(false);
-  const isPublic = PUBLIC_PATHS.has(pathname);
+  const isPublic = isPublicPath(pathname);
 
   useEffect(() => {
     if (isPublic) {
@@ -83,6 +91,10 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
           applyAccountTheme(userBody.data.appearanceTheme);
         }
         setAllowedPath(pathname);
+        const capacitor = (window as Window & { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor;
+        if (capacitor?.isNativePlatform?.()) {
+          void ensureMobileSession(window.location.origin).catch(() => undefined);
+        }
       })
       .catch(() => {
         if (active) {
@@ -122,6 +134,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
           ...(token ? { "X-XSRF-TOKEN": token } : {}),
         },
       });
+      await clearSession().catch(() => undefined);
     } finally {
       window.dispatchEvent(new Event(realtimeAuthChangedName));
       router.replace("/login");
@@ -156,33 +169,11 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
             ) : null}
           </Link>
           <span className="sessionName">{userName}</span>
-          <ThemeToggle className="sessionThemeToggle" />
           <NotificationBell />
-          <button
-            className="sessionMobileSignOut"
-            disabled={loggingOut}
-            onClick={() => void signOut()}
-            type="button"
-            aria-label={loggingOut ? "Signing out" : "Sign out"}
-            title={loggingOut ? "Signing out" : "Sign out"}
-          >
-            <LogOut aria-hidden="true" />
-          </button>
-          <Link className="sessionDesktopAction" href="/home" prefetch={false}>
-            <Home aria-hidden="true" />
-            Home
-          </Link>
-          <button
-            className="sessionDesktopAction"
-            disabled={loggingOut}
-            onClick={() => void signOut()}
-            type="button"
-          >
-            <LogOut aria-hidden="true" />
-            {loggingOut ? "Signing out…" : "Sign out"}
-          </button>
+          <SessionMenu loggingOut={loggingOut} onSignOut={() => void signOut()} />
         </div>
       </header>
+      <AreaMismatchBanner />
       {children}
       {pathname !== "/help/katabang" && <FloatingKatabang />}
     </CallProvider>

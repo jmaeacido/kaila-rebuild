@@ -103,7 +103,7 @@ class OpportunityMatchingService
             'areaId' => $job->area_id,
             'categoryId' => $job->service_category_id,
         ]);
-        $this->outbox->record('opportunity.matched', 'job_opportunity', $opportunity->id, 1, [
+        $this->outbox->record('opportunity.matched', 'job_opportunity', (string) $opportunity->id, 1, [
             'rooms' => ["user:{$provider->user_id}"],
             'jobId' => $job->id,
             'opportunityId' => $opportunity->id,

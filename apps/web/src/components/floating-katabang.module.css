@@ -102,8 +102,9 @@
 
 .conversation {
   background: var(--color-background);
+  align-content: start;
   display: grid;
-  gap: var(--spacing-16);
+  gap: var(--spacing-12);
   overflow-y: auto;
   padding: var(--spacing-16);
 }
@@ -115,6 +116,7 @@
   display: grid;
   gap: var(--spacing-8);
   justify-items: center;
+  min-height: 100%;
   text-align: center;
 }
 
@@ -129,6 +131,7 @@
 }
 
 .exchange {
+  align-content: start;
   display: grid;
   gap: var(--spacing-8);
 }

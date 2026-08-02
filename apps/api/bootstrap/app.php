@@ -1,9 +1,11 @@
 <?php
 
+use App\Console\Commands\ActivateScheduledMaintenance;
 use App\Console\Commands\ImportLegacyUsers;
 use App\Http\Middleware\AssignRequestContext;
 use App\Http\Middleware\AuthenticateMobileAccessToken;
 use App\Http\Middleware\EnsureAdministrator;
+use App\Http\Middleware\EnsureNotInMaintenance;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
@@ -19,7 +21,7 @@ use Illuminate\View\Middleware\ShareErrorsFromSession;
 use Symfony\Component\HttpFoundation\Response;
 
 return Application::configure(basePath: dirname(__DIR__))
-    ->withCommands([ImportLegacyUsers::class])
+    ->withCommands([ImportLegacyUsers::class, ActivateScheduledMaintenance::class])
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
         api: __DIR__.'/../routes/api.php',
@@ -44,6 +46,7 @@ return Application::configure(basePath: dirname(__DIR__))
             StartSession::class,
             ShareErrorsFromSession::class,
             ValidateCsrfToken::class,
+            EnsureNotInMaintenance::class,
         ]);
 
         $middleware->validateCsrfTokens(except: [

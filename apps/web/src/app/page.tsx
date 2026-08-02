@@ -455,6 +455,7 @@ export default function HomePage() {
         <p>Nearby help, made simple.</p>
         <nav aria-label="Footer navigation">
           <Link href="/community">Community</Link>
+          <Link href="/faqs">FAQs</Link>
           <Link href="/privacy">Privacy</Link>
           <Link href="/terms">Terms</Link>
           <Link href="/account-deletion">Account deletion</Link>

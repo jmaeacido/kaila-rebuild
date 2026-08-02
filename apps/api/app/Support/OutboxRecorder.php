@@ -46,6 +46,17 @@ class OutboxRecorder
      */
     private function normalizeRealtimePayload(array $payload): array
     {
+        if (($payload['broadcast'] ?? null) === 'authenticated') {
+            $data = is_array($payload['data'] ?? null)
+                ? $payload['data']
+                : array_diff_key($payload, array_flip(['broadcast', 'data', 'recipientUserIds', 'rooms']));
+
+            return [
+                'broadcast' => 'authenticated',
+                'data' => $data,
+            ];
+        }
+
         if (! isset($payload['rooms']) || isset($payload['recipientUserIds'])) {
             return $payload;
         }

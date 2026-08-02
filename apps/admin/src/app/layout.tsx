@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { AdminShellNav } from "./components/admin-shell-nav";
+import { AdminMaintenanceBanner } from "./components/admin-maintenance-banner";
 
 export const metadata: Metadata = {
   title: "KAILA Administration",
@@ -14,7 +15,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body><AdminShellNav />{children}</body>
+      <body>
+        <AdminShellNav />
+        <AdminMaintenanceBanner />
+        {children}
+      </body>
     </html>
   );
 }

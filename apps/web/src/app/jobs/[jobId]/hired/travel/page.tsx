@@ -5,7 +5,7 @@ import { use, useCallback, useEffect, useRef, useState } from "react";
 import { ArrowLeft, ArrowUp, Check, ChevronLeft, ChevronRight, LocateFixed, MessageCircle, Navigation, RotateCcw, ShieldCheck, Square } from "lucide-react";
 import { Button, Feedback } from "@kaila/ui";
 import { BackgroundNavigation } from "@kaila/mobile/background-navigation";
-import { loadSession } from "@kaila/mobile/session";
+import { ensureMobileSession } from "@kaila/mobile/session";
 import styles from "../hired.module.css";
 import { LiveTravelMap } from "./live-travel-map";
 import { useRealtimeInvalidation } from "../../../../use-realtime-invalidation";
@@ -37,6 +37,11 @@ type Travel = {
   destinationLabel: string | null;
 };
 
+function isNativePlatform() {
+  const capacitor = (window as Window & { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor;
+  return capacitor?.isNativePlatform?.() === true;
+}
+
 function ManeuverIcon({ step }: { step: RouteStep | null }) {
   if (step?.maneuver === "arrive") return <Check aria-hidden="true" />;
   if (step?.modifier?.includes("left")) return <ChevronLeft aria-hidden="true" />;
@@ -64,20 +69,29 @@ export default function TravelPage({ params }: { params: Promise<{ jobId: string
     setHeading(next);
   }, []);
 
+  const stopWebWatch = useCallback(() => {
+    if (watchId.current !== null) {
+      navigator.geolocation.clearWatch(watchId.current);
+      watchId.current = null;
+    }
+  }, []);
+
   const startNativeNavigation = useCallback(async () => {
-    const capacitor = (window as Window & { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor;
-    if (!capacitor?.isNativePlatform?.()) return false;
-    const session = await loadSession();
-    if (!session) throw new Error("Your mobile session needs to be refreshed before background navigation can start.");
-    const origin = process.env.NEXT_PUBLIC_KAILA_API_ORIGIN ?? window.location.origin;
+    if (!isNativePlatform()) return false;
+    const browserOrigin = window.location.origin;
+    const apiOrigin = process.env.NEXT_PUBLIC_KAILA_API_ORIGIN ?? browserOrigin;
+    const session = await ensureMobileSession(browserOrigin);
     await BackgroundNavigation.start({
-      locationUrl: new URL(`/api/v1/auth/mobile/jobs/${jobId}/travel/location`, origin).href,
-      stopUrl: new URL(`/api/v1/auth/mobile/jobs/${jobId}/travel/stop`, origin).href,
+      locationUrl: new URL(`/api/v1/auth/mobile/jobs/${jobId}/travel/location`, apiOrigin).href,
+      stopUrl: new URL(`/api/v1/auth/mobile/jobs/${jobId}/travel/stop`, apiOrigin).href,
+      refreshUrl: new URL("/api/v1/auth/mobile/refresh", apiOrigin).href,
       accessToken: session.accessToken,
+      refreshToken: session.refreshToken,
     });
     nativeNavigation.current = true;
+    stopWebWatch();
     return true;
-  }, [jobId]);
+  }, [jobId, stopWebWatch]);
 
   const load = useCallback(async (quiet = false) => {
     try {
@@ -95,8 +109,8 @@ export default function TravelPage({ params }: { params: Promise<{ jobId: string
 
   useEffect(() => {
     void load();
-    return () => { if (watchId.current !== null) navigator.geolocation.clearWatch(watchId.current); };
-  }, [load]);
+    return () => { stopWebWatch(); };
+  }, [load, stopWebWatch]);
 
   // Keep heading current for observers and native background travelers from shared samples.
   useEffect(() => {
@@ -119,11 +133,12 @@ export default function TravelPage({ params }: { params: Promise<{ jobId: string
   const sendPosition = useCallback(async (position: GeolocationPosition, force = false) => {
     if (sending.current || (!force && Date.now() - lastSentAt.current < 3000)) return;
     sending.current = true;
+    const capturedAt = new Date(Math.max(position.timestamp, lastSentAt.current + 1)).toISOString();
     const current: Point = {
       latitude: position.coords.latitude,
       longitude: position.coords.longitude,
       accuracyMeters: Math.max(1, Math.min(200, Math.round(position.coords.accuracy))),
-      capturedAt: new Date(position.timestamp).toISOString(),
+      capturedAt,
     };
     const nextHeading = resolveTravelHeading({
       gpsHeading: position.coords.heading,
@@ -164,36 +179,67 @@ export default function TravelPage({ params }: { params: Promise<{ jobId: string
         setState("error");
       }),
       (error) => {
-        if (watchId.current !== null) navigator.geolocation.clearWatch(watchId.current);
-        watchId.current = null;
+        stopWebWatch();
         setErrorMessage(error.code === error.PERMISSION_DENIED ? "Allow precise location for KAILA in Android Settings, then try again." : "KAILA could not get your current location. Turn on Location and try again.");
         setState("error");
       },
       { enableHighAccuracy: true, maximumAge: 3000, timeout: 15000 },
     );
-  }, [sendPosition]);
+  }, [sendPosition, stopWebWatch]);
 
-  useEffect(() => {
-    if (!travel?.canShareLocation || travel.status !== "active") return;
-    const capacitor = (window as Window & { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor;
-    if (!capacitor?.isNativePlatform?.()) {
+  const ensureSharing = useCallback(async () => {
+    if (!isNativePlatform()) {
       beginLocationWatch();
       return;
     }
-    void BackgroundNavigation.status().then(({ active: serviceActive }) => {
-      nativeNavigation.current = serviceActive;
-      if (!serviceActive) {
-        setErrorMessage("Background navigation stopped. Tap Retry to resume sharing.");
+    try {
+      const { active: serviceActive } = await BackgroundNavigation.status();
+      if (serviceActive) {
+        nativeNavigation.current = true;
+        stopWebWatch();
+        return;
+      }
+      nativeNavigation.current = false;
+      try {
+        await startNativeNavigation();
+      } catch {
+        beginLocationWatch();
+        setErrorMessage("Background navigation unavailable. Sharing continues while KAILA stays open.");
         setState("error");
       }
-    }).catch(() => {
-      setErrorMessage("KAILA could not verify background navigation. Tap Retry to resume sharing.");
+    } catch {
+      nativeNavigation.current = false;
+      beginLocationWatch();
+      setErrorMessage("KAILA could not verify background navigation. Sharing continues while the app stays open.");
       setState("error");
-    });
-  }, [beginLocationWatch, travel?.canShareLocation, travel?.status]);
+    }
+  }, [beginLocationWatch, startNativeNavigation, stopWebWatch]);
+
+  useEffect(() => {
+    if (!travel?.canShareLocation || travel.status !== "active") return;
+    void ensureSharing();
+    if (!isNativePlatform()) return;
+    const timer = window.setInterval(() => {
+      void BackgroundNavigation.status().then(({ active: serviceActive }) => {
+        if (serviceActive) {
+          nativeNavigation.current = true;
+          stopWebWatch();
+          return;
+        }
+        if (nativeNavigation.current) {
+          nativeNavigation.current = false;
+          beginLocationWatch();
+          setErrorMessage("Background navigation stopped. Sharing continues while KAILA stays open. Tap Retry to resume background sharing.");
+          setState("error");
+        }
+      }).catch(() => undefined);
+    }, 15000);
+    return () => window.clearInterval(timer);
+  }, [beginLocationWatch, ensureSharing, stopWebWatch, travel?.canShareLocation, travel?.status]);
 
   async function start() {
     setState("sharing");
+    setErrorMessage("");
     if (!navigator.geolocation) {
       setErrorMessage("Live location is not supported on this device.");
       setState("error");
@@ -202,22 +248,30 @@ export default function TravelPage({ params }: { params: Promise<{ jobId: string
     try {
       const initialPosition = await new Promise<GeolocationPosition>((resolve, reject) => navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, maximumAge: 3000, timeout: 15000 }));
       const response = await fetch(`/api/v1/jobs/${jobId}/travel/start`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ consentConfirmed: true, foreground: true }) });
-      if (!response.ok) throw new Error();
+      if (!response.ok) throw new Error("TRAVEL_START");
       await sendPosition(initialPosition, true);
-      const backgroundStarted = await startNativeNavigation();
-      if (!backgroundStarted) beginLocationWatch();
+      try {
+        const backgroundStarted = await startNativeNavigation();
+        if (!backgroundStarted) beginLocationWatch();
+      } catch (error) {
+        beginLocationWatch();
+        setErrorMessage(error instanceof Error ? error.message : "Background navigation unavailable. Sharing continues while KAILA stays open.");
+      }
       await load();
-    } catch {
-      setErrorMessage("Allow precise location for KAILA and turn on Location, then try again.");
+    } catch (error) {
+      if (error instanceof Error && error.message === "TRAVEL_START") {
+        setErrorMessage("Navigation could not be started. Check your connection and try again.");
+      } else {
+        setErrorMessage("Allow precise location for KAILA and turn on Location, then try again.");
+      }
       setState("error");
     }
   }
 
   async function stop() {
-    if (watchId.current !== null) navigator.geolocation.clearWatch(watchId.current);
-    watchId.current = null;
+    stopWebWatch();
     setState("sharing");
-    if (nativeNavigation.current) {
+    if (nativeNavigation.current || isNativePlatform()) {
       await BackgroundNavigation.stop().catch(() => undefined);
       nativeNavigation.current = false;
     }
@@ -234,9 +288,8 @@ export default function TravelPage({ params }: { params: Promise<{ jobId: string
     setErrorMessage("");
     setState("loading");
     try {
-      if (travel?.canShareLocation && active) {
-        const backgroundStarted = await startNativeNavigation();
-        if (!backgroundStarted) beginLocationWatch();
+      if (travel?.canShareLocation && travel.status === "active") {
+        await ensureSharing();
       }
       await load();
     } catch (error) {

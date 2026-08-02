@@ -6,6 +6,7 @@ import { NativeRuntime } from "./native-runtime";
 import { AuthGuard } from "./auth-guard";
 import { RealtimeProvider } from "./realtime-provider";
 import { NotificationRuntime } from "./notification-runtime";
+import { MaintenanceGate } from "./maintenance-gate";
 import { ThemeProvider } from "./theme-provider";
 import { themeBootstrapScript } from "./theme";
 
@@ -15,10 +16,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f7f9fc" },
-    { media: "(prefers-color-scheme: dark)", color: "#0c1524" },
-  ],
+  themeColor: "#f7f9fc",
   colorScheme: "light dark",
 };
 
@@ -37,6 +35,7 @@ export default function RootLayout({
           <NativeRuntime />
           <OnlineStatus />
           <RealtimeProvider>
+            <MaintenanceGate />
             <NotificationRuntime />
             <AuthGuard>{children}</AuthGuard>
           </RealtimeProvider>

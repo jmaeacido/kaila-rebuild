@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { Button, Feedback } from "@kaila/ui";
 import { prepareCsrf } from "../auth-client";
+import { clearSession } from "@kaila/mobile/session";
 import styles from "../account/account.module.css";
 import settingsStyles from "./settings.module.css";
 import { useTheme } from "../theme-provider";
@@ -145,6 +146,7 @@ export default function SettingsPage() {
           ...(token ? { "X-XSRF-TOKEN": token } : {}),
         },
       });
+      await clearSession().catch(() => undefined);
     } finally {
       router.replace("/login");
       router.refresh();

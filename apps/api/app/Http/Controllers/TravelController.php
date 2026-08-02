@@ -143,7 +143,7 @@ class TravelController extends Controller
             'latitude' => (float) $sample->latitude,
             'longitude' => (float) $sample->longitude,
             'accuracyMeters' => $sample->accuracy_meters,
-            'headingDegrees' => isset($sample->heading_degrees) && $sample->heading_degrees !== null
+            'headingDegrees' => is_numeric($sample->heading_degrees ?? null)
                 ? (float) $sample->heading_degrees
                 : null,
             'capturedAt' => $sample->captured_at,

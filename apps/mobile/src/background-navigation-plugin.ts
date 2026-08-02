@@ -1,7 +1,13 @@
 import { registerPlugin } from "@capacitor/core";
 
 type BackgroundNavigationPlugin = {
-  start(options: { locationUrl: string; stopUrl: string; accessToken: string }): Promise<void>;
+  start(options: {
+    locationUrl: string;
+    stopUrl: string;
+    accessToken: string;
+    refreshUrl?: string;
+    refreshToken?: string;
+  }): Promise<void>;
   stop(): Promise<void>;
   status(): Promise<{ active: boolean }>;
 };

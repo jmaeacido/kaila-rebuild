@@ -29,7 +29,6 @@ const PUBLIC_PATHS = new Set([
   "/register",
   "/reset-password",
   "/terms",
-  "/account-deletion",
 ]);
 
 let latestRealtimeStatus: RealtimeStatus = "disconnected";

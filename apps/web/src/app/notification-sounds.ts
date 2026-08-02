@@ -13,6 +13,10 @@ const SOUND_BY_EVENT: Record<string, string> = {
   "support.case.created": "/sounds/kaila_support.wav",
   "support.message.created": "/sounds/kaila_support.wav",
   "support.reply": "/sounds/kaila_support.wav",
+  "platform.maintenance.scheduled": "/sounds/kaila_job_update.wav",
+  "platform.maintenance.activated": "/sounds/kaila_job_update.wav",
+  "platform.maintenance.cancelled": "/sounds/kaila_job_update.wav",
+  "platform.maintenance.ended": "/sounds/kaila_job_hired.wav",
 };
 
 const SOUND_BY_ROUTE: Record<string, string> = {
@@ -75,6 +79,8 @@ export function soundForNotification(type: string, routeType?: string | null): s
 
 export function playNotificationSound(src: string | null | undefined, options: PlaySoundOptions = {}): void {
   if (!src || typeof window === "undefined") return;
+  // Notification chimes wait for a user gesture; in-app UI cues (allowNative) may already be gesture-driven.
+  if (!unlocked && !options.allowNative) return;
   if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
   // Native Android already plays channel sounds for background pushes; keep web/desktop chimes only
   // unless the caller opts in (in-app UI cues like typing / reacts / call feedback).

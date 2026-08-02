@@ -17,6 +17,9 @@ export type FeedbackMessage = {
   actionLabel?: string;
   eyebrow?: string;
   matchJobId?: string;
+  kind?: string;
+  maintenanceEndsAt?: number;
+  maintenanceScheduledAt?: string;
 };
 
 const ephemeralEventTypes = new Set([
@@ -97,6 +100,48 @@ export function feedbackForDomainEvent(event: DomainEvent): FeedbackMessage | nu
       eyebrow: matched ? "NEW MATCH NEAR YOU" : undefined,
       matchJobId: matched && /^[A-Za-z0-9-]+$/.test(jobId) ? jobId : undefined,
     };
+  }
+
+  if (event.type === "platform.maintenance.scheduled") {
+    const message = typeof event.data.message === "string" ? event.data.message : "KAILA will pause for maintenance soon.";
+    const scheduledAt = typeof event.data.scheduledAt === "string" ? event.data.scheduledAt : null;
+    const endsAtFromSchedule = scheduledAt ? Date.parse(scheduledAt) : Number.NaN;
+    const seconds = typeof event.data.secondsRemaining === "number"
+      ? event.data.secondsRemaining
+      : typeof event.data.countdownSeconds === "number"
+        ? event.data.countdownSeconds
+        : 60;
+    return {
+      title: "Maintenance starting soon",
+      body: message,
+      persistent: true,
+      eyebrow: "PLATFORM NOTICE",
+      kind: "maintenance-countdown",
+      maintenanceScheduledAt: scheduledAt ?? undefined,
+      maintenanceEndsAt: Number.isFinite(endsAtFromSchedule)
+        ? endsAtFromSchedule
+        : Date.now() + Math.max(0, seconds) * 1000,
+    };
+  }
+
+  if (event.type === "platform.maintenance.cancelled") {
+    return {
+      title: "Maintenance cancelled",
+      body: typeof event.data.message === "string" ? event.data.message : "Scheduled maintenance was cancelled.",
+      persistent: false,
+      eyebrow: "PLATFORM NOTICE",
+      kind: "maintenance-cancelled",
+    };
+  }
+
+  if (event.type === "platform.maintenance.activated") {
+    // Redirect handles awareness; a toast would linger after users leave /maintenance.
+    return null;
+  }
+
+  if (event.type === "platform.maintenance.ended") {
+    // The maintenance page already shows "back online"; avoid a leftover toast after Continue.
+    return null;
   }
 
   return null;

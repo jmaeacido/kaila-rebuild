@@ -2,7 +2,7 @@
 
 ## Decision
 
-KAILA fulfills an eligible account-deletion request immediately after password re-authentication and explicit typed confirmation. Deletion keeps the user row as a neutral `Deleted KAILA member` identity while irreversibly replacing direct identifiers, removing public profile media and provider credentials, deleting push and notification data, revoking browser and mobile sessions, and preventing future authentication.
+KAILA fulfills an eligible account-deletion request immediately after identity re-confirmation and explicit typed confirmation. Password accounts re-enter their current password. Social sign-in accounts (for example Google) confirm by typing their account email, because they have no KAILA password. Deletion keeps the user row as a neutral `Deleted KAILA member` identity while irreversibly replacing direct identifiers, removing public profile media and provider credentials, deleting push and notification data, revoking browser and mobile sessions, and preventing future authentication.
 
 Draft jobs and their media are removed because they have no shared marketplace history. Completed or otherwise retained job, offer, message, review, dispute, moderation, support, and audit relationships remain attached to the neutral identity when needed for the other participant's history, safety, fraud prevention, dispute handling, and operational integrity.
 

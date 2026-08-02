@@ -27,6 +27,20 @@ class MobileAuthenticationTest extends TestCase
             ->assertJsonPath('data.id', (string) $user->getKey());
     }
 
+    public function test_cookie_session_can_bridge_mobile_tokens(): void
+    {
+        $user = User::factory()->create();
+        $this->actingAs($user)
+            ->postJson('/api/v1/auth/mobile/bridge', ['deviceName' => 'KAILA Android'])
+            ->assertOk()
+            ->assertJsonPath('data.tokens.tokenType', 'Bearer');
+
+        $accessToken = $this->postJson('/api/v1/auth/mobile/bridge', ['deviceName' => 'KAILA Android'])->json('data.tokens.accessToken');
+        $this->withToken($accessToken)->getJson('/api/v1/auth/mobile/me')
+            ->assertOk()
+            ->assertJsonPath('data.id', (string) $user->getKey());
+    }
+
     public function test_refresh_token_is_single_use_and_rotates_both_tokens(): void
     {
         $user = User::factory()->create();

@@ -70,20 +70,42 @@ await deliverySubscriber.subscribe(config.OUTBOX_REALTIME_CHANNEL, (message) => 
     return;
   }
 
-  const rooms = publication.recipientUserIds.map((userId) => `user:${userId}`);
-  let target = io.to(rooms[0]);
-  for (const room of rooms.slice(1)) target = target.to(room);
-  process.stdout.write(structuredLog("info", "realtime.event_published", {
-    eventId: publication.event.eventId,
-    eventType: publication.event.type,
-    recipientCount: publication.recipientUserIds.length,
-    connectedSocketCount: io.sockets.sockets.size,
-  }) + "\n");
-  target.timeout(2_000).emit("domain.event", publication.event, (error: Error | null, responses: unknown[]) => {
-    process.stdout.write(structuredLog(error ? "warn" : "info", "realtime.event_delivery", {
+  if ("recipientUserIds" in publication) {
+    const rooms = publication.recipientUserIds.map((userId) => `user:${userId}`);
+    let target = io.to(rooms[0]);
+    for (const room of rooms.slice(1)) target = target.to(room);
+    process.stdout.write(structuredLog("info", "realtime.event_published", {
       eventId: publication.event.eventId,
       eventType: publication.event.type,
       recipientCount: publication.recipientUserIds.length,
+      broadcast: null,
+      connectedSocketCount: io.sockets.sockets.size,
+    }) + "\n");
+    target.timeout(2_000).emit("domain.event", publication.event, (error: Error | null, responses: unknown[]) => {
+      process.stdout.write(structuredLog(error ? "warn" : "info", "realtime.event_delivery", {
+        eventId: publication.event.eventId,
+        eventType: publication.event.type,
+        recipientCount: publication.recipientUserIds.length,
+        acknowledgementCount: responses?.length ?? 0,
+        timedOut: Boolean(error),
+      }) + "\n");
+    });
+    return;
+  }
+
+  const recipientCount = io.sockets.sockets.size;
+  process.stdout.write(structuredLog("info", "realtime.event_published", {
+    eventId: publication.event.eventId,
+    eventType: publication.event.type,
+    recipientCount,
+    broadcast: publication.broadcast,
+    connectedSocketCount: io.sockets.sockets.size,
+  }) + "\n");
+  io.to("broadcast:authenticated").timeout(2_000).emit("domain.event", publication.event, (error: Error | null, responses: unknown[]) => {
+    process.stdout.write(structuredLog(error ? "warn" : "info", "realtime.event_delivery", {
+      eventId: publication.event.eventId,
+      eventType: publication.event.type,
+      recipientCount,
       acknowledgementCount: responses?.length ?? 0,
       timedOut: Boolean(error),
     }) + "\n");
@@ -117,6 +139,7 @@ io.on("connection", async (socket) => {
   // and client events are never accepted as room identifiers.
   const userId = socket.data.userId as string;
   await socket.join(`user:${userId}`);
+  await socket.join("broadcast:authenticated");
   process.stdout.write(
     structuredLog("info", "realtime.connected", { connectionId: socket.id, userId }) + "\n",
   );

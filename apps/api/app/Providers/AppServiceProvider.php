@@ -114,5 +114,14 @@ class AppServiceProvider extends ServiceProvider
                 Limit::perMinute(20)->by($request->ip()),
             ];
         });
+
+        RateLimiter::for('account-password-verify', function (Request $request) {
+            $userId = (string) optional($request->user())->getAuthIdentifier();
+
+            return [
+                Limit::perMinute(10)->by(hash('sha256', $userId.'|'.$request->ip())),
+                Limit::perMinute(30)->by($request->ip()),
+            ];
+        });
     }
 }

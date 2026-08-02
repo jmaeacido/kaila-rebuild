@@ -21,6 +21,7 @@ class JobAreaResolver
                 ->where('type', 'barangay')
                 ->where('is_active', true)
                 ->where('code', $boundary['code'])
+                ->with('parent')
                 ->first();
             if ($byCode) {
                 return $byCode;

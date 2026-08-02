@@ -1,0 +1,21 @@
+# KAILA branded gateway error pages
+#
+# Include from the HTTPS server block when Next upstream is unavailable.
+# Static files live in each app's public/status directory.
+
+# example:
+# error_page 400 /status/400.html;
+# error_page 401 /status/401.html;
+# error_page 403 /status/403.html;
+# error_page 404 /status/404.html;
+# error_page 408 /status/408.html;
+# error_page 429 /status/429.html;
+# error_page 500 /status/500.html;
+# error_page 502 /status/502.html;
+# error_page 503 /status/503.html;
+# error_page 504 /status/504.html;
+#
+# location = /status/502.html {
+#   root /var/www/kaila-rebuild/apps/web/public;
+#   internal;
+# }

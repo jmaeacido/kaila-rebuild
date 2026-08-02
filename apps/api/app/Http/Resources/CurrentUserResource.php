@@ -4,6 +4,7 @@ namespace App\Http\Resources;
 
 use App\Models\ProfileAsset;
 use App\Models\ProviderProfile;
+use App\Support\StaffAuthorization;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\DB;
@@ -37,6 +38,10 @@ class CurrentUserResource extends JsonResource
                 ? (string) ($this->resource->appearance_theme ?: 'system')
                 : 'system',
             'providerEligible' => $providerEligible,
+            'staffRole' => in_array((string) ($this->resource->staff_role ?? ''), ['super_admin', 'admin', 'staff'], true)
+                ? (string) $this->resource->staff_role
+                : null,
+            'staffCapabilities' => StaffAuthorization::capabilities($this->resource),
             'avatarUrl' => $avatar ? "/api/v1/profile-assets/{$avatar->getKey()}" : null,
             'reputation' => [
                 'averageRating' => $reputation?->average_rating !== null

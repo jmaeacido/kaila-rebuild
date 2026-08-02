@@ -56,6 +56,10 @@ export const marketplaceRealtimeEventTypeSchema = z.enum([
   "support.case.waiting_for_customer",
   "support.case.resolved",
   "support.case.closed",
+  "platform.maintenance.scheduled",
+  "platform.maintenance.cancelled",
+  "platform.maintenance.activated",
+  "platform.maintenance.ended",
 ]);
 
 export const typingCommandSchema = z.object({ jobId: z.uuid(), active: z.boolean() });
@@ -69,10 +73,16 @@ export const travelLocationCommandSchema = z.object({
   foreground: z.literal(true),
 });
 
-export const realtimePublicationSchema = z.object({
-  event: realtimeEventEnvelopeSchema,
-  recipientUserIds: z.array(z.string().min(1)).min(1).max(100),
-});
+export const realtimePublicationSchema = z.union([
+  z.object({
+    event: realtimeEventEnvelopeSchema,
+    recipientUserIds: z.array(z.string().min(1)).min(1).max(100),
+  }),
+  z.object({
+    event: realtimeEventEnvelopeSchema,
+    broadcast: z.literal("authenticated"),
+  }),
+]);
 
 export type RealtimePublication = z.infer<typeof realtimePublicationSchema>;
 

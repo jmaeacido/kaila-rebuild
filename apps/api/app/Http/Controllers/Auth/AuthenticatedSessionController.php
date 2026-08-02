@@ -40,7 +40,7 @@ class AuthenticatedSessionController extends Controller
         $request->session()->regenerate();
         /** @var User $user */
         $user = $request->user();
-        if (in_array($user->account_status, ['restricted', 'deleted'], true) || $user->banned_at !== null || $user->deleted_at !== null) {
+        if (in_array($user->account_status, ['restricted', 'deactivated', 'deleted'], true) || $user->banned_at !== null || $user->deleted_at !== null) {
             Auth::guard('web')->logout();
             $request->session()->invalidate();
 
@@ -49,6 +49,20 @@ class AuthenticatedSessionController extends Controller
         $this->audit->record($request, 'auth.login_succeeded', $user, 'user', (string) $user->getKey());
 
         return (new CurrentUserResource($user))->response();
+    }
+
+    /** Mint opaque mobile tokens from an authenticated browser/cookie session (Capacitor). */
+    public function bridgeMobile(Request $request): JsonResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+        $data = $request->validate([
+            'deviceName' => ['required', 'string', 'max:100'],
+        ]);
+        $tokens = $this->mobileTokens->createSession($user, $data['deviceName']);
+        $this->audit->record($request, 'auth.mobile_bridge_succeeded', $user, 'mobile_session', $tokens['sessionId']);
+
+        return response()->json(['data' => ['tokens' => $tokens]]);
     }
 
     public function destroy(Request $request): JsonResponse

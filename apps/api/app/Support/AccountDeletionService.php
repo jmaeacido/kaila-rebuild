@@ -18,8 +18,9 @@ class AccountDeletionService
             ->leftJoin('accepted_offer_snapshots', 'accepted_offer_snapshots.service_job_id', '=', 'service_jobs.id')
             ->leftJoin('provider_profiles', 'provider_profiles.id', '=', 'accepted_offer_snapshots.provider_profile_id')
             ->where(fn ($query) => $query->where('service_jobs.client_user_id', $user->id)->orWhere('provider_profiles.user_id', $user->id))
-            ->whereNotIn('service_jobs.status', ['draft', 'cancelled', 'completed', 'rated'])
-            ->count();
+            ->whereNotIn('service_jobs.status', ['draft', 'cancelled', 'completed', 'rated', 'rated_closed'])
+            ->distinct()
+            ->count('service_jobs.id');
         if ($activeJobs > 0) {
             $blockers[] = ['code' => 'ACTIVE_JOBS', 'title' => 'Finish active work', 'message' => "$activeJobs active job(s) still need attention.", 'href' => '/jobs'];
         }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Area;
 use App\Support\JobAreaResolver;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -30,12 +31,32 @@ class JobAreaController extends Controller
             ], 422);
         }
 
+        $area->loadMissing('parent');
+        $city = $this->cityOf($area);
+
         return response()->json([
             'data' => [
                 'id' => $area->id,
                 'name' => $area->name,
-                'city' => $area->parent?->name,
+                'city' => $city?->name,
+                'cityId' => $city?->id,
+                'cityName' => $city?->name,
+                'cityType' => $city?->type,
             ],
         ]);
+    }
+
+    private function cityOf(Area $area): ?Area
+    {
+        if (in_array($area->type, ['city', 'municipality'], true)) {
+            return $area;
+        }
+
+        $parent = $area->parent;
+        if ($parent && in_array($parent->type, ['city', 'municipality'], true)) {
+            return $parent;
+        }
+
+        return null;
     }
 }

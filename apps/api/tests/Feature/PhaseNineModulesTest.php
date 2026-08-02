@@ -77,7 +77,39 @@ class PhaseNineModulesTest extends TestCase
         $this->assertSame('groq-chat-completions', json_decode((string) $row->response_metadata, true, 512, JSON_THROW_ON_ERROR)['engine']);
         Http::assertSent(fn ($request) => $request->hasHeader('Authorization', 'Bearer test-key')
             && $request['messages'][1]['content'] === 'I have two offers.'
-            && $request['response_format']['json_schema']['strict'] === true);
+            && $request['response_format']['json_schema']['strict'] === true
+            && str_contains((string) $request['messages'][0]['content'], 'match the user\'s language exactly')
+            && str_contains((string) $request['messages'][0]['content'], 'Never default to Filipino'));
+    }
+
+    public function test_katabang_prompt_requires_matching_latest_user_language(): void
+    {
+        config(['services.katabang_ai.api_key' => 'test-key']);
+        Http::fake(['api.groq.com/*' => Http::response([
+            'id' => 'resp_lang',
+            'choices' => [['message' => ['content' => json_encode([
+                'intent' => 'account',
+                'answer' => 'Open Account Settings, find Delete Account, and follow the confirmation steps.',
+                'action' => ['label' => 'Account Settings', 'href' => '/account'],
+                'escalated' => false,
+            ], JSON_THROW_ON_ERROR)]]],
+        ])]);
+        $user = User::factory()->create();
+        $this->actingAs($user)->postJson('/api/v1/katabang', [
+            'message' => 'How to delete account?',
+            'conversation' => [
+                ['role' => 'user', 'content' => 'Paano maghanap ng trabaho?'],
+                ['role' => 'assistant', 'content' => 'Pumunta sa Nearby jobs.'],
+            ],
+        ])->assertOk();
+        Http::assertSent(function ($request) {
+            $system = (string) $request['messages'][0]['content'];
+            $latest = $request['messages'][array_key_last($request['messages'])]['content'] ?? null;
+
+            return $latest === 'How to delete account?'
+                && str_contains($system, 'Follow the latest user message even if earlier turns used a different language')
+                && str_contains($system, 'English latest message → English only');
+        });
     }
 
     public function test_katabang_fails_closed_when_ai_is_not_configured(): void

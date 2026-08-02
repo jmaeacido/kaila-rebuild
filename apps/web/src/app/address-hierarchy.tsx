@@ -12,6 +12,24 @@ export type AreaReference = {
 
 const independentCity = "independent-city";
 
+/** City/municipality id for a barangay or city/municipality area row. */
+export function cityIdForArea(areas: AreaReference[], areaId: number | null | undefined): number | null {
+  if (!areaId) return null;
+  const area = areas.find((entry) => entry.id === areaId);
+  if (!area) return null;
+  if (area.type === "city" || area.type === "municipality") return area.id;
+  if (area.type === "barangay" && area.parent_id != null) {
+    const parent = areas.find((entry) => entry.id === area.parent_id);
+    if (parent && (parent.type === "city" || parent.type === "municipality")) return parent.id;
+  }
+  return null;
+}
+
+export function areaName(areas: AreaReference[], areaId: number | null | undefined): string | null {
+  if (!areaId) return null;
+  return areas.find((entry) => entry.id === areaId)?.name ?? null;
+}
+
 export function areaPathLabel(areas: AreaReference[], areaId: string): string {
   const barangay = areas.find((area) => String(area.id) === areaId);
   const city = areas.find((area) => area.id === barangay?.parent_id);

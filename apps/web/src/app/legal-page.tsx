@@ -54,6 +54,7 @@ export function LegalPage({
         </article>
 
         <footer className={styles.footer}>
+          <Link href="/faqs">FAQs</Link>
           <Link href="/privacy">Privacy Policy</Link>
           <Link href="/terms">Terms of Service</Link>
           <Link href="/account-deletion">Account deletion</Link>

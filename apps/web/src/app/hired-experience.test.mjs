@@ -72,6 +72,9 @@ test("travel distinguishes location failures and can resume native background na
   assert.match(travel, /BackgroundNavigation\.start/);
   assert.match(travel, /void retry\(\)/);
   assert.match(travel, /screen locks/);
+  assert.match(travel, /ensureMobileSession/);
+  assert.match(travel, /ensureSharing/);
+  assert.match(travel, /beginLocationWatch/);
 });
 
 test("travel navigation derives heading, advances turns, and keeps a stable map instance", () => {
@@ -79,7 +82,8 @@ test("travel navigation derives heading, advances turns, and keeps a stable map 
   assert.match(travel, /activeNavigationStep/);
   assert.match(travel, /headingDegrees/);
   assert.doesNotMatch(travel, /key=\{travelerNavigating/);
-  assert.match(map, /map\.setStyle\(mapStyleForTheme\(resolved\)\)/);
+  assert.match(map, /map\.setStyle\(nextStyle\)/);
+  assert.match(map, /themeStyleApplied/);
   assert.match(map, /remainingCoordinates/);
   assert.match(map, /Heading up/);
   assert.match(styles, /navigationPuck/);

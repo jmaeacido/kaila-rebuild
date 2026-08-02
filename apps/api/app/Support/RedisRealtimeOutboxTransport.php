@@ -13,6 +13,7 @@ class RedisRealtimeOutboxTransport implements OutboxTransport
     /** @throws JsonException */
     public function publish(OutboxEvent $event): void
     {
+        $broadcast = ($event->payload['broadcast'] ?? null) === 'authenticated';
         $recipientUserIds = $event->payload['recipientUserIds'] ?? null;
         $data = $event->payload['data'] ?? null;
         if ((! is_array($recipientUserIds) || ! is_array($data)) && is_array($event->payload['rooms'] ?? null)) {
@@ -23,26 +24,43 @@ class RedisRealtimeOutboxTransport implements OutboxTransport
                 $event->payload['rooms'],
             )));
             $data = $event->payload;
-            unset($data['rooms']);
+            unset($data['rooms'], $data['broadcast']);
         }
-        if (! is_array($recipientUserIds) || $recipientUserIds === [] || count($recipientUserIds) > 100 || ! is_array($data)) {
-            throw new LogicException('Realtime outbox payloads require data and between 1 and 100 recipient user IDs.');
+        if ($broadcast) {
+            if (! is_array($data)) {
+                throw new LogicException('Realtime broadcast payloads require data.');
+            }
+            $publication = [
+                'event' => [
+                    'eventId' => (string) $event->getKey(),
+                    'type' => $event->event_type,
+                    'occurredAt' => $event->occurred_at->toIso8601String(),
+                    'resourceType' => $event->resource_type,
+                    'resourceId' => $event->resource_id,
+                    'version' => $event->resource_version,
+                    'data' => $data,
+                ],
+                'broadcast' => 'authenticated',
+            ];
+        } else {
+            if (! is_array($recipientUserIds) || $recipientUserIds === [] || count($recipientUserIds) > 100 || ! is_array($data)) {
+                throw new LogicException('Realtime outbox payloads require data and between 1 and 100 recipient user IDs.');
+            }
+            $publication = [
+                'event' => [
+                    'eventId' => (string) $event->getKey(),
+                    'type' => $event->event_type,
+                    'occurredAt' => $event->occurred_at->toIso8601String(),
+                    'resourceType' => $event->resource_type,
+                    'resourceId' => $event->resource_id,
+                    'version' => $event->resource_version,
+                    'data' => $data,
+                ],
+                'recipientUserIds' => array_values(array_map('strval', $recipientUserIds)),
+            ];
         }
 
-        $publication = [
-            'event' => [
-                'eventId' => (string) $event->getKey(),
-                'type' => $event->event_type,
-                'occurredAt' => $event->occurred_at->toIso8601String(),
-                'resourceType' => $event->resource_type,
-                'resourceId' => $event->resource_id,
-                'version' => $event->resource_version,
-                'data' => $data,
-            ],
-            'recipientUserIds' => array_values(array_map('strval', $recipientUserIds)),
-        ];
-
-        Redis::publish(
+        Redis::connection('realtime_pubsub')->publish(
             (string) config('outbox.realtime_channel'),
             json_encode($publication, JSON_THROW_ON_ERROR),
         );

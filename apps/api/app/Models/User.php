@@ -22,6 +22,7 @@ use Illuminate\Notifications\Notifiable;
     'active_mode',
     'appearance_theme',
     'is_admin',
+    'staff_role',
     'role',
     'area',
     'category',
@@ -62,6 +63,9 @@ class User extends Authenticatable
             'password' => 'hashed',
             'provider_intent' => 'boolean',
             'is_admin' => 'boolean',
+            'status_updated_at' => 'datetime',
+            'banned_at' => 'datetime',
+            'deleted_at' => 'datetime',
         ];
     }
 }

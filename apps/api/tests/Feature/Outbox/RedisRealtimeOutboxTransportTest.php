@@ -19,7 +19,9 @@ class RedisRealtimeOutboxTransportTest extends TestCase
             'recipientUserIds' => ['42', '84'],
             'data' => ['status' => 'accepted'],
         ]);
-        Redis::shouldReceive('publish')->once()->withArgs(function (string $channel, string $message) use ($event): bool {
+        $connection = \Mockery::mock();
+        Redis::shouldReceive('connection')->once()->with('realtime_pubsub')->andReturn($connection);
+        $connection->shouldReceive('publish')->once()->withArgs(function (string $channel, string $message) use ($event): bool {
             /** @var array{event: array<string, mixed>, recipientUserIds: list<string>} $publication */
             $publication = json_decode($message, true, flags: JSON_THROW_ON_ERROR);
 
@@ -44,12 +46,35 @@ class RedisRealtimeOutboxTransportTest extends TestCase
     public function test_transport_safely_delivers_legacy_server_owned_user_rooms(): void
     {
         $event = $this->event(['rooms' => ['user:42', 'not-a-user-room'], 'status' => 'accepted']);
-        Redis::shouldReceive('publish')->once()->withArgs(function (string $channel, string $message): bool {
+        $connection = \Mockery::mock();
+        Redis::shouldReceive('connection')->once()->with('realtime_pubsub')->andReturn($connection);
+        $connection->shouldReceive('publish')->once()->withArgs(function (string $channel, string $message): bool {
             $publication = json_decode($message, true, flags: JSON_THROW_ON_ERROR);
 
             return $channel === 'kaila:realtime:events'
                 && $publication['recipientUserIds'] === ['42']
                 && $publication['event']['data'] === ['status' => 'accepted'];
+        })->andReturn(1);
+
+        (new RedisRealtimeOutboxTransport)->publish($event);
+    }
+
+    public function test_transport_publishes_authenticated_broadcast(): void
+    {
+        $event = $this->event([
+            'broadcast' => 'authenticated',
+            'data' => ['phase' => 'scheduled'],
+        ]);
+        $connection = \Mockery::mock();
+        Redis::shouldReceive('connection')->once()->with('realtime_pubsub')->andReturn($connection);
+        $connection->shouldReceive('publish')->once()->withArgs(function (string $channel, string $message) use ($event): bool {
+            $publication = json_decode($message, true, flags: JSON_THROW_ON_ERROR);
+
+            return $channel === 'kaila:realtime:events'
+                && ($publication['broadcast'] ?? null) === 'authenticated'
+                && $publication['event']['eventId'] === $event->getKey()
+                && $publication['event']['data'] === ['phase' => 'scheduled']
+                && ! isset($publication['recipientUserIds']);
         })->andReturn(1);
 
         (new RedisRealtimeOutboxTransport)->publish($event);

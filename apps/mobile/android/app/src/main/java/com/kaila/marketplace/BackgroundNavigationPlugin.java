@@ -46,7 +46,9 @@ public class BackgroundNavigationPlugin extends Plugin {
     private void startService(PluginCall call) {
         String locationUrl = call.getString("locationUrl");
         String stopUrl = call.getString("stopUrl");
+        String refreshUrl = call.getString("refreshUrl");
         String accessToken = call.getString("accessToken");
+        String refreshToken = call.getString("refreshToken");
         if (locationUrl == null || stopUrl == null || accessToken == null || !locationUrl.startsWith("https://") || !stopUrl.startsWith("https://")) {
             call.reject("Secure navigation endpoints and an access token are required");
             return;
@@ -56,6 +58,12 @@ public class BackgroundNavigationPlugin extends Plugin {
         intent.putExtra(NavigationLocationService.EXTRA_LOCATION_URL, locationUrl);
         intent.putExtra(NavigationLocationService.EXTRA_STOP_URL, stopUrl);
         intent.putExtra(NavigationLocationService.EXTRA_ACCESS_TOKEN, accessToken);
+        if (refreshUrl != null && refreshUrl.startsWith("https://")) {
+            intent.putExtra(NavigationLocationService.EXTRA_REFRESH_URL, refreshUrl);
+        }
+        if (refreshToken != null) {
+            intent.putExtra(NavigationLocationService.EXTRA_REFRESH_TOKEN, refreshToken);
+        }
         ContextCompat.startForegroundService(getContext(), intent);
         call.resolve();
     }

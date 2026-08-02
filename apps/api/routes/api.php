@@ -1,13 +1,15 @@
 <?php
 
 use App\Http\Controllers\AccountDeletionController;
-use App\Http\Controllers\AppearanceController;
 use App\Http\Controllers\AdminAccountDeletionController;
 use App\Http\Controllers\AdminDisputeController;
 use App\Http\Controllers\AdminMarketplaceController;
+use App\Http\Controllers\AdminMaintenanceController;
 use App\Http\Controllers\AdminPhaseNineController;
 use App\Http\Controllers\AdminReportController;
 use App\Http\Controllers\AdminSupportCaseController;
+use App\Http\Controllers\AdminUserController;
+use App\Http\Controllers\AppearanceController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\MobileSessionController;
 use App\Http\Controllers\Auth\PasswordRecoveryController;
@@ -30,6 +32,7 @@ use App\Http\Controllers\MessageAssetController;
 use App\Http\Controllers\NotificationPreferenceController;
 use App\Http\Controllers\OfferController;
 use App\Http\Controllers\OpportunityController;
+use App\Http\Controllers\PlatformMaintenanceController;
 use App\Http\Controllers\ProfileAssetController;
 use App\Http\Controllers\ProviderCredentialController;
 use App\Http\Controllers\PushDeviceController;
@@ -45,6 +48,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/auth/csrf', fn () => response()->noContent());
+Route::get('/platform/maintenance', [PlatformMaintenanceController::class, 'show']);
 
 Route::middleware('throttle:registration')->post('/auth/register', RegisteredUserController::class);
 Route::get('/auth/registration-config', RegistrationConfigController::class);
@@ -64,6 +68,7 @@ Route::middleware('throttle:password-recovery')->group(function (): void {
 Route::middleware('mobile.auth')->group(function (): void {
     Route::get('/auth/mobile/me', [MobileSessionController::class, 'me']);
     Route::get('/auth/mobile/account-deletion', [AccountDeletionController::class, 'show']);
+    Route::middleware('throttle:account-password-verify')->post('/auth/mobile/account-deletion/verify-password', [AccountDeletionController::class, 'verifyPassword']);
     Route::delete('/auth/mobile/account', [AccountDeletionController::class, 'destroy']);
     Route::post('/auth/mobile/logout', [MobileSessionController::class, 'destroyCurrent']);
     Route::get('/auth/mobile/sessions', [MobileSessionController::class, 'index']);
@@ -155,6 +160,7 @@ Route::middleware('mobile.auth')->group(function (): void {
 Route::middleware('auth')->group(function (): void {
     Route::get('/me', CurrentUserController::class);
     Route::get('/me/account-deletion', [AccountDeletionController::class, 'show']);
+    Route::middleware('throttle:account-password-verify')->post('/me/account-deletion/verify-password', [AccountDeletionController::class, 'verifyPassword']);
     Route::delete('/me/account', [AccountDeletionController::class, 'destroy']);
     Route::get('/providers', [MarketplaceProfileController::class, 'discover']);
     Route::get('/providers/{providerProfile}', [MarketplaceProfileController::class, 'publicProfile']);
@@ -162,6 +168,7 @@ Route::middleware('auth')->group(function (): void {
     Route::get('/profile-assets/{profileAsset}', [ProfileAssetController::class, 'show']);
     Route::post('/auth/logout', [AuthenticatedSessionController::class, 'destroy']);
     Route::post('/auth/logout-all', [AuthenticatedSessionController::class, 'destroyAll']);
+    Route::post('/auth/mobile/bridge', [AuthenticatedSessionController::class, 'bridgeMobile']);
     Route::get('/me/sessions', [UserSessionController::class, 'index']);
     Route::delete('/me/sessions/{sessionId}', [UserSessionController::class, 'destroy']);
     Route::post('/realtime/ticket', [RealtimeTicketController::class, 'browser']);
@@ -250,7 +257,19 @@ Route::middleware('auth')->group(function (): void {
     Route::post('/support/cases/{supportCase}/close', [SupportCaseController::class, 'close']);
     Route::post('/support/cases/{supportCase}/reopen', [SupportCaseController::class, 'reopen']);
     Route::middleware('admin')->prefix('admin/marketplace')->group(function (): void {
+        Route::get('/maintenance', [AdminMaintenanceController::class, 'show']);
+        Route::post('/maintenance/schedule', [AdminMaintenanceController::class, 'schedule']);
+        Route::post('/maintenance/activate', [AdminMaintenanceController::class, 'activate']);
+        Route::post('/maintenance/cancel', [AdminMaintenanceController::class, 'cancel']);
+        Route::post('/maintenance/end', [AdminMaintenanceController::class, 'end']);
         Route::get('/account-deletions', [AdminAccountDeletionController::class, 'index']);
+        Route::get('/users', [AdminUserController::class, 'index']);
+        Route::post('/users', [AdminUserController::class, 'store']);
+        Route::put('/users/{user}', [AdminUserController::class, 'update']);
+        Route::post('/users/{user}/status', [AdminUserController::class, 'setStatus']);
+        Route::post('/users/{user}/activate', [AdminUserController::class, 'activate']);
+        Route::post('/users/{user}/deactivate', [AdminUserController::class, 'deactivate']);
+        Route::delete('/users/{user}', [AdminUserController::class, 'destroy']);
         Route::get('/support/cases', [AdminSupportCaseController::class, 'index']);
         Route::get('/support/cases/{supportCase}', [AdminSupportCaseController::class, 'show']);
         Route::put('/support/cases/{supportCase}', [AdminSupportCaseController::class, 'update']);

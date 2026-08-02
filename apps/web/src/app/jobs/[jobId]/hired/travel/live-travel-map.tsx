@@ -42,7 +42,10 @@ function remainingCoordinates(location: Point | null, route: Point[] | null): Ar
   let best = Number.POSITIVE_INFINITY;
   for (let index = 0; index < coordinates.length; index += 1) {
     const [longitude, latitude] = coordinates[index];
-    const distance = (longitude - location.longitude) ** 2 + (latitude - location.latitude) ** 2;
+    const latScale = Math.cos((location.latitude * Math.PI) / 180);
+    const dLat = (latitude - location.latitude) * 111_320;
+    const dLng = (longitude - location.longitude) * 111_320 * latScale;
+    const distance = dLat * dLat + dLng * dLng;
     if (distance < best) {
       best = distance;
       nearest = index;
@@ -79,6 +82,7 @@ export function LiveTravelMap({
   const routeRef = useRef(route);
   const locationRef = useRef(location);
   const headingRef = useRef(heading);
+  const themeStyleApplied = useRef<string | null>(null);
   const [failed, setFailed] = useState(false);
   const [following, setFollowing] = useState(true);
   const [headingUp, setHeadingUp] = useState(true);
@@ -184,6 +188,7 @@ export function LiveTravelMap({
         canvasContextAttributes: { antialias: false },
       });
       mapRef.current = map;
+      themeStyleApplied.current = mapStyleForTheme(resolved);
       removeFallback.current = addMissingStyleImageFallback(map);
       map.on("dragstart", () => setFollowing(false));
       map.on("pitchstart", () => setFollowing(false));
@@ -205,6 +210,7 @@ export function LiveTravelMap({
         destinationMarker.current = null;
         map.remove();
         mapRef.current = null;
+        themeStyleApplied.current = null;
       };
     } catch {
       queueMicrotask(() => setFailed(true));
@@ -213,11 +219,14 @@ export function LiveTravelMap({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [Boolean(location || destination)]);
 
-  // Theme changes only — never rebind style on GPS ticks.
+  // Theme changes only — never rebind style on GPS ticks or remount echoes.
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
-    map.setStyle(mapStyleForTheme(resolved));
+    const nextStyle = mapStyleForTheme(resolved);
+    if (themeStyleApplied.current === nextStyle) return;
+    themeStyleApplied.current = nextStyle;
+    map.setStyle(nextStyle);
     map.once("style.load", () => paintRoute(map, routeRef.current, locationRef.current));
   }, [paintRoute, resolved]);
 

@@ -19,8 +19,27 @@ describe("realtime outbox publications", () => {
       }),
     );
 
-    expect(publication?.recipientUserIds).toEqual(["42"]);
+    expect(publication && "recipientUserIds" in publication ? publication.recipientUserIds : null).toEqual(["42"]);
     expect(publication?.event.data).toEqual({ status: "open" });
+  });
+
+  it("accepts authenticated broadcast publications", () => {
+    const publication = parseRealtimePublication(
+      JSON.stringify({
+        event: {
+          eventId: "123e4567-e89b-12d3-a456-426614174000",
+          type: "platform.maintenance.scheduled",
+          occurredAt: "2026-07-16T05:00:00+00:00",
+          resourceType: "platform_maintenance",
+          resourceId: "1",
+          version: 1,
+          data: { phase: "scheduled" },
+        },
+        broadcast: "authenticated",
+      }),
+    );
+
+    expect(publication && "broadcast" in publication ? publication.broadcast : null).toBe("authenticated");
   });
 
   it("rejects malformed JSON and publications without server audiences", () => {
