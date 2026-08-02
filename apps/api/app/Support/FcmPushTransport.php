@@ -21,7 +21,8 @@ class FcmPushTransport implements PushTransport
         $data = $notification->data ?? [];
         $silent = ($data['silent'] ?? null) === '1';
         $isCall = ($data['type'] ?? null) === 'call';
-        $isCallCancel = $isCall && (($data['action'] ?? null) === 'cancel' || in_array((string) ($data['status'] ?? ''), ['declined', 'ended', 'active'], true));
+        $callStatus = (string) ($data['status'] ?? '');
+        $isCallCancel = $isCall && (($data['action'] ?? null) === 'cancel' || in_array($callStatus, ['declined', 'ended', 'active'], true));
         [$channelId, $sound] = $this->channelAndSound($notification, $silent, $isCall);
 
         $payloadData = array_map('strval', array_merge($data, [
@@ -33,7 +34,9 @@ class FcmPushTransport implements PushTransport
             'sound' => $sound ?? '',
         ]));
         if ($isCallCancel) {
-            $payloadData['action'] = 'cancel';
+            // An answered call only dismisses the ringing UI. It must never be
+            // delivered to the WebView as a terminal cancel action.
+            $payloadData['action'] = $callStatus === 'active' ? 'dismiss' : 'cancel';
         }
 
         $message = [

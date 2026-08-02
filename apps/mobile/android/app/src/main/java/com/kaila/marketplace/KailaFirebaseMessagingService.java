@@ -13,7 +13,7 @@ public class KailaFirebaseMessagingService extends FirebaseMessagingService {
         Map<String, String> data = remoteMessage.getData();
         if ("call".equals(data.get("type"))) {
             String action = data.get("action");
-            if ("cancel".equals(action) || isTerminalStatus(data.get("status"))) {
+            if ("cancel".equals(action) || "dismiss".equals(action) || dismissesRinging(data.get("status"))) {
                 IncomingCallNotifier.cancel(this);
             } else {
                 Bundle extras = new Bundle();
@@ -42,7 +42,7 @@ public class KailaFirebaseMessagingService extends FirebaseMessagingService {
         PushNotificationsPlugin.onNewToken(token);
     }
 
-    private static boolean isTerminalStatus(String status) {
+    private static boolean dismissesRinging(String status) {
         return "declined".equals(status) || "ended".equals(status) || "active".equals(status);
     }
 }

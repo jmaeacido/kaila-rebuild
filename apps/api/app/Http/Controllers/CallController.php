@@ -199,7 +199,7 @@ class CallController
                         'contextId' => $locked->context_id,
                         'media' => $locked->media,
                         'status' => $locked->status,
-                        'action' => 'cancel',
+                        'action' => $locked->status === 'active' ? 'dismiss' : 'cancel',
                         'hideFromInbox' => '1',
                     ],
                 );

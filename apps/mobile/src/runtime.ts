@@ -6,7 +6,7 @@ import { IncomingCall } from "./incoming-call-plugin";
 import { deepLinkRoute, incomingCallRoute, notificationRoute } from "./routes";
 import { closeMobileSocialBrowser } from "./oauth";
 import { loadSession } from "./session";
-import { callStatusEndsMedia } from "./call-status";
+import { callStatusEndsMedia, callUpdateDismissesRinging, nativeCallUpdateEndsMedia } from "./call-status";
 
 type DomainEvent = {
   type?: string;
@@ -93,9 +93,13 @@ export async function initializeMobileRuntime(options: {
       options.navigate(notificationRoute(data));
       window.dispatchEvent(new Event("kaila:realtime-reconcile"));
       if (data.type === "call" && data.callId) {
+        if (callUpdateDismissesRinging(data.action, data.status)) {
+          void IncomingCall.cancelIncoming().catch(() => undefined);
+        }
+        if (data.status === "active" || data.action === "dismiss") return;
         dispatchNativeCall({
           callId: data.callId,
-          action: data.action === "cancel" ? "cancel" : "open",
+          action: nativeCallUpdateEndsMedia(data.action, data.status) ? "cancel" : "open",
           media: data.media,
           contextType: data.contextType,
           contextId: data.contextId,
@@ -108,8 +112,10 @@ export async function initializeMobileRuntime(options: {
       const payload = data as Record<string, string | undefined>;
       window.dispatchEvent(new Event("kaila:realtime-reconcile"));
       if (payload.type !== "call" || !payload.callId) return;
-      if (payload.action === "cancel") {
+      if (callUpdateDismissesRinging(payload.action, payload.status)) {
         void IncomingCall.cancelIncoming().catch(() => undefined);
+      }
+      if (nativeCallUpdateEndsMedia(payload.action, payload.status)) {
         dispatchNativeCall({
           callId: payload.callId,
           action: "cancel",
@@ -119,6 +125,7 @@ export async function initializeMobileRuntime(options: {
         });
         return;
       }
+      if (payload.status === "active" || payload.action === "dismiss") return;
       dispatchNativeCall({
         callId: payload.callId,
         action: "open",

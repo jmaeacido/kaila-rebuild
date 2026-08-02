@@ -82,12 +82,13 @@ class FcmPushTransportTest extends TestCase
         config()->set('services.fcm.project_id', 'kaila-test');
         Http::fake(['https://fcm.googleapis.com/*' => Http::response(['name' => 'message-id'])]);
         $tokens = Mockery::mock(FcmAccessTokenProvider::class);
-        $tokens->shouldReceive('token')->times(3)->andReturn('oauth-token');
+        $tokens->shouldReceive('token')->times(4)->andReturn('oauth-token');
         $transport = new FcmPushTransport($tokens);
         $device = new PushDevice(['token_encrypted' => 'device-token']);
 
         foreach ([
             ['type' => 'call', 'callId' => 'call-1', 'action' => 'ring', 'eventType' => 'call.ringing'],
+            ['type' => 'call', 'callId' => 'call-1', 'action' => 'cancel', 'status' => 'active', 'eventType' => 'call.status.changed'],
             ['type' => 'call', 'callId' => 'call-1', 'action' => 'cancel', 'status' => 'ended', 'eventType' => 'call.status.changed'],
             ['type' => 'message', 'silent' => '1', 'eventType' => 'message.created'],
         ] as $index => $data) {
@@ -103,6 +104,10 @@ class FcmPushTransportTest extends TestCase
                 && $request['message']['data']['type'] === 'call'
                 && $request['message']['data']['channelId'] === 'kaila_calls_v3'
                 && $request['message']['data']['action'] === 'ring',
+            fn ($request) => ! isset($request['message']['notification'])
+                && $request['message']['data']['action'] === 'dismiss'
+                && $request['message']['data']['status'] === 'active'
+                && $request['message']['android']['ttl'] === '30s',
             fn ($request) => ! isset($request['message']['notification'])
                 && $request['message']['data']['action'] === 'cancel'
                 && $request['message']['android']['ttl'] === '30s',
