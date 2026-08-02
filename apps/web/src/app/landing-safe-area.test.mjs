@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 
 const styles = readFileSync(new URL("./page.module.css", import.meta.url), "utf8");
-const page = readFileSync(new URL("./page.tsx", import.meta.url), "utf8");
+const page = readFileSync(new URL("./landing-page.tsx", import.meta.url), "utf8");
 
 test("the signed-out landing header clears the Android status bar", () => {
   const topbar = styles.match(/\.topbar\s*\{(?<rules>[\s\S]*?)\}/)?.groups?.rules ?? "";

@@ -166,6 +166,19 @@ const groups: FaqGroup[] = [
   },
 ];
 
+const faqStructuredData = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: groups.flatMap((group) => group.items).map((item) => ({
+    "@type": "Question",
+    name: item.question,
+    acceptedAnswer: {
+      "@type": "Answer",
+      text: item.answer,
+    },
+  })),
+};
+
 function FaqAccordionItem({
   item,
   open,
@@ -230,6 +243,12 @@ export default function FaqsPage() {
 
   return (
     <main className={styles.page}>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(faqStructuredData).replace(/</g, "\\u003c"),
+        }}
+      />
       <nav className={styles.topbar} aria-label="FAQs navigation">
         <Link className={styles.brand} href="/" aria-label="KAILA home">
           <BrandMark priority />

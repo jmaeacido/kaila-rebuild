@@ -9,10 +9,39 @@ import { NotificationRuntime } from "./notification-runtime";
 import { MaintenanceGate } from "./maintenance-gate";
 import { ThemeProvider } from "./theme-provider";
 import { themeBootstrapScript } from "./theme";
+import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "./seo";
 
 export const metadata: Metadata = {
-  title: "KAILA — Local services near you",
-  description: "Find trusted independent service providers in your area.",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: "KAILA | Local Services Near You",
+    template: "%s | KAILA",
+  },
+  description: SITE_DESCRIPTION,
+  applicationName: SITE_NAME,
+  authors: [{ name: SITE_NAME, url: SITE_URL }],
+  creator: SITE_NAME,
+  publisher: SITE_NAME,
+  category: "local services marketplace",
+  manifest: "/manifest.webmanifest",
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
+  openGraph: {
+    type: "website",
+    locale: "en_PH",
+    url: SITE_URL,
+    siteName: SITE_NAME,
+    title: "KAILA | Local Services Near You",
+    description: SITE_DESCRIPTION,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "KAILA | Local Services Near You",
+    description: SITE_DESCRIPTION,
+  },
 };
 
 export const viewport: Viewport = {

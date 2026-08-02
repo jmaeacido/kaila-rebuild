@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import { LegalPage, type LegalSection } from "../legal-page";
+import { publicPageMetadata } from "../seo";
 
-export const metadata: Metadata = {
-  title: "Privacy Policy | KAILA",
+export const metadata: Metadata = publicPageMetadata({
+  title: "Privacy Policy",
   description: "How KAILA collects, uses, shares, and retains information.",
-};
+  path: "/privacy",
+});
 
 const sections: LegalSection[] = [
   {
