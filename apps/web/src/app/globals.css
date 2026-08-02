@@ -288,6 +288,8 @@ a {
 .notificationDropdown { position: absolute; right: 0; top: calc(100% + var(--spacing-8)); z-index: 1100; width: min(24rem, calc(100vw - (2 * var(--spacing-16)))); overflow: hidden; color: var(--color-ink); background: var(--color-surface); border: var(--control-border-width) solid var(--color-border); border-radius: var(--radius-card); box-shadow: var(--shadow-floating); }
 .notificationDropdown > header { display: flex; align-items: center; justify-content: space-between; gap: var(--spacing-8); padding: var(--spacing-16); border-bottom: var(--control-border-width) solid var(--color-border); }
 .notificationDropdown > header span { color: var(--color-text-secondary); font-size: var(--font-caption-size); }
+.notificationMarkAll { align-items: center; background: transparent; border: 0; color: var(--color-primary); display: flex; font: inherit; font-size: var(--font-caption-size); font-weight: var(--font-weight-semibold); gap: var(--spacing-4); padding: var(--spacing-8); }
+.notificationMarkAll svg { height: 18px; width: 18px; }
 .notificationDropdownList { display: grid; max-height: 24rem; overflow-y: auto; }
 .appSessionBar .notificationDropdownList > a { display: grid; grid-template-columns: var(--spacing-8) 1fr; gap: var(--spacing-8); padding: var(--spacing-12) var(--spacing-16); color: var(--color-ink); border: 0; border-bottom: var(--control-border-width) solid var(--color-border); border-radius: 0; text-decoration: none; }
 .notificationDropdownList > a > span { width: var(--spacing-8); height: var(--spacing-8); margin-top: var(--spacing-8); border-radius: var(--radius-pill); background: transparent; }

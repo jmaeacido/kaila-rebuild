@@ -126,13 +126,18 @@ class MarketplaceProfileController extends Controller
             ->where('scan_status', 'clean')
             ->latest()
             ->first();
+        $completedJobs = DB::table('accepted_offer_snapshots')
+            ->join('service_jobs', 'service_jobs.id', '=', 'accepted_offer_snapshots.service_job_id')
+            ->where('accepted_offer_snapshots.provider_profile_id', $profile->id)
+            ->whereNotNull('service_jobs.completed_at')
+            ->count();
 
         return ['id' => $profile->id, 'displayName' => $profile->display_name, 'avatarUrl' => $avatar ? "/api/v1/profile-assets/{$avatar->id}" : null, 'bio' => $profile->bio, 'yearsExperience' => $profile->years_experience,
             'rating' => $reputation?->average_rating !== null
                 ? (float) $reputation->average_rating
                 : ($profile->rating !== null ? (float) $profile->rating : null),
             'reviewCount' => (int) ($reputation?->published_review_count ?? 0),
-            'completedJobs' => $profile->completed_jobs, 'responseMinutes' => $profile->response_minutes,
+            'completedJobs' => $completedJobs, 'responseMinutes' => $profile->response_minutes,
             'memberSince' => $profile->created_at?->toDateString(), 'verified' => $profile->credentials->isNotEmpty(),
             'services' => $profile->services, 'serviceAreas' => $profile->serviceAreas, 'availability' => $profile->relationLoaded('availability') ? $profile->availability : [],
             'availabilityStatus' => $profile->relationLoaded('availability') && $profile->availability->contains('is_available', true) ? 'available' : 'unavailable',

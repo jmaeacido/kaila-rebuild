@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Bell, ChevronRight, X } from "lucide-react";
+import { Bell, CheckCheck, ChevronRight, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { notificationRoute, type NotificationRecord } from "./notification-route";
 import { useRealtimeInvalidation } from "./use-realtime-invalidation";
@@ -74,6 +74,25 @@ export function NotificationBell() {
     window.location.assign(notificationRoute(item));
   }, [load]);
 
+  const markAllRead = useCallback(async () => {
+    if (unread === 0) return;
+    const readAt = new Date().toISOString();
+    setItems((current) => current.map((item) => item.readAt ? item : { ...item, readAt }));
+    setUnread(0);
+    try {
+      const token = await prepareCsrf();
+      const response = await fetch("/api/v1/notifications/read", {
+        method: "PUT",
+        credentials: "include",
+        headers: { Accept: "application/json", ...(token ? { "X-XSRF-TOKEN": token } : {}) },
+      });
+      if (!response.ok) throw new Error();
+      window.dispatchEvent(new Event(notificationsChangedName));
+    } catch {
+      void load();
+    }
+  }, [load, unread]);
+
   return (
     <div className="notificationMenu" ref={container}>
       <button
@@ -91,6 +110,7 @@ export function NotificationBell() {
         <section className="notificationDropdown" id="notification-dropdown" aria-label="Recent notifications">
           <header>
             <div><strong>Notifications</strong><span>{unread} unread</span></div>
+            {unread > 0 && <button className="notificationMarkAll" type="button" onClick={() => void markAllRead()}><CheckCheck aria-hidden="true" />Mark all as read</button>}
             <button className="notificationDropdownClose" type="button" aria-label="Close notifications" onClick={() => setOpen(false)}><X aria-hidden="true" /></button>
           </header>
           <div className="notificationDropdownList">
