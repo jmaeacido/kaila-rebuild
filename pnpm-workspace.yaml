@@ -3,6 +3,7 @@ packages:
   - "apps/admin"
   - "apps/realtime"
   - "apps/mobile"
+  - "apps/admin-mobile"
   - "packages/*"
 
 overrides:

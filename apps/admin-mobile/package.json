@@ -1,0 +1,28 @@
+{
+  "name": "@kaila/admin-mobile",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "android:doctor": "node scripts/android-doctor.mjs",
+    "android:debug": "node scripts/build-android.mjs debug",
+    "android:bundle": "node scripts/build-android.mjs release",
+    "android:sync": "pnpm build && cap sync android",
+    "android:verify": "node scripts/verify-android.mjs",
+    "lint": "tsc --noEmit",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@capacitor/core": "8.4.2",
+    "@kaila/design-tokens": "workspace:*"
+  },
+  "devDependencies": {
+    "@capacitor/android": "8.4.2",
+    "@capacitor/cli": "8.4.2",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.6",
+    "vitest": "^4.1.10"
+  }
+}

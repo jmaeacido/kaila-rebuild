@@ -1,0 +1,84 @@
+@import "@kaila/design-tokens/tokens.css";
+
+:root {
+  color: var(--color-ink);
+  background: var(--color-background);
+  color-scheme: light dark;
+  font-family: Inter, system-ui, sans-serif;
+  font-synthesis: none;
+}
+
+* { box-sizing: border-box; }
+body { min-height: 100dvh; margin: 0; }
+button { font: inherit; }
+
+.recovery-shell {
+  display: grid;
+  min-height: 100dvh;
+  place-content: center;
+  padding: var(--spacing-24);
+  background: var(--gradient-hero);
+}
+
+.recovery-card {
+  width: min(100%, var(--content-width-compact));
+  padding: var(--spacing-32) var(--spacing-24);
+  border-radius: var(--radius-dialog);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-floating);
+  text-align: center;
+}
+
+.brand-mark {
+  display: grid;
+  width: var(--spacing-64);
+  height: var(--spacing-64);
+  margin: 0 auto var(--spacing-24);
+  place-items: center;
+  border-radius: var(--radius-dialog);
+  background: var(--gradient-primary);
+  color: var(--color-on-primary);
+  font-size: var(--font-heading-size);
+  font-weight: var(--font-weight-bold);
+}
+
+.eyebrow {
+  margin: 0 0 var(--spacing-8);
+  color: var(--color-primary);
+  font-size: var(--font-small-size);
+  font-weight: var(--font-weight-semibold);
+}
+
+h1 { margin: 0 0 var(--spacing-12); font-size: var(--font-heading-size); line-height: var(--line-height-tight); }
+.supporting-copy { margin: 0 0 var(--spacing-24); color: var(--color-text-secondary); line-height: var(--line-height-body); }
+
+.connection-status {
+  display: flex;
+  min-height: var(--control-min-height);
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-8);
+  margin: 0 0 var(--spacing-16);
+  border-radius: var(--radius-input);
+  background: var(--color-warning-surface);
+  font-size: var(--font-small-size);
+  font-weight: var(--font-weight-medium);
+}
+
+.connection-status__dot { width: var(--spacing-8); height: var(--spacing-8); border-radius: var(--radius-pill); background: var(--color-warning); }
+
+.primary-action {
+  width: 100%;
+  min-height: var(--control-min-height);
+  padding: 0 var(--spacing-24);
+  border: 0;
+  border-radius: var(--radius-button);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  cursor: pointer;
+  font-weight: var(--font-weight-semibold);
+}
+
+.primary-action:focus-visible { outline: var(--focus-ring-width) solid var(--color-focus); outline-offset: var(--spacing-4); }
+
+@media (min-width: 48rem) { .recovery-card { padding: var(--spacing-48); } }
