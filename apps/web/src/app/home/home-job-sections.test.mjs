@@ -64,6 +64,13 @@ test("Travel status speaks to the active user in the correct role", () => {
   assert.match(source, /travelerRole === "client" \? "Client on the way" : "Provider on the way"/);
 });
 
+test("Every active job keeps a truthful Distance and ETA row visible", () => {
+  assert.match(source, /activeJobs\.map\(\(job\)[\s\S]*activeJobRouteMetrics\(job\)/);
+  assert.match(source, /Distance: \$\{distance == null \? "—"/);
+  assert.match(source, /ETA: \$\{eta == null \? "—"/);
+  assert.match(source, /Distance: Not applicable · ETA: Not applicable/);
+});
+
 test("Opportunity cards request approximate driving distance", () => {
   assert.match(opportunitiesSource, /opportunityId=\{item\.id\}/);
   assert.match(opportunityDetailsSource, /opportunityId=\{opportunity\.id\}/);

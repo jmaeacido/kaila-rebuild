@@ -290,7 +290,7 @@ export default function AuthenticatedHomePage() {
               <h3>{job.title}</h3>
               <p><MapPin aria-hidden="true" />{job.area.name}</p>
               {job.counterpart && <><p className={styles.clientName}>{job.counterpart.displayName}</p><p className={styles.clientReputation}><Star aria-hidden="true" />{job.counterpart.rating === null ? "New · No reviews" : `${Number(job.counterpart.rating).toFixed(1)} · ${job.counterpart.reviewCount} review${job.counterpart.reviewCount === 1 ? "" : "s"}`}</p></>}
-              {job.status === "provider_traveling" && <p className={styles.routeMetrics}><Navigation aria-hidden="true" />{formatTravelDistance(job.travel?.distanceMeters ?? null)} · {formatTravelEta(job.travel?.etaSeconds ?? null)}</p>}
+              <p className={styles.routeMetrics}><Navigation aria-hidden="true" />{activeJobRouteMetrics(job)}</p>
             </div>
             <Link href={job.status === "provider_traveling" ? `/jobs/${job.id}/hired/travel` : `/jobs/${job.id}`}>
               {job.status === "provider_traveling" ? job.serviceLocationMode === "at_provider" ? job.role === "client" ? "Navigate to Shop" : "Track client" : job.role === "provider" ? "Navigate to Client" : "Track provider" : "Continue"}
@@ -416,4 +416,13 @@ function travelStatusLabel(job: Job): string {
   const travelerRole = job.serviceLocationMode === "at_provider" ? "client" : "provider";
   if (job.role === travelerRole) return "You’re on the way";
   return travelerRole === "client" ? "Client on the way" : "Provider on the way";
+}
+
+function activeJobRouteMetrics(job: Job): string {
+  if (job.serviceLocationMode === "remote") {
+    return "Distance: Not applicable · ETA: Not applicable";
+  }
+  const distance = job.travel?.distanceMeters;
+  const eta = job.travel?.etaSeconds;
+  return `Distance: ${distance == null ? "—" : formatTravelDistance(distance)} · ETA: ${eta == null ? "—" : formatTravelEta(eta)}`;
 }

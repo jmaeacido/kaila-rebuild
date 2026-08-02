@@ -113,6 +113,11 @@ class PhaseFiveCommunicationTravelTest extends TestCase
             ->assertJsonPath('data.arrivedAt', fn ($value) => $value !== null)
             ->assertJsonPath('data.distanceMeters', fn ($value) => is_int($value))
             ->assertJsonPath('data.etaSeconds', fn ($value) => is_int($value));
+        $storedSample = DB::table('location_samples')->where('travel_session_id', function ($query) use ($job): void {
+            $query->select('id')->from('travel_sessions')->where('service_job_id', $job)->latest('started_at')->limit(1);
+        })->first();
+        $this->assertNotNull($storedSample);
+        $this->assertSame(now()->parse($captured)->utc()->format('Y-m-d H:i:s'), now()->parse($storedSample->captured_at)->utc()->format('Y-m-d H:i:s'));
         $this->postJson("/api/v1/jobs/$job/travel/location", ['latitude' => 7.1, 'longitude' => 125.6, 'accuracyMeters' => 12, 'capturedAt' => $captured, 'foreground' => true])->assertConflict();
         $this->actingAs($outsider)->getJson("/api/v1/jobs/$job/travel")->assertNotFound();
         $this->actingAs($client)->getJson("/api/v1/jobs/$job/travel")

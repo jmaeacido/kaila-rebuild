@@ -12,6 +12,7 @@ use App\Support\NotificationService;
 use App\Support\OutboxRecorder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Throwable;
@@ -64,8 +65,9 @@ class TravelController extends Controller
         abort_unless($p['travelerId'] !== null && $actor->id === $p['travelerId'], 404);
         abort_unless($serviceJob->status === 'provider_traveling', 409);
         $session = TravelSession::query()->where('service_job_id', $serviceJob->id)->where('status', 'active')->firstOrFail();
+        $capturedAt = Carbon::parse($data['capturedAt'])->utc();
         $last = DB::table('location_samples')->where('travel_session_id', $session->id)->latest('captured_at')->first();
-        abort_if($last && now()->parse($data['capturedAt'])->lessThanOrEqualTo(now()->parse($last->captured_at)), 409, 'Location updates must be ordered.');
+        abort_if($last && $capturedAt->lessThanOrEqualTo(Carbon::parse($last->captured_at)), 409, 'Location updates must be ordered.');
         $heading = array_key_exists('headingDegrees', $data) && $data['headingDegrees'] !== null
             ? fmod((float) $data['headingDegrees'] + 360.0, 360.0)
             : null;
@@ -75,7 +77,7 @@ class TravelController extends Controller
             'longitude' => $data['longitude'],
             'accuracy_meters' => $data['accuracyMeters'],
             'heading_degrees' => $heading,
-            'captured_at' => $data['capturedAt'],
+            'captured_at' => $capturedAt,
         ]);
         $routeAvailable = true;
         try {
