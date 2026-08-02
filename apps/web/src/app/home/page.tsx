@@ -23,6 +23,7 @@ import styles from "./home.module.css";
 import { isEphemeralRealtimeEvent } from "../notification-feedback";
 import { useRealtimeInvalidation } from "../use-realtime-invalidation";
 import { formatTravelDistance, formatTravelEta, type TravelMetrics } from "../travel-metrics";
+import { useHiredRouteEstimate } from "../use-hired-route-estimate";
 
 type User = {
   name: string;
@@ -290,7 +291,7 @@ export default function AuthenticatedHomePage() {
               <h3>{job.title}</h3>
               <p><MapPin aria-hidden="true" />{job.area.name}</p>
               {job.counterpart && <><p className={styles.clientName}>{job.counterpart.displayName}</p><p className={styles.clientReputation}><Star aria-hidden="true" />{job.counterpart.rating === null ? "New · No reviews" : `${Number(job.counterpart.rating).toFixed(1)} · ${job.counterpart.reviewCount} review${job.counterpart.reviewCount === 1 ? "" : "s"}`}</p></>}
-              <p className={styles.routeMetrics}><Navigation aria-hidden="true" />{activeJobRouteMetrics(job)}</p>
+              <p className={styles.routeMetrics}><Navigation aria-hidden="true" /><ActiveJobRouteMetrics job={job} /></p>
             </div>
             <Link href={job.status === "provider_traveling" ? `/jobs/${job.id}/hired/travel` : `/jobs/${job.id}`}>
               {job.status === "provider_traveling" ? job.serviceLocationMode === "at_provider" ? job.role === "client" ? "Navigate to Shop" : "Track client" : job.role === "provider" ? "Navigate to Client" : "Track provider" : "Continue"}
@@ -418,11 +419,16 @@ function travelStatusLabel(job: Job): string {
   return travelerRole === "client" ? "Client on the way" : "Provider on the way";
 }
 
-function activeJobRouteMetrics(job: Job): string {
+function ActiveJobRouteMetrics({ job }: { job: Job }) {
+  const isTraveler = job.role === (job.serviceLocationMode === "at_provider" ? "client" : "provider");
+  const preview = useHiredRouteEstimate(
+    job.id,
+    isTraveler && job.status === "provider_selected" && job.serviceLocationMode !== "remote" && job.travel === null,
+  );
   if (job.serviceLocationMode === "remote") {
     return "Distance: Not applicable · ETA: Not applicable";
   }
-  const distance = job.travel?.distanceMeters;
-  const eta = job.travel?.etaSeconds;
+  const distance = job.travel?.distanceMeters ?? preview?.distanceMeters;
+  const eta = job.travel?.etaSeconds ?? preview?.etaSeconds;
   return `Distance: ${distance == null ? "—" : formatTravelDistance(distance)} · ETA: ${eta == null ? "—" : formatTravelEta(eta)}`;
 }

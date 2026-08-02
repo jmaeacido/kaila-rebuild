@@ -9,6 +9,7 @@ import { ensureMobileSession } from "@kaila/mobile/session";
 import styles from "../hired.module.css";
 import { LiveTravelMap } from "./live-travel-map";
 import { useRealtimeInvalidation } from "../../../../use-realtime-invalidation";
+import { useHiredRouteEstimate } from "../../../../use-hired-route-estimate";
 import {
   activeNavigationStep,
   formatArrivalClock,
@@ -325,9 +326,10 @@ export default function TravelPage({ params }: { params: Promise<{ jobId: string
   }
 
   const fallbackDistance = straightLineMeters(travel?.location ?? null, travel?.destination ?? null);
-  const distance = travel?.distanceMeters ?? fallbackDistance;
-  const eta = travel?.etaSeconds ?? (fallbackDistance === null ? null : Math.max(60, Math.ceil(fallbackDistance / 6.1)));
   const active = travel?.status === "active";
+  const preview = useHiredRouteEstimate(jobId, Boolean(travel?.canShareLocation && !active && !travel.arrivedAt && travel.serviceLocationMode !== "remote"));
+  const distance = travel?.distanceMeters ?? preview?.distanceMeters ?? fallbackDistance;
+  const eta = travel?.etaSeconds ?? preview?.etaSeconds ?? (fallbackDistance === null ? null : Math.max(60, Math.ceil(fallbackDistance / 6.1)));
   const travelerNavigating = Boolean(travel?.canShareLocation && active);
   const shopService = travel?.serviceLocationMode === "at_provider";
   const travelerName = shopService ? "client" : "provider";

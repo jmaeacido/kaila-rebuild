@@ -65,7 +65,8 @@ test("Travel status speaks to the active user in the correct role", () => {
 });
 
 test("Every active job keeps a truthful Distance and ETA row visible", () => {
-  assert.match(source, /activeJobs\.map\(\(job\)[\s\S]*activeJobRouteMetrics\(job\)/);
+  assert.match(source, /activeJobs\.map\(\(job\)[\s\S]*<ActiveJobRouteMetrics job=\{job\}/);
+  assert.match(source, /useHiredRouteEstimate/);
   assert.match(source, /Distance: \$\{distance == null \? "—"/);
   assert.match(source, /ETA: \$\{eta == null \? "—"/);
   assert.match(source, /Distance: Not applicable · ETA: Not applicable/);

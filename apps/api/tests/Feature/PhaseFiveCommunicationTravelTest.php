@@ -105,6 +105,11 @@ class PhaseFiveCommunicationTravelTest extends TestCase
     public function test_foreground_travel_is_provider_owned_reconciles_and_stops(): void
     {
         [$job,$client,$provider,$outsider] = $this->selectedJob();
+        $this->actingAs($client)->postJson("/api/v1/jobs/$job/travel/estimate", ['latitude' => 7.1, 'longitude' => 125.6])->assertNotFound();
+        $this->actingAs($provider)->postJson("/api/v1/jobs/$job/travel/estimate", ['latitude' => 7.1, 'longitude' => 125.6])
+            ->assertOk()
+            ->assertJsonPath('data.distanceMeters', fn ($value) => is_int($value))
+            ->assertJsonPath('data.etaSeconds', fn ($value) => is_int($value));
         $this->actingAs($client)->postJson("/api/v1/jobs/$job/travel/start", ['consentConfirmed' => true, 'foreground' => true])->assertNotFound();
         $this->actingAs($provider)->postJson("/api/v1/jobs/$job/travel/start", ['consentConfirmed' => true, 'foreground' => true])->assertOk()->assertJsonPath('data.status', 'active');
         $captured = now()->toIso8601String();

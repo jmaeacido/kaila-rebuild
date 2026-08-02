@@ -49,6 +49,35 @@ class TravelController extends Controller
         return response()->json(['data' => $this->present($session->refresh())]);
     }
 
+    public function estimate(Request $request, ServiceJob $serviceJob): JsonResponse
+    {
+        $data = $request->validate([
+            'latitude' => 'required|numeric|between:-90,90',
+            'longitude' => 'required|numeric|between:-180,180',
+        ]);
+        $actor = $request->user();
+        abort_unless($actor instanceof User, 401);
+        $participants = $this->access->requireParticipant($serviceJob, $actor);
+        abort_unless($participants['travelerId'] !== null && $actor->id === $participants['travelerId'], 404);
+        abort_if($participants['serviceLocationMode'] === 'remote', 409, 'Remote services do not use navigation.');
+        abort_unless(in_array($serviceJob->status, ['provider_selected', 'provider_traveling'], true), 409);
+        abort_if($participants['destinationLatitude'] === null || $participants['destinationLongitude'] === null, 422, 'The destination is not pinned.');
+
+        try {
+            $route = $this->maps->route(
+                new GeoPoint((float) $data['latitude'], (float) $data['longitude']),
+                new GeoPoint($participants['destinationLatitude'], $participants['destinationLongitude']),
+            );
+        } catch (Throwable) {
+            return response()->json(['message' => 'A driving route is not currently available.'], 503);
+        }
+
+        return response()->json(['data' => [
+            'distanceMeters' => $route->distanceMeters,
+            'etaSeconds' => $route->durationSeconds,
+        ]]);
+    }
+
     public function update(Request $request, ServiceJob $serviceJob): JsonResponse
     {
         $data = $request->validate([

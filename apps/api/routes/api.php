@@ -3,8 +3,8 @@
 use App\Http\Controllers\AccountDeletionController;
 use App\Http\Controllers\AdminAccountDeletionController;
 use App\Http\Controllers\AdminDisputeController;
-use App\Http\Controllers\AdminMarketplaceController;
 use App\Http\Controllers\AdminMaintenanceController;
+use App\Http\Controllers\AdminMarketplaceController;
 use App\Http\Controllers\AdminPhaseNineController;
 use App\Http\Controllers\AdminReportController;
 use App\Http\Controllers\AdminSupportCaseController;
@@ -108,6 +108,7 @@ Route::middleware('mobile.auth')->group(function (): void {
     Route::put('/auth/mobile/jobs/{serviceJob}/conversation/read', [ConversationController::class, 'read']);
     Route::put('/auth/mobile/jobs/{serviceJob}/conversation/typing', [ConversationController::class, 'typing']);
     Route::get('/auth/mobile/jobs/{serviceJob}/travel', [TravelController::class, 'show']);
+    Route::post('/auth/mobile/jobs/{serviceJob}/travel/estimate', [TravelController::class, 'estimate']);
     Route::post('/auth/mobile/jobs/{serviceJob}/travel/start', [TravelController::class, 'start']);
     Route::post('/auth/mobile/jobs/{serviceJob}/travel/location', [TravelController::class, 'update']);
     Route::post('/auth/mobile/jobs/{serviceJob}/travel/stop', [TravelController::class, 'stop']);
@@ -209,6 +210,7 @@ Route::middleware('auth')->group(function (): void {
     Route::put('/jobs/{serviceJob}/conversation/read', [ConversationController::class, 'read']);
     Route::put('/jobs/{serviceJob}/conversation/typing', [ConversationController::class, 'typing']);
     Route::get('/jobs/{serviceJob}/travel', [TravelController::class, 'show']);
+    Route::post('/jobs/{serviceJob}/travel/estimate', [TravelController::class, 'estimate']);
     Route::post('/jobs/{serviceJob}/travel/start', [TravelController::class, 'start']);
     Route::post('/jobs/{serviceJob}/travel/location', [TravelController::class, 'update']);
     Route::post('/jobs/{serviceJob}/travel/stop', [TravelController::class, 'stop']);
