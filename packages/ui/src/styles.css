@@ -19,6 +19,20 @@
 .kaila-button--secondary { background: var(--color-surface); border-color: var(--color-primary); color: var(--color-primary); }
 .kaila-button--tertiary { background: transparent; color: var(--color-primary); }
 .kaila-button--danger { background: var(--color-danger); color: var(--color-on-primary); }
+.kaila-button > span {
+  align-items: center;
+  color: inherit;
+  display: inline-flex;
+  gap: inherit;
+}
+button.kaila-button.kaila-button--primary,
+button.kaila-button.kaila-button--primary > span { color: var(--color-on-primary); }
+button.kaila-button.kaila-button--secondary,
+button.kaila-button.kaila-button--secondary > span { color: var(--color-primary); }
+button.kaila-button.kaila-button--tertiary,
+button.kaila-button.kaila-button--tertiary > span { color: var(--color-primary); }
+button.kaila-button.kaila-button--danger,
+button.kaila-button.kaila-button--danger > span { color: var(--color-on-primary); }
 .kaila-button:disabled { cursor: not-allowed; opacity: var(--opacity-disabled); }
 .kaila-button:active:not(:disabled) { transform: scale(var(--scale-pressed)); }
 

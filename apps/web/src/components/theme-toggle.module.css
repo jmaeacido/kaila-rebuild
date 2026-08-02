@@ -1,0 +1,78 @@
+.root {
+  position: relative;
+}
+
+.trigger {
+  align-items: center;
+  background: var(--color-surface);
+  border: var(--control-border-width) solid var(--color-border);
+  border-radius: var(--radius-button);
+  color: var(--color-ink);
+  cursor: pointer;
+  display: inline-flex;
+  height: var(--control-min-height);
+  justify-content: center;
+  min-width: var(--control-min-height);
+  padding: 0;
+}
+
+.trigger svg {
+  height: var(--spacing-24);
+  width: var(--spacing-24);
+}
+
+.trigger:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.menu {
+  background: var(--color-surface);
+  border: var(--control-border-width) solid var(--color-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-floating);
+  display: grid;
+  gap: var(--spacing-4);
+  min-width: 10rem;
+  padding: var(--spacing-8);
+  position: absolute;
+  right: 0;
+  top: calc(100% + var(--spacing-8));
+  z-index: calc(var(--z-toast) - 1);
+}
+
+.option,
+.optionActive {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-button);
+  color: var(--color-text);
+  cursor: pointer;
+  display: flex;
+  font: inherit;
+  font-weight: var(--font-weight-medium);
+  gap: var(--spacing-8);
+  min-height: var(--control-min-height);
+  padding: var(--spacing-8) var(--spacing-12);
+  text-align: left;
+  width: 100%;
+}
+
+.optionActive {
+  background: color-mix(in srgb, var(--color-primary) 12%, var(--color-surface));
+  color: var(--color-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.option svg,
+.optionActive svg {
+  height: var(--spacing-24);
+  width: var(--spacing-24);
+}
+
+.option:focus-visible,
+.optionActive:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-focus);
+  outline-offset: 2px;
+}

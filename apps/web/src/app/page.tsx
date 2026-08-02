@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { Button, Feedback } from "@kaila/ui";
 import { BrandMark } from "../components/brand-mark";
+import { ThemeToggle } from "../components/theme-toggle";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signedInHome, SignedInUser } from "./auth-client";
@@ -149,6 +150,7 @@ export default function HomePage() {
           <Link href="/community">Community</Link>
         </nav>
         <div className={styles.headerActions}>
+          <ThemeToggle />
           <Link className={styles.providerLink} href="/login" prefetch={false}>
             Sign in
           </Link>

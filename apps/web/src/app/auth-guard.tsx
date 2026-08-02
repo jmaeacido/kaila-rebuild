@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { BrandMark } from "../components/brand-mark";
+import { ThemeToggle } from "../components/theme-toggle";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Home, LogOut } from "lucide-react";
@@ -155,6 +156,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
             ) : null}
           </Link>
           <span className="sessionName">{userName}</span>
+          <ThemeToggle className="sessionThemeToggle" />
           <NotificationBell />
           <button
             className="sessionMobileSignOut"

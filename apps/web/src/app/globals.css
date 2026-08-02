@@ -255,6 +255,20 @@ a {
   color: var(--color-danger);
 }
 
+.appSessionBar .sessionThemeToggle button {
+  color: var(--color-ink);
+  background: var(--color-surface);
+}
+
+.appSessionBar .sessionThemeToggle .sessionThemeMenuOption,
+.appSessionBar .sessionThemeToggle button[role="menuitemradio"] {
+  color: var(--color-text);
+  background: transparent;
+  border: 0;
+  width: 100%;
+  justify-content: flex-start;
+}
+
 .appSessionBar .notificationBell {
   position: relative;
 }
