@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test": "node --test src/app/appearance-default.test.mjs",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

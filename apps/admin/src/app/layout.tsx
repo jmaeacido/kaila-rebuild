@@ -7,15 +7,15 @@ import { AppearanceSwitcher } from "./components/appearance-switcher";
 const appearanceScript = `(() => {
   try {
     const stored = localStorage.getItem("kaila-admin-appearance");
-    const preference = ["light", "dark", "system"].includes(stored) ? stored : "system";
+    const preference = ["light", "dark", "system"].includes(stored) ? stored : "light";
     const resolved = preference === "system"
       ? (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
       : preference;
     document.documentElement.dataset.appearance = preference;
     document.documentElement.dataset.theme = resolved;
   } catch {
-    document.documentElement.dataset.appearance = "system";
-    document.documentElement.dataset.theme = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    document.documentElement.dataset.appearance = "light";
+    document.documentElement.dataset.theme = "light";
   }
 })();`;
 

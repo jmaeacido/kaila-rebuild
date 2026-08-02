@@ -30,23 +30,23 @@ function applyTheme(preference: AppearanceTheme) {
 }
 
 export function AppearanceSwitcher() {
-  const [preference, setPreference] = useState<AppearanceTheme>("system");
+  const [preference, setPreference] = useState<AppearanceTheme>("light");
 
   useEffect(() => {
     const stored = window.localStorage.getItem(storageKey);
-    const initial = isAppearanceTheme(stored) ? stored : "system";
+    const initial = isAppearanceTheme(stored) ? stored : "light";
     applyTheme(initial);
     const syncSelection = window.setTimeout(() => setPreference(initial), 0);
 
     const media = window.matchMedia("(prefers-color-scheme: dark)");
     const handleSystemChange = () => {
-      if ((window.localStorage.getItem(storageKey) ?? "system") === "system") {
+      if (window.localStorage.getItem(storageKey) === "system") {
         applyTheme("system");
       }
     };
     const handleStorage = (event: StorageEvent) => {
       if (event.key !== storageKey) return;
-      const next = isAppearanceTheme(event.newValue) ? event.newValue : "system";
+      const next = isAppearanceTheme(event.newValue) ? event.newValue : "light";
       setPreference(next);
       applyTheme(next);
     };

@@ -2,7 +2,7 @@ try {
   const stored = localStorage.getItem("kaila-admin-appearance");
   const preference = ["light", "dark", "system"].includes(stored)
     ? stored
-    : "system";
+    : "light";
   const resolved =
     preference === "system"
       ? matchMedia("(prefers-color-scheme: dark)").matches
@@ -11,9 +11,5 @@ try {
       : preference;
   document.documentElement.dataset.theme = resolved;
 } catch {
-  document.documentElement.dataset.theme = matchMedia(
-    "(prefers-color-scheme: dark)",
-  ).matches
-    ? "dark"
-    : "light";
+  document.documentElement.dataset.theme = "light";
 }
