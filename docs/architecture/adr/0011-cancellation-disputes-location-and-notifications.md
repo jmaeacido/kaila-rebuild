@@ -37,9 +37,9 @@ The lifecycle ADR defines where cancellation and dispute branches may occur, but
 ### Notifications and direct communication
 
 - Pilot notifications are limited to actionable job, offer, hired-job message, travel/arrival, completion, dispute, review, account-security, and support events.
-- Urgent job-state and account-security events may use push plus in-app delivery. Routine reminders use standard notification priority. No full-screen intent, persistent alarm, repeated sound loop, or promotional push is allowed.
-- Users may mute message and routine reminder notifications, but security and material job-state changes remain enabled while the account/job is active. Quiet hours suppress sound for non-urgent events without delaying the durable in-app notification.
-- Direct messaging before hire and voice/video calls are not part of the pilot. Job-scoped messaging opens only after provider selection. Feed, AI, advanced analytics, operations research tooling, integrated payments, and background location remain deferred under ADR-0008.
+- Urgent job-state and account-security events may use push plus in-app delivery. Routine reminders use standard notification priority. No full-screen intent, persistent alarm, repeated sound loop, or promotional push is allowed for non-call events. Authorized incoming calls may use full-screen intent and ringtone looping per Decision 0034.
+- Users may mute message and routine reminder notifications, but security and material job-state changes remain enabled while the account/job is active. Quiet hours suppress sound for non-urgent events without delaying the durable in-app notification. Incoming call alerts bypass quiet hours.
+- Direct messaging before hire was deferred from the pilot; voice/video calls are reintroduced under Phase 9 / Decision 0034 with TURN and abuse gates. Job-scoped messaging opens only after provider selection. Feed, AI, advanced analytics, operations research tooling, integrated payments, and background location remain deferred under ADR-0008.
 
 ## Consequences
 

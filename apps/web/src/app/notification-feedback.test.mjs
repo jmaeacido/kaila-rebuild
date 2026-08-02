@@ -1,19 +1,44 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { feedbackForDomainEvent } from "./notification-feedback.ts";
+import { feedbackForDomainEvent, isEphemeralRealtimeEvent } from "./notification-feedback.ts";
 import { readFileSync } from "node:fs";
 
 const globals = readFileSync(new URL("./globals.css", import.meta.url), "utf8");
 const runtime = readFileSync(new URL("./notification-runtime.tsx", import.meta.url), "utf8");
 const realtime = readFileSync(new URL("./realtime-provider.tsx", import.meta.url), "utf8");
 const invalidation = readFileSync(new URL("./use-realtime-invalidation.ts", import.meta.url), "utf8");
+const home = readFileSync(new URL("./home/page.tsx", import.meta.url), "utf8");
 
 test("turns durable notification events into visible feedback", () => {
   assert.deepEqual(feedbackForDomainEvent({
     eventId: "event-1", type: "notification.created", occurredAt: new Date().toISOString(),
     resourceType: "notification", resourceId: "notification-1", version: 1,
     data: { notification: { id: "notification-1", type: "offer.created", title: "New offer", body: "A provider sent an offer.", resourceType: "service_job", resourceId: "job-1", data: { jobId: "job-1", type: "offer" }, readAt: null, createdAt: new Date().toISOString() } },
-  }), { title: "New offer", body: "A provider sent an offer.", href: "/jobs/job-1/offers" });
+  }), {
+    title: "New offer",
+    body: "A provider sent an offer.",
+    href: "/jobs/job-1/offers",
+    persistent: true,
+    actionLabel: "View update",
+    eyebrow: undefined,
+    matchJobId: undefined,
+  });
+});
+
+test("job matches use the shared non-blocking dialog copy", () => {
+  assert.deepEqual(feedbackForDomainEvent({
+    eventId: "event-match", type: "notification.created", occurredAt: new Date().toISOString(),
+    resourceType: "notification", resourceId: "notification-2", version: 1,
+    data: { notification: { id: "notification-2", type: "opportunity.matched", title: "New job near you", body: "Test", resourceType: "service_job", resourceId: "job-2", data: { jobId: "job-2", type: "job" }, readAt: null, createdAt: new Date().toISOString() } },
+  }), {
+    title: "Test",
+    body: "New job near you",
+    href: "/opportunities/job-2",
+    persistent: true,
+    actionLabel: "View job",
+    eyebrow: "NEW MATCH NEAR YOU",
+    matchJobId: "job-2",
+  });
 });
 
 test("turns every realtime domain event into visible feedback", () => {
@@ -21,14 +46,36 @@ test("turns every realtime domain event into visible feedback", () => {
     eventId: "event-2", type: "job.state.changed", occurredAt: new Date().toISOString(),
     resourceType: "service_job", resourceId: "job-1", version: 2,
     data: { jobId: "job-1" },
-  }), { title: "Job State Changed", body: "This update is now reflected in your job.", href: "/jobs/job-1" });
+  }), { title: "Job State Changed", body: "This update is now reflected in your job.", href: "/jobs/job-1", actionLabel: "View update" });
 });
 
 test("shows internal realtime events without inventing a route", () => {
   assert.deepEqual(feedbackForDomainEvent({
     eventId: "event-2", type: "job.updated", occurredAt: new Date().toISOString(),
     resourceType: "service_job", resourceId: "job-1", version: 2, data: {},
-  }), { title: "Job Updated", body: "This update is now reflected in your job.", href: undefined });
+  }), { title: "Job Updated", body: "This update is now reflected in your job.", href: undefined, actionLabel: undefined });
+});
+
+test("suppresses call ringing feedback owned by CallProvider", () => {
+  assert.equal(feedbackForDomainEvent({
+    eventId: "event-call", type: "call.ringing", occurredAt: new Date().toISOString(),
+    resourceType: "call_session", resourceId: "call-1", version: 1,
+    data: { callId: "call-1", contextType: "job", contextId: "job-1", media: "audio" },
+  }), null);
+  assert.equal(feedbackForDomainEvent({
+    eventId: "event-call-note", type: "notification.created", occurredAt: new Date().toISOString(),
+    resourceType: "notification", resourceId: "notification-call", version: 1,
+    data: { notification: { id: "notification-call", type: "call.ringing", title: "Incoming audio call", body: "Ada is calling about your job.", resourceType: "call_session", resourceId: "call-1", data: { type: "call", callId: "call-1" }, readAt: null, createdAt: new Date().toISOString() } },
+  }), null);
+});
+
+test("suppresses high-frequency ephemeral realtime events", () => {
+  assert.equal(isEphemeralRealtimeEvent("travel.location.changed"), true);
+  assert.equal(isEphemeralRealtimeEvent("conversation.typing.changed"), true);
+  assert.equal(feedbackForDomainEvent({
+    eventId: "event-3", type: "travel.location.changed", occurredAt: new Date().toISOString(),
+    resourceType: "travel_session", resourceId: "travel-1", version: 3, data: { jobId: "job-1" },
+  }), null);
 });
 
 test("mobile notifications are viewport bounded and independently scrollable", () => {
@@ -40,12 +87,24 @@ test("mobile notifications are viewport bounded and independently scrollable", (
 test("realtime feedback advances a bounded non-blocking queue", () => {
   assert.match(runtime, /eventKey: detail\.eventId/);
   assert.match(runtime, /dismiss\(active\.id\), 6_000/);
-  assert.match(runtime, /current\.slice\(-19\)/);
+  assert.match(runtime, /next\.slice\(-19\)/);
   assert.match(runtime, /aria-modal="false"/);
+  assert.match(runtime, /appToastDialog/);
+  assert.match(runtime, /persistent/);
+  assert.match(runtime, /MatchOpportunityPrompt/);
+  assert.match(runtime, /MatchOpportunityDetails/);
+  assert.match(globals, /\.appToastMatchMeta/);
 });
 
 test("realtime starts with resilient polling and reconciles visible screens", () => {
   assert.match(realtime, /transports: \["polling", "websocket"\]/);
   assert.match(invalidation, /document\.visibilityState === "visible" && !realtimeConnected/);
   assert.match(invalidation, /10_000/);
+});
+
+test("home reconciles quietly and ignores ephemeral travel or typing noise", () => {
+  assert.match(home, /load\(true\)/);
+  assert.match(home, /if \(!quiet\) setStatus\("loading"\)/);
+  assert.match(home, /isEphemeralRealtimeEvent\(event\.type\)/);
+  assert.doesNotMatch(home, /setPopupOpportunity/);
 });

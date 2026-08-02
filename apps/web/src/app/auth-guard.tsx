@@ -8,6 +8,7 @@ import { Home, LogOut } from "lucide-react";
 import { prepareCsrf } from "./auth-client";
 import { BrandedLoader } from "./branded-loader";
 import { FloatingKatabang } from "../components/floating-katabang";
+import { CallProvider } from "./calls/call-provider";
 import { NotificationBell } from "./notification-bell";
 import { PullToRefresh } from "./pull-to-refresh";
 import { realtimeAuthChangedName } from "./realtime-provider";
@@ -122,7 +123,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <>
+    <CallProvider>
       <PullToRefresh />
       <header className="appSessionBar">
         <Link href="/home" aria-label="KAILA home" prefetch={false}>
@@ -182,6 +183,6 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
       </header>
       {children}
       {pathname !== "/help/katabang" && <FloatingKatabang />}
-    </>
+    </CallProvider>
   );
 }

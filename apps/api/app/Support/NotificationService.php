@@ -37,7 +37,8 @@ class NotificationService
         ]);
 
         if ($this->allowsPush($userId, $channel)) {
-            $silent = $this->isQuietHours($userId);
+            // Incoming calls bypass quiet hours so wake-on-lock ringing still works.
+            $silent = $routeType !== 'call' && $this->isQuietHours($userId);
             if ($silent) {
                 $notification->update(['data' => [...$notification->data, 'silent' => '1']]);
             }
@@ -49,6 +50,11 @@ class NotificationService
                 ]);
                 DB::afterCommit(fn () => DeliverPushNotification::dispatch($attempt->id));
             }
+        }
+
+        // Ephemeral call cancel pushes should not create inbox/toast fan-out.
+        if (($data['hideFromInbox'] ?? null) === '1') {
+            return $notification;
         }
 
         $this->outbox->record('notification.created', 'notification', $notification->id, 1, [

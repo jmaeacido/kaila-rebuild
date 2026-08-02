@@ -29,10 +29,11 @@ test("Home renders each job's service category icon", () => {
   assert.doesNotMatch(source, /<Hammer aria-hidden="true" \/>/);
 });
 
-test("Home keeps matched jobs visible beside active work and announces a new match", () => {
+test("Home keeps matched jobs visible beside active work and announces matches through shared dialogs", () => {
   assert.match(source, /id="matched-jobs-title"/);
-  assert.match(source, /role="dialog" aria-modal="false"/);
-  assert.match(source, /sessionStorage\.getItem\(popupKey\)/);
+  assert.match(source, /isEphemeralRealtimeEvent\(event\.type\)/);
+  assert.match(source, /load\(true\)/);
+  assert.doesNotMatch(source, /setPopupOpportunity/);
 });
 
 test("Home pairs hired work and nearby jobs only when both have content", () => {

@@ -140,22 +140,7 @@
 @keyframes spin{to{transform:rotate(360deg)}
 }
 
-.callOverlay{align-items:center;background:color-mix(in srgb,var(--color-background) 94%,transparent);display:flex;flex-direction:column;gap:var(--spacing-12);inset:0;justify-content:center;position:absolute;z-index:10}
 .chatWindow{position:relative}
-.callMedia{align-items:center;display:flex;height:min(55vh,32rem);justify-content:center;position:relative;width:min(90%,48rem)}
-.callMedia>video:first-child{background:#000;border-radius:var(--radius-card);height:100%;object-fit:cover;width:100%}
-.localVideo{border:var(--spacing-4) solid var(--color-surface);border-radius:var(--radius-card);bottom:var(--spacing-12);height:8rem;object-fit:cover;position:absolute;right:var(--spacing-12);width:6rem}
-.callAvatar{align-items:center;background:var(--gradient-primary);border-radius:var(--radius-pill);color:var(--color-on-primary);display:flex;font-size:var(--font-heading-size);font-weight:var(--font-weight-bold);height:7rem;justify-content:center;overflow:hidden;width:7rem}
-.callAvatar img{height:100%;object-fit:cover;width:100%}
-.callOverlay>div:last-child{display:flex;gap:var(--spacing-16)}
-.callOverlay button{align-items:center;background:var(--color-surface);border:0;border-radius:var(--radius-pill);color:var(--color-ink);display:flex;height:var(--spacing-48);justify-content:center;width:var(--spacing-48)}
-.callOverlay .answerCall{background:var(--color-success);color:var(--color-on-primary)}
-.callOverlay .endCall{background:var(--color-danger);color:var(--color-on-primary)}
-
-.callOverlay .callActions{align-items:center;display:flex;gap:var(--spacing-12);justify-content:center}
-.callOverlay .labeledCallAction{font:inherit;font-weight:var(--font-weight-semibold);gap:var(--spacing-8);min-height:var(--spacing-48);padding:0 var(--spacing-16);width:auto}
-.labeledCallAction svg{flex:0 0 auto}
-
 .chatHeader{grid-row:1}
 .chatPrivacy{grid-row:2}
 .chatNotice{grid-row:3;min-height:0}

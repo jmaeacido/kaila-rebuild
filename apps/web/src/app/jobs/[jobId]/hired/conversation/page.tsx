@@ -7,12 +7,9 @@ import {
   FileText,
   Image as ImageIcon,
   LoaderCircle,
-  Mic,
-  MicOff,
   Paperclip,
   Phone,
   PhoneIncoming,
-  PhoneOff,
   PhoneOutgoing,
   Plus,
   Send,
@@ -22,6 +19,7 @@ import {
   X,
 } from "lucide-react";
 import styles from "../hired.module.css";
+import { useCall } from "../../../../calls/call-provider";
 import { useRealtimeInvalidation } from "../../../../use-realtime-invalidation";
 import { MediaViewer, type ViewableMedia } from "../../../../../components/media-viewer";
 
@@ -49,15 +47,17 @@ type Conversation = {
   messages: Message[];
   calls: CallLog[];
 };
-type CallLog = { id: string; media: "audio" | "video"; status: string; viewerDirection: "incoming" | "outgoing"; startedAt: string; answeredAt: string | null; endedAt: string | null; endedReason: string | null; durationSeconds: number | null };
-type CallSignal = {
-  type: "ringing" | "offer" | "answer" | "candidate" | "hangup";
-  callId: string;
+type CallLog = {
+  id: string;
   media: "audio" | "video";
-  description?: RTCSessionDescriptionInit | null;
-  candidate?: RTCIceCandidateInit | null;
+  status: string;
+  viewerDirection: "incoming" | "outgoing";
+  startedAt: string;
+  answeredAt: string | null;
+  endedAt: string | null;
+  endedReason: string | null;
+  durationSeconds: number | null;
 };
-type ActiveCall = { id: string; media: "audio" | "video"; direction: "incoming" | "outgoing"; status: "ringing" | "connecting" | "active" };
 
 const emojiGroups = [
   { label: "Smileys", emojis: ["😀", "😃", "😄", "😁", "😆", "😅", "😂", "🤣", "😊", "😇", "🙂", "🙃", "😉", "😍", "🥰", "😘", "😋", "😎", "🤩", "🥳", "😏", "😢", "😭", "😡", "🤔", "🫡", "😴", "🤗"] },
@@ -74,6 +74,7 @@ const reactions = ["👍", "👎", "❤️", "😂", "🤣", "😮", "😢", "�
 
 export default function ConversationPage({ params }: { params: Promise<{ jobId: string }> }) {
   const { jobId } = use(params);
+  const { startCall, notice: callNotice } = useCall();
   const [conversation, setConversation] = useState<Conversation | null>(null);
   const [text, setText] = useState("");
   const [file, setFile] = useState<File | null>(null);
@@ -82,19 +83,8 @@ export default function ConversationPage({ params }: { params: Promise<{ jobId: 
   const [showEmoji, setShowEmoji] = useState(false);
   const [reactionPicker, setReactionPicker] = useState<{ messageId: string; vertical: "above" | "below"; horizontal: "left" | "right" } | null>(null);
   const [selectedMediaId, setSelectedMediaId] = useState<string | null>(null);
-  const [call, setCall] = useState<ActiveCall | null>(null);
-  const [muted, setMuted] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
   const end = useRef<HTMLDivElement>(null);
-  const peer = useRef<RTCPeerConnection | null>(null);
-  const peerCallId = useRef<string | null>(null);
-  const localStream = useRef<MediaStream | null>(null);
-  const answering = useRef(false);
-  const queuedOffers = useRef(new Map<string, RTCSessionDescriptionInit>());
-  const queuedCandidates = useRef(new Map<string, RTCIceCandidateInit[]>());
-  const remoteVideo = useRef<HTMLVideoElement>(null);
-  const remoteAudio = useRef<HTMLAudioElement>(null);
-  const localVideo = useRef<HTMLVideoElement>(null);
 
   const load = useCallback(async () => {
     try {
@@ -116,118 +106,6 @@ export default function ConversationPage({ params }: { params: Promise<{ jobId: 
     };
   }, [load]);
 
-  const sendSignal = useCallback(async (callId: string, payload: Omit<CallSignal, "callId" | "media">) => {
-    const response = await fetch(`/api/v1/calls/${callId}/signal`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    if (!response.ok) throw new Error("Call signaling failed.");
-  }, []);
-
-  const createPeer = useCallback(async (callId: string, media: "audio" | "video") => {
-    const configuration = await fetch("/api/v1/calls/configuration");
-    if (!configuration.ok) throw new Error("Call configuration is unavailable.");
-    const config = (await configuration.json()) as { data: RTCConfiguration };
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: media === "video" });
-    localStream.current = stream;
-    const connection = new RTCPeerConnection(config.data);
-    stream.getTracks().forEach((track) => connection.addTrack(track, stream));
-    connection.ontrack = (event) => {
-      const remoteStream = event.streams[0] || new MediaStream([event.track]);
-      if (media === "video" && remoteVideo.current) remoteVideo.current.srcObject = remoteStream;
-      if (media === "audio" && remoteAudio.current) {
-        remoteAudio.current.srcObject = remoteStream;
-        void remoteAudio.current.play().catch(() => {
-          setNotice("Tap the call screen once to enable call audio.");
-        });
-      }
-    };
-    connection.onicecandidate = (event) => {
-      if (event.candidate) void sendSignal(callId, { type: "candidate", candidate: event.candidate.toJSON() });
-    };
-    connection.onconnectionstatechange = () => {
-      if (connection.connectionState === "connected") {
-        setCall((current) => current?.id === callId ? { ...current, status: "active" } : current);
-        setNotice("");
-      } else if (connection.connectionState === "failed") {
-        setNotice("The call connection failed. End the call and try again on a stable network.");
-      }
-    };
-    peer.current = connection;
-    peerCallId.current = callId;
-    window.setTimeout(() => {
-      if (localVideo.current) localVideo.current.srcObject = stream;
-    }, 0);
-    return connection;
-  }, [sendSignal]);
-
-  const closeCall = useCallback(() => {
-    peer.current?.close();
-    peer.current = null;
-    peerCallId.current = null;
-    localStream.current?.getTracks().forEach((track) => track.stop());
-    localStream.current = null;
-    setCall(null);
-    setMuted(false);
-  }, []);
-
-  useEffect(() => {
-    let active = true;
-    const poll = async () => {
-      try {
-        const response = await fetch("/api/v1/calls/signals", { cache: "no-store" });
-        if (!response.ok || !active) return;
-        const signals = ((await response.json()) as { data: CallSignal[] }).data;
-        for (const signal of signals) {
-          if (signal.type === "ringing") {
-            setCall((current) => current || { id: signal.callId, media: signal.media, direction: "incoming", status: "ringing" });
-          } else if (signal.type === "offer" && signal.description) {
-            queuedOffers.current.set(signal.callId, signal.description);
-          } else if (signal.type === "answer" && signal.description && peer.current && peerCallId.current === signal.callId) {
-            await peer.current.setRemoteDescription(signal.description);
-            for (const candidate of queuedCandidates.current.get(signal.callId) || []) {
-              try {
-                await peer.current.addIceCandidate(candidate);
-              } catch {
-                // A stale network candidate must not prevent SDP negotiation.
-              }
-            }
-            queuedCandidates.current.delete(signal.callId);
-            setCall((current) => current ? { ...current, status: "connecting" } : current);
-          } else if (signal.type === "candidate" && signal.candidate) {
-            if (peer.current?.remoteDescription && peerCallId.current === signal.callId) {
-              try {
-                await peer.current.addIceCandidate(signal.candidate);
-              } catch {
-                // Browsers can reject obsolete candidates after a network change.
-              }
-            } else {
-              const candidates = queuedCandidates.current.get(signal.callId) || [];
-              candidates.push(signal.candidate);
-              queuedCandidates.current.set(signal.callId, candidates);
-            }
-          } else if (signal.type === "hangup") {
-            setCall((current) => {
-              if (current?.id !== signal.callId) return current;
-              window.setTimeout(closeCall, 0);
-              return current;
-            });
-          }
-        }
-      } catch {
-        // The next poll reconciles transient signaling failures.
-      }
-    };
-    const initial = window.setTimeout(() => void poll(), 0);
-    const timer = window.setInterval(() => void poll(), 750);
-    return () => {
-      active = false;
-      window.clearTimeout(initial);
-      window.clearInterval(timer);
-    };
-  }, [closeCall]);
-
   async function send(event: FormEvent) {
     event.preventDefault();
     if (!text.trim() && !file) return;
@@ -248,11 +126,10 @@ export default function ConversationPage({ params }: { params: Promise<{ jobId: 
       data.append("file", file);
       const upload = await fetch(`/api/v1/messages/${messageId}/assets`, { method: "POST", body: data });
       if (!upload.ok) setNotice("Your message was sent, but the attachment could not be uploaded.");
-      else setNotice("Attachment uploaded and queued for a safety check.");
+      setFile(null);
     }
     setText("");
-    setFile(null);
-    setShowEmoji(false);
+    setState("ready");
     await load();
   }
 
@@ -274,108 +151,15 @@ export default function ConversationPage({ params }: { params: Promise<{ jobId: 
     setReactionPicker({ messageId, vertical, horizontal });
   }
 
-  async function startCall(media: "audio" | "video") {
+  async function beginCall(media: "audio" | "video") {
     setNotice("");
-    const response = await fetch("/api/v1/calls", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ contextType: "job", contextId: jobId, media }),
+    await startCall({
+      contextType: "job",
+      contextId: jobId,
+      media,
+      peerName: conversation?.otherParty.name,
+      peerAvatarUrl: conversation?.otherParty.avatarUrl,
     });
-    if (response.ok) {
-      const created = (await response.json()) as { data: { id: string } };
-      try {
-        setCall({ id: created.data.id, media, direction: "outgoing", status: "ringing" });
-        const connection = await createPeer(created.data.id, media);
-        await connection.setLocalDescription();
-        if (!connection.localDescription) throw new Error("The browser did not create a call offer.");
-        await sendSignal(created.data.id, { type: "offer", description: connection.localDescription.toJSON() });
-      } catch {
-        await fetch(`/api/v1/calls/${created.data.id}/transition`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "end", reason: "failed" }) }).catch(() => undefined);
-        closeCall();
-        setNotice("Microphone or camera access is required to start the call.");
-      }
-      return;
-    }
-    const body = (await response.json().catch(() => null)) as { error?: { message?: string } } | null;
-    setNotice(body?.error?.message || "Calling is temporarily unavailable. You can continue in chat.");
-  }
-
-  async function answerCall() {
-    if (!call || answering.current) return;
-    answering.current = true;
-    setCall({ ...call, status: "connecting" });
-    let stage = "loading the call offer";
-    try {
-      let offer = queuedOffers.current.get(call.id) || null;
-      if (!offer) {
-        const response = await fetch(`/api/v1/calls/${call.id}/signal-state`, { cache: "no-store" });
-        if (!response.ok) throw new Error();
-        offer = ((await response.json()) as { data: { offer: RTCSessionDescriptionInit | null } }).data.offer;
-      }
-      if (!offer) {
-        await new Promise((resolve) => window.setTimeout(resolve, 500));
-        const response = await fetch(`/api/v1/calls/${call.id}/signal-state`, { cache: "no-store" });
-        if (!response.ok) throw new Error();
-        offer = ((await response.json()) as { data: { offer: RTCSessionDescriptionInit | null } }).data.offer;
-      }
-      if (!offer) throw new Error();
-      stage = "opening your camera and microphone";
-      const connection = await createPeer(call.id, call.media);
-      stage = "applying the caller’s offer";
-      await connection.setRemoteDescription(offer);
-      for (const candidate of queuedCandidates.current.get(call.id) || []) {
-        try {
-          await connection.addIceCandidate(candidate);
-        } catch {
-          // Continue negotiating when a queued candidate is no longer usable.
-        }
-      }
-      queuedCandidates.current.delete(call.id);
-      queuedOffers.current.delete(call.id);
-      stage = "creating the call answer";
-      await connection.setLocalDescription();
-      if (!connection.localDescription) throw new Error("The browser did not create a call answer.");
-      stage = "sending the call answer";
-      await sendSignal(call.id, { type: "answer", description: connection.localDescription.toJSON() });
-      stage = "confirming the answered call";
-      const transition = await fetch(`/api/v1/calls/${call.id}/transition`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "answer" }) });
-      if (!transition.ok) throw new Error();
-      setCall({ ...call, status: "connecting" });
-    } catch (error) {
-      peer.current?.close();
-      peer.current = null;
-      peerCallId.current = null;
-      localStream.current?.getTracks().forEach((track) => track.stop());
-      localStream.current = null;
-      setCall({ ...call, status: "ringing" });
-      if (error instanceof DOMException && ["NotAllowedError", "SecurityError"].includes(error.name)) {
-        setNotice(`Allow ${call.media === "video" ? "camera and microphone" : "microphone"} access in your browser, then answer again.`);
-      } else if (error instanceof DOMException && error.name === "NotFoundError") {
-        setNotice(`No ${call.media === "video" ? "camera or microphone" : "microphone"} was found on this device.`);
-      } else {
-        console.error(`Call failed while ${stage}.`, error);
-        setNotice(`The call failed while ${stage}. Please try a new call.`);
-      }
-    } finally {
-      answering.current = false;
-    }
-  }
-
-  async function endCall(action: "decline" | "end" = "end") {
-    if (!call) return;
-    await sendSignal(call.id, { type: "hangup" });
-    await fetch(`/api/v1/calls/${call.id}/transition`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action, reason: action === "decline" ? "declined" : "completed" }),
-    });
-    closeCall();
-  }
-
-  function toggleMute() {
-    const next = !muted;
-    localStream.current?.getAudioTracks().forEach((track) => { track.enabled = !next; });
-    setMuted(next);
   }
 
   const otherName = conversation?.otherParty.name || "Job participant";
@@ -387,6 +171,7 @@ export default function ConversationPage({ params }: { params: Promise<{ jobId: 
     ...conversation.messages.map((message) => ({ kind: "message" as const, at: message.createdAt, message })),
     ...conversation.calls.map((callLog) => ({ kind: "call" as const, at: callLog.startedAt, callLog })),
   ].sort((first, second) => new Date(first.at).getTime() - new Date(second.at).getTime()) : [];
+
   return (
     <main className={styles.chatShell}>
       <section className={styles.chatWindow}>
@@ -403,14 +188,14 @@ export default function ConversationPage({ params }: { params: Promise<{ jobId: 
             <p>Hired job conversation</p>
           </div>
           <nav aria-label="Call controls">
-            <button type="button" onClick={() => void startCall("audio")} aria-label={`Audio call ${otherName}`}><Phone /></button>
-            <button type="button" onClick={() => void startCall("video")} aria-label={`Video call ${otherName}`}><Video /></button>
+            <button type="button" onClick={() => void beginCall("audio")} aria-label={`Audio call ${otherName}`}><Phone /></button>
+            <button type="button" onClick={() => void beginCall("video")} aria-label={`Video call ${otherName}`}><Video /></button>
           </nav>
         </header>
 
         <div className={styles.chatPrivacy}><ShieldCheck /><span>Private to this job’s client and provider</span></div>
         <p className={styles.chatNotice} role="status">
-          {state === "error" ? "Chat is unavailable. Check your connection and try again; your draft remains here." : notice}
+          {state === "error" ? "Chat is unavailable. Check your connection and try again; your draft remains here." : notice || callNotice}
         </p>
 
         <section className={styles.messages} aria-live="polite" aria-label="Messages">
@@ -470,31 +255,6 @@ export default function ConversationPage({ params }: { params: Promise<{ jobId: 
             <button className={styles.sendButton} type="submit" disabled={state === "sending" || (!text.trim() && !file)} aria-label="Send message"><Send /></button>
           </div>
         </form>
-        {call && (
-          <section className={styles.callOverlay} aria-label={`${call.media} call`}>
-            <div className={styles.callMedia}>
-              {call.media === "video" && <video ref={remoteVideo} autoPlay playsInline />}
-              {call.media === "audio" && <audio ref={remoteAudio} autoPlay />}
-              {call.media === "video" && <video className={styles.localVideo} ref={localVideo} autoPlay muted playsInline />}
-              {call.media === "audio" && <span className={styles.callAvatar}>{conversation?.otherParty.avatarUrl ? <img src={conversation.otherParty.avatarUrl} alt="" /> : otherName[0]}</span>}
-            </div>
-            <h2>{otherName}</h2>
-            <p>{call.status === "connecting" ? "Connecting…" : call.direction === "incoming" && call.status === "ringing" ? `Incoming ${call.media} call` : call.status === "active" ? "Call connected" : "Calling…"}</p>
-            <div className={styles.callActions}>
-              {call.direction === "incoming" && call.status === "ringing" && (
-                <button className={`${styles.answerCall} ${styles.labeledCallAction}`} type="button" onClick={() => void answerCall()} aria-label={`Answer ${call.media} call`}>
-                  {call.media === "video" ? <Video /> : <Phone />}
-                  <span>{call.media === "video" ? "Answer video" : "Answer audio"}</span>
-                </button>
-              )}
-              {call.status === "active" && <button type="button" onClick={toggleMute} aria-label={muted ? "Unmute" : "Mute"}>{muted ? <MicOff /> : <Mic />}</button>}
-              <button className={`${styles.endCall} ${call.direction === "incoming" && call.status === "ringing" ? styles.labeledCallAction : ""}`} type="button" onClick={() => void endCall(call.direction === "incoming" && call.status === "ringing" ? "decline" : "end")} aria-label={call.direction === "incoming" && call.status === "ringing" ? `Decline ${call.media} call` : "End call"}>
-                <PhoneOff />
-                {call.direction === "incoming" && call.status === "ringing" && <span>Decline</span>}
-              </button>
-            </div>
-          </section>
-        )}
         {selectedMediaIndex >= 0 && <MediaViewer assets={conversationMedia as ViewableMedia[]} initialIndex={selectedMediaIndex} onClose={() => setSelectedMediaId(null)} />}
       </section>
     </main>

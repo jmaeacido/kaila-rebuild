@@ -4,8 +4,13 @@ import { initializeApp, getApps } from "firebase/app";
 import { getMessaging, getToken, isSupported, onMessage } from "firebase/messaging";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Bell, CheckCircle2, X } from "lucide-react";
+import { ArrowRight, Bell, CheckCircle2, X } from "lucide-react";
 import { prepareCsrf } from "./auth-client";
+import {
+  MatchOpportunityAvatar,
+  MatchOpportunityDetails,
+  MatchOpportunityPrompt,
+} from "./match-opportunity-prompt";
 import { feedbackForDomainEvent, type FeedbackMessage } from "./notification-feedback";
 import { domainEventName, realtimeStatusName, type DomainEvent, type RealtimeStatus } from "./realtime-provider";
 
@@ -46,7 +51,12 @@ export function NotificationRuntime() {
       }
     }
     const id = ++nextId.current;
-    setToasts((current) => [...current.slice(-19), { ...message, id }]);
+    setToasts((current) => {
+      const next = [...current, { ...message, id }];
+      // Durable notification dialogs stay ahead of brief status toasts.
+      next.sort((left, right) => Number(Boolean(right.persistent || right.permissionPrompt)) - Number(Boolean(left.persistent || left.permissionPrompt)));
+      return next.slice(-19);
+    });
   }, []);
 
   useEffect(() => {
@@ -155,14 +165,60 @@ export function NotificationRuntime() {
   return (
     <aside className="toastViewport" aria-live="polite" aria-label="KAILA updates">
       {toasts.slice(0, 1).map((toast) => (
-        <section className="appToast" key={toast.id} role="dialog" aria-modal="false" aria-labelledby={`realtime-update-${toast.id}`}>
-          <span className="appToastIcon" aria-hidden="true">{toast.permissionPrompt ? <Bell /> : <CheckCircle2 />}</span>
-          <div><strong id={`realtime-update-${toast.id}`}>{toast.title}</strong><p>{toast.body}</p>
-            {toast.permissionPrompt ? <button type="button" onClick={() => void registerBrowserPush().catch(() => show({ title: "Push setup failed", body: "Check browser notification permissions and try again." }))}>Enable notifications</button>
-              : toast.href ? <Link href={toast.href}>View update</Link> : null}
-          </div>
-          <button className="appToastClose" type="button" aria-label={`Dismiss ${toast.title}`} onClick={() => dismiss(toast.id)}><X /></button>
-        </section>
+        toast.matchJobId ? (
+          <MatchOpportunityPrompt jobId={toast.matchJobId} key={toast.id}>
+            {({ opportunity, status }) => (
+              <section
+                className="appToast appToastDialog appToastMatch"
+                role="dialog"
+                aria-modal="false"
+                aria-labelledby={`realtime-update-${toast.id}`}
+              >
+                <span className="appToastIcon appToastAvatar" aria-hidden={opportunity?.client.avatarUrl ? undefined : true}>
+                  <MatchOpportunityAvatar opportunity={opportunity} />
+                  {!opportunity ? <CheckCircle2 aria-hidden="true" /> : null}
+                </span>
+                <div>
+                  {toast.eyebrow ? <p className="appToastEyebrow">{toast.eyebrow}</p> : null}
+                  <strong id={`realtime-update-${toast.id}`}>{opportunity?.title || toast.title}</strong>
+                  {opportunity ? <p>{opportunity.client.displayName}</p> : <p>{toast.body}</p>}
+                  <MatchOpportunityDetails opportunity={opportunity} status={status} />
+                  {toast.href ? (
+                    <Link href={toast.href} onClick={() => dismiss(toast.id)}>
+                      {toast.actionLabel || "View job"}
+                      <ArrowRight aria-hidden="true" />
+                    </Link>
+                  ) : null}
+                </div>
+                <button className="appToastClose" type="button" aria-label={`Dismiss ${toast.title}`} onClick={() => dismiss(toast.id)}><X /></button>
+              </section>
+            )}
+          </MatchOpportunityPrompt>
+        ) : (
+          <section
+            className={toast.persistent || toast.permissionPrompt ? "appToast appToastDialog" : "appToast"}
+            key={toast.id}
+            role="dialog"
+            aria-modal="false"
+            aria-labelledby={`realtime-update-${toast.id}`}
+          >
+            <span className="appToastIcon" aria-hidden="true">{toast.permissionPrompt ? <Bell /> : <CheckCircle2 />}</span>
+            <div>
+              {toast.eyebrow ? <p className="appToastEyebrow">{toast.eyebrow}</p> : null}
+              <strong id={`realtime-update-${toast.id}`}>{toast.title}</strong>
+              <p>{toast.body}</p>
+              {toast.permissionPrompt ? (
+                <button type="button" onClick={() => void registerBrowserPush().catch(() => show({ title: "Push setup failed", body: "Check browser notification permissions and try again." }))}>Enable notifications</button>
+              ) : toast.href ? (
+                <Link href={toast.href} onClick={() => dismiss(toast.id)}>
+                  {toast.actionLabel || "View update"}
+                  <ArrowRight aria-hidden="true" />
+                </Link>
+              ) : null}
+            </div>
+            <button className="appToastClose" type="button" aria-label={`Dismiss ${toast.title}`} onClick={() => dismiss(toast.id)}><X /></button>
+          </section>
+        )
       ))}
     </aside>
   );

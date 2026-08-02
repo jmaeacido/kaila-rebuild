@@ -90,6 +90,11 @@ class OpportunityMatchingService
             return;
         }
 
-        $this->notifications->send($provider->user_id, 'opportunity.matched', 'New job near you', $job->title, 'service_job', $job->id, ['jobId' => $job->id, 'areaId' => $job->area_id, 'categoryId' => $job->service_category_id]);
+        $this->notifications->send($provider->user_id, 'opportunity.matched', 'New job near you', $job->title, 'service_job', $job->id, [
+            'jobId' => $job->id,
+            'opportunityId' => $opportunity->id,
+            'areaId' => $job->area_id,
+            'categoryId' => $job->service_category_id,
+        ]);
     }
 }

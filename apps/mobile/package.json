@@ -6,6 +6,7 @@
   "exports": {
     "./oauth": "./src/oauth.ts",
     "./background-navigation": "./src/background-navigation-plugin.ts",
+    "./incoming-call": "./src/incoming-call-plugin.ts",
     "./runtime": "./src/runtime.ts",
     "./session": "./src/session.ts"
   },

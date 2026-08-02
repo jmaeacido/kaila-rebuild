@@ -9,7 +9,7 @@ KAILA packages the consumer application with Capacitor 8 under `apps/mobile`. Re
 
 The native runtime handles verified HTTPS and `kaila://app` links, FCM registration/action routing, foreground/app-state reconciliation, and network recovery. Push payloads may contain only a known event type and opaque resource identifier. Unknown or malformed actions open the durable notification inbox.
 
-The pilot requests notification and foreground location permissions only. It does not request background location or full-screen intent, create persistent/repeating alarms, implement calls, or use the legacy APK self-update mechanism. Releases are signed AAB artifacts promoted through the protected `android-production` environment.
+The pilot requests notification and foreground location permissions. Background location remains prohibited. Full-screen intent and a call foreground service are authorized **only** for hired-job (and accepted-direct) incoming/active calls per Decision 0034; they must not be used for job alerts, marketing, or routine reminders. The release does not create persistent/repeating promotional alarms or use the legacy APK self-update mechanism. Releases are signed AAB artifacts promoted through the protected `android-production` environment.
 
 ## Consequences
 

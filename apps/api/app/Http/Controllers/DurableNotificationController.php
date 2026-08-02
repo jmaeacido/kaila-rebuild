@@ -15,7 +15,13 @@ class DurableNotificationController
 
     public function index(Request $request): JsonResponse
     {
-        $query = DurableNotification::query()->where('user_id', $this->user($request)->id)->whereNull('cleared_at');
+        $query = DurableNotification::query()
+            ->where('user_id', $this->user($request)->id)
+            ->whereNull('cleared_at')
+            ->where(function ($builder): void {
+                $builder->whereNull('data->hideFromInbox')
+                    ->orWhere('data->hideFromInbox', '!=', '1');
+            });
 
         return response()->json([
             'data' => (clone $query)->latest()->limit(100)->get()->map(fn (DurableNotification $notification): array => $this->serialize($notification)),

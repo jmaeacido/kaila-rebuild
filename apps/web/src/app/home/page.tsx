@@ -15,12 +15,12 @@ import {
   Search,
   Settings,
   Star,
-  X,
 } from "lucide-react";
 import { Feedback } from "@kaila/ui";
 import { ServiceCategoryIcon } from "../../components/service-category-icon";
 import { OpportunityRouteMetrics } from "../../components/job-request-location";
 import styles from "./home.module.css";
+import { isEphemeralRealtimeEvent } from "../notification-feedback";
 import { useRealtimeInvalidation } from "../use-realtime-invalidation";
 import { formatTravelDistance, formatTravelEta, type TravelMetrics } from "../travel-metrics";
 
@@ -84,13 +84,12 @@ export default function AuthenticatedHomePage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
-  const [popupOpportunity, setPopupOpportunity] = useState<Opportunity | null>(null);
   const [status, setStatus] = useState<"loading" | "ready" | "error">(
     "loading",
   );
 
-  const load = useCallback(async () => {
-    setStatus("loading");
+  const load = useCallback(async (quiet = false) => {
+    if (!quiet) setStatus("loading");
     try {
       const [userResponse, referenceResponse, jobsResponse] = await Promise.all([
         fetch("/api/v1/me", { cache: "no-store" }),
@@ -125,26 +124,19 @@ export default function AuthenticatedHomePage() {
       setCategories(referenceBody.data.categories);
       setJobs(jobsBody.data);
       setOpportunities(providerOpportunities);
-      const newest = providerOpportunities[0];
-      if (newest) {
-        const popupKey = `kaila:home-opportunity:${newest.id}`;
-        if (window.sessionStorage.getItem(popupKey) !== "shown") {
-          window.sessionStorage.setItem(popupKey, "shown");
-          setPopupOpportunity(newest);
-        }
-      }
       setStatus("ready");
     } catch {
-      setStatus("error");
+      if (!quiet) setStatus("error");
     }
   }, []);
-  useRealtimeInvalidation(() => void load(), (event) =>
-    ["service_job", "offer_thread", "notification", "job_conversation", "travel_session"].includes(event.resourceType),
+  useRealtimeInvalidation(() => void load(true), (event) =>
+    ["service_job", "offer_thread", "notification", "job_conversation", "travel_session"].includes(event.resourceType)
+    && !isEphemeralRealtimeEvent(event.type),
   );
 
   useEffect(() => {
     const initialLoad = window.setTimeout(() => void load(), 0);
-    const reconcile = () => void load();
+    const reconcile = () => void load(true);
     window.addEventListener("online", reconcile);
     return () => {
       window.clearTimeout(initialLoad);
@@ -416,15 +408,6 @@ export default function AuthenticatedHomePage() {
           Account
         </Link>
       </nav>
-
-      {popupOpportunity && (
-        <aside className={styles.opportunityPopup} role="dialog" aria-modal="false" aria-labelledby="opportunity-popup-title">
-          <button type="button" aria-label="Close matched job" onClick={() => setPopupOpportunity(null)}><X aria-hidden="true" /></button>
-          <span className={styles.popupIcon}><ServiceCategoryIcon icon={popupOpportunity.category.icon} aria-hidden="true" /></span>
-          <div><p className={styles.eyebrow}>NEW MATCH NEAR YOU</p><h2 id="opportunity-popup-title">{popupOpportunity.title}</h2><span><MapPin aria-hidden="true" />{popupOpportunity.area.name}</span></div>
-          <Link href={`/opportunities/${popupOpportunity.jobId}`} onClick={() => setPopupOpportunity(null)}>View job <ArrowRight aria-hidden="true" /></Link>
-        </aside>
-      )}
     </main>
   );
 }

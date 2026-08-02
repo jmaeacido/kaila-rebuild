@@ -43,7 +43,7 @@ The classification applies to product behavior, not legacy code reuse. No legacy
 | Message attachments | Preserve | attachment tables/routes | Object storage and authorized signed access |
 | Message reactions | Defer | `job_message_reactions` | Noncritical polish |
 | Typing/presence | Improve | presence routes/maps/events | Ephemeral TTL, authenticated rooms, multi-node adapter |
-| Audio/video calls | Defer | WebRTC, `kaila.call.signal` | Add after chat; TURN, abuse/privacy/background tests |
+| Audio/video calls | Improve | WebRTC + global CallProvider + Android wake UI | Decision 0034; TURN-gated; Messenger-style wake-on-lock |
 | Missed/completed call logs | Merge | `missed_calls` plus call-kind messages | Model calls once, render into conversation/notifications |
 | Live provider travel tracking | Preserve | `job_navigation_states`, navigation events | Core PDD feature; privacy and lifecycle improvements |
 | OSRM route/ETA | Improve | `lookupRouteDistanceKm()`, app route calls | Provider abstraction, caching, quotas, failure states |
@@ -51,7 +51,7 @@ The classification applies to product behavior, not legacy code reuse. No legacy
 | Realtime marketplace updates | Preserve | Socket.IO domain events | Authenticated minimal events plus REST reconciliation/outbox |
 | FCM push notifications | Preserve | push token/send functions, Android receiver | Durable notification model, preferences, delivery logs |
 | Persistent job-request alert | Remove | FCM `persistent`, Android job channel | ADR-0011 prohibits persistent/repeating alert behavior in the pilot |
-| Incoming full-screen call notification | Defer | `KailaNativePlugin.showIncomingCall()` | Reassess Android eligibility and abuse controls |
+| Incoming full-screen call notification | Improve | `IncomingCallActivity` + `kaila_calls_v2` | Decision 0034; call-only full-screen intent |
 | PWA/offline app shell | Improve | `sw.js`, manifest | Define safe caching/offline recovery; never cache private data loosely |
 | Capacitor Android packaging | Preserve | root package scripts, `android/` | Recreate after web/API foundation; extract custom native requirements |
 | APK self-update/download | Remove | `/api/mobile-update*`, `mobile-update.json` | Prefer managed store/release channel unless enterprise distribution approved |

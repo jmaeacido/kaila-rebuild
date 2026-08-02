@@ -13,6 +13,22 @@ export type NotificationRecord = {
 export function notificationRoute(notification: NotificationRecord): string {
   if (notification.resourceType === "direct_conversation" && /^[A-Za-z0-9-]+$/.test(notification.resourceId)) return `/messages/${notification.resourceId}`;
   if (notification.resourceType === "support_case" && /^[A-Za-z0-9-]+$/.test(notification.resourceId)) return `/support/${notification.resourceId}`;
+  if (notification.resourceType === "call_session" || notification.data.type === "call") {
+    const contextId = String(notification.data.contextId ?? "");
+    const callId = String(notification.data.callId ?? notification.resourceId);
+    if (notification.data.contextType === "job" && /^[A-Za-z0-9-]+$/.test(contextId) && /^[A-Za-z0-9-]+$/.test(callId)) {
+      const params = new URLSearchParams({
+        callId,
+        callAction: notification.data.action === "cancel" ? "cancel" : "open",
+        callMedia: String(notification.data.media || "audio"),
+        callContextType: "job",
+        callContextId: contextId,
+      });
+      if (typeof notification.data.callerName === "string") params.set("callCallerName", notification.data.callerName);
+      return `/jobs/${contextId}/hired/conversation?${params.toString()}`;
+    }
+    return "/notifications";
+  }
   const jobId = String(notification.data.jobId ?? notification.resourceId);
   if (notification.resourceType !== "service_job" || !/^[A-Za-z0-9-]+$/.test(jobId)) return "/notifications";
   const routeType = notification.data.type;

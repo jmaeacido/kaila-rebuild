@@ -34,7 +34,15 @@ class CallController
         $calleeId = $this->callee($data['contextType'], $data['contextId'], $actor);
         $call = DB::transaction(function () use ($data, $actor, $calleeId) {
             $call = CallSession::query()->create(['id' => (string) Str::uuid(), 'context_type' => $data['contextType'], 'context_id' => $data['contextId'], 'caller_user_id' => $actor->id, 'callee_user_id' => $calleeId, 'media' => $data['media'], 'status' => 'ringing']);
-            $this->outbox->record('call.ringing', 'call_session', $call->id, 1, ['rooms' => ["user:$calleeId"], 'callId' => $call->id, 'contextType' => $call->context_type, 'contextId' => $call->context_id, 'media' => $call->media]);
+            $this->outbox->record('call.ringing', 'call_session', $call->id, 1, [
+                'rooms' => ["user:$calleeId"],
+                'callId' => $call->id,
+                'contextType' => $call->context_type,
+                'contextId' => $call->context_id,
+                'media' => $call->media,
+                'callerName' => $actor->name,
+                'callerUserId' => $actor->id,
+            ]);
             $this->notifications->send(
                 $calleeId,
                 'call.ringing',
@@ -47,12 +55,23 @@ class CallController
                     'contextType' => $call->context_type,
                     'contextId' => $call->context_id,
                     'media' => $call->media,
+                    'callerName' => $actor->name,
+                    'callerUserId' => $actor->id,
+                    'action' => 'ring',
                 ],
             );
 
             return $call;
         });
-        $this->queueSignal($calleeId, ['type' => 'ringing', 'callId' => $call->id, 'media' => $call->media, 'callerUserId' => $actor->id]);
+        $this->queueSignal($calleeId, [
+            'type' => 'ringing',
+            'callId' => $call->id,
+            'media' => $call->media,
+            'callerUserId' => $actor->id,
+            'callerName' => $actor->name,
+            'contextType' => $call->context_type,
+            'contextId' => $call->context_id,
+        ]);
 
         return response()->json(['data' => $call], 201);
     }
@@ -146,7 +165,36 @@ class CallController
             abort_unless(in_array($callSession->status, ['ringing', 'active'], true), 409);
             $callSession->update(['status' => $data['action'] === 'decline' ? 'declined' : 'ended', 'ended_at' => now(), 'ended_reason' => $data['reason'] ?? ($data['action'] === 'decline' ? 'declined' : 'completed')]);
         }
-        DB::transaction(fn () => $this->outbox->record('call.status.changed', 'call_session', $callSession->id, now()->getTimestamp(), ['rooms' => ["user:{$callSession->caller_user_id}", "user:{$callSession->callee_user_id}"], 'callId' => $callSession->id, 'status' => $callSession->status, 'contextType' => $callSession->context_type, 'contextId' => $callSession->context_id, 'media' => $callSession->media]));
+        DB::transaction(function () use ($callSession) {
+            $this->outbox->record('call.status.changed', 'call_session', $callSession->id, now()->getTimestamp(), [
+                'rooms' => ["user:{$callSession->caller_user_id}", "user:{$callSession->callee_user_id}"],
+                'callId' => $callSession->id,
+                'status' => $callSession->status,
+                'contextType' => $callSession->context_type,
+                'contextId' => $callSession->context_id,
+                'media' => $callSession->media,
+            ]);
+            // Ephemeral cancel pushes clear native ringing UI without inbox clutter.
+            foreach ([$callSession->caller_user_id, $callSession->callee_user_id] as $userId) {
+                $this->notifications->send(
+                    $userId,
+                    'call.status.changed',
+                    'Call update',
+                    'The call status changed.',
+                    'call_session',
+                    $callSession->id,
+                    [
+                        'callId' => $callSession->id,
+                        'contextType' => $callSession->context_type,
+                        'contextId' => $callSession->context_id,
+                        'media' => $callSession->media,
+                        'status' => $callSession->status,
+                        'action' => 'cancel',
+                        'hideFromInbox' => '1',
+                    ],
+                );
+            }
+        });
 
         return response()->json(['data' => $callSession]);
     }

@@ -1,31 +1,66 @@
 const allowedTypes = new Set(["job", "offer", "message", "call", "travel", "completion", "dispute", "review", "security", "support"]);
 
+function safeId(value: string | undefined): value is string {
+  return Boolean(value && /^[A-Za-z0-9-]+$/.test(value));
+}
+
+function callDeepLink(data: {
+  callId?: string;
+  contextId?: string;
+  media?: string;
+  callerName?: string;
+  action?: string;
+}): string | null {
+  if (!safeId(data.callId) || !safeId(data.contextId)) return null;
+  const params = new URLSearchParams({
+    callId: data.callId,
+    callAction: data.action || "open",
+    callMedia: data.media === "video" ? "video" : "audio",
+    callContextType: "job",
+    callContextId: data.contextId,
+  });
+  if (data.callerName) params.set("callCallerName", data.callerName);
+  return `/jobs/${data.contextId}/hired/conversation?${params.toString()}`;
+}
+
 export function incomingCallRoute(event: {
   type?: string;
-  data?: { contextType?: string; contextId?: string };
+  data?: {
+    contextType?: string;
+    contextId?: string;
+    callId?: string;
+    media?: string;
+    callerName?: string;
+  };
 }): string | null {
-  const contextId = event.data?.contextId;
-  return event.type === "call.ringing"
-    && event.data?.contextType === "job"
-    && Boolean(contextId && /^[A-Za-z0-9-]+$/.test(contextId))
-    ? `/jobs/${contextId}/hired/conversation`
-    : null;
+  if (event.type !== "call.ringing" || event.data?.contextType !== "job") return null;
+  return callDeepLink({
+    callId: event.data.callId,
+    contextId: event.data.contextId,
+    media: event.data.media,
+    callerName: event.data.callerName,
+    action: "open",
+  });
 }
 
 export function notificationRoute(data: Record<string, string | undefined>): string {
   const type = data.type;
   const jobId = data.jobId;
   if (!type || !allowedTypes.has(type)) return "/notifications";
-  if (type === "message" && data.conversationId && /^[A-Za-z0-9-]+$/.test(data.conversationId)) return `/messages/${data.conversationId}`;
-  if (
-    type === "call"
-    && data.contextType === "job"
-    && data.contextId
-    && /^[A-Za-z0-9-]+$/.test(data.contextId)
-  ) return `/jobs/${data.contextId}/hired/conversation`;
+  if (type === "message" && data.conversationId && safeId(data.conversationId)) return `/messages/${data.conversationId}`;
+  if (type === "call" && data.contextType === "job") {
+    const route = callDeepLink({
+      callId: data.callId,
+      contextId: data.contextId,
+      media: data.media,
+      callerName: data.callerName,
+      action: data.action === "cancel" ? "cancel" : data.action === "answer" ? "answer" : "open",
+    });
+    if (route) return route;
+  }
   if (type === "security") return "/profile/sessions";
   if (type === "support") return "/notifications";
-  if (!jobId || !/^[A-Za-z0-9-]+$/.test(jobId)) return "/notifications";
+  if (!jobId || !safeId(jobId)) return "/notifications";
   if (type === "message") return `/jobs/${jobId}/hired/conversation`;
   if (type === "travel") return `/jobs/${jobId}/hired/travel`;
   if (["completion", "review", "dispute"].includes(type)) return `/jobs/${jobId}/work`;
