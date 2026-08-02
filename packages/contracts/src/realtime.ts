@@ -59,7 +59,15 @@ export const marketplaceRealtimeEventTypeSchema = z.enum([
 ]);
 
 export const typingCommandSchema = z.object({ jobId: z.uuid(), active: z.boolean() });
-export const travelLocationCommandSchema = z.object({ jobId: z.uuid(), latitude: z.number().min(-90).max(90), longitude: z.number().min(-180).max(180), accuracyMeters: z.number().int().positive().max(200), capturedAt: z.iso.datetime({ offset: true }), foreground: z.literal(true) });
+export const travelLocationCommandSchema = z.object({
+  jobId: z.uuid(),
+  latitude: z.number().min(-90).max(90),
+  longitude: z.number().min(-180).max(180),
+  accuracyMeters: z.number().int().positive().max(200),
+  capturedAt: z.iso.datetime({ offset: true }),
+  headingDegrees: z.number().min(0).max(360).nullable().optional(),
+  foreground: z.literal(true),
+});
 
 export const realtimePublicationSchema = z.object({
   event: realtimeEventEnvelopeSchema,

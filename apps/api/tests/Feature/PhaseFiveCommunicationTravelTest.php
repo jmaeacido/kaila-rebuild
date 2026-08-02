@@ -108,14 +108,17 @@ class PhaseFiveCommunicationTravelTest extends TestCase
         $this->actingAs($client)->postJson("/api/v1/jobs/$job/travel/start", ['consentConfirmed' => true, 'foreground' => true])->assertNotFound();
         $this->actingAs($provider)->postJson("/api/v1/jobs/$job/travel/start", ['consentConfirmed' => true, 'foreground' => true])->assertOk()->assertJsonPath('data.status', 'active');
         $captured = now()->toIso8601String();
-        $this->postJson("/api/v1/jobs/$job/travel/location", ['latitude' => 7.0707, 'longitude' => 125.6087, 'accuracyMeters' => 12, 'capturedAt' => $captured, 'foreground' => true])
+        $this->postJson("/api/v1/jobs/$job/travel/location", ['latitude' => 7.0707, 'longitude' => 125.6087, 'accuracyMeters' => 12, 'capturedAt' => $captured, 'headingDegrees' => 182.5, 'foreground' => true])
             ->assertOk()
             ->assertJsonPath('data.arrivedAt', fn ($value) => $value !== null)
             ->assertJsonPath('data.distanceMeters', fn ($value) => is_int($value))
             ->assertJsonPath('data.etaSeconds', fn ($value) => is_int($value));
         $this->postJson("/api/v1/jobs/$job/travel/location", ['latitude' => 7.1, 'longitude' => 125.6, 'accuracyMeters' => 12, 'capturedAt' => $captured, 'foreground' => true])->assertConflict();
         $this->actingAs($outsider)->getJson("/api/v1/jobs/$job/travel")->assertNotFound();
-        $this->actingAs($client)->getJson("/api/v1/jobs/$job/travel")->assertOk()->assertJsonPath('data.location.latitude', 7.0707);
+        $this->actingAs($client)->getJson("/api/v1/jobs/$job/travel")
+            ->assertOk()
+            ->assertJsonPath('data.location.latitude', 7.0707)
+            ->assertJsonPath('data.location.headingDegrees', 182.5);
         $this->actingAs($provider)->getJson('/api/v1/jobs')
             ->assertOk()
             ->assertJsonPath('data.0.travel.distanceMeters', fn ($value) => is_int($value))

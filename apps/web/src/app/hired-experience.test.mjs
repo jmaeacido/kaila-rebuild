@@ -5,6 +5,7 @@ import test from "node:test";
 const conversation = readFileSync(new URL("./jobs/[jobId]/hired/conversation/page.tsx", import.meta.url), "utf8");
 const styles = readFileSync(new URL("./jobs/[jobId]/hired/hired.module.css", import.meta.url), "utf8");
 const travel = readFileSync(new URL("./jobs/[jobId]/hired/travel/page.tsx", import.meta.url), "utf8");
+const map = readFileSync(new URL("./jobs/[jobId]/hired/travel/live-travel-map.tsx", import.meta.url), "utf8");
 const work = readFileSync(new URL("./jobs/[jobId]/work/page.tsx", import.meta.url), "utf8");
 const workStyles = readFileSync(new URL("./jobs/[jobId]/work/work.module.css", import.meta.url), "utf8");
 const jobDetails = readFileSync(new URL("./jobs/[jobId]/page.tsx", import.meta.url), "utf8");
@@ -71,4 +72,15 @@ test("travel distinguishes location failures and can resume native background na
   assert.match(travel, /BackgroundNavigation\.start/);
   assert.match(travel, /void retry\(\)/);
   assert.match(travel, /screen locks/);
+});
+
+test("travel navigation derives heading, advances turns, and keeps a stable map instance", () => {
+  assert.match(travel, /resolveTravelHeading/);
+  assert.match(travel, /activeNavigationStep/);
+  assert.match(travel, /headingDegrees/);
+  assert.doesNotMatch(travel, /key=\{travelerNavigating/);
+  assert.match(map, /map\.setStyle\(mapStyleForTheme\(resolved\)\)/);
+  assert.match(map, /remainingCoordinates/);
+  assert.match(map, /Heading up/);
+  assert.match(styles, /navigationPuck/);
 });

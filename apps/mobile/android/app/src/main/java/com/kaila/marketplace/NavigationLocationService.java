@@ -104,6 +104,10 @@ public class NavigationLocationService extends Service implements LocationListen
                 .put("accuracyMeters", Math.max(1, Math.min(200, Math.round(location.getAccuracy()))))
                 .put("capturedAt", Instant.ofEpochMilli(location.getTime()).toString())
                 .put("foreground", true);
+            if (location.hasBearing()) {
+                float bearing = location.getBearing();
+                if (bearing >= 0f && bearing <= 360f) body.put("headingDegrees", bearing);
+            }
             post(locationUrl, body.toString());
         } catch (Exception ignored) { }
     }

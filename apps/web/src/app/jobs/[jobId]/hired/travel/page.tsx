@@ -9,9 +9,19 @@ import { loadSession } from "@kaila/mobile/session";
 import styles from "../hired.module.css";
 import { LiveTravelMap } from "./live-travel-map";
 import { useRealtimeInvalidation } from "../../../../use-realtime-invalidation";
+import {
+  activeNavigationStep,
+  formatArrivalClock,
+  formatNavigationDistance,
+  formatNavigationEta,
+  resolveTravelHeading,
+  straightLineMeters,
+  type NavigationPoint,
+  type NavigationStep,
+} from "../../../../travel-navigation";
 
-type Point = { latitude: number; longitude: number; accuracyMeters?: number; capturedAt?: string };
-type RouteStep = { instruction: string; maneuver: string; modifier: string | null; distanceMeters: number; durationSeconds: number; location: Point };
+type Point = NavigationPoint;
+type RouteStep = NavigationStep;
 type Travel = {
   status: string;
   canShareLocation: boolean;
@@ -26,28 +36,6 @@ type Travel = {
   travelerRole: "client" | "provider" | null;
   destinationLabel: string | null;
 };
-
-function straightLineMeters(from: Point | null, to: Point | null) {
-  if (!from || !to) return null;
-  const radius = 6_371_000;
-  const latitude = (to.latitude - from.latitude) * Math.PI / 180;
-  const longitude = (to.longitude - from.longitude) * Math.PI / 180;
-  const startLatitude = from.latitude * Math.PI / 180;
-  const endLatitude = to.latitude * Math.PI / 180;
-  const value = Math.sin(latitude / 2) ** 2 + Math.cos(startLatitude) * Math.cos(endLatitude) * Math.sin(longitude / 2) ** 2;
-  return Math.round(radius * 2 * Math.atan2(Math.sqrt(value), Math.sqrt(1 - value)));
-}
-
-function formatDistance(meters: number | null) {
-  if (meters === null) return "—";
-  return meters >= 1000 ? `${(meters / 1000).toFixed(1)} km` : `${Math.max(0, meters)} m`;
-}
-
-function formatEta(seconds: number | null) {
-  if (seconds === null) return "—";
-  if (seconds < 60) return "< 1 min";
-  return `${Math.ceil(seconds / 60)} min`;
-}
 
 function ManeuverIcon({ step }: { step: RouteStep | null }) {
   if (step?.maneuver === "arrive") return <Check aria-hidden="true" />;
@@ -67,6 +55,14 @@ export default function TravelPage({ params }: { params: Promise<{ jobId: string
   const sending = useRef(false);
   const lastSentAt = useRef(0);
   const nativeNavigation = useRef(false);
+  const lastPoint = useRef<Point | null>(null);
+  const headingRef = useRef<number | null>(null);
+
+  const applyHeading = useCallback((next: number | null) => {
+    if (next === null) return;
+    headingRef.current = next;
+    setHeading(next);
+  }, []);
 
   const startNativeNavigation = useCallback(async () => {
     const capacitor = (window as Window & { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor;
@@ -102,19 +98,53 @@ export default function TravelPage({ params }: { params: Promise<{ jobId: string
     return () => { if (watchId.current !== null) navigator.geolocation.clearWatch(watchId.current); };
   }, [load]);
 
+  // Keep heading current for observers and native background travelers from shared samples.
+  useEffect(() => {
+    const location = travel?.location;
+    if (!location) return;
+    if (typeof location.headingDegrees === "number" && !Number.isNaN(location.headingDegrees)) {
+      applyHeading(location.headingDegrees);
+      lastPoint.current = location;
+      return;
+    }
+    const derived = resolveTravelHeading({
+      gpsHeading: null,
+      previous: lastPoint.current,
+      current: location,
+    });
+    applyHeading(derived);
+    lastPoint.current = location;
+  }, [applyHeading, travel?.location]);
+
   const sendPosition = useCallback(async (position: GeolocationPosition, force = false) => {
     if (sending.current || (!force && Date.now() - lastSentAt.current < 3000)) return;
     sending.current = true;
-    setHeading(position.coords.heading);
+    const current: Point = {
+      latitude: position.coords.latitude,
+      longitude: position.coords.longitude,
+      accuracyMeters: Math.max(1, Math.min(200, Math.round(position.coords.accuracy))),
+      capturedAt: new Date(position.timestamp).toISOString(),
+    };
+    const nextHeading = resolveTravelHeading({
+      gpsHeading: position.coords.heading,
+      speedMetersPerSecond: position.coords.speed,
+      previous: lastPoint.current,
+      current,
+    });
+    applyHeading(nextHeading);
+    lastPoint.current = current;
     try {
       const response = await fetch(`/api/v1/jobs/${jobId}/travel/location`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-          accuracyMeters: Math.max(1, Math.min(200, Math.round(position.coords.accuracy))),
-          capturedAt: new Date(position.timestamp).toISOString(),
+          latitude: current.latitude,
+          longitude: current.longitude,
+          accuracyMeters: current.accuracyMeters,
+          capturedAt: current.capturedAt,
+          ...(typeof (nextHeading ?? headingRef.current) === "number"
+            ? { headingDegrees: nextHeading ?? headingRef.current }
+            : {}),
           foreground: true,
         }),
       });
@@ -124,7 +154,7 @@ export default function TravelPage({ params }: { params: Promise<{ jobId: string
     } finally {
       sending.current = false;
     }
-  }, [jobId, load]);
+  }, [applyHeading, jobId, load]);
 
   const beginLocationWatch = useCallback(() => {
     if (nativeNavigation.current || watchId.current !== null || !navigator.geolocation) return;
@@ -224,22 +254,37 @@ export default function TravelPage({ params }: { params: Promise<{ jobId: string
   const travelerName = shopService ? "client" : "provider";
   const destinationName = shopService ? "provider’s shop" : "client";
   const steps = travel?.routeSteps ?? [];
-  const nextStep = steps.find((step) => step.maneuver !== "depart") ?? steps[0] ?? null;
+  const nextStep = activeNavigationStep(travel?.location ?? null, steps);
   const instructionDistance = straightLineMeters(travel?.location ?? null, nextStep?.location ?? null);
   const lastUpdate = travel?.location?.capturedAt ? new Date(travel.location.capturedAt) : null;
+  const arrivalClock = formatArrivalClock(travel?.arrivedAt ?? null);
 
   return <main className={styles.navigationShell}>
-    <LiveTravelMap key={travelerNavigating ? "navigation" : "tracking"} location={travel?.location ?? null} destination={travel?.destination ?? null} route={travel?.routeGeometry ?? null} heading={heading} navigationMode={travelerNavigating} travelerLabel={travelerName} destinationLabel={destinationName} />
+    <LiveTravelMap
+      location={travel?.location ?? null}
+      destination={travel?.destination ?? null}
+      route={travel?.routeGeometry ?? null}
+      heading={heading}
+      navigationMode={travelerNavigating}
+      travelerLabel={travelerName}
+      destinationLabel={destinationName}
+    />
 
     <header className={styles.navigationTop}>
       <a href={`/jobs/${jobId}`} aria-label="Back to job"><ArrowLeft /></a>
-      <div><strong>{travel?.arrivedAt ? `Arrived at ${destinationName}` : active ? travelerNavigating ? `Navigating to ${destinationName}` : `${shopService ? "Client" : "Provider"} on the way` : "Navigation"}</strong><span>{lastUpdate ? `Updated ${lastUpdate.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}` : `Waiting for ${travelerName} GPS (point A)`}</span></div>
+      <div>
+        <strong>{travel?.arrivedAt ? `Arrived at ${destinationName}` : active ? travelerNavigating ? `Navigating to ${destinationName}` : `${shopService ? "Client" : "Provider"} on the way` : "Navigation"}</strong>
+        <span>{lastUpdate ? `Updated ${lastUpdate.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}` : `Waiting for ${travelerName} GPS (point A)`}</span>
+      </div>
       <a href={`/jobs/${jobId}/hired/conversation`} aria-label="Message job participant"><MessageCircle /></a>
     </header>
 
-    {travelerNavigating && <section className={styles.turnCard} aria-live="polite">
+    {travelerNavigating && !travel?.arrivedAt && <section className={styles.turnCard} aria-live="polite">
       <div className={styles.maneuver}><ManeuverIcon step={nextStep} /></div>
-      <div><span>{formatDistance(instructionDistance)}</span><strong>{nextStep?.instruction ?? "Follow the highlighted route"}</strong></div>
+      <div>
+        <span>{formatNavigationDistance(instructionDistance)}</span>
+        <strong>{nextStep?.instruction ?? "Follow the highlighted route"}</strong>
+      </div>
     </section>}
 
     {state === "loading" && <div className={styles.navigationLoading}><Navigation /><span>Loading your route…</span></div>}
@@ -247,15 +292,15 @@ export default function TravelPage({ params }: { params: Promise<{ jobId: string
     <section className={styles.navigationSheet} aria-label="Travel progress">
       <div className={styles.sheetHandle} aria-hidden="true" />
       {errorMessage && <Feedback kind="error" title={travel ? "Live location needs attention" : "Live map is unavailable"}>{errorMessage}</Feedback>}
-      {travel?.arrivedAt ? <div className={styles.arrival}><span><Check /></span><div><h1>{shopService ? "Client has arrived" : "Provider has arrived"}</h1><p>You can now continue with the service.</p></div></div> : <div className={styles.routeSummary}>
-        <div><strong>{formatEta(eta)}</strong><span>ETA to {destinationName}</span></div>
-        <div><strong>{formatDistance(distance)}</strong><span>distance to {destinationName}</span></div>
+      {travel?.arrivedAt ? <div className={styles.arrival}><span><Check /></span><div><h1>{shopService ? "Client has arrived" : "Provider has arrived"}</h1><p>{arrivalClock ? `Arrived at ${arrivalClock}. You can continue with the service.` : "You can now continue with the service."}</p></div></div> : <div className={styles.routeSummary}>
+        <div><strong>{formatNavigationEta(eta)}</strong><span>ETA to {destinationName}</span></div>
+        <div><strong>{formatNavigationDistance(distance)}</strong><span>distance remaining</span></div>
         <div><strong>{travel?.location?.accuracyMeters ? `±${travel.location.accuracyMeters} m` : "—"}</strong><span>GPS accuracy</span></div>
       </div>}
 
       {!active && !travel?.arrivedAt && <div className={styles.waitingCopy}>
         <Navigation aria-hidden="true" />
-        <div><h1>{travel?.canShareLocation ? `Ready to navigate to ${destinationName}?` : `Waiting for the ${travelerName}`}</h1><p>{travel?.canShareLocation ? `Your GPS position is point A and the ${destinationName} pin is point B. KAILA keeps the route, distance, and ETA current.` : `The point A to point B route, distance, and live ETA will appear when the ${travelerName} starts navigation.`}</p></div>
+        <div><h1>{travel?.canShareLocation ? `Ready to navigate to ${destinationName}?` : `Waiting for the ${travelerName}`}</h1><p>{travel?.canShareLocation ? `Your GPS position is point A and the ${destinationName} pin is point B. KAILA keeps the route, turns, distance, and ETA current.` : `The point A to point B route, turns, distance, and live ETA will appear when the ${travelerName} starts navigation.`}</p></div>
       </div>}
 
       <div className={styles.navigationActions}>

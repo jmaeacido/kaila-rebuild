@@ -36,15 +36,16 @@
 .maneuver{align-items:center;display:flex;height:var(--spacing-48);justify-content:center;width:var(--spacing-48)}
 .maneuver svg{height:var(--spacing-32);width:var(--spacing-32)}
 .turnCard>div:last-child{display:grid;gap:var(--spacing-4)}
-.turnCard span{font-size:var(--font-small-size);opacity:.84}
+.turnCard>div:last-child>span{font-size:var(--font-small-size);opacity:.84}
 .turnCard strong{font-size:var(--font-card-title-size)}
 .mapControls{display:grid;gap:var(--spacing-8);position:absolute;right:var(--spacing-16);top:calc(var(--spacing-64) * 2 + var(--spacing-32));z-index:2}
 .mapControls button{align-items:center;background:var(--color-surface);border:var(--control-border-width) solid var(--color-border);border-radius:var(--radius-pill);box-shadow:var(--shadow-card);color:var(--color-ink);cursor:pointer;display:flex;height:var(--control-min-height);justify-content:center;width:var(--control-min-height)}
 .mapControls button:hover,.mapControls .following{background:var(--color-primary);color:var(--color-on-primary)}
 .mapControls svg{height:var(--spacing-20);width:var(--spacing-20)}
-.navigationShell .providerMarker{align-items:center;background:var(--color-primary);border:var(--spacing-4) solid var(--color-surface);display:flex;height:var(--spacing-32);justify-content:center;width:var(--spacing-32)}
-.providerMarker span{border-bottom:var(--spacing-8) solid var(--color-on-primary);border-left:var(--spacing-4) solid transparent;border-right:var(--spacing-4) solid transparent;height:0;transform:translateY(calc(var(--spacing-4) * -1));width:0}
-.navigationShell .destinationMarker{background:var(--color-primary);border-radius:var(--radius-pill) var(--radius-pill) var(--radius-pill) var(--spacing-4);height:var(--spacing-32);transform:rotate(-45deg);width:var(--spacing-32)}
+.navigationShell .providerMarker{align-items:center;background:var(--color-primary);border:var(--spacing-4) solid var(--color-surface);border-radius:var(--radius-pill);box-shadow:var(--shadow-floating);display:flex;height:2.5rem;justify-content:center;position:relative;width:2.5rem}
+.navigationPuck i{animation:navPuckPulse calc(var(--duration-slow) * 5) ease-out infinite;background:color-mix(in srgb,var(--color-primary) 35%,transparent);border-radius:var(--radius-pill);height:5.5rem;left:50%;opacity:.55;pointer-events:none;position:absolute;top:50%;transform:translate(-50%,-50%);width:5.5rem;z-index:0}
+.navigationShell .providerMarker>span{border-bottom:0.75rem solid var(--color-on-primary);border-left:0.4rem solid transparent;border-right:0.4rem solid transparent;height:0;position:relative;transform:translateY(-0.15rem);width:0;z-index:1}
+.navigationShell .destinationMarker{background:var(--color-danger);border:var(--spacing-4) solid var(--color-surface);border-radius:var(--radius-pill) var(--radius-pill) var(--radius-pill) var(--spacing-4);box-shadow:var(--shadow-floating);height:var(--spacing-32);position:relative;transform:rotate(-45deg);width:var(--spacing-32)}
 .destinationMarker span{background:var(--color-surface);border-radius:var(--radius-pill);height:var(--spacing-8);left:50%;position:absolute;top:50%;transform:translate(-50%,-50%);width:var(--spacing-8)}
 .navigationLoading{align-items:center;background:var(--color-surface);border-radius:var(--radius-card);box-shadow:var(--shadow-floating);color:var(--color-primary);display:flex;gap:var(--spacing-8);left:50%;padding:var(--spacing-12) var(--spacing-16);position:absolute;top:50%;transform:translate(-50%,-50%);z-index:4}
 .navigationLoading svg{animation:navPulse calc(var(--duration-slow) * 4) ease-in-out infinite}
@@ -66,6 +67,7 @@
 .privacyNote summary svg{color:var(--color-primary);height:var(--spacing-20);width:var(--spacing-20)}
 .privacyNote p{line-height:var(--line-height-body);padding-bottom:var(--spacing-8)}
 @keyframes navPulse{50%{opacity:.55;transform:scale(var(--scale-pressed))}}
+@keyframes navPuckPulse{0%,100%{opacity:.5;transform:translate(-50%,-50%) scale(1)}50%{opacity:.18;transform:translate(-50%,-50%) scale(1.18)}}
 @media(min-width:48rem){.navigationTop,.turnCard{left:var(--spacing-24);max-width:30rem;right:auto;width:calc(100% - var(--spacing-48))}.navigationSheet{border-radius:var(--radius-sheet);bottom:var(--spacing-24);left:var(--spacing-24);max-height:calc(100dvh - 14rem);right:auto;width:30rem}.mapControls{right:var(--spacing-24);top:var(--spacing-24)}}
 
 .chatShell{height:calc(100dvh - 5rem);margin:auto;max-width:64rem;padding:var(--spacing-12)}

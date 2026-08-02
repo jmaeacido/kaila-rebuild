@@ -50,7 +50,14 @@ class TravelController extends Controller
 
     public function update(Request $request, ServiceJob $serviceJob): JsonResponse
     {
-        $data = $request->validate(['latitude' => 'required|numeric|between:-90,90', 'longitude' => 'required|numeric|between:-180,180', 'accuracyMeters' => 'required|integer|min:1|max:200', 'capturedAt' => 'required|date', 'foreground' => 'accepted']);
+        $data = $request->validate([
+            'latitude' => 'required|numeric|between:-90,90',
+            'longitude' => 'required|numeric|between:-180,180',
+            'accuracyMeters' => 'required|integer|min:1|max:200',
+            'capturedAt' => 'required|date',
+            'headingDegrees' => 'nullable|numeric|between:0,360',
+            'foreground' => 'accepted',
+        ]);
         $actor = $request->user();
         abort_unless($actor instanceof User, 401);
         $p = $this->access->requireParticipant($serviceJob, $actor);
@@ -59,7 +66,17 @@ class TravelController extends Controller
         $session = TravelSession::query()->where('service_job_id', $serviceJob->id)->where('status', 'active')->firstOrFail();
         $last = DB::table('location_samples')->where('travel_session_id', $session->id)->latest('captured_at')->first();
         abort_if($last && now()->parse($data['capturedAt'])->lessThanOrEqualTo(now()->parse($last->captured_at)), 409, 'Location updates must be ordered.');
-        DB::table('location_samples')->insert(['travel_session_id' => $session->id, 'latitude' => $data['latitude'], 'longitude' => $data['longitude'], 'accuracy_meters' => $data['accuracyMeters'], 'captured_at' => $data['capturedAt']]);
+        $heading = array_key_exists('headingDegrees', $data) && $data['headingDegrees'] !== null
+            ? fmod((float) $data['headingDegrees'] + 360.0, 360.0)
+            : null;
+        DB::table('location_samples')->insert([
+            'travel_session_id' => $session->id,
+            'latitude' => $data['latitude'],
+            'longitude' => $data['longitude'],
+            'accuracy_meters' => $data['accuracyMeters'],
+            'heading_degrees' => $heading,
+            'captured_at' => $data['capturedAt'],
+        ]);
         $routeAvailable = true;
         try {
             if ($p['destinationLatitude'] === null || $p['destinationLongitude'] === null) {
@@ -122,7 +139,15 @@ class TravelController extends Controller
         $data['serviceLocationMode'] = $participants['serviceLocationMode'];
         $data['travelerRole'] = $participants['travelerId'] === $participants['clientId'] ? 'client' : ($participants['travelerId'] === $participants['providerId'] ? 'provider' : null);
         $data['destinationLabel'] = $participants['destinationLabel'];
-        $data['location'] = $sample ? ['latitude' => (float) $sample->latitude, 'longitude' => (float) $sample->longitude, 'accuracyMeters' => $sample->accuracy_meters, 'capturedAt' => $sample->captured_at] : null;
+        $data['location'] = $sample ? [
+            'latitude' => (float) $sample->latitude,
+            'longitude' => (float) $sample->longitude,
+            'accuracyMeters' => $sample->accuracy_meters,
+            'headingDegrees' => isset($sample->heading_degrees) && $sample->heading_degrees !== null
+                ? (float) $sample->heading_degrees
+                : null,
+            'capturedAt' => $sample->captured_at,
+        ] : null;
         $data['destination'] = $participants['destinationLatitude'] !== null && $participants['destinationLongitude'] !== null
             ? ['latitude' => $participants['destinationLatitude'], 'longitude' => $participants['destinationLongitude']]
             : null;
