@@ -6,6 +6,7 @@ import { PushNotifications } from "@capacitor/push-notifications";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { adminNotificationRoute } from "../admin-notification-routes";
+import { adminPushMessagingAvailable } from "./admin-push-guard";
 
 const deviceStorageKey = "kaila-admin-push-device-id";
 
@@ -28,6 +29,17 @@ async function csrfToken(): Promise<string | undefined> {
   return value ? decodeURIComponent(value) : undefined;
 }
 
+async function sessionAuthenticated(): Promise<boolean> {
+  try {
+    const response = await fetch("/api/v1/auth/session-status", { credentials: "include" });
+    if (!response.ok) return false;
+    const body = (await response.json()) as { data?: { authenticated?: boolean } };
+    return body.data?.authenticated === true;
+  } catch {
+    return false;
+  }
+}
+
 export function AdminPushRuntime() {
   const router = useRouter();
 
@@ -37,38 +49,52 @@ export function AdminPushRuntime() {
     const handles: Array<{ remove(): Promise<void> }> = [];
 
     const register = async () => {
-      await PushNotifications.createChannel({
-        id: "kaila_admin_actions_v1",
-        name: "Admin actions",
-        description: "Reviews, approvals, reports, disputes, and support requests requiring attention",
-        importance: 5,
-        visibility: 0,
-        vibration: true,
-      });
-      const permission = await PushNotifications.checkPermissions();
-      const resolved = permission.receive === "prompt" ? await PushNotifications.requestPermissions() : permission;
-      if (resolved.receive === "granted" && !disposed) await PushNotifications.register();
+      if (disposed) return;
+      if (!(await adminPushMessagingAvailable())) return;
+      if (!(await sessionAuthenticated())) return;
+      try {
+        await PushNotifications.createChannel({
+          id: "kaila_admin_actions_v1",
+          name: "Admin actions",
+          description: "Reviews, approvals, reports, disputes, and support requests requiring attention",
+          importance: 5,
+          visibility: 0,
+          vibration: true,
+        });
+        const permission = await PushNotifications.checkPermissions();
+        const resolved = permission.receive === "prompt" ? await PushNotifications.requestPermissions() : permission;
+        if (resolved.receive === "granted" && !disposed && (await adminPushMessagingAvailable())) {
+          await PushNotifications.register();
+        }
+      } catch {
+        // Native FCM failures must never take down the admin shell.
+      }
     };
 
     void (async () => {
       handles.push(
         await PushNotifications.addListener("registration", async ({ value: token }) => {
-          const csrf = await csrfToken();
-          const response = await fetch("/api/v1/push-devices", {
-            method: "POST",
-            credentials: "include",
-            headers: {
-              Accept: "application/json",
-              "Content-Type": "application/json",
-              ...(csrf ? { "X-XSRF-TOKEN": csrf } : {}),
-            },
-            body: JSON.stringify({ platform: "admin_android", token }),
-          });
-          if (response.ok) {
-            const body = (await response.json()) as { data?: { id?: string } };
-            if (body.data?.id) localStorage.setItem(deviceStorageKey, body.data.id);
+          try {
+            const csrf = await csrfToken();
+            const response = await fetch("/api/v1/push-devices", {
+              method: "POST",
+              credentials: "include",
+              headers: {
+                Accept: "application/json",
+                "Content-Type": "application/json",
+                ...(csrf ? { "X-XSRF-TOKEN": csrf } : {}),
+              },
+              body: JSON.stringify({ platform: "admin_android", token }),
+            });
+            if (response.ok) {
+              const body = (await response.json()) as { data?: { id?: string } };
+              if (body.data?.id) localStorage.setItem(deviceStorageKey, body.data.id);
+            }
+          } catch {
+            // Token upsert can retry on the next authenticated resume.
           }
         }),
+        await PushNotifications.addListener("registrationError", () => undefined),
         await PushNotifications.addListener("pushNotificationActionPerformed", ({ notification }) => {
           router.push(adminNotificationRoute(notification.data as Record<string, string | undefined>));
           router.refresh();

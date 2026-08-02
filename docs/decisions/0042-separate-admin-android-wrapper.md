@@ -33,3 +33,5 @@ registration use admin-specific credentials.
 - The managed web deployment must remain compatible with released WebView wrappers.
 - Production acceptance requires an admin-specific signing identity, Digital Asset
   Links entry, physical-device authentication tests, and distribution-policy review.
+- FCM registration must be gated by `AdminPushGuard` so missing Firebase config
+  cannot crash-loop the process after notification permission (Decision 0043).
