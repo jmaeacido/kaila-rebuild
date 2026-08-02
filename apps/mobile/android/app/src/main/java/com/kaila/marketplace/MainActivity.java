@@ -36,6 +36,7 @@ public class MainActivity extends BridgeActivity {
         String contextType = intent.getStringExtra(IncomingCallNotifier.EXTRA_CONTEXT_TYPE);
         String contextId = intent.getStringExtra(IncomingCallNotifier.EXTRA_CONTEXT_ID);
         String callerName = intent.getStringExtra(IncomingCallNotifier.EXTRA_CALLER_NAME);
+        String callerAvatarUrl = intent.getStringExtra(IncomingCallNotifier.EXTRA_CALLER_AVATAR_URL);
         if (getBridge() == null || getBridge().getWebView() == null) return;
         String script = "window.dispatchEvent(new CustomEvent('kaila:native-call',{detail:{"
             + "callId:" + jsonString(callId) + ","
@@ -44,6 +45,7 @@ public class MainActivity extends BridgeActivity {
             + "contextType:" + jsonString(contextType == null ? "job" : contextType) + ","
             + "contextId:" + jsonString(contextId == null ? "" : contextId) + ","
             + "callerName:" + jsonString(callerName == null ? "" : callerName)
+            + ",callerAvatarUrl:" + jsonString(callerAvatarUrl == null ? "" : callerAvatarUrl)
             + "}}));";
         getBridge().getWebView().post(() -> getBridge().getWebView().evaluateJavascript(script, null));
         if (contextId != null && !contextId.isEmpty() && "job".equals(contextType == null ? "job" : contextType)) {
@@ -52,7 +54,8 @@ public class MainActivity extends BridgeActivity {
                 + "&callMedia=" + encode(media == null ? "audio" : media)
                 + "&callContextType=job"
                 + "&callContextId=" + encode(contextId)
-                + (callerName == null || callerName.isEmpty() ? "" : "&callCallerName=" + encode(callerName));
+                + (callerName == null || callerName.isEmpty() ? "" : "&callCallerName=" + encode(callerName))
+                + (callerAvatarUrl == null || callerAvatarUrl.isEmpty() ? "" : "&callCallerAvatarUrl=" + encode(callerAvatarUrl));
             getBridge().getWebView().post(() -> getBridge().getWebView().evaluateJavascript(
                 "window.location.assign(" + jsonString(path) + ");",
                 null

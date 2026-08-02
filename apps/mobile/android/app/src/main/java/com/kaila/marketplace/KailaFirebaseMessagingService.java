@@ -25,13 +25,14 @@ public class KailaFirebaseMessagingService extends FirebaseMessagingService {
                     IncomingCallNotifier.EXTRA_CALLER_NAME,
                     data.containsKey("callerName") ? data.get("callerName") : "KAILA caller"
                 );
+                extras.putString(IncomingCallNotifier.EXTRA_CALLER_AVATAR_URL, data.get("callerAvatarUrl"));
                 IncomingCallNotifier.show(this, extras);
             }
             // Still forward so a foreground WebView can hydrate CallProvider.
             PushNotificationsPlugin.sendRemoteMessage(remoteMessage);
             return;
         }
-        super.onMessageReceived(remoteMessage);
+        KailaNotificationNotifier.show(this, data);
         PushNotificationsPlugin.sendRemoteMessage(remoteMessage);
     }
 

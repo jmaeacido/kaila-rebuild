@@ -3,7 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\CallSession;
+use App\Models\ClientProfile;
 use App\Models\DirectConversation;
+use App\Models\ProfileAsset;
+use App\Models\ProviderProfile;
 use App\Models\ServiceJob;
 use App\Models\User;
 use App\Support\HiredJobAccess;
@@ -32,7 +35,9 @@ class CallController
         abort_if(RateLimiter::tooManyAttempts("calls:{$actor->id}", 5), 429);
         RateLimiter::hit("calls:{$actor->id}", 60);
         $calleeId = $this->callee($data['contextType'], $data['contextId'], $actor);
-        $call = DB::transaction(function () use ($data, $actor, $calleeId) {
+        $callerName = $this->displayName($actor);
+        $callerAvatarUrl = $this->avatarUrl($actor);
+        $call = DB::transaction(function () use ($data, $actor, $calleeId, $callerName, $callerAvatarUrl) {
             $call = CallSession::query()->create(['id' => (string) Str::uuid(), 'context_type' => $data['contextType'], 'context_id' => $data['contextId'], 'caller_user_id' => $actor->id, 'callee_user_id' => $calleeId, 'media' => $data['media'], 'status' => 'ringing']);
             $this->outbox->record('call.ringing', 'call_session', $call->id, 1, [
                 'rooms' => ["user:$calleeId"],
@@ -40,14 +45,15 @@ class CallController
                 'contextType' => $call->context_type,
                 'contextId' => $call->context_id,
                 'media' => $call->media,
-                'callerName' => $actor->name,
+                'callerName' => $callerName,
+                'callerAvatarUrl' => $callerAvatarUrl,
                 'callerUserId' => $actor->id,
             ]);
             $this->notifications->send(
                 $calleeId,
                 'call.ringing',
                 "Incoming {$call->media} call",
-                "{$actor->name} is calling about your job.",
+                "{$callerName} is calling about your job.",
                 'call_session',
                 $call->id,
                 [
@@ -55,7 +61,8 @@ class CallController
                     'contextType' => $call->context_type,
                     'contextId' => $call->context_id,
                     'media' => $call->media,
-                    'callerName' => $actor->name,
+                    'callerName' => $callerName,
+                    'callerAvatarUrl' => $callerAvatarUrl,
                     'callerUserId' => $actor->id,
                     'action' => 'ring',
                 ],
@@ -68,7 +75,8 @@ class CallController
             'callId' => $call->id,
             'media' => $call->media,
             'callerUserId' => $actor->id,
-            'callerName' => $actor->name,
+            'callerName' => $callerName,
+            'callerAvatarUrl' => $callerAvatarUrl,
             'contextType' => $call->context_type,
             'contextId' => $call->context_id,
         ]);
@@ -222,6 +230,26 @@ class CallController
         abort_unless($user instanceof User, 401);
 
         return $user;
+    }
+
+    private function displayName(User $user): string
+    {
+        if ($user->active_mode === 'provider') {
+            $name = ProviderProfile::query()->where('user_id', $user->id)->value('display_name');
+            if (is_string($name) && $name !== '') {
+                return $name;
+            }
+        }
+        $name = ClientProfile::query()->where('user_id', $user->id)->value('display_name');
+
+        return is_string($name) && $name !== '' ? $name : $user->name;
+    }
+
+    private function avatarUrl(User $user): ?string
+    {
+        $avatar = ProfileAsset::query()->where('user_id', $user->id)->where('purpose', 'avatar')->where('scan_status', 'clean')->latest()->first();
+
+        return $avatar ? "/api/v1/profile-assets/{$avatar->id}" : null;
     }
 
     /** @param array<string, mixed> $payload */

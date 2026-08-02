@@ -42,6 +42,8 @@ public class IncomingCallActivity extends Activity {
 
         TextView title = findViewById(R.id.incomingCallTitle);
         TextView subtitle = findViewById(R.id.incomingCallSubtitle);
+        TextView avatar = findViewById(R.id.incomingCallAvatar);
+        avatar.setText(callerName.isEmpty() ? "K" : callerName.substring(0, 1).toUpperCase());
         title.setText(callerName);
         subtitle.setText("Incoming " + media + " call");
 

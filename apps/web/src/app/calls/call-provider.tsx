@@ -182,6 +182,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
     callId: string;
     media: CallMedia;
     callerName?: string;
+    callerAvatarUrl?: string;
     contextType?: string;
     contextId?: string;
   }) => {
@@ -197,7 +198,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
         contextType: signal.contextType || "job",
         contextId: signal.contextId || "",
         peerName: signal.callerName || "Incoming call",
-        peerAvatarUrl: null,
+        peerAvatarUrl: signal.callerAvatarUrl || null,
       };
     });
   }, [startRingtone]);
@@ -267,6 +268,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
           callId: String(detail.data.callId || detail.resourceId),
           media,
           callerName: typeof detail.data.callerName === "string" ? detail.data.callerName : undefined,
+          callerAvatarUrl: typeof detail.data.callerAvatarUrl === "string" ? detail.data.callerAvatarUrl : undefined,
           contextType: typeof detail.data.contextType === "string" ? detail.data.contextType : undefined,
           contextId: typeof detail.data.contextId === "string" ? detail.data.contextId : undefined,
         });
@@ -400,13 +402,14 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const onNativeAction = (event: Event) => {
-      const detail = (event as CustomEvent<{ callId?: string; action?: string; media?: CallMedia; contextType?: string; contextId?: string; callerName?: string }>).detail;
+      const detail = (event as CustomEvent<{ callId?: string; action?: string; media?: CallMedia; contextType?: string; contextId?: string; callerName?: string; callerAvatarUrl?: string }>).detail;
       if (!detail?.callId || !detail.action) return;
       if (detail.action === "ring" || detail.action === "open") {
         applyIncomingRing({
           callId: detail.callId,
           media: detail.media === "video" ? "video" : "audio",
           callerName: detail.callerName,
+          callerAvatarUrl: detail.callerAvatarUrl,
           contextType: detail.contextType,
           contextId: detail.contextId,
         });
@@ -416,6 +419,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
           callId: detail.callId,
           media: detail.media === "video" ? "video" : "audio",
           callerName: detail.callerName,
+          callerAvatarUrl: detail.callerAvatarUrl,
           contextType: detail.contextType,
           contextId: detail.contextId,
         });
@@ -428,6 +432,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
           callId: detail.callId,
           media: detail.media === "video" ? "video" : "audio",
           callerName: detail.callerName,
+          callerAvatarUrl: detail.callerAvatarUrl,
           contextType: detail.contextType,
           contextId: detail.contextId,
         });
@@ -471,6 +476,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
         contextType: params.get("callContextType") || "job",
         contextId: params.get("callContextId") || "",
         callerName: params.get("callCallerName") || undefined,
+        callerAvatarUrl: params.get("callCallerAvatarUrl") || undefined,
       },
     }));
   }, []);

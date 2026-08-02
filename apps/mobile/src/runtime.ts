@@ -16,6 +16,7 @@ type DomainEvent = {
     callId?: string;
     media?: string;
     callerName?: string;
+    callerAvatarUrl?: string;
     status?: string;
     action?: string;
   };
@@ -45,6 +46,7 @@ export async function initializeMobileRuntime(options: {
         contextType: detail.data.contextType,
         contextId: detail.data.contextId,
         callerName: detail.data.callerName,
+        callerAvatarUrl: detail.data.callerAvatarUrl,
       });
     }
     if (detail?.type === "call.status.changed" && callStatusEndsMedia(detail.data?.status)) {
@@ -98,6 +100,7 @@ export async function initializeMobileRuntime(options: {
           contextType: data.contextType,
           contextId: data.contextId,
           callerName: data.callerName,
+          callerAvatarUrl: data.callerAvatarUrl,
         });
       }
     }),
@@ -123,6 +126,7 @@ export async function initializeMobileRuntime(options: {
         contextType: payload.contextType,
         contextId: payload.contextId,
         callerName: payload.callerName,
+        callerAvatarUrl: payload.callerAvatarUrl,
       });
       const route = notificationRoute(payload);
       if (route !== "/notifications") options.navigate(route);

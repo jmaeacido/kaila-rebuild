@@ -26,6 +26,7 @@
   object-fit: cover;
   width: 100%;
 }
+.media > video.waitingVideo { display: none; }
 
 .localVideo {
   border: var(--spacing-4) solid var(--color-surface);

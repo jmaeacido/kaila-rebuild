@@ -18,6 +18,7 @@ public final class IncomingCallNotifier {
     public static final String EXTRA_CONTEXT_TYPE = "contextType";
     public static final String EXTRA_CONTEXT_ID = "contextId";
     public static final String EXTRA_CALLER_NAME = "callerName";
+    public static final String EXTRA_CALLER_AVATAR_URL = "callerAvatarUrl";
     public static final String EXTRA_ACTION = "callAction";
 
     private IncomingCallNotifier() {}

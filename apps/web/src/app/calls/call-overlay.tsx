@@ -30,6 +30,7 @@ export function CallOverlay({
   onToggleMute,
 }: CallOverlayProps) {
   const ringingIncoming = call.direction === "incoming" && call.status === "ringing";
+  const waiting = call.status !== "active";
   const statusLabel = call.status === "connecting"
     ? "Connecting…"
     : ringingIncoming
@@ -41,10 +42,10 @@ export function CallOverlay({
   return (
     <section className={styles.overlay} aria-label={`${call.media} call`}>
       <div className={styles.media}>
-        {call.media === "video" && <video ref={remoteVideo} autoPlay playsInline />}
+        {call.media === "video" && <video className={waiting ? styles.waitingVideo : ""} ref={remoteVideo} autoPlay playsInline />}
         {call.media === "audio" && <audio ref={remoteAudio} autoPlay />}
         {call.media === "video" && <video className={styles.localVideo} ref={localVideo} autoPlay muted playsInline />}
-        {call.media === "audio" && (
+        {(call.media === "audio" || waiting) && (
           <span className={styles.avatar}>
             {call.peerAvatarUrl ? <img src={call.peerAvatarUrl} alt="" /> : call.peerName.slice(0, 1).toUpperCase()}
           </span>

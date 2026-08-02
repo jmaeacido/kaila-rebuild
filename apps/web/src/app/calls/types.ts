@@ -6,6 +6,7 @@ export type CallSignal = {
   media: CallMedia;
   callerUserId?: number;
   callerName?: string;
+  callerAvatarUrl?: string;
   contextType?: string;
   contextId?: string;
   description?: RTCSessionDescriptionInit | null;

@@ -25,6 +25,7 @@ export function notificationRoute(notification: NotificationRecord): string {
         callContextId: contextId,
       });
       if (typeof notification.data.callerName === "string") params.set("callCallerName", notification.data.callerName);
+      if (typeof notification.data.callerAvatarUrl === "string") params.set("callCallerAvatarUrl", notification.data.callerAvatarUrl);
       return `/jobs/${contextId}/hired/conversation?${params.toString()}`;
     }
     return "/notifications";
