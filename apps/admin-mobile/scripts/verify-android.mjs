@@ -10,6 +10,7 @@ const checks = [
   [read("android/app/src/main/res/values/strings.xml").includes("KAILA Admin"), "Android app label must identify the admin app."],
   [read("android/app/src/main/AndroidManifest.xml").includes("android.permission.POST_NOTIFICATIONS"), "Android notification permission must be declared."],
   [read("package.json").includes('"@capacitor/push-notifications"'), "The Capacitor push plugin must be packaged."],
+  [read("android/app/build.gradle").includes("com.google.firebase:firebase-messaging"), "Firebase Messaging must be on the compile classpath for AdminPushGuard."],
   [read("android/app/src/main/java/com/kaila/admin/AdminPushGuardPlugin.java").includes('name = "AdminPushGuard"'), "Native AdminPushGuard must probe Firebase before FCM registration."],
   [read("android/app/src/main/java/com/kaila/admin/MainActivity.java").includes("AdminPushGuardPlugin.class"), "MainActivity must register AdminPushGuard before the Capacitor bridge starts."],
   [read("android/app/proguard-rules.pro").includes("AdminPushGuardPlugin"), "Release ProGuard rules must keep AdminPushGuard and Firebase entry points."],
