@@ -28,7 +28,7 @@ class RegisteredUserController extends Controller
         ]);
 
         event(new Registered($user));
-        Auth::login($user);
+        Auth::login($user, remember: true);
         $request->session()->regenerate();
 
         $this->audit->record($request, 'auth.registered', $user, 'user', (string) $user->getKey());

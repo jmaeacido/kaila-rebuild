@@ -32,7 +32,9 @@ return [
     |
     */
 
-    'lifetime' => (int) env('SESSION_LIFETIME', 120),
+    // Consumer marketplace default: stay signed in until explicit logout.
+    // Override via SESSION_LIFETIME (minutes). Remember-me still rehydrates after idle expiry.
+    'lifetime' => (int) env('SESSION_LIFETIME', 525600),
 
     'expire_on_close' => env('SESSION_EXPIRE_ON_CLOSE', false),
 

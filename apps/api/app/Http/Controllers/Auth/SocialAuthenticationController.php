@@ -127,7 +127,7 @@ class SocialAuthenticationController extends Controller
                 return $this->mobileSuccessRedirect($user, $destination, (string) ($pending['code_challenge'] ?? ''));
             }
 
-            Auth::login($user);
+            Auth::login($user, remember: true);
             $request->session()->regenerate();
 
             return redirect()->away($this->publicDestination($destination));
@@ -184,7 +184,7 @@ class SocialAuthenticationController extends Controller
             ]], 422);
         }
 
-        Auth::login($user);
+        Auth::login($user, remember: true);
         $request->session()->regenerate();
         $this->audit->record($request, 'auth.mobile_social_exchange_succeeded', $user, 'user', (string) $user->getKey());
 

@@ -118,7 +118,30 @@ class AuthenticationTest extends TestCase
         $response->assertOk()->assertJsonPath('data.id', (string) $user->getKey());
         $this->assertAuthenticatedAs($user);
         $this->assertNotSame($oldSessionId, $this->app['session']->driver()->getId());
+        $this->assertNotNull($user->fresh()->remember_token);
         $this->assertDatabaseHas('audit_events', ['event_type' => 'auth.login_succeeded']);
+    }
+
+    public function test_authenticated_session_survives_former_two_hour_idle_window(): void
+    {
+        $user = User::factory()->create([
+            'email' => 'persist@example.test',
+            'password' => Hash::make('a-secure-password'),
+        ]);
+
+        $this->postJson('/api/v1/auth/login', [
+            'email' => 'persist@example.test',
+            'password' => 'a-secure-password',
+        ])->assertOk();
+
+        $this->travel(121)->minutes();
+
+        $this->getJson('/api/v1/auth/session-status')
+            ->assertOk()
+            ->assertJsonPath('data.authenticated', true);
+        $this->getJson('/api/v1/me')
+            ->assertOk()
+            ->assertJsonPath('data.id', (string) $user->getKey());
     }
 
     public function test_login_failure_is_generic_and_audited_without_email_metadata(): void

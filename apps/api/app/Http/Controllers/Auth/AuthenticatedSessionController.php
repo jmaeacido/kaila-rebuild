@@ -25,7 +25,8 @@ class AuthenticatedSessionController extends Controller
     {
         $credentials = $request->safe()->only(['email', 'password']);
 
-        if (! Auth::attempt($credentials)) {
+        // Marketplace sessions persist until explicit logout (or password reset / logout-all).
+        if (! Auth::attempt($credentials, remember: true)) {
             $this->audit->record($request, 'auth.login_failed');
 
             return response()->json([
