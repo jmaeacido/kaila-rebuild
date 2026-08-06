@@ -28,6 +28,7 @@ use App\Http\Controllers\JobAreaController;
 use App\Http\Controllers\JobAssetController;
 use App\Http\Controllers\JobLifecycleController;
 use App\Http\Controllers\KatabangController;
+use App\Http\Controllers\MarketplaceAreaController;
 use App\Http\Controllers\MarketplaceProfileController;
 use App\Http\Controllers\MessageAssetController;
 use App\Http\Controllers\NotificationPreferenceController;
@@ -55,6 +56,8 @@ Route::middleware('throttle:registration')->post('/auth/register', RegisteredUse
 Route::get('/auth/registration-config', RegistrationConfigController::class);
 Route::get('/auth/session-status', SessionStatusController::class);
 Route::get('/marketplace/reference-data', ReferenceDataController::class);
+Route::get('/marketplace/areas', [MarketplaceAreaController::class, 'index']);
+Route::get('/marketplace/areas/{area}', [MarketplaceAreaController::class, 'show']);
 Route::middleware('throttle:login')->post('/auth/login', [AuthenticatedSessionController::class, 'store']);
 Route::middleware('throttle:login')->get('/auth/social/{provider}/redirect', [SocialAuthenticationController::class, 'redirect']);
 Route::get('/auth/social/{provider}/callback', [SocialAuthenticationController::class, 'callback']);

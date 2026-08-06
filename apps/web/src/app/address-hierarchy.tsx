@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import styles from "./address-hierarchy.module.css";
 
 export type AreaReference = {
@@ -10,7 +10,7 @@ export type AreaReference = {
   name: string;
 };
 
-const independentCity = "independent-city";
+const independentLocality = "independent-city";
 
 /** City/municipality id for a barangay or city/municipality area row. */
 export function cityIdForArea(areas: AreaReference[], areaId: number | null | undefined): number | null {
@@ -39,6 +39,29 @@ export function areaPathLabel(areas: AreaReference[], areaId: string): string {
   return [province, city?.name, barangay?.name].filter(Boolean).join(", ");
 }
 
+async function fetchArea(areaId: string): Promise<AreaReference & { parent?: AreaReference | null }> {
+  const response = await fetch(`/api/v1/marketplace/areas/${encodeURIComponent(areaId)}`, {
+    cache: "no-store",
+  });
+  if (!response.ok) throw new Error("AREA_LOOKUP_FAILED");
+  return ((await response.json()) as { data: AreaReference & { parent?: AreaReference | null } }).data;
+}
+
+async function fetchChildren(parentId: string): Promise<AreaReference[]> {
+  const response = await fetch(
+    `/api/v1/marketplace/areas?parentId=${encodeURIComponent(parentId)}`,
+    { cache: "no-store" },
+  );
+  if (!response.ok) throw new Error("AREA_CHILDREN_FAILED");
+  return ((await response.json()) as { data: AreaReference[] }).data;
+}
+
+function isRegionDirectLocality(areas: AreaReference[], area: AreaReference): boolean {
+  if (!["city", "municipality"].includes(area.type ?? "")) return false;
+  const parent = areas.find((entry) => entry.id === area.parent_id);
+  return parent?.type === "region";
+}
+
 export function AddressHierarchy({
   areas,
   value,
@@ -52,54 +75,98 @@ export function AddressHierarchy({
 }) {
   const [provinceId, setProvinceId] = useState("");
   const [cityId, setCityId] = useState("");
+  const [barangays, setBarangays] = useState<AreaReference[]>([]);
+  const [barangaysLoading, setBarangaysLoading] = useState(false);
 
   const provinces = useMemo(
     () => areas.filter((area) => area.type === "province"),
     [areas],
   );
-  const independentCities = useMemo(
-    () =>
-      areas.filter(
-        (area) =>
-          area.type === "city" &&
-          areas.find((parent) => parent.id === area.parent_id)?.type === "region",
-      ),
+  const independentLocalities = useMemo(
+    () => areas.filter((area) => isRegionDirectLocality(areas, area)),
     [areas],
   );
-  const selectedPath = useMemo(() => {
-    const barangay = areas.find((area) => String(area.id) === value);
-    const city = areas.find((area) => area.id === barangay?.parent_id);
-    const parent = areas.find((area) => area.id === city?.parent_id);
-
-    return {
-      provinceId: parent?.type === "province" ? String(parent.id) : city ? independentCity : "",
-      cityId: city ? String(city.id) : "",
-    };
-  }, [areas, value]);
-  const effectiveProvinceId = provinceId || selectedPath.provinceId;
-  const effectiveCityId = cityId || selectedPath.cityId;
   const cities = useMemo(
     () =>
-      effectiveProvinceId === independentCity
-        ? independentCities
+      provinceId === independentLocality
+        ? independentLocalities
         : areas.filter(
             (area) =>
               ["city", "municipality"].includes(area.type ?? "") &&
-              String(area.parent_id) === effectiveProvinceId,
+              String(area.parent_id) === provinceId,
           ),
-    [areas, effectiveProvinceId, independentCities],
+    [areas, independentLocalities, provinceId],
   );
-  const barangays = useMemo(
-    () =>
-      areas.filter(
-        (area) => area.type === "barangay" && String(area.parent_id) === effectiveCityId,
-      ),
-    [areas, effectiveCityId],
-  );
+
+  useEffect(() => {
+    let active = true;
+
+    if (!value) {
+      return () => {
+        active = false;
+      };
+    }
+
+    void (async () => {
+      try {
+        const barangay = await fetchArea(value);
+        if (!active || barangay.type !== "barangay" || barangay.parent_id == null) return;
+
+        const city =
+          barangay.parent &&
+          ["city", "municipality"].includes(barangay.parent.type ?? "")
+            ? barangay.parent
+            : areas.find((area) => area.id === barangay.parent_id);
+
+        if (!city) return;
+
+        const parent = areas.find((area) => area.id === city.parent_id);
+        setProvinceId(parent?.type === "province" ? String(parent.id) : independentLocality);
+        setCityId(String(city.id));
+      } catch {
+        // Keep the empty cascade; the caller still holds the saved value.
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, [areas, value]);
+
+  useEffect(() => {
+    let active = true;
+
+    if (!cityId) {
+      setBarangays([]);
+      setBarangaysLoading(false);
+      return () => {
+        active = false;
+      };
+    }
+
+    setBarangaysLoading(true);
+    void fetchChildren(cityId)
+      .then((children) => {
+        if (!active) return;
+        setBarangays(children.filter((area) => area.type === "barangay"));
+      })
+      .catch(() => {
+        if (!active) return;
+        setBarangays([]);
+      })
+      .finally(() => {
+        if (active) setBarangaysLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [cityId]);
 
   function chooseProvince(next: string) {
     setProvinceId(next);
     setCityId("");
+    setBarangays([]);
     onChange("");
   }
 
@@ -114,7 +181,7 @@ export function AddressHierarchy({
         Province{optional && <small>Optional</small>}
         <select
           required={!optional}
-          value={effectiveProvinceId}
+          value={provinceId}
           onChange={(event) => chooseProvince(event.target.value)}
         >
           <option value="">Choose province</option>
@@ -123,17 +190,17 @@ export function AddressHierarchy({
               {province.name}
             </option>
           ))}
-          {independentCities.length > 0 && (
-            <option value={independentCity}>Independent City</option>
+          {independentLocalities.length > 0 && (
+            <option value={independentLocality}>Independent City</option>
           )}
         </select>
       </label>
       <label>
         City / Municipality
         <select
-          required={!optional && Boolean(effectiveProvinceId)}
-          disabled={!effectiveProvinceId}
-          value={effectiveCityId}
+          required={!optional && Boolean(provinceId)}
+          disabled={!provinceId}
+          value={cityId}
           onChange={(event) => chooseCity(event.target.value)}
         >
           <option value="">Choose city or municipality</option>
@@ -147,12 +214,12 @@ export function AddressHierarchy({
       <label>
         Barangay
         <select
-          required={!optional && Boolean(effectiveCityId)}
-          disabled={!effectiveCityId}
+          required={!optional && Boolean(cityId)}
+          disabled={!cityId || barangaysLoading}
           value={value}
           onChange={(event) => onChange(event.target.value)}
         >
-          <option value="">Choose barangay</option>
+          <option value="">{barangaysLoading ? "Loading barangays…" : "Choose barangay"}</option>
           {barangays.map((barangay) => (
             <option key={barangay.id} value={barangay.id}>
               {barangay.name}

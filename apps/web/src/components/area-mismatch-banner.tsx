@@ -59,6 +59,50 @@ function readPosition(): Promise<GeolocationPosition> {
   });
 }
 
+async function resolveCity(
+  areas: AreaReference[],
+  areaId: number | null | undefined,
+  fallback?: { id: number; name: string; type?: string },
+): Promise<{ cityId: number; label: string } | null> {
+  if (fallback && (fallback.type === "city" || fallback.type === "municipality")) {
+    return { cityId: fallback.id, label: fallback.name };
+  }
+
+  const fromList = cityIdForArea(areas, areaId);
+  if (fromList != null) {
+    const label = areaName(areas, fromList);
+    return label ? { cityId: fromList, label } : null;
+  }
+
+  if (!areaId) return null;
+
+  const response = await fetch(`/api/v1/marketplace/areas/${areaId}`, {
+    credentials: "include",
+    cache: "no-store",
+  });
+  if (!response.ok) return null;
+
+  const area = (
+    (await response.json()) as {
+      data: AreaReference & { parent?: AreaReference | null };
+    }
+  ).data;
+
+  if (area.type === "city" || area.type === "municipality") {
+    return { cityId: area.id, label: area.name };
+  }
+
+  if (
+    area.type === "barangay" &&
+    area.parent &&
+    (area.parent.type === "city" || area.parent.type === "municipality")
+  ) {
+    return { cityId: area.parent.id, label: area.parent.name };
+  }
+
+  return null;
+}
+
 export function AreaMismatchBanner() {
   const [warning, setWarning] = useState<Warning | null>(null);
 
@@ -81,18 +125,16 @@ export function AreaMismatchBanner() {
         const homeLabels: string[] = [];
         if (isProvider) {
           for (const serviceArea of profile.provider?.serviceAreas ?? []) {
-            const cityId = cityIdForArea(areas, serviceArea.id);
-            if (cityId == null || homeCityIds.has(cityId)) continue;
-            homeCityIds.add(cityId);
-            const label = areaName(areas, cityId);
-            if (label) homeLabels.push(label);
+            const city = await resolveCity(areas, serviceArea.id, serviceArea);
+            if (!city || homeCityIds.has(city.cityId)) continue;
+            homeCityIds.add(city.cityId);
+            homeLabels.push(city.label);
           }
         } else {
-          const cityId = cityIdForArea(areas, profile.client?.area_id);
-          if (cityId != null) {
-            homeCityIds.add(cityId);
-            const label = areaName(areas, cityId);
-            if (label) homeLabels.push(label);
+          const city = await resolveCity(areas, profile.client?.area_id);
+          if (city) {
+            homeCityIds.add(city.cityId);
+            homeLabels.push(city.label);
           }
         }
 

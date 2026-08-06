@@ -12,6 +12,7 @@
     "format:check": "pnpm --recursive --if-present format:check",
     "lint": "pnpm --recursive --if-present lint",
     "mobile:audit": "node scripts/audit-mobile-layout.mjs",
+    "psgc:philippines": "node scripts/generate-philippines-psgc.mjs",
     "performance:budget": "node scripts/check-build-budgets.mjs",
     "phase9:validate": "node scripts/validate-phase-nine.mjs",
     "quality:encoding": "node scripts/check-text-encoding.mjs",

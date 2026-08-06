@@ -7,10 +7,25 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   AddressHierarchy,
-  areaPathLabel,
   type AreaReference,
 } from "../../address-hierarchy";
 import styles from "../../phase-nine.module.css";
+
+async function areaPathLabelFromApi(areaId: string, areas: AreaReference[]): Promise<string | null> {
+  const response = await fetch(`/api/v1/marketplace/areas/${encodeURIComponent(areaId)}`, {
+    cache: "no-store",
+  });
+  if (!response.ok) return null;
+  const barangay = (
+    (await response.json()) as {
+      data: AreaReference & { parent?: AreaReference | null };
+    }
+  ).data;
+  const city = barangay.parent ?? areas.find((area) => area.id === barangay.parent_id) ?? null;
+  const parent = city ? areas.find((area) => area.id === city.parent_id) : null;
+  const province = parent?.type === "province" ? parent.name : "Independent City";
+  return [province, city?.name, barangay.name].filter(Boolean).join(", ");
+}
 
 export default function ShareCommunityPostPage() {
   const router = useRouter();
@@ -51,7 +66,7 @@ export default function ShareCommunityPostPage() {
           kind,
           title,
           body,
-          areaLabel: areaId ? areaPathLabel(areas, areaId) : null,
+          areaLabel: areaId ? await areaPathLabelFromApi(areaId, areas) : null,
         }),
       });
       if (!response.ok) throw new Error();

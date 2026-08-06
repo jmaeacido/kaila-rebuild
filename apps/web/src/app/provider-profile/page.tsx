@@ -22,6 +22,8 @@ export default function ProviderProfilePage() {
   const [cityId, setCityId] = useState("");
   const [coverageMode, setCoverageMode] = useState<"city" | "barangays">("city");
   const [barangayIds, setBarangayIds] = useState<string[]>([]);
+  const [barangays, setBarangays] = useState<Item[]>([]);
+  const [barangaysLoading, setBarangaysLoading] = useState(false);
   const [message, setMessage] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [offersAtShop, setOffersAtShop] = useState(false);
   const [shopLocation, setShopLocation] = useState<{ latitude: number; longitude: number } | null>(null);
@@ -30,32 +32,24 @@ export default function ProviderProfilePage() {
     () => areas.filter((area) => area.type === "province"),
     [areas],
   );
-  const independentCities = useMemo(
+  const independentLocalities = useMemo(
     () =>
-      areas.filter(
-        (area) =>
-          area.type === "city" &&
-          areas.find((parent) => parent.id === area.parent_id)?.type === "region",
-      ),
+      areas.filter((area) => {
+        if (!["city", "municipality"].includes(area.type ?? "")) return false;
+        return areas.find((parent) => parent.id === area.parent_id)?.type === "region";
+      }),
     [areas],
   );
   const cities = useMemo(
     () =>
       provinceId === independentCity
-        ? independentCities
+        ? independentLocalities
         : areas.filter(
             (area) =>
               ["city", "municipality"].includes(area.type ?? "") &&
               String(area.parent_id) === provinceId,
           ),
-    [areas, independentCities, provinceId],
-  );
-  const barangays = useMemo(
-    () =>
-      areas.filter(
-        (area) => area.type === "barangay" && String(area.parent_id) === cityId,
-      ),
-    [areas, cityId],
+    [areas, independentLocalities, provinceId],
   );
 
   useEffect(() => {
@@ -73,10 +67,47 @@ export default function ProviderProfilePage() {
       .catch(() => setMessage("error"));
   }, []);
 
+  useEffect(() => {
+    let active = true;
+
+    if (!cityId) {
+      setBarangays([]);
+      setBarangaysLoading(false);
+      return () => {
+        active = false;
+      };
+    }
+
+    setBarangaysLoading(true);
+    void fetch(`/api/v1/marketplace/areas?parentId=${encodeURIComponent(cityId)}`, {
+      cache: "no-store",
+    })
+      .then(async (response) => {
+        if (!response.ok) throw new Error();
+        return response.json() as Promise<{ data: Item[] }>;
+      })
+      .then((body) => {
+        if (!active) return;
+        setBarangays(body.data.filter((area) => area.type === "barangay"));
+      })
+      .catch(() => {
+        if (!active) return;
+        setBarangays([]);
+      })
+      .finally(() => {
+        if (active) setBarangaysLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [cityId]);
+
   function chooseProvince(value: string) {
     setProvinceId(value);
     setCityId("");
     setBarangayIds([]);
+    setBarangays([]);
   }
 
   function chooseCity(value: string) {
@@ -181,7 +212,7 @@ export default function ProviderProfilePage() {
                       {province.name}
                     </option>
                   ))}
-                  {independentCities.length > 0 && (
+                  {independentLocalities.length > 0 && (
                     <option value={independentCity}>Independent City</option>
                   )}
                 </select>
@@ -238,7 +269,11 @@ export default function ProviderProfilePage() {
                   </span>
                 </div>
                 {!cityId && <p>Choose a city or municipality first.</p>}
-                {cityId && (
+                {cityId && barangaysLoading && <p>Loading barangays…</p>}
+                {cityId && !barangaysLoading && barangays.length === 0 && (
+                  <p>No barangays found for this city or municipality.</p>
+                )}
+                {cityId && !barangaysLoading && (
                   <div className={styles.barangayGrid}>
                     {barangays.map((barangay) => (
                       <label key={barangay.id}>

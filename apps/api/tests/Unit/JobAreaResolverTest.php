@@ -92,4 +92,38 @@ class JobAreaResolverTest extends TestCase
 
         $this->assertNull(app(JobAreaResolver::class)->resolve(8.9500, 125.5400));
     }
+
+    public function test_it_falls_back_to_name_match_within_the_detected_city(): void
+    {
+        $city = Area::query()->create([
+            'type' => 'city',
+            'name' => 'City of Butuan',
+            'code' => '1630400000',
+            'is_active' => true,
+        ]);
+        $barangay = Area::query()->create([
+            'parent_id' => $city->id,
+            'type' => 'barangay',
+            'name' => 'Lapu-lapu Pob.',
+            'code' => '1630400051',
+            'is_active' => true,
+        ]);
+        Area::query()->create([
+            'type' => 'city',
+            'name' => 'City of Davao',
+            'code' => '1130700000',
+            'is_active' => true,
+        ]);
+        Http::fake(['http://boundaries.test/query*' => Http::response(['features' => [[
+            'attributes' => [
+                'brgy_name' => 'Lapu-Lapu Pob. (Bgy. 8)',
+                'city_name' => 'Butuan City',
+                'psgc_10d' => null,
+            ],
+        ]]])]);
+
+        $resolved = app(JobAreaResolver::class)->resolve(8.9500, 125.5400);
+
+        $this->assertTrue($barangay->is($resolved));
+    }
 }

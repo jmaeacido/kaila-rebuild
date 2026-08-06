@@ -5,6 +5,8 @@ namespace Database\Seeders;
 use App\Models\Area;
 use App\Models\ServiceCategory;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Carbon;
+use RuntimeException;
 
 class MarketplaceReferenceSeeder extends Seeder
 {
@@ -20,6 +22,10 @@ class MarketplaceReferenceSeeder extends Seeder
         'PH-DVO',
         'PH-TAG',
     ];
+
+    private const BUTUAN_CITY_CODE = '1630400000';
+
+    private const AGUSAN_DEL_NORTE_CODE = '1600200000';
 
     /** @var list<array{string, string, string}> */
     private const LEGACY_SERVICES = [
@@ -54,37 +60,88 @@ class MarketplaceReferenceSeeder extends Seeder
             );
         }
 
-        foreach (LegacyMarketplaceReferenceData::areas() as $regionData) {
-            $region = $this->area(null, 'region', $regionData['name'], $regionData['code']);
+        $this->seedPhilippineAreas();
+        $this->groupButuanUnderAgusanDelNorte();
+    }
 
-            foreach ($regionData['children'] as $childData) {
-                if ($childData['type'] === 'province') {
-                    $province = $this->area($region, 'province', $childData['name'], $childData['code']);
-                    foreach ($childData['children'] as $cityData) {
-                        $this->seedCity($province, $cityData);
+    private function seedPhilippineAreas(): void
+    {
+        $payload = PhilippinePsgcData::load();
+        $codeToId = [];
+        foreach (array_chunk(array_column($payload['areas'], 'code'), 500) as $codes) {
+            foreach (Area::query()->whereIn('code', $codes)->pluck('id', 'code') as $code => $id) {
+                $codeToId[$code] = $id;
+            }
+        }
+
+        $waves = [
+            ['region'],
+            ['province'],
+            ['city', 'municipality'],
+            ['barangay'],
+        ];
+
+        foreach ($waves as $types) {
+            $batch = [];
+            $now = Carbon::now();
+
+            foreach ($payload['areas'] as $area) {
+                if (! in_array($area['type'], $types, true)) {
+                    continue;
+                }
+
+                $parentId = null;
+                if ($area['parentCode'] !== null) {
+                    $parentId = $codeToId[$area['parentCode']] ?? null;
+                    if ($parentId === null) {
+                        throw new RuntimeException("Missing parent area {$area['parentCode']} for {$area['code']}.");
                     }
-                } else {
-                    $this->seedCity($region, $childData);
+                }
+
+                $batch[] = [
+                    'code' => $area['code'],
+                    'parent_id' => $parentId,
+                    'type' => $area['type'],
+                    'name' => $area['name'],
+                    'is_active' => true,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
+            }
+
+            foreach (array_chunk($batch, 500) as $chunk) {
+                Area::query()->upsert(
+                    $chunk,
+                    ['code'],
+                    ['parent_id', 'type', 'name', 'is_active', 'updated_at'],
+                );
+            }
+
+            if ($types === ['barangay']) {
+                continue;
+            }
+
+            foreach (array_chunk(array_column($batch, 'code'), 500) as $codes) {
+                foreach (Area::query()->whereIn('code', $codes)->pluck('id', 'code') as $code => $id) {
+                    $codeToId[$code] = $id;
                 }
             }
         }
     }
 
-    /** @param array{code: string, name: string, type: string, children: list<array{string, string}>} $cityData */
-    private function seedCity(Area $parent, array $cityData): void
+    private function groupButuanUnderAgusanDelNorte(): void
     {
-        $city = $this->area($parent, $cityData['type'], $cityData['name'], $cityData['code']);
+        $butuanId = Area::query()->where('code', self::BUTUAN_CITY_CODE)->value('id');
+        $provinceId = Area::query()->where('code', self::AGUSAN_DEL_NORTE_CODE)->value('id');
 
-        foreach ($cityData['children'] as [$code, $name]) {
-            $this->area($city, 'barangay', $name, $code);
+        if ($butuanId === null || $provinceId === null) {
+            throw new RuntimeException('Butuan marketplace grouping requires City of Butuan and Agusan del Norte.');
         }
-    }
 
-    private function area(?Area $parent, string $type, string $name, string $code): Area
-    {
-        return Area::query()->updateOrCreate(
-            ['code' => $code],
-            ['parent_id' => $parent?->id, 'type' => $type, 'name' => $name, 'is_active' => true],
-        );
+        Area::query()->whereKey($butuanId)->update([
+            'parent_id' => $provinceId,
+            'type' => 'city',
+            'is_active' => true,
+        ]);
     }
 }

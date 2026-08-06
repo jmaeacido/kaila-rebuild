@@ -12,7 +12,12 @@ class ReferenceDataController extends Controller
     {
         return response()->json(['data' => [
             'categories' => ServiceCategory::query()->where('is_active', true)->orderBy('sort_order')->orderBy('name')->get(['id', 'parent_id', 'name', 'slug', 'icon']),
-            'areas' => Area::query()->where('is_active', true)->orderBy('type')->orderBy('name')->get(['id', 'parent_id', 'type', 'name', 'code']),
+            'areas' => Area::query()
+                ->where('is_active', true)
+                ->whereIn('type', ['region', 'province', 'city', 'municipality'])
+                ->orderBy('type')
+                ->orderBy('name')
+                ->get(['id', 'parent_id', 'type', 'name', 'code']),
         ]]);
     }
 }

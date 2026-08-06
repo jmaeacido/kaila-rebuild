@@ -2,7 +2,7 @@
 
 ## Status
 
-Superseded in part by Decision 0010
+Superseded in part by Decision 0010 and Decision 0048
 
 ## Decision
 

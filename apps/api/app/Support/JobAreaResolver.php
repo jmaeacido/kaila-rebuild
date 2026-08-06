@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\Area;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
 class JobAreaResolver
@@ -29,21 +30,49 @@ class JobAreaResolver
         }
 
         $barangayName = $this->normalize($boundary['barangay']);
-        $cityName = $boundary['city'] ? $this->normalize($boundary['city']) : null;
-        $barangays = Area::query()
+        if ($barangayName === '') {
+            return null;
+        }
+
+        $cityIds = $this->matchingCityIds($boundary['city']);
+        if ($boundary['city'] && $cityIds->isEmpty()) {
+            return null;
+        }
+
+        $candidates = Area::query()
             ->where('type', 'barangay')
             ->where('is_active', true)
             ->with('parent')
+            ->when($cityIds->isNotEmpty(), fn ($query) => $query->whereIn('parent_id', $cityIds))
+            ->when($cityIds->isEmpty(), function ($query) use ($boundary): void {
+                $query->where('name', $boundary['barangay'])->limit(25);
+            })
             ->get();
 
-        return $barangays->first(function (Area $barangay) use ($barangayName, $cityName): bool {
-            if ($this->normalize($barangay->name) !== $barangayName) {
-                return false;
-            }
+        return $candidates->first(
+            fn (Area $barangay): bool => $this->normalize($barangay->name) === $barangayName,
+        );
+    }
 
-            return $cityName === null
-                || ($barangay->parent && $this->normalize($barangay->parent->name) === $cityName);
-        });
+    /** @return Collection<int, int> */
+    private function matchingCityIds(?string $cityName): Collection
+    {
+        if (! $cityName) {
+            return collect();
+        }
+
+        $normalizedCity = $this->normalize($cityName);
+        if ($normalizedCity === '') {
+            return collect();
+        }
+
+        return Area::query()
+            ->whereIn('type', ['city', 'municipality'])
+            ->where('is_active', true)
+            ->get(['id', 'name'])
+            ->filter(fn (Area $city): bool => $this->normalize($city->name) === $normalizedCity)
+            ->pluck('id')
+            ->values();
     }
 
     private function normalize(string $name): string
