@@ -19,7 +19,7 @@
 
 Test at minimum Android 8, 13, 14, and the current target API on an entry-level physical device plus one Samsung and one other OEM device. For each supported role/account, verify cold start, foreground/background/terminated notification actions, trusted/untrusted deep links, notification denial, location denial, offline launch/recovery, token rotation, account switch, logout, app upgrade with an active session, and server/web rollback compatibility.
 
-Foreground location must stop when the app loses the required foreground capability. No test may observe background collection, full-screen intent, persistent alarm, repeating sound, sensitive lock-screen text, or a self-update prompt.
+Foreground location must stop when the app loses the required foreground capability. No test may observe background collection, persistent alarm, repeating sound outside authorized incoming calls, sensitive lock-screen text, or a self-update prompt. Full-screen intent and ringtone looping are allowed only for hired-job (and accepted-direct) `call.ringing` events per Decision 0034 / ADR-0022; they must not appear for job alerts, marketing, or routine reminders.
 
 ## Rollback
 
