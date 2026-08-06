@@ -25,54 +25,56 @@ class NotificationService
         array $data = [],
         string $channel = 'material',
     ): DurableNotification {
-        $routeType = $this->routeType($type);
-        $notification = DurableNotification::query()->create([
-            'user_id' => $userId,
-            'type' => $type,
-            'title' => $title,
-            'body' => $body,
-            'resource_type' => $resourceType,
-            'resource_id' => $resourceId,
-            'data' => [...$data, 'type' => $routeType, 'eventType' => $type],
-        ]);
-
-        if ($this->allowsPush($userId, $channel)) {
-            // Incoming calls bypass quiet hours so wake-on-lock ringing still works.
-            $silent = $routeType !== 'call' && $this->isQuietHours($userId);
-            if ($silent) {
-                $notification->update(['data' => [...$notification->data, 'silent' => '1']]);
-            }
-            foreach (PushDevice::query()->where('user_id', $userId)->whereNull('revoked_at')->get() as $device) {
-                $attempt = PushDeliveryAttempt::query()->create([
-                    'notification_id' => $notification->id,
-                    'push_device_id' => $device->id,
-                    'attempt' => 1,
-                ]);
-                DB::afterCommit(fn () => DeliverPushNotification::dispatch($attempt->id));
-            }
-        }
-
-        // Ephemeral call cancel pushes should not create inbox/toast fan-out.
-        if (($data['hideFromInbox'] ?? null) === '1') {
-            return $notification;
-        }
-
-        $this->outbox->record('notification.created', 'notification', $notification->id, 1, [
-            'rooms' => ["user:{$userId}"],
-            'notification' => [
-                'id' => $notification->id,
+        return DB::transaction(function () use ($userId, $type, $title, $body, $resourceType, $resourceId, $data, $channel): DurableNotification {
+            $routeType = $this->routeType($type);
+            $notification = DurableNotification::query()->create([
+                'user_id' => $userId,
                 'type' => $type,
                 'title' => $title,
                 'body' => $body,
-                'resourceType' => $resourceType,
-                'resourceId' => $resourceId,
-                'data' => $notification->data,
-                'readAt' => null,
-                'createdAt' => $notification->created_at?->toIso8601String(),
-            ],
-        ]);
+                'resource_type' => $resourceType,
+                'resource_id' => $resourceId,
+                'data' => [...$data, 'type' => $routeType, 'eventType' => $type],
+            ]);
 
-        return $notification;
+            if ($this->allowsPush($userId, $channel)) {
+                // Incoming calls bypass quiet hours so wake-on-lock ringing still works.
+                $silent = $routeType !== 'call' && $this->isQuietHours($userId);
+                if ($silent) {
+                    $notification->update(['data' => [...$notification->data, 'silent' => '1']]);
+                }
+                foreach (PushDevice::query()->where('user_id', $userId)->whereNull('revoked_at')->get() as $device) {
+                    $attempt = PushDeliveryAttempt::query()->create([
+                        'notification_id' => $notification->id,
+                        'push_device_id' => $device->id,
+                        'attempt' => 1,
+                    ]);
+                    DB::afterCommit(fn () => DeliverPushNotification::dispatch($attempt->id));
+                }
+            }
+
+            // Ephemeral call cancel pushes should not create inbox/toast fan-out.
+            if (($data['hideFromInbox'] ?? null) === '1') {
+                return $notification;
+            }
+
+            $this->outbox->record('notification.created', 'notification', $notification->id, 1, [
+                'rooms' => ["user:{$userId}"],
+                'notification' => [
+                    'id' => $notification->id,
+                    'type' => $type,
+                    'title' => $title,
+                    'body' => $body,
+                    'resourceType' => $resourceType,
+                    'resourceId' => $resourceId,
+                    'data' => $notification->data,
+                    'readAt' => null,
+                    'createdAt' => $notification->created_at?->toIso8601String(),
+                ],
+            ]);
+
+            return $notification;
+        });
     }
 
     private function allowsPush(int $userId, string $channel): bool

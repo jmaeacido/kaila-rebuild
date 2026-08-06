@@ -44,21 +44,27 @@ class MarketplaceReferenceSeederTest extends TestCase
             'Other Services' => 'Ellipsis',
         ], ServiceCategory::query()->orderBy('sort_order')->pluck('icon', 'name')->all());
 
-        $this->assertSame(171, Area::query()->count());
+        $this->assertSame(191, Area::query()->count());
         $this->assertSame(2, Area::query()->where('type', 'region')->count());
         $this->assertSame(2, Area::query()->where('type', 'province')->count());
         $this->assertSame(2, Area::query()->where('type', 'city')->count());
-        $this->assertSame(165, Area::query()->where('type', 'barangay')->count());
+        $this->assertSame(1, Area::query()->where('type', 'municipality')->count());
+        $this->assertSame(184, Area::query()->where('type', 'barangay')->count());
 
         $gingoog = Area::query()->where('code', '1004308000')->firstOrFail();
         $butuan = Area::query()->where('code', '1630400000')->firstOrFail();
+        $nasipit = Area::query()->where('code', '1600209000')->firstOrFail();
 
         $this->assertSame('Misamis Oriental', Area::query()->findOrFail($gingoog->parent_id)->name);
         $this->assertSame('Agusan del Norte', Area::query()->findOrFail($butuan->parent_id)->name);
+        $this->assertSame('Agusan del Norte', Area::query()->findOrFail($nasipit->parent_id)->name);
+        $this->assertSame('municipality', $nasipit->type);
         $this->assertSame(79, Area::query()->where('parent_id', $gingoog->id)->count());
         $this->assertSame(86, Area::query()->where('parent_id', $butuan->id)->count());
+        $this->assertSame(19, Area::query()->where('parent_id', $nasipit->id)->count());
         $this->assertDatabaseHas('areas', ['code' => '1004308083', 'name' => 'Tagpako', 'parent_id' => $gingoog->id]);
         $this->assertDatabaseHas('areas', ['code' => '1630400103', 'name' => 'Pigdaulan', 'parent_id' => $butuan->id]);
+        $this->assertDatabaseHas('areas', ['code' => '1600209020', 'name' => 'Triangulo', 'parent_id' => $nasipit->id]);
     }
 
     public function test_it_is_safe_to_rerun(): void
@@ -67,7 +73,7 @@ class MarketplaceReferenceSeederTest extends TestCase
         $this->seed(MarketplaceReferenceSeeder::class);
 
         $this->assertSame(17, ServiceCategory::query()->count());
-        $this->assertSame(171, Area::query()->count());
+        $this->assertSame(191, Area::query()->count());
     }
 
     public function test_it_deactivates_superseded_placeholder_reference_rows_without_deleting_them(): void
@@ -90,6 +96,6 @@ class MarketplaceReferenceSeederTest extends TestCase
         $this->assertDatabaseHas('service_categories', ['slug' => 'home-cleaning', 'is_active' => false]);
         $this->assertDatabaseHas('areas', ['code' => 'PH-DVO', 'is_active' => false]);
         $this->assertSame(17, ServiceCategory::query()->where('is_active', true)->count());
-        $this->assertSame(171, Area::query()->where('is_active', true)->count());
+        $this->assertSame(191, Area::query()->where('is_active', true)->count());
     }
 }

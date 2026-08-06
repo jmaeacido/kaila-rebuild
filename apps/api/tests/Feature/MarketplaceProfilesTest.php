@@ -59,6 +59,40 @@ class MarketplaceProfilesTest extends TestCase
         ]);
     }
 
+    public function test_provider_can_cover_a_whole_municipality(): void
+    {
+        $category = ServiceCategory::query()->create([
+            'name' => 'Plumbing',
+            'slug' => 'plumbing',
+            'icon' => 'Wrench',
+            'is_active' => true,
+        ]);
+        $province = Area::query()->create([
+            'type' => 'province',
+            'name' => 'Agusan del Norte',
+            'code' => '1600200000',
+            'is_active' => true,
+        ]);
+        $municipality = Area::query()->create([
+            'parent_id' => $province->id,
+            'type' => 'municipality',
+            'name' => 'Nasipit',
+            'code' => '1600209000',
+            'is_active' => true,
+        ]);
+        $user = User::factory()->create();
+        User::factory()->create(['is_admin' => true]);
+
+        $this->actingAs($user)
+            ->putJson('/api/v1/me/provider-profile', $this->validProfile($category, $municipality))
+            ->assertOk()
+            ->assertJsonPath('data.status', 'pending_review')
+            ->assertJsonPath('data.service_areas.0.id', $municipality->id)
+            ->assertJsonPath('data.service_areas.0.type', 'municipality');
+
+        $this->assertDatabaseHas('provider_service_areas', ['area_id' => $municipality->id]);
+    }
+
     public function test_discovery_is_deterministic_and_excludes_ineligible_or_out_of_area_profiles(): void
     {
         [$category, $area] = $this->referenceData();

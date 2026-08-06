@@ -79,7 +79,7 @@ class NotificationPreferencesTest extends TestCase
             'last_seen_at' => now(),
         ]);
 
-        DB::transaction(fn () => app(NotificationService::class)->send(
+        app(NotificationService::class)->send(
             $user->id,
             'message.created',
             'New message',
@@ -88,10 +88,31 @@ class NotificationPreferencesTest extends TestCase
             'job-1',
             ['jobId' => 'job-1'],
             'message',
-        ));
+        );
 
         $this->assertDatabaseHas('durable_notifications', ['user_id' => $user->id, 'type' => 'message.created']);
         $this->assertDatabaseCount('push_delivery_attempts', 0);
+        $this->assertDatabaseHas('outbox_events', ['event_type' => 'notification.created']);
+    }
+
+    public function test_notification_send_records_outbox_without_an_outer_transaction(): void
+    {
+        $user = User::factory()->create();
+
+        app(NotificationService::class)->send(
+            $user->id,
+            'admin.review.provider_submitted',
+            'Provider profile needs review',
+            'A provider submitted a profile.',
+            'provider_profile',
+            '1',
+            ['providerProfileId' => 1],
+        );
+
+        $this->assertDatabaseHas('durable_notifications', [
+            'user_id' => $user->id,
+            'type' => 'admin.review.provider_submitted',
+        ]);
         $this->assertDatabaseHas('outbox_events', ['event_type' => 'notification.created']);
     }
 

@@ -8,7 +8,7 @@ Superseded in part by Decision 0010
 
 The rebuild seeds the legacy application's 17 canonical service categories and
 the complete Gingoog and Butuan address trees published in its two PSGC
-workbooks.
+workbooks. Decision 0047 extends the Agusan del Norte tree with Nasipit.
 
 Official 10-digit PSGC identifiers are stored in `areas.code` so references are
 stable and traceable. The hierarchy follows the workbook geography:

@@ -30,12 +30,20 @@ final class LegacyMarketplaceReferenceData
                     'code' => '1600200000',
                     'name' => 'Agusan del Norte',
                     'type' => 'province',
-                    'children' => [[
-                        'code' => '1630400000',
-                        'name' => 'City of Butuan',
-                        'type' => 'city',
-                        'children' => self::butuanBarangays(),
-                    ]],
+                    'children' => [
+                        [
+                            'code' => '1630400000',
+                            'name' => 'City of Butuan',
+                            'type' => 'city',
+                            'children' => self::butuanBarangays(),
+                        ],
+                        [
+                            'code' => '1600209000',
+                            'name' => 'Nasipit',
+                            'type' => 'municipality',
+                            'children' => self::nasipitBarangays(),
+                        ],
+                    ],
                 ]],
             ],
         ];
@@ -108,6 +116,20 @@ final class LegacyMarketplaceReferenceData
             ['1630400096', 'Nong-nong'], ['1630400097', 'Pagatpatan'], ['1630400098', 'Pangabugan'],
             ['1630400099', 'Salvacion'], ['1630400100', 'Santo Niño'], ['1630400101', 'Sumile'],
             ['1630400102', 'Don Francisco'], ['1630400103', 'Pigdaulan'],
+        ];
+    }
+
+    /** @return list<array{string, string}> */
+    private static function nasipitBarangays(): array
+    {
+        return [
+            ['1600209001', 'Aclan'], ['1600209002', 'Amontay'], ['1600209004', 'Ata-atahon'],
+            ['1600209005', 'Camagong'], ['1600209006', 'Cubi-Cubi'], ['1600209007', 'Culit'],
+            ['1600209008', 'Jaguimitan'], ['1600209009', 'Kinabjangan'], ['1600209010', 'Barangay 1'],
+            ['1600209011', 'Barangay 2'], ['1600209012', 'Barangay 3'], ['1600209013', 'Barangay 4'],
+            ['1600209014', 'Barangay 5'], ['1600209015', 'Barangay 6'], ['1600209016', 'Barangay 7'],
+            ['1600209017', 'Punta'], ['1600209018', 'Santa Ana'], ['1600209019', 'Talisay'],
+            ['1600209020', 'Triangulo'],
         ];
     }
 }
