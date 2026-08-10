@@ -28,6 +28,8 @@ class BrandedWelcomeTest extends TestCase
         $this->assertStringContainsString('finish your provider profile', $html);
         $this->assertStringContainsString('https://kaila-app.com/brand/kaila-wordmark.png', $html);
         $this->assertStringContainsString('href="https://kaila-app.com"', $html);
+        $this->assertStringContainsString('mailto:support@kaila-app.com', $html);
+        $this->assertStringContainsString('support@kaila-app.com', $html);
         $this->assertStringNotContainsString('rebuild.kaila-app.com', $html);
         $this->assertIsArray($message->view);
         $this->assertSame('mail.auth.welcome', $message->view['html']);

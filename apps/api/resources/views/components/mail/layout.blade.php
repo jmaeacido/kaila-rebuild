@@ -56,6 +56,9 @@
                     <tr>
                         <td style="padding:20px 32px;background:#f7f9fc;color:#667085;font-size:12px;line-height:1.5;">
                             KAILA · Nearby help, made simple.<br>
+                            Questions? Email
+                            <a href="mailto:{{ config('kaila.support_email') }}" style="color:#1463ff;text-decoration:none;font-weight:600;">{{ config('kaila.support_email') }}</a>
+                            or visit
                             <a href="{{ rtrim((string) config('app.url'), '/') }}" style="color:#1463ff;text-decoration:none;">kaila-app.com</a>
                         </td>
                     </tr>

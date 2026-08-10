@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { LegalPage, type LegalSection } from "../legal-page";
 import { publicPageMetadata } from "../seo";
+import { SUPPORT_EMAIL } from "../../lib/support-email";
 
 export const metadata: Metadata = publicPageMetadata({
   title: "Privacy Policy",
@@ -43,7 +44,7 @@ const sections: LegalSection[] = [
   },
   {
     heading: "Contact",
-    body: "Use KAILA's official in-app support channel for privacy questions, account help, safety concerns, or an account-deletion request.",
+    body: `Use KAILA's official in-app support channel or email ${SUPPORT_EMAIL} for privacy questions, account help, safety concerns, or an account-deletion request.`,
   },
 ];
 

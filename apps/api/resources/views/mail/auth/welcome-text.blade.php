@@ -12,4 +12,6 @@ You can also finish your provider profile when you are ready to offer your servi
 Explore KAILA:
 {{ $appUrl }}
 
+Questions? Email {{ config('kaila.support_email') }}
+
 KAILA — Nearby help, made simple.

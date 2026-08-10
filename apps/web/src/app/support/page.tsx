@@ -1,5 +1,179 @@
 "use client";
-import Image from "next/image";import Link from "next/link";import{useCallback,useEffect,useState}from"react";import{ArrowLeft,ChevronRight,CircleHelp,MessageCircleQuestion,Plus,ShieldAlert,Sparkles}from"lucide-react";import styles from"./support.module.css";import{useRealtimeInvalidation}from"../use-realtime-invalidation";
-type SupportCase={id:string;reference:string;subject:string;status:string;unread:boolean;lastMessageAt:string};
-const status=(value:string)=>({open:"Open",waiting_for_support:"Waiting for support",waiting_for_customer:"Waiting for you",resolved:"Resolved",closed:"Closed"}[value]??value);
-export default function SupportPage(){const[items,setItems]=useState<SupportCase[]>([]);const[state,setState]=useState<"loading"|"ready"|"error">("loading");const load=useCallback(async()=>{try{const response=await fetch("/api/v1/support/cases",{cache:"no-store"});if(!response.ok)throw new Error();setItems(((await response.json())as{data:SupportCase[]}).data);setState("ready")}catch{setState("error")}},[]);useEffect(()=>{const timer=window.setTimeout(()=>void load(),0);return()=>window.clearTimeout(timer)},[load]);useRealtimeInvalidation(()=>void load(),event=>event.type.startsWith("support."));return <main className={styles.page}><header className={styles.top}><div><p className={styles.eyebrow}>Customer care</p><h1>Support</h1><p>Get help from the right KAILA team.</p></div><Link className={styles.back} href="/account"><ArrowLeft/>Account</Link></header><section className={styles.hero}><Image className={styles.heroIcon} src="/support/support-icon.png" alt="" width={160} height={160} priority/><h1>How can we help?</h1><p>Send us a message about your account, booking, payment, or app experience. Your request stays here so you can follow every update.</p><div className={styles.heroActions}><Link className={styles.primary} href="/support/new"><Plus/>New support request</Link></div></section><section className={styles.grid}><article className={styles.card}><h2>Choose the right help</h2><div className={styles.choices}><Link className={styles.choice} href="/faqs"><CircleHelp/><div><strong>FAQs</strong><p>Common questions about hiring and offering services</p></div><ChevronRight/></Link><Link className={styles.choice} href="/help/katabang"><Sparkles/><div><strong>Ask Katabang</strong><p>Quick guidance on using KAILA</p></div><ChevronRight/></Link><Link className={styles.choice} href="/safety"><ShieldAlert/><div><strong>Safety concern</strong><p>Report scams, threats, or unsafe conduct</p></div><ChevronRight/></Link></div></article><article className={styles.card}><h2>Your requests</h2>{state==="loading"&&<div className={styles.skeleton}/>} {state==="error"&&<div className={styles.error}>We couldn’t load your requests. <button onClick={()=>void load()}>Try again</button></div>}{state==="ready"&&items.length===0&&<div><MessageCircleQuestion/><p className={styles.muted}>No support requests yet.</p><Link className={styles.link} href="/support/new">Start a request</Link></div>}{items.length>0&&<div className={styles.caseList}>{items.map(item=><Link className={`${styles.card} ${styles.case}`} href={`/support/${item.id}`} key={item.id}><div><strong>{item.subject}</strong><p className={styles.meta}>{item.reference} · {new Date(item.lastMessageAt).toLocaleString()}</p></div><span className={styles.badge}>{item.unread?"New reply":status(item.status)}</span></Link>)}</div>}</article></section></main>}
+
+import Image from "next/image";
+import Link from "next/link";
+import { useCallback, useEffect, useState } from "react";
+import {
+  ArrowLeft,
+  ChevronRight,
+  CircleHelp,
+  Mail,
+  MessageCircleQuestion,
+  Plus,
+  ShieldAlert,
+  Sparkles,
+} from "lucide-react";
+import { SUPPORT_EMAIL } from "../../lib/support-email";
+import { useRealtimeInvalidation } from "../use-realtime-invalidation";
+import styles from "./support.module.css";
+
+type SupportCase = {
+  id: string;
+  reference: string;
+  subject: string;
+  status: string;
+  unread: boolean;
+  lastMessageAt: string;
+};
+
+const status = (value: string) =>
+  ({
+    open: "Open",
+    waiting_for_support: "Waiting for support",
+    waiting_for_customer: "Waiting for you",
+    resolved: "Resolved",
+    closed: "Closed",
+  }[value] ?? value);
+
+export default function SupportPage() {
+  const [items, setItems] = useState<SupportCase[]>([]);
+  const [state, setState] = useState<"loading" | "ready" | "error">("loading");
+
+  const load = useCallback(async () => {
+    try {
+      const response = await fetch("/api/v1/support/cases", { cache: "no-store" });
+      if (!response.ok) throw new Error();
+      setItems(((await response.json()) as { data: SupportCase[] }).data);
+      setState("ready");
+    } catch {
+      setState("error");
+    }
+  }, []);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => void load(), 0);
+    return () => window.clearTimeout(timer);
+  }, [load]);
+
+  useRealtimeInvalidation(
+    () => void load(),
+    (event) => event.type.startsWith("support."),
+  );
+
+  return (
+    <main className={styles.page}>
+      <header className={styles.top}>
+        <div>
+          <p className={styles.eyebrow}>Customer care</p>
+          <h1>Support</h1>
+          <p>Get help from the right KAILA team.</p>
+        </div>
+        <Link className={styles.back} href="/account">
+          <ArrowLeft />
+          Account
+        </Link>
+      </header>
+
+      <section className={styles.hero}>
+        <Image
+          className={styles.heroIcon}
+          src="/support/support-icon.png"
+          alt=""
+          width={160}
+          height={160}
+          priority
+        />
+        <h1>How can we help?</h1>
+        <p>
+          Send us a message about your account, booking, payment, or app experience.
+          Your request stays here so you can follow every update.
+        </p>
+        <div className={styles.heroActions}>
+          <Link className={styles.primary} href="/support/new">
+            <Plus />
+            New support request
+          </Link>
+          <a className={styles.secondary} href={`mailto:${SUPPORT_EMAIL}`}>
+            <Mail />
+            Email {SUPPORT_EMAIL}
+          </a>
+        </div>
+      </section>
+
+      <section className={styles.grid}>
+        <article className={styles.card}>
+          <h2>Choose the right help</h2>
+          <div className={styles.choices}>
+            <Link className={styles.choice} href="/faqs">
+              <CircleHelp />
+              <div>
+                <strong>FAQs</strong>
+                <p>Common questions about hiring and offering services</p>
+              </div>
+              <ChevronRight />
+            </Link>
+            <Link className={styles.choice} href="/help/katabang">
+              <Sparkles />
+              <div>
+                <strong>Ask Katabang</strong>
+                <p>Quick guidance on using KAILA</p>
+              </div>
+              <ChevronRight />
+            </Link>
+            <Link className={styles.choice} href="/safety">
+              <ShieldAlert />
+              <div>
+                <strong>Safety concern</strong>
+                <p>Report scams, threats, or unsafe conduct</p>
+              </div>
+              <ChevronRight />
+            </Link>
+          </div>
+        </article>
+
+        <article className={styles.card}>
+          <h2>Your requests</h2>
+          {state === "loading" && <div className={styles.skeleton} />}
+          {state === "error" && (
+            <div className={styles.error}>
+              We couldn’t load your requests.{" "}
+              <button type="button" onClick={() => void load()}>
+                Try again
+              </button>
+            </div>
+          )}
+          {state === "ready" && items.length === 0 && (
+            <div>
+              <MessageCircleQuestion />
+              <p className={styles.muted}>No support requests yet.</p>
+              <Link className={styles.link} href="/support/new">
+                Start a request
+              </Link>
+            </div>
+          )}
+          {items.length > 0 && (
+            <div className={styles.caseList}>
+              {items.map((item) => (
+                <Link
+                  className={`${styles.card} ${styles.case}`}
+                  href={`/support/${item.id}`}
+                  key={item.id}
+                >
+                  <div>
+                    <strong>{item.subject}</strong>
+                    <p className={styles.meta}>
+                      {item.reference} · {new Date(item.lastMessageAt).toLocaleString()}
+                    </p>
+                  </div>
+                  <span className={styles.badge}>
+                    {item.unread ? "New reply" : status(item.status)}
+                  </span>
+                </Link>
+              ))}
+            </div>
+          )}
+        </article>
+      </section>
+    </main>
+  );
+}

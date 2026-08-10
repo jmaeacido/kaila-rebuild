@@ -9,4 +9,6 @@ Open this secure link:
 
 This link expires in {{ $expiresInMinutes }} minutes. If you did not request it, you can safely ignore this email.
 
+Questions? Email {{ config('kaila.support_email') }}
+
 KAILA — Nearby help, made simple.

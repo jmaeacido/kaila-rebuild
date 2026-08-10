@@ -11,6 +11,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { BrandMark } from "../../components/brand-mark";
+import { SUPPORT_EMAIL } from "../../lib/support-email";
 import styles from "./faqs.module.css";
 
 type FaqItem = {
@@ -159,7 +160,7 @@ const groups: FaqGroup[] = [
         id: "support",
         question: "How do I contact support?",
         answer:
-          "Open Support to start a request about your account, booking, or app experience. You can follow replies in the same thread.",
+          `Open Support to start a request about your account, booking, or app experience and follow replies in the same thread. You can also email ${SUPPORT_EMAIL} when you cannot stay signed in.`,
         href: { label: "Contact support", path: "/support" },
       },
     ],
@@ -313,7 +314,10 @@ export default function FaqsPage() {
           <article className={styles.card}>
             <LifeBuoy aria-hidden="true" />
             <h2>Still need help?</h2>
-            <p>Send a support request and follow replies in one thread.</p>
+            <p>
+              Send a support request and follow replies in one thread, or email{" "}
+              <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>.
+            </p>
             <Link href="/support">Contact support</Link>
           </article>
         </aside>
