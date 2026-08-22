@@ -15,7 +15,7 @@ app.innerHTML = `
     </div>
 
     <section class="recovery-card" aria-labelledby="recovery-title">
-      <div class="brand-mark" aria-hidden="true">K</div>
+      <img class="brand-mark" src="/brand/kaila-bull-app-icon-v2.png" alt="KAILA" />
       <p class="eyebrow">Nearby help, when you need it</p>
       <h1 id="recovery-title">Let’s get you connected</h1>
       <p class="supporting-copy">

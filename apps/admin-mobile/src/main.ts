@@ -9,7 +9,7 @@ if (!app) {
 app.innerHTML = `
   <main class="recovery-shell">
     <section class="recovery-card" aria-labelledby="recovery-title">
-      <div class="brand-mark" aria-hidden="true">K</div>
+      <img class="brand-mark" src="/brand/kaila-bull-app-icon-v2.png" alt="KAILA" />
       <p class="eyebrow">KAILA Admin</p>
       <h1 id="recovery-title">Can’t reach admin tools</h1>
       <p class="supporting-copy">

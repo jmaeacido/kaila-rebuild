@@ -131,10 +131,10 @@ export default function MaintenancePage() {
         <Image
           alt="KAILA"
           className={styles.brandMark}
-          height={248}
+          height={526}
           priority
-          src="/brand/kaila-wordmark-on-dark.png"
-          width={1102}
+          src="/brand/kaila-wordmark-bull-v1-on-dark.png"
+          width={2023}
         />
         <div>
           <p>PLATFORM CONTROL</p>

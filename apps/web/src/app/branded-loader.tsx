@@ -17,7 +17,7 @@ export function BrandedLoader({
       <div className="brandedLoaderMark" aria-hidden="true">
         <span className="brandedLoaderHalo" />
         <Image
-          src="/brand/kaila-app-icon.png"
+          src="/brand/kaila-bull-app-icon-v2.png"
           alt=""
           width={533}
           height={556}

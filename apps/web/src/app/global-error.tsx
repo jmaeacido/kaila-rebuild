@@ -31,9 +31,9 @@ export default function GlobalError({
         <main style={{ maxWidth: "28rem", textAlign: "center" }}>
           <img
             alt="KAILA"
-            src="/brand/kaila-wordmark.png"
+            src="/brand/kaila-wordmark-bull-v1.png"
             width={176}
-            height={40}
+            height={46}
             style={{ height: "auto", width: "8rem" }}
           />
           <p

@@ -40,7 +40,7 @@ export default function ForgotPasswordPage() {
       <section className={styles.authCard}>
         <div className={styles.authIcon}>
           <Image
-            src="/brand/kaila-app-icon.png"
+            src="/brand/kaila-bull-app-icon-v2.png"
             alt=""
             width={533}
             height={556}

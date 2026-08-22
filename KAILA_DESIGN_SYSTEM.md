@@ -52,19 +52,20 @@ Apply this principle by:
 
 ## 3. Logo Usage
 
-The approved KAILA logo is the primary brand mark.
+The approved KAILA identity combines a rounded custom wordmark with a friendly blue bull mascot.
 
-### Primary Version
+### Approved Assets
 
-- Blue background
-- White map pin
-- Blue `K`
-- Blue tools
-- Cyan accent
+- The primary wordmark uses rounded dark-blue `KAILA` letterforms with cyan accents in the `K` and both `A` counters.
+- The mascot is a friendly blue bull in a KAILA polo giving a thumbs-up.
+- The app icon uses the mascot on the approved blue-to-cyan rounded-square background.
+- The horizontal lockup places the mascot to the left of the wordmark.
+- The accessibility variant changes the dark-blue wordmark strokes to white while preserving the cyan accents for dark and gradient surfaces.
+- Preserve the supplied artwork; do not redraw, recolor, or separate internal elements.
 
 ### Clear Space
 
-Keep clear space equal to at least half (`0.5x`) the logo's width on every side.
+Keep clear space equal to at least half (`0.5x`) the wordmark's cap height on every side.
 
 ### Never
 
@@ -72,7 +73,7 @@ Keep clear space equal to at least half (`0.5x`) the logo's width on every side.
 - Rotate the logo.
 - Add shadows or outlines.
 - Change its colors.
-- Place it on a busy background.
+- Place it on a busy background or a background without sufficient contrast.
 
 ## 4. Color System
 
@@ -366,7 +367,7 @@ Users choose **Light**, **Dark**, or **System** in Settings. The preference is s
 | `--color-primary` | `#3b82ff` |
 | `--color-accent` | `#4ec8ff` |
 
-Brand wordmarks switch between ink and on-dark assets. Maps use OpenFreeMap liberty (light) and dark styles.
+Brand wordmarks switch between the canonical blue/cyan asset and the approved white/cyan accessibility variant on dark or gradient surfaces. Maps use OpenFreeMap liberty (light) and dark styles.
 
 ## 26. Accessibility
 

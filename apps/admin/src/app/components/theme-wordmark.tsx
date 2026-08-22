@@ -12,19 +12,19 @@ export function ThemeWordmark({
       <Image
         alt="KAILA"
         className="themeWordmarkLight"
-        height={248}
+        height={526}
         priority={priority}
-        src="/brand/kaila-wordmark.png"
-        width={1102}
+        src="/brand/kaila-wordmark-bull-v1.png"
+        width={2023}
       />
       <Image
         alt=""
         aria-hidden="true"
         className="themeWordmarkDark"
-        height={248}
+        height={526}
         priority={priority}
-        src="/brand/kaila-wordmark-on-dark.png"
-        width={1102}
+        src="/brand/kaila-wordmark-bull-v1-on-dark.png"
+        width={2023}
       />
     </span>
   );
