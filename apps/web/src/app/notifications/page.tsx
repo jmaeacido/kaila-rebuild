@@ -8,6 +8,7 @@ import { prepareCsrf } from "../auth-client";
 import { notificationRoute, type NotificationRecord } from "../notification-route";
 import { useRealtimeInvalidation } from "../use-realtime-invalidation";
 import { notificationsChangedName } from "../notification-bell";
+import { NotificationGlyph } from "../notification-glyph";
 import styles from "./notifications.module.css";
 
 type State = "loading" | "ready" | "error";
@@ -55,7 +56,7 @@ export default function NotificationsPage() {
         {items.map((item) => (
           <article className={item.readAt ? styles.read : styles.unread} key={item.id}>
             <Link href={notificationRoute(item)} onClick={(event) => { event.preventDefault(); void open(item); }}>
-              <span className={styles.dot} aria-label={item.readAt ? "Read" : "Unread"} />
+              <span className={styles.icon}><NotificationGlyph item={item} /></span>
               <div><h2>{item.title}</h2><p>{item.body}</p><time dateTime={item.createdAt}>{new Date(item.createdAt).toLocaleString()}</time></div>
             </Link>
             <button type="button" aria-label={`Clear ${item.title}`} onClick={() => void mutate(`/api/v1/notifications/${item.id}`, "DELETE")}><Trash2 aria-hidden="true" /></button>

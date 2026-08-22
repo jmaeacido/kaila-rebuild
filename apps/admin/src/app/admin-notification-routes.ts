@@ -12,7 +12,10 @@ export function adminNotificationRoute(data: Record<string, string | undefined>)
     return safeId(data.caseId) ? `/cases?case=${encodeURIComponent(data.caseId)}` : "/cases";
   }
   if (eventType.startsWith("support.") || resourceType === "support_case") {
-    return safeId(data.caseId) ? `/support?case=${encodeURIComponent(data.caseId)}` : "/support";
+    if (!safeId(data.caseId)) return "/support";
+    const query = new URLSearchParams({ case: data.caseId });
+    if (safeId(data.messageId)) query.set("message", data.messageId);
+    return `/support?${query.toString()}`;
   }
   if (
     eventType.startsWith("admin.review.") ||

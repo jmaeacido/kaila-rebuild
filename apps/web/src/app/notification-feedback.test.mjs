@@ -80,8 +80,9 @@ test("suppresses high-frequency ephemeral realtime events", () => {
 
 test("mobile notifications are viewport bounded and independently scrollable", () => {
   assert.match(globals, /\.notificationDropdown \{ position: fixed; inset-inline: var\(--spacing-12\)/);
-  assert.match(globals, /grid-template-rows: auto minmax\(0, 1fr\) auto/);
-  assert.match(globals, /\.notificationDropdownList \{ max-height: none; min-height: 0/);
+  assert.match(globals, /max-height: calc\(var\(--kaila-viewport-height, 100dvh\)/);
+  assert.match(globals, /\.notificationDropdownList \{ max-height: calc\([^}]+min-height: 0/);
+  assert.match(globals, /notificationItemIcon/);
 });
 
 test("realtime feedback advances a bounded non-blocking queue", () => {
@@ -98,6 +99,7 @@ test("realtime feedback advances a bounded non-blocking queue", () => {
 
 test("realtime starts with resilient polling and reconciles visible screens", () => {
   assert.match(realtime, /transports: \["polling", "websocket"\]/);
+  assert.match(realtime, /window\.location\.hostname}:3100/);
   assert.match(realtime, /PUBLIC_PATHS/);
   assert.match(realtime, /getRealtimeStatus/);
   assert.match(invalidation, /getRealtimeStatus\(\) === "connected"/);

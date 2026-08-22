@@ -286,21 +286,31 @@ a {
 .appSessionBar .notificationMenu { position: relative; }
 .appSessionBar button.notificationBell { color: var(--color-text); min-height: var(--control-min-height); min-width: var(--control-min-height); justify-content: center; }
 .notificationDropdown { position: absolute; right: 0; top: calc(100% + var(--spacing-8)); z-index: 1100; width: min(24rem, calc(100vw - (2 * var(--spacing-16)))); overflow: hidden; color: var(--color-ink); background: var(--color-surface); border: var(--control-border-width) solid var(--color-border); border-radius: var(--radius-card); box-shadow: var(--shadow-floating); }
-.notificationDropdown > header { display: flex; align-items: center; justify-content: space-between; gap: var(--spacing-8); padding: var(--spacing-16); border-bottom: var(--control-border-width) solid var(--color-border); }
+.notificationDropdown > header { display: flex; align-items: center; gap: var(--spacing-8); padding: var(--spacing-16); border-bottom: var(--control-border-width) solid var(--color-border); }
+.notificationDropdown > header > div { flex: 1; min-width: 0; }
+.notificationDropdown > header h2 { font-size: var(--font-card-title-size); }
 .notificationDropdown > header span { color: var(--color-text-secondary); font-size: var(--font-caption-size); }
 .notificationMarkAll { align-items: center; background: transparent; border: 0; color: var(--color-primary); display: flex; font: inherit; font-size: var(--font-caption-size); font-weight: var(--font-weight-semibold); gap: var(--spacing-4); padding: var(--spacing-8); }
 .notificationMarkAll svg { height: 18px; width: 18px; }
 .notificationDropdownList { display: grid; max-height: 24rem; overflow-y: auto; }
-.appSessionBar .notificationDropdownList > a { display: grid; grid-template-columns: var(--spacing-8) 1fr; gap: var(--spacing-8); padding: var(--spacing-12) var(--spacing-16); color: var(--color-ink); border: 0; border-bottom: var(--control-border-width) solid var(--color-border); border-radius: 0; text-decoration: none; }
-.notificationDropdownList > a > span { width: var(--spacing-8); height: var(--spacing-8); margin-top: var(--spacing-8); border-radius: var(--radius-pill); background: transparent; }
-.notificationDropdownList > a.unread > span { background: var(--color-primary); }
+.appSessionBar .notificationDropdownList > a { align-items: center; display: grid; grid-template-columns: var(--control-min-height) minmax(0, 1fr) var(--spacing-20); gap: var(--spacing-12); min-height: 5.5rem; padding: var(--spacing-12) var(--spacing-16); color: var(--color-ink); border: 0; border-bottom: var(--control-border-width) solid var(--color-border); border-radius: 0; text-decoration: none; }
+.appSessionBar .notificationDropdownList > a.unread { background: color-mix(in srgb, var(--color-primary) 7%, var(--color-surface)); box-shadow: inset 3px 0 0 var(--color-primary); }
+.notificationItemIcon { align-items: center; background: var(--color-background); border-radius: var(--radius-pill); color: var(--color-text-secondary); display: flex; height: var(--control-min-height); justify-content: center; width: var(--control-min-height); }
+.unread .notificationItemIcon { background: color-mix(in srgb, var(--color-primary) 14%, var(--color-surface)); color: var(--color-primary); }
+.notificationItemIcon svg { height: var(--spacing-20); width: var(--spacing-20); }
+.notificationItemChevron { color: var(--color-text-secondary); height: var(--spacing-20) !important; width: var(--spacing-20) !important; }
 .notificationDropdownList > a div { min-width: 0; }
 .notificationDropdownList > a strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .notificationDropdownList > a p, .notificationDropdownList > a time, .notificationDropdownEmpty { color: var(--color-text-secondary); font-size: var(--font-caption-size); }
 .notificationDropdownList > a p { margin-top: var(--spacing-4); }
 .notificationDropdownList > a time { display: block; margin-top: var(--spacing-4); }
-.notificationDropdownEmpty { padding: var(--spacing-24); text-align: center; }
-.appSessionBar .notificationSeeAll { display: flex; justify-content: center; min-height: var(--control-min-height); padding: var(--spacing-12); color: var(--color-primary); border: 0; border-radius: 0; font-weight: var(--font-weight-semibold); text-decoration: none; }
+.notificationDropdownEmpty { align-items: center; display: flex; flex-direction: column; gap: var(--spacing-8); padding: var(--spacing-32) var(--spacing-24); text-align: center; }
+.notificationDropdownEmpty > svg { color: var(--color-primary); height: var(--spacing-32); width: var(--spacing-32); }
+.notificationDropdownEmpty p { margin: 0; }
+.notificationDropdownEmpty button { align-items: center; background: transparent; border: 0; color: var(--color-primary); display: inline-flex; font: inherit; font-weight: var(--font-weight-semibold); gap: var(--spacing-8); min-height: var(--control-min-height); }
+.notificationDropdownLoading { display: grid; gap: var(--spacing-12); padding: var(--spacing-16); }
+.notificationDropdownLoading span { animation: pulse 1.2s ease-in-out infinite alternate; background: var(--color-background); border-radius: var(--radius-card); height: 4.5rem; }
+.appSessionBar .notificationSeeAll { align-items: center; display: flex; justify-content: space-between; min-height: var(--control-min-height); padding: var(--spacing-12) var(--spacing-16); color: var(--color-primary); border: 0; border-radius: 0; font-weight: var(--font-weight-semibold); text-decoration: none; }
 
 .appSessionBar .notificationBell > span {
   align-items: center;
@@ -547,10 +557,10 @@ a {
 .notificationDropdown > header > div { display: grid; gap: var(--spacing-4); }
 .notificationDropdownClose { display: none; }
 @media (max-width: 767px) {
-  .notificationDropdown { position: fixed; inset-inline: var(--spacing-12); top: calc(env(safe-area-inset-top) + 5.5rem); bottom: calc(env(safe-area-inset-bottom) + 6.5rem); width: auto; max-height: none; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; border-radius: var(--radius-dialog); }
+  .notificationDropdown { position: fixed; inset-inline: var(--spacing-12); top: calc(env(safe-area-inset-top) + 5.5rem); bottom: auto; width: auto; max-height: calc(var(--kaila-viewport-height, 100dvh) - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 12.5rem); display: flex; flex-direction: column; border-radius: var(--radius-dialog); }
   .notificationDropdown > header { padding: var(--spacing-12) var(--spacing-16); }
   .notificationDropdownClose { display: grid; place-items: center; min-height: var(--control-min-height); min-width: var(--control-min-height); padding: 0; border: 0; color: var(--color-text-secondary) !important; background: transparent; }
   .notificationDropdownClose svg { width: var(--spacing-24); height: var(--spacing-24); }
-  .notificationDropdownList { max-height: none; min-height: 0; overscroll-behavior: contain; }
+  .notificationDropdownList { max-height: calc(var(--kaila-viewport-height, 100dvh) - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 21rem); min-height: 0; overscroll-behavior: contain; }
   .notificationDropdownList > a strong, .notificationDropdownList > a p { overflow-wrap: anywhere; white-space: normal; }
 }

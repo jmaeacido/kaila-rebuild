@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 import {
   isThemePreference,
@@ -28,4 +29,13 @@ test("resolves system from the provided OS flag", () => {
 test("public browsing defaults to light without a stored preference", () => {
   assert.equal(readStoredThemePreference(), "light");
   assert.match(themeBootstrapScript, /\? stored : "light"/);
+});
+
+test("theme hydration starts from a deterministic snapshot before browser reconciliation", () => {
+  const provider = readFileSync(new URL("./theme-provider.tsx", import.meta.url), "utf8");
+
+  assert.match(provider, /useState<ThemePreference>\("light"\)/);
+  assert.match(provider, /useState<ResolvedTheme>\("light"\)/);
+  assert.match(provider, /setTimeout\(\(\) => \{\s*commit\(readStoredThemePreference\(\)\)/);
+  assert.doesNotMatch(provider, /useState<ThemePreference>\(\(\) => readStoredThemePreference\(\)\)/);
 });

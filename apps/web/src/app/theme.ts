@@ -75,6 +75,7 @@ async function applyNativeChrome(resolved: ResolvedTheme): Promise<void> {
 export function applyThemeToDocument(preference: ThemePreference, resolved: ResolvedTheme): void {
   if (typeof document === "undefined") return;
   const root = document.documentElement;
+  root.dataset.appearance = preference;
   root.dataset.theme = resolved;
   root.style.colorScheme = resolved;
   ensureThemeColorMeta(resolved);
@@ -93,6 +94,7 @@ export const themeBootstrapScript = `(() => {
     const systemDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
     const resolved = preference === "light" ? "light" : preference === "dark" ? "dark" : systemDark ? "dark" : "light";
     const root = document.documentElement;
+    root.dataset.appearance = preference;
     root.dataset.theme = resolved;
     root.style.colorScheme = resolved;
     let meta = document.querySelector('meta[name="theme-color"]');

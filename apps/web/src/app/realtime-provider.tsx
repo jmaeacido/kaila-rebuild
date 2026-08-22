@@ -57,7 +57,10 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    const realtimeUrl = process.env.NEXT_PUBLIC_REALTIME_URL || window.location.origin;
+    const realtimeUrl = process.env.NEXT_PUBLIC_REALTIME_URL
+      || (process.env.NODE_ENV === "development"
+        ? `${window.location.protocol}//${window.location.hostname}:3100`
+        : window.location.origin);
 
     let socket: Socket | null = null;
     let retryTimer: number | null = null;
@@ -142,9 +145,22 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
       }
       window.dispatchEvent(new Event(realtimeReconcileName));
     };
+    const authChanged = (event: Event) => {
+      if ((event as CustomEvent<boolean>).detail === false) {
+        if (retryTimer !== null) {
+          window.clearTimeout(retryTimer);
+          retryTimer = null;
+        }
+        disconnectCleanly(socket);
+        socket = null;
+        publishStatus("disconnected");
+        return;
+      }
+      recover();
+    };
     window.addEventListener("online", recover);
     window.addEventListener("focus", recover);
-    window.addEventListener(realtimeAuthChangedName, recover);
+    window.addEventListener(realtimeAuthChangedName, authChanged);
     document.addEventListener("visibilitychange", recover);
     void connect();
 
@@ -153,7 +169,7 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
       if (retryTimer !== null) window.clearTimeout(retryTimer);
       window.removeEventListener("online", recover);
       window.removeEventListener("focus", recover);
-      window.removeEventListener(realtimeAuthChangedName, recover);
+      window.removeEventListener(realtimeAuthChangedName, authChanged);
       document.removeEventListener("visibilitychange", recover);
       disconnectCleanly(socket);
       publishStatus("disconnected");

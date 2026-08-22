@@ -36,8 +36,8 @@ export async function sendCallSignal(
   if (!response.ok) throw new Error("Call signaling failed.");
 }
 
-export async function pollCallSignals(): Promise<CallSignal[]> {
-  const response = await fetch("/api/v1/calls/signals", { cache: "no-store" });
+export async function pollCallSignals(signal?: AbortSignal): Promise<CallSignal[]> {
+  const response = await fetch("/api/v1/calls/signals", { cache: "no-store", signal });
   if (!response.ok) return [];
   return ((await response.json()) as { data: CallSignal[] }).data;
 }

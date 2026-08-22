@@ -68,7 +68,12 @@ php apps/api/artisan queue:work redis --queue=outbox,default --tries=5
 php apps/api/artisan schedule:work
 ```
 
-For local development only, the database seeder creates the administrator account `test@example.com` with password `password`. Never reuse these credentials outside local development.
+For local development only, the database seeder creates these accounts with password `password`:
+
+- `admin@example.com` — administrator
+- `consumer@example.com` — consumer with both client and provider profiles
+
+Never reuse these credentials outside local development.
 
 Never reuse the example passwords outside local development.
 

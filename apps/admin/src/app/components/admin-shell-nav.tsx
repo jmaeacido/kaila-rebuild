@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { adminDestinations } from "../admin-destinations";
 import { adminAuthenticatedEvent, adminSignedOutEvent } from "../admin-session-events";
 import styles from "./admin-shell-nav.module.css";
+import { AdminNotificationCenter } from "./admin-notification-center";
 import { ThemeWordmark } from "./theme-wordmark";
 
 const authPaths = new Set(["/forgot-password", "/reset-password"]);
@@ -15,10 +16,6 @@ export function AdminShellNav() {
   const [authenticated, setAuthenticated] = useState(false);
 
   const refreshSession = useCallback(() => {
-    if (authPaths.has(pathname)) {
-      setAuthenticated(false);
-      return;
-    }
     let active = true;
     void fetch("/api/v1/auth/session-status", { credentials: "include", cache: "no-store" })
       .then(async (response) => {
@@ -34,7 +31,7 @@ export function AdminShellNav() {
     return () => {
       active = false;
     };
-  }, [pathname]);
+  }, []);
 
   useEffect(() => {
     const cancel = refreshSession();
@@ -47,7 +44,7 @@ export function AdminShellNav() {
       window.removeEventListener(adminAuthenticatedEvent, onAuthenticated);
       window.removeEventListener(adminSignedOutEvent, onSignedOut);
     };
-  }, [refreshSession]);
+  }, [pathname, refreshSession]);
 
   if (!authenticated || authPaths.has(pathname)) return null;
 
@@ -69,6 +66,7 @@ export function AdminShellNav() {
             );
           })}
         </nav>
+        <AdminNotificationCenter />
       </div>
     </header>
   );

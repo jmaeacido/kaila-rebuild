@@ -15,10 +15,11 @@
     "@capacitor/core": "8.4.2",
     "@capacitor/push-notifications": "8.1.1",
     "@kaila/design-tokens": "workspace:*",
+    "lucide-react": "^0.468.0",
     "next": "16.2.11",
     "react": "19.2.4",
     "react-dom": "19.2.4",
-    "lucide-react": "^0.468.0"
+    "socket.io-client": "4.8.1"
   },
   "devDependencies": {
     "@types/node": "^24",

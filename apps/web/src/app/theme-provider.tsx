@@ -38,8 +38,10 @@ export function useTheme(): ThemeContextValue {
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [preference, setPreferenceState] = useState<ThemePreference>(() => readStoredThemePreference());
-  const [resolved, setResolved] = useState<ResolvedTheme>(() => resolveTheme(readStoredThemePreference()));
+  // Keep the server render and the client's hydration render identical. The
+  // head bootstrap owns the painted theme until we reconcile browser state.
+  const [preference, setPreferenceState] = useState<ThemePreference>("light");
+  const [resolved, setResolved] = useState<ResolvedTheme>("light");
   const [syncStatus, setSyncStatus] = useState<"idle" | "saving" | "error">("idle");
   const [authenticated, setAuthenticated] = useState(false);
 
@@ -52,8 +54,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    applyThemeToDocument(preference, resolved);
-  }, [preference, resolved]);
+    const reconciliation = window.setTimeout(() => {
+      commit(readStoredThemePreference());
+    }, 0);
+    return () => window.clearTimeout(reconciliation);
+  }, [commit]);
 
   useEffect(() => {
     if (preference !== "system") return;

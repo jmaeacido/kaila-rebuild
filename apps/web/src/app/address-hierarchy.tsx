@@ -76,7 +76,8 @@ export function AddressHierarchy({
   const [provinceId, setProvinceId] = useState("");
   const [cityId, setCityId] = useState("");
   const [barangays, setBarangays] = useState<AreaReference[]>([]);
-  const [barangaysLoading, setBarangaysLoading] = useState(false);
+  const [loadedBarangaysCityId, setLoadedBarangaysCityId] = useState("");
+  const barangaysLoading = Boolean(cityId) && loadedBarangaysCityId !== cityId;
 
   const provinces = useMemo(
     () => areas.filter((area) => area.type === "province"),
@@ -137,14 +138,11 @@ export function AddressHierarchy({
     let active = true;
 
     if (!cityId) {
-      setBarangays([]);
-      setBarangaysLoading(false);
       return () => {
         active = false;
       };
     }
 
-    setBarangaysLoading(true);
     void fetchChildren(cityId)
       .then((children) => {
         if (!active) return;
@@ -155,7 +153,7 @@ export function AddressHierarchy({
         setBarangays([]);
       })
       .finally(() => {
-        if (active) setBarangaysLoading(false);
+        if (active) setLoadedBarangaysCityId(cityId);
       });
 
     return () => {
@@ -167,11 +165,14 @@ export function AddressHierarchy({
     setProvinceId(next);
     setCityId("");
     setBarangays([]);
+    setLoadedBarangaysCityId("");
     onChange("");
   }
 
   function chooseCity(next: string) {
     setCityId(next);
+    setBarangays([]);
+    setLoadedBarangaysCityId("");
     onChange("");
   }
 

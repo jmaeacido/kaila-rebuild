@@ -4,6 +4,7 @@ import test from "node:test";
 
 const authGuard = readFileSync(new URL("./auth-guard.tsx", import.meta.url), "utf8");
 const callProvider = readFileSync(new URL("./calls/call-provider.tsx", import.meta.url), "utf8");
+const realtimeProvider = readFileSync(new URL("./realtime-provider.tsx", import.meta.url), "utf8");
 
 test("CallProvider remains mounted while a protected route authenticates", () => {
   const provider = authGuard.indexOf("<CallProvider>");
@@ -16,4 +17,17 @@ test("CallProvider remains mounted while a protected route authenticates", () =>
 test("native answer can read incoming call state without waiting for a React effect", () => {
   assert.match(callProvider, /callRef\.current = incoming;[\s\S]*?setCall\(incoming\);/);
   assert.match(callProvider, /if \(callRef\.current\) return;/);
+});
+
+test("call signal polling never overlaps requests", () => {
+  assert.doesNotMatch(callProvider, /setInterval\(\(\) => void poll\(\)/);
+  assert.match(callProvider, /finally \{[\s\S]*?setTimeout\(\(\) => void poll\(\), 750\)/);
+});
+
+test("logout tears down authenticated activity without a final realtime refresh", () => {
+  assert.match(authGuard, /if \(loggingOut\) \{\s*return <BrandedLoader/);
+  assert.match(authGuard, /CustomEvent<boolean>\(realtimeAuthChangedName, \{ detail: false \}\)/);
+  assert.match(callProvider, /pollCallSignals\(pollAbort\.signal\)/);
+  assert.match(callProvider, /pollAbort\.abort\(\)/);
+  assert.match(realtimeProvider, /detail === false[\s\S]*?publishStatus\("disconnected"\);[\s\S]*?return;/);
 });

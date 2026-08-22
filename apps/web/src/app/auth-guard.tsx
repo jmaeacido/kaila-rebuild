@@ -125,11 +125,14 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
       });
       await clearSession().catch(() => undefined);
     } finally {
-      window.dispatchEvent(new Event(realtimeAuthChangedName));
+      window.dispatchEvent(new CustomEvent<boolean>(realtimeAuthChangedName, { detail: false }));
       router.replace("/login");
       router.refresh();
-      setLoggingOut(false);
     }
+  }
+
+  if (loggingOut) {
+    return <BrandedLoader label="Signing you out of KAILA…" />;
   }
 
   return (

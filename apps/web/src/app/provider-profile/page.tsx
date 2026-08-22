@@ -23,7 +23,8 @@ export default function ProviderProfilePage() {
   const [coverageMode, setCoverageMode] = useState<"city" | "barangays">("city");
   const [barangayIds, setBarangayIds] = useState<string[]>([]);
   const [barangays, setBarangays] = useState<Item[]>([]);
-  const [barangaysLoading, setBarangaysLoading] = useState(false);
+  const [loadedBarangaysCityId, setLoadedBarangaysCityId] = useState("");
+  const barangaysLoading = Boolean(cityId) && loadedBarangaysCityId !== cityId;
   const [message, setMessage] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [offersAtShop, setOffersAtShop] = useState(false);
   const [shopLocation, setShopLocation] = useState<{ latitude: number; longitude: number } | null>(null);
@@ -71,14 +72,11 @@ export default function ProviderProfilePage() {
     let active = true;
 
     if (!cityId) {
-      setBarangays([]);
-      setBarangaysLoading(false);
       return () => {
         active = false;
       };
     }
 
-    setBarangaysLoading(true);
     void fetch(`/api/v1/marketplace/areas?parentId=${encodeURIComponent(cityId)}`, {
       cache: "no-store",
     })
@@ -95,7 +93,7 @@ export default function ProviderProfilePage() {
         setBarangays([]);
       })
       .finally(() => {
-        if (active) setBarangaysLoading(false);
+        if (active) setLoadedBarangaysCityId(cityId);
       });
 
     return () => {
@@ -108,11 +106,14 @@ export default function ProviderProfilePage() {
     setCityId("");
     setBarangayIds([]);
     setBarangays([]);
+    setLoadedBarangaysCityId("");
   }
 
   function chooseCity(value: string) {
     setCityId(value);
     setBarangayIds([]);
+    setBarangays([]);
+    setLoadedBarangaysCityId("");
   }
 
   function toggleBarangay(value: string) {

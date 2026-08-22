@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { Bell, CheckCheck, ChevronRight, X } from "lucide-react";
+import { Bell, CheckCheck, ChevronRight, RefreshCw, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { notificationRoute, type NotificationRecord } from "./notification-route";
 import { useRealtimeInvalidation } from "./use-realtime-invalidation";
 import { prepareCsrf } from "./auth-client";
+import { NotificationGlyph } from "./notification-glyph";
 
 export const notificationsChangedName = "kaila:notifications-changed";
 
@@ -13,14 +14,20 @@ export function NotificationBell() {
   const [items, setItems] = useState<NotificationRecord[]>([]);
   const [unread, setUnread] = useState(0);
   const [open, setOpen] = useState(false);
+  const [state, setState] = useState<"loading" | "ready" | "error">("loading");
   const container = useRef<HTMLDivElement>(null);
 
   const load = useCallback(async () => {
-    const response = await fetch("/api/v1/notifications", { credentials: "include", headers: { Accept: "application/json" }, cache: "no-store" });
-    if (!response.ok) return;
-    const body = (await response.json()) as { data: NotificationRecord[]; meta: { unreadCount: number } };
-    setItems(body.data.slice(0, 6));
-    setUnread(body.meta.unreadCount);
+    try {
+      const response = await fetch("/api/v1/notifications", { credentials: "include", headers: { Accept: "application/json" }, cache: "no-store" });
+      if (!response.ok) throw new Error();
+      const body = (await response.json()) as { data: NotificationRecord[]; meta: { unreadCount: number } };
+      setItems(body.data.slice(0, 6));
+      setUnread(body.meta.unreadCount);
+      setState("ready");
+    } catch {
+      setState("error");
+    }
   }, []);
 
   useRealtimeInvalidation(() => void load(), (event) => event.type.startsWith("notification."));
@@ -109,19 +116,23 @@ export function NotificationBell() {
       {open && (
         <section className="notificationDropdown" id="notification-dropdown" aria-label="Recent notifications">
           <header>
-            <div><strong>Notifications</strong><span>{unread} unread</span></div>
+            <div><h2>Notifications</h2><span>{unread === 0 ? "You’re all caught up" : `${unread} unread`}</span></div>
             {unread > 0 && <button className="notificationMarkAll" type="button" onClick={() => void markAllRead()}><CheckCheck aria-hidden="true" />Mark all as read</button>}
             <button className="notificationDropdownClose" type="button" aria-label="Close notifications" onClick={() => setOpen(false)}><X aria-hidden="true" /></button>
           </header>
           <div className="notificationDropdownList">
-            {items.length === 0 ? <p className="notificationDropdownEmpty">You’re all caught up.</p> : items.map((item) => (
+            {state === "loading" && <div className="notificationDropdownLoading" aria-label="Loading notifications"><span /><span /></div>}
+            {state === "error" && <div className="notificationDropdownEmpty"><Bell aria-hidden="true" /><strong>Couldn’t load updates</strong><p>Check your connection and try again.</p><button type="button" onClick={() => void load()}><RefreshCw aria-hidden="true" />Try again</button></div>}
+            {state === "ready" && items.length === 0 && <div className="notificationDropdownEmpty"><Bell aria-hidden="true" /><strong>No new notifications</strong><p>Job, message, and support updates will appear here.</p></div>}
+            {state === "ready" && items.map((item) => (
               <Link className={item.readAt ? "" : "unread"} href={notificationRoute(item)} key={item.id} onClick={(event) => { event.preventDefault(); void openNotification(item); }}>
-                <span aria-hidden="true" />
+                <span className="notificationItemIcon"><NotificationGlyph item={item} /></span>
                 <div><strong>{item.title}</strong><p>{item.body}</p><time dateTime={item.createdAt}>{new Date(item.createdAt).toLocaleString()}</time></div>
+                <ChevronRight className="notificationItemChevron" aria-hidden="true" />
               </Link>
             ))}
           </div>
-          <Link className="notificationSeeAll" href="/notifications" onClick={() => setOpen(false)}>See all notifications <ChevronRight aria-hidden="true" /></Link>
+          <Link className="notificationSeeAll" href="/notifications" onClick={() => setOpen(false)}><span>See all notifications</span><ChevronRight aria-hidden="true" /></Link>
         </section>
       )}
     </div>

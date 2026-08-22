@@ -40,12 +40,12 @@ class SupportCaseController extends Controller
                 $this->jobAccess->requireParticipant($job, $user);
             }
         }
-        $case = DB::transaction(function () use ($data, $user): SupportCase {
+        [$case, $message] = DB::transaction(function () use ($data, $user): array {
             $case = SupportCase::query()->create(['reference' => $this->reference(), 'customer_user_id' => $user->id, 'service_job_id' => $data['jobId'] ?? null, 'category' => $data['category'], 'subject' => $data['subject'], 'last_message_at' => now(), 'customer_read_at' => now()]);
-            $case->messages()->create(['sender_user_id' => $user->id, 'sender_role' => 'customer', 'body' => $data['message']]);
+            $message = $case->messages()->create(['sender_user_id' => $user->id, 'sender_role' => 'customer', 'body' => $data['message']]);
             $this->publish($case, 'support.case.created');
 
-            return $case;
+            return [$case, $message];
         });
         $this->adminNotifications->send(
             'support.case.created',
@@ -53,7 +53,7 @@ class SupportCaseController extends Controller
             "{$case->reference} is waiting for support.",
             'support_case',
             (string) $case->id,
-            ['caseId' => $case->id],
+            ['caseId' => $case->id, 'messageId' => $message->id],
         );
 
         return response()->json(['data' => $this->present($case->load(['messages.sender', 'assignee']))], 201);
@@ -74,10 +74,12 @@ class SupportCaseController extends Controller
         abort_unless($supportCase->customer_user_id === $user->id, 404);
         abort_if($supportCase->status === 'closed', 409, 'Reopen this request before replying.');
         $data = $request->validate(['message' => 'required|string|min:1|max:4000']);
-        DB::transaction(function () use ($supportCase, $user, $data): void {
-            $supportCase->messages()->create(['sender_user_id' => $user->id, 'sender_role' => 'customer', 'body' => $data['message']]);
+        $message = DB::transaction(function () use ($supportCase, $user, $data): SupportMessage {
+            $message = $supportCase->messages()->create(['sender_user_id' => $user->id, 'sender_role' => 'customer', 'body' => $data['message']]);
             $supportCase->update(['status' => 'waiting_for_support', 'staff_read_at' => null, 'customer_read_at' => now(), 'last_message_at' => now(), 'version' => $supportCase->version + 1]);
             $this->publish($supportCase, 'support.message.created');
+
+            return $message;
         });
         $this->adminNotifications->send(
             'support.message.created',
@@ -85,7 +87,7 @@ class SupportCaseController extends Controller
             "{$supportCase->reference} has a new customer reply.",
             'support_case',
             (string) $supportCase->id,
-            ['caseId' => $supportCase->id],
+            ['caseId' => $supportCase->id, 'messageId' => $message->id],
         );
 
         return response()->json(['data' => $this->present($supportCase->refresh()->load(['messages.sender', 'assignee']))]);

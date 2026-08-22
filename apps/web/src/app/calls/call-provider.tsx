@@ -206,9 +206,11 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let active = true;
+    let pollTimer: number | null = null;
+    const pollAbort = new AbortController();
     const poll = async () => {
       try {
-        const signals = await pollCallSignals();
+        const signals = await pollCallSignals(pollAbort.signal);
         if (!active) return;
         for (const signal of signals) {
           if (signal.type === "ringing") {
@@ -249,14 +251,17 @@ export function CallProvider({ children }: { children: ReactNode }) {
         }
       } catch {
         // The next poll reconciles transient signaling failures.
+      } finally {
+        if (active) {
+          pollTimer = window.setTimeout(() => void poll(), 750);
+        }
       }
     };
-    const initial = window.setTimeout(() => void poll(), 0);
-    const timer = window.setInterval(() => void poll(), 750);
+    pollTimer = window.setTimeout(() => void poll(), 0);
     return () => {
       active = false;
-      window.clearTimeout(initial);
-      window.clearInterval(timer);
+      pollAbort.abort();
+      if (pollTimer !== null) window.clearTimeout(pollTimer);
     };
   }, [applyIncomingRing, closeMedia]);
 

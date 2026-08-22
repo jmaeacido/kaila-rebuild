@@ -7,15 +7,16 @@
 .header button { flex: 0 0 auto; }
 .list { display: grid; gap: var(--spacing-12); }
 .list article { align-items: center; background: var(--color-surface); border: var(--control-border-width) solid var(--color-border); border-radius: var(--radius-card); display: flex; overflow: hidden; }
-.list article.unread { border-color: var(--color-primary); box-shadow: var(--shadow-card); }
+.list article.unread { border-color: color-mix(in srgb, var(--color-primary) 55%, var(--color-border)); box-shadow: var(--shadow-card); }
 .list article > a { align-items: center; color: inherit; display: flex; flex: 1; gap: var(--spacing-12); padding: var(--spacing-16); text-decoration: none; }
 .list article > button { align-items: center; background: transparent; border: 0; color: var(--color-text-secondary); cursor: pointer; display: flex; justify-content: center; margin-right: var(--spacing-8); width: var(--control-min-height); }
 .list article > button:hover { color: var(--color-danger); }
 .list h2 { font-size: var(--font-card-title-size); }
 .list div { display: grid; gap: var(--spacing-4); }
 .list time { font-size: var(--font-small-size); }
-.dot { background: var(--color-border); border-radius: var(--radius-pill); flex: 0 0 auto; height: var(--spacing-8); width: var(--spacing-8); }
-.unread .dot { background: var(--color-primary); }
+.icon { align-items: center; background: var(--color-background); border-radius: var(--radius-pill); color: var(--color-text-secondary); display: flex; flex: 0 0 var(--control-min-height); height: var(--control-min-height); justify-content: center; }
+.icon svg { height: var(--spacing-20); width: var(--spacing-20); }
+.unread .icon { background: color-mix(in srgb, var(--color-primary) 14%, var(--color-surface)); color: var(--color-primary); }
 .empty { align-items: center; background: var(--color-surface); border: var(--control-border-width) solid var(--color-border); border-radius: var(--radius-card); display: flex; flex-direction: column; gap: var(--spacing-8); padding: var(--spacing-48) var(--spacing-24); text-align: center; }
 .empty svg { color: var(--color-primary); height: var(--spacing-48); width: var(--spacing-48); }
 .skeletons { display: grid; gap: var(--spacing-12); }
