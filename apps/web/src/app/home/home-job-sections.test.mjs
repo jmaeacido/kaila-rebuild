@@ -9,6 +9,8 @@ const jobDetailsSource = readFileSync(new URL("../jobs/[jobId]/page.tsx", import
 const notificationBellSource = readFileSync(new URL("../notification-bell.tsx", import.meta.url), "utf8");
 const authGuardSource = readFileSync(new URL("../auth-guard.tsx", import.meta.url), "utf8");
 const brandedLoaderSource = readFileSync(new URL("../branded-loader.tsx", import.meta.url), "utf8");
+const initialUiGateSource = readFileSync(new URL("../initial-ui-gate.tsx", import.meta.url), "utf8");
+const globalStylesSource = readFileSync(new URL("../globals.css", import.meta.url), "utf8");
 
 test("Home keeps every non-terminal job active and terminal jobs in history", () => {
   assert.match(source, /const activeClientJobs = jobs\.filter/);
@@ -45,14 +47,19 @@ test("Authenticated loading uses the approved KAILA lockup and human-facing copy
   assert.match(brandedLoaderSource, /<BrandMark className="brandedLoaderLogo" priority showBull \/>/);
   assert.match(brandedLoaderSource, /className="brandedLoaderBackdrop"/);
   assert.match(authGuardSource, /Getting KAILA ready for you/);
+  assert.match(globalStylesSource, /animation: branded-loader-orbit/);
+  assert.match(globalStylesSource, /animation: branded-loader-marker/);
+  assert.match(globalStylesSource, /prefers-reduced-motion: reduce/);
 });
 
-test("Authenticated navigation retains the verified session and lets pages own loading UI", () => {
+test("Authenticated navigation retains the session and reveals pages after their initial UI settles", () => {
   assert.match(authGuardSource, /if \(sessionReady\) return/);
   assert.match(authGuardSource, /\{sessionReady \? \(/);
-  assert.doesNotMatch(authGuardSource, /<AuthenticatedRouteTransition/);
-  assert.doesNotMatch(authGuardSource, /MutationObserver/);
-  assert.doesNotMatch(authGuardSource, /image\.complete/);
+  assert.match(authGuardSource, /<InitialUiGate key=\{pathname\}>/);
+  assert.match(initialUiGateSource, /MutationObserver/);
+  assert.match(initialUiGateSource, /image\.complete/);
+  assert.match(initialUiGateSource, /document\.fonts\?\.ready/);
+  assert.match(initialUiGateSource, /requestAnimationFrame\(\(\) => requestAnimationFrame/);
 });
 
 test("Every job-card surface uses its service category icon", () => {

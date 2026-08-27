@@ -120,6 +120,7 @@ a {
 }
 
 .brandedLoaderBackdrop {
+  animation: branded-loader-orbit calc(var(--duration-slow) * 16) linear infinite;
   border: var(--control-border-width) dashed
     color-mix(in srgb, var(--color-accent) 32%, transparent);
   border-radius: var(--radius-pill);
@@ -136,6 +137,7 @@ a {
 }
 
 .brandedLoaderBackdrop i {
+  animation: branded-loader-marker calc(var(--duration-slow) * 4) ease-in-out infinite alternate;
   background: var(--color-accent);
   border: var(--spacing-4) solid var(--color-background);
   border-radius: var(--radius-pill);
@@ -150,8 +152,23 @@ a {
 }
 
 .brandedLoaderBackdrop i:nth-of-type(2) {
+  animation-delay: calc(var(--duration-slow) * -2);
   bottom: var(--spacing-48);
   right: var(--spacing-48);
+}
+
+@keyframes branded-loader-orbit {
+  to {
+    transform: rotate(344deg);
+  }
+}
+
+@keyframes branded-loader-marker {
+  to {
+    box-shadow: 0 0 0 var(--spacing-8)
+      color-mix(in srgb, var(--color-accent) 16%, transparent);
+    transform: scale(1.15);
+  }
 }
 
 .brandedLoaderCard {
@@ -219,6 +236,18 @@ a {
   height: var(--spacing-16);
   position: relative;
   width: var(--spacing-16);
+}
+
+.initialUiContentPending {
+  opacity: 0;
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+}
+
+.initialUiContent {
+  transition: opacity var(--duration-fast) ease-out;
 }
 
 @keyframes branded-loader-route {
@@ -456,6 +485,8 @@ a {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .brandedLoaderBackdrop,
+  .brandedLoaderBackdrop i,
   .brandedLoaderRoute > span::after {
     animation: none;
   }

@@ -7,6 +7,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { prepareCsrf } from "./auth-client";
 import { BrandedLoader } from "./branded-loader";
+import { InitialUiGate } from "./initial-ui-gate";
 import { FloatingKatabang } from "../components/floating-katabang";
 import { SessionMenu } from "../components/session-menu";
 import { AreaMismatchBanner } from "../components/area-mismatch-banner";
@@ -125,7 +126,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   return (
     <CallProvider>
       {sessionReady ? (
-        <>
+        <InitialUiGate key={pathname}>
           <PullToRefresh />
           <header className="appSessionBar">
             <Link href="/home" aria-label="KAILA home">
@@ -156,7 +157,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
           </header>
           <AreaMismatchBanner />
           {children}
-        </>
+        </InitialUiGate>
       ) : (
         <BrandedLoader label="Getting KAILA ready for you…" />
       )}
