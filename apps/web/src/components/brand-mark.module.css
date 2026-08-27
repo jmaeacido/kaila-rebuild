@@ -1,0 +1,26 @@
+.lockup {
+  align-items: center;
+  display: inline-flex;
+  gap: var(--spacing-8);
+  width: 8rem;
+}
+
+.bull {
+  border-radius: var(--radius-card);
+  display: none;
+  flex: 0 0 auto;
+  height: auto;
+  width: 26%;
+}
+
+.wordmark {
+  flex: 0 0 auto;
+  height: auto;
+  width: 100%;
+}
+
+@media (min-width: 48rem) {
+  .bull {
+    display: block;
+  }
+}

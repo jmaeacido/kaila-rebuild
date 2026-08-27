@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useTheme } from "../app/theme-provider";
 import type { ResolvedTheme } from "../app/theme";
+import styles from "./brand-mark.module.css";
 
 type BrandMarkProps = {
   className?: string;
@@ -14,11 +15,11 @@ type BrandMarkProps = {
 };
 
 function markFor(variant: BrandMarkProps["variant"], resolved: ResolvedTheme): string {
-  if (variant === "ink") return "/brand/kaila-wordmark-bull-v1.png";
-  if (variant === "onDark") return "/brand/kaila-wordmark-bull-v1-on-dark.png";
+  if (variant === "ink") return "/brand/kaila-wordmark.png";
+  if (variant === "onDark") return "/brand/kaila-wordmark-on-dark.png";
   return resolved === "dark"
-    ? "/brand/kaila-wordmark-bull-v1-on-dark.png"
-    : "/brand/kaila-wordmark-bull-v1.png";
+    ? "/brand/kaila-wordmark-on-dark.png"
+    : "/brand/kaila-wordmark.png";
 }
 
 export function BrandMark({
@@ -30,13 +31,23 @@ export function BrandMark({
 }: BrandMarkProps) {
   const { resolved } = useTheme();
   return (
-    <Image
-      className={className}
-      src={markFor(variant, resolved)}
-      alt="KAILA"
-      width={width}
-      height={height}
-      priority={priority}
-    />
+    <span className={`${styles.lockup}${className ? ` ${className}` : ""}`}>
+      <Image
+        className={styles.bull}
+        src="/brand/kaila-bull-app-icon-v2.png"
+        alt=""
+        width={1254}
+        height={1254}
+        priority={priority}
+      />
+      <Image
+        className={styles.wordmark}
+        src={markFor(variant, resolved)}
+        alt="KAILA"
+        width={width}
+        height={height}
+        priority={priority}
+      />
+    </span>
   );
 }
