@@ -28,8 +28,18 @@ class AdminMarketplaceController extends Controller
     public function queue(): JsonResponse
     {
         return response()->json(['data' => [
-            'providers' => ProviderProfile::query()->where('status', 'pending_review')->with(['services:id,name', 'serviceAreas:id,name'])->oldest()->get(),
-            'credentials' => ProviderCredential::query()->where('review_status', 'pending')->with('providerProfile')->oldest()->get(),
+            'providers' => ProviderProfile::query()
+                ->where('status', 'pending_review')
+                ->with(['user:id,name,email', 'services:id,name', 'serviceAreas:id,name,type', 'availability'])
+                ->oldest()
+                ->get()
+                ->map(fn (ProviderProfile $profile): array => $this->presentProvider($profile)),
+            'credentials' => ProviderCredential::query()
+                ->where('review_status', 'pending')
+                ->with(['providerProfile.user:id,name,email', 'asset'])
+                ->oldest()
+                ->get()
+                ->map(fn (ProviderCredential $credential): array => $this->presentCredential($credential)),
             'assets' => ProfileAsset::query()
                 ->where('scan_status', 'pending')
                 ->with('user:id,name,email')
@@ -77,6 +87,20 @@ class AdminMarketplaceController extends Controller
                         'email' => $asset->reviewer?->email,
                     ],
                 ]),
+            'providerReviews' => ProviderProfile::query()
+                ->whereNotNull('reviewed_at')
+                ->with(['user:id,name,email', 'reviewer:id,name,email', 'services:id,name', 'serviceAreas:id,name,type'])
+                ->latest('reviewed_at')
+                ->limit(50)
+                ->get()
+                ->map(fn (ProviderProfile $profile): array => $this->presentProvider($profile, true)),
+            'credentialReviews' => ProviderCredential::query()
+                ->whereNotNull('reviewed_at')
+                ->with(['providerProfile.user:id,name,email', 'asset', 'reviewer:id,name,email'])
+                ->latest('reviewed_at')
+                ->limit(50)
+                ->get()
+                ->map(fn (ProviderCredential $credential): array => $this->presentCredential($credential, true)),
         ]]);
     }
 
@@ -121,10 +145,31 @@ class AdminMarketplaceController extends Controller
 
     public function provider(Request $request, ProviderProfile $providerProfile): JsonResponse
     {
-        $data = $request->validate(['status' => ['required', Rule::in(['active', 'rejected', 'suspended'])]]);
-        DB::transaction(function () use ($providerProfile, $data): void {
-            $providerProfile->update(['status' => $data['status']]);
+        $data = $request->validate([
+            'status' => ['required', Rule::in(['active', 'rejected', 'suspended'])],
+            'reviewReason' => ['nullable', 'required_unless:status,active', 'string', 'min:10', 'max:1000'],
+        ]);
+        /** @var User $admin */ $admin = $request->user();
+        DB::transaction(function () use ($providerProfile, $data, $admin): void {
+            $approved = $data['status'] === 'active';
+            $providerProfile->update([
+                'status' => $data['status'],
+                'reviewed_by' => $admin->id,
+                'review_note' => $approved ? null : trim($data['reviewReason']),
+                'reviewed_at' => now(),
+            ]);
             $this->outbox->record('profile.updated', 'provider_profile', (string) $providerProfile->id, (int) now()->format('U'), ['rooms' => ["user:{$providerProfile->user_id}"], 'providerProfileId' => $providerProfile->id, 'status' => $providerProfile->status]);
+            $this->notifications->send(
+                $providerProfile->user_id,
+                $approved ? 'profile.provider_approved' : 'profile.provider_rejected',
+                $approved ? 'Provider profile approved' : 'Provider profile not approved',
+                $approved
+                    ? 'Your provider profile is approved and can now appear in KAILA discovery.'
+                    : "Your provider profile wasn't approved. Reason: {$providerProfile->review_note}",
+                'provider_profile',
+                (string) $providerProfile->id,
+                ['providerProfileId' => $providerProfile->id, 'reviewStatus' => $approved ? 'approved' : 'rejected', 'reviewReason' => $providerProfile->review_note],
+            );
         });
 
         return response()->json(['data' => $providerProfile]);
@@ -176,16 +221,78 @@ class AdminMarketplaceController extends Controller
 
     public function credential(Request $request, ProviderCredential $providerCredential): JsonResponse
     {
-        $data = $request->validate(['reviewStatus' => ['required', Rule::in(['approved', 'rejected'])], 'reviewNote' => ['nullable', 'string', 'max:1000']]);
+        $data = $request->validate([
+            'reviewStatus' => ['required', Rule::in(['approved', 'rejected'])],
+            'reviewNote' => ['nullable', 'required_if:reviewStatus,rejected', 'string', 'min:10', 'max:1000'],
+        ]);
         /** @var User $admin */ $admin = $request->user();
         DB::transaction(function () use ($providerCredential, $data, $admin): void {
             $asset = ProfileAsset::query()->lockForUpdate()->findOrFail($providerCredential->asset_id);
             abort_if($data['reviewStatus'] === 'approved' && $asset->scan_status !== 'clean', 409, 'A credential cannot be approved before its file passes scanning.');
-            $providerCredential->update(['review_status' => $data['reviewStatus'], 'review_note' => $data['reviewNote'] ?? null, 'reviewed_by' => $admin->id, 'reviewed_at' => now()]);
+            $approved = $data['reviewStatus'] === 'approved';
+            $providerCredential->update(['review_status' => $data['reviewStatus'], 'review_note' => $approved ? null : trim($data['reviewNote']), 'reviewed_by' => $admin->id, 'reviewed_at' => now()]);
             $profile = ProviderProfile::query()->findOrFail($providerCredential->provider_profile_id);
             $this->outbox->record('profile.updated', 'provider_profile', (string) $profile->id, (int) now()->format('U'), ['rooms' => ["user:{$profile->user_id}"], 'providerProfileId' => $profile->id, 'credentialReviewStatus' => $providerCredential->review_status]);
+            $this->notifications->send(
+                $profile->user_id,
+                $approved ? 'profile.credential_approved' : 'profile.credential_rejected',
+                $approved ? 'Credential approved' : 'Credential not approved',
+                $approved
+                    ? "Your {$providerCredential->label} credential was approved."
+                    : "Your {$providerCredential->label} credential wasn't approved. Reason: {$providerCredential->review_note}",
+                'provider_credential',
+                (string) $providerCredential->id,
+                ['providerProfileId' => $profile->id, 'credentialId' => $providerCredential->id, 'reviewStatus' => $approved ? 'approved' : 'rejected', 'reviewReason' => $providerCredential->review_note],
+            );
         });
 
         return response()->json(['data' => $providerCredential->fresh()]);
+    }
+
+    /** @return array<string, mixed> */
+    private function presentProvider(ProviderProfile $profile, bool $reviewed = false): array
+    {
+        return [
+            'id' => $profile->id,
+            'displayName' => $profile->display_name,
+            'bio' => $profile->bio,
+            'yearsExperience' => $profile->years_experience,
+            'offersAtShop' => $profile->offers_at_shop,
+            'shopName' => $profile->shop_name,
+            'shopAddress' => $profile->shop_address,
+            'submittedAt' => $profile->updated_at?->toIso8601String(),
+            'user' => ['id' => $profile->user_id, 'name' => $profile->user?->name, 'email' => $profile->user?->email],
+            'services' => $profile->services->map->only(['id', 'name'])->values(),
+            'serviceAreas' => $profile->serviceAreas->map->only(['id', 'name', 'type'])->values(),
+            'availability' => $profile->relationLoaded('availability') ? $profile->availability : [],
+            ...($reviewed ? [
+                'decision' => $profile->status === 'active' ? 'approved' : 'rejected',
+                'reviewReason' => $profile->review_note,
+                'reviewedAt' => $profile->reviewed_at?->toIso8601String(),
+                'reviewedBy' => ['id' => $profile->reviewed_by, 'name' => $profile->reviewer?->name ?? 'Unknown reviewer', 'email' => $profile->reviewer?->email],
+            ] : []),
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function presentCredential(ProviderCredential $credential, bool $reviewed = false): array
+    {
+        $asset = $credential->asset;
+        $profile = $credential->providerProfile;
+
+        return [
+            'id' => $credential->id,
+            'label' => $credential->label,
+            'type' => $credential->type,
+            'submittedAt' => $credential->created_at?->toIso8601String(),
+            'provider' => ['id' => $profile->id, 'displayName' => $profile->display_name, 'user' => ['id' => $profile->user_id, 'name' => $profile->user?->name, 'email' => $profile->user?->email]],
+            'asset' => ['id' => $asset->id, 'originalName' => $asset->original_name, 'mimeType' => $asset->mime_type, 'sizeBytes' => $asset->size_bytes, 'scanStatus' => $asset->scan_status, 'previewUrl' => "/api/v1/admin/marketplace/assets/{$asset->id}/preview"],
+            ...($reviewed ? [
+                'decision' => $credential->review_status,
+                'reviewReason' => $credential->review_note,
+                'reviewedAt' => $credential->reviewed_at?->toIso8601String(),
+                'reviewedBy' => ['id' => $credential->reviewed_by, 'name' => $credential->reviewer?->name ?? 'Unknown reviewer', 'email' => $credential->reviewer?->email],
+            ] : []),
+        ];
     }
 }

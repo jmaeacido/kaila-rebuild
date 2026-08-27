@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
@@ -22,7 +23,19 @@ class ProviderProfile extends Model
 
     protected function casts(): array
     {
-        return ['rating' => 'decimal:2', 'offers_at_shop' => 'boolean', 'shop_latitude' => 'decimal:7', 'shop_longitude' => 'decimal:7'];
+        return ['rating' => 'decimal:2', 'offers_at_shop' => 'boolean', 'shop_latitude' => 'decimal:7', 'shop_longitude' => 'decimal:7', 'reviewed_at' => 'datetime'];
+    }
+
+    /** @return BelongsTo<User, $this> */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    /** @return BelongsTo<User, $this> */
+    public function reviewer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'reviewed_by');
     }
 
     /** @return BelongsToMany<ServiceCategory, $this> */

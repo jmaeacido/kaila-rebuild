@@ -167,6 +167,58 @@ class MarketplaceProfilesTest extends TestCase
         $this->actingAs($viewer)->getJson("/api/v1/providers/{$profile->id}")->assertJsonPath('data.verified', true);
     }
 
+    public function test_provider_and_credential_rejections_require_reasons_notify_users_and_enter_history(): void
+    {
+        [$category, $area] = $this->referenceData();
+        $profile = $this->provider('Review Provider', 'pending_review', $category, $area);
+        $user = User::query()->findOrFail($profile->user_id);
+        $asset = ProfileAsset::query()->create([
+            'user_id' => $user->id,
+            'purpose' => 'credential',
+            'disk' => 'private-local',
+            'object_key' => 'credentials/license.pdf',
+            'original_name' => 'license.pdf',
+            'mime_type' => 'application/pdf',
+            'size_bytes' => 100,
+            'scan_status' => 'clean',
+        ]);
+        $credential = ProviderCredential::query()->create([
+            'provider_profile_id' => $profile->id,
+            'asset_id' => $asset->id,
+            'type' => 'license',
+            'label' => 'Trade License',
+            'review_status' => 'pending',
+        ]);
+        $admin = User::factory()->create(['is_admin' => true, 'name' => 'Review Admin']);
+
+        $this->actingAs($admin)
+            ->putJson("/api/v1/admin/marketplace/providers/{$profile->id}/status", ['status' => 'rejected'])
+            ->assertUnprocessable();
+        $this->putJson("/api/v1/admin/marketplace/providers/{$profile->id}/status", [
+            'status' => 'rejected',
+            'reviewReason' => 'Add a clearer description of your professional experience.',
+        ])->assertOk();
+        $this->putJson("/api/v1/admin/marketplace/credentials/{$credential->id}/review", [
+            'reviewStatus' => 'rejected',
+        ])->assertUnprocessable();
+        $this->putJson("/api/v1/admin/marketplace/credentials/{$credential->id}/review", [
+            'reviewStatus' => 'rejected',
+            'reviewNote' => 'The license number is cropped out of the document.',
+        ])->assertOk();
+
+        $this->assertDatabaseHas('provider_profiles', ['id' => $profile->id, 'reviewed_by' => $admin->id, 'review_note' => 'Add a clearer description of your professional experience.']);
+        $this->assertDatabaseHas('provider_credentials', ['id' => $credential->id, 'reviewed_by' => $admin->id, 'review_note' => 'The license number is cropped out of the document.']);
+        $this->assertDatabaseHas('durable_notifications', ['user_id' => $user->id, 'type' => 'profile.provider_rejected']);
+        $this->assertDatabaseHas('durable_notifications', ['user_id' => $user->id, 'type' => 'profile.credential_rejected']);
+
+        $this->getJson('/api/v1/admin/marketplace/review-queue')
+            ->assertOk()
+            ->assertJsonPath('data.providerReviews.0.reviewedBy.name', 'Review Admin')
+            ->assertJsonPath('data.providerReviews.0.reviewReason', 'Add a clearer description of your professional experience.')
+            ->assertJsonPath('data.credentialReviews.0.reviewedBy.name', 'Review Admin')
+            ->assertJsonPath('data.credentialReviews.0.reviewReason', 'The license number is cropped out of the document.');
+    }
+
     public function test_uploads_are_private_and_quarantined_until_scan(): void
     {
         $disk = (string) config('filesystems.private_assets_disk');

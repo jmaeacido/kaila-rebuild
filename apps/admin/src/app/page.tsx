@@ -20,8 +20,39 @@ import { notifyAdminAuthenticated, notifyAdminSignedOut } from "./admin-session-
 import styles from "./page.module.css";
 import { revokeAdminPushDevice } from "./components/admin-push-runtime";
 
-type Provider = { id: number; display_name: string; bio: string };
-type Credential = { id: number; label: string; type: string };
+type Provider = {
+  id: number;
+  displayName: string;
+  bio: string;
+  yearsExperience: number;
+  offersAtShop: boolean;
+  shopName: string | null;
+  shopAddress: string | null;
+  submittedAt: string | null;
+  user: { id: number; name: string; email: string };
+  services: Array<{ id: number; name: string }>;
+  serviceAreas: Array<{ id: number; name: string; type: string }>;
+};
+type ProviderReview = Provider & {
+  decision: "approved" | "rejected";
+  reviewReason: string | null;
+  reviewedAt: string | null;
+  reviewedBy: { id: number | null; name: string; email: string | null };
+};
+type Credential = {
+  id: number;
+  label: string;
+  type: string;
+  submittedAt: string | null;
+  provider: { id: number; displayName: string; user: { id: number; name: string; email: string } };
+  asset: { id: string; originalName: string; mimeType: string; sizeBytes: number; scanStatus: string; previewUrl: string };
+};
+type CredentialReview = Credential & {
+  decision: "approved" | "rejected";
+  reviewReason: string | null;
+  reviewedAt: string | null;
+  reviewedBy: { id: number | null; name: string; email: string | null };
+};
 type Asset = {
   id: string;
   originalName: string;
@@ -43,6 +74,15 @@ type QueueData = {
   credentials: Credential[];
   assets: Asset[];
   assetReviews: AssetReview[];
+  providerReviews: ProviderReview[];
+  credentialReviews: CredentialReview[];
+};
+type RejectionTarget = {
+  kind: "providers" | "credentials" | "assets";
+  id: number | string;
+  title: string;
+  context: string;
+  consequence: string;
 };
 type ViewState = "loading" | "ready" | "signed-out" | "forbidden" | "error";
 type QueueResult =
@@ -64,6 +104,8 @@ export default function AdminHome() {
     credentials: [],
     assets: [],
     assetReviews: [],
+    providerReviews: [],
+    credentialReviews: [],
   });
   const [state, setState] = useState<ViewState>("loading");
   const [email, setEmail] = useState("");
@@ -76,7 +118,7 @@ export default function AdminHome() {
   const [reviewingId, setReviewingId] = useState<string | null>(null);
   const [reviewMessage, setReviewMessage] = useState("");
   const [reviewError, setReviewError] = useState("");
-  const [assetToReject, setAssetToReject] = useState<Asset | null>(null);
+  const [rejectionTarget, setRejectionTarget] = useState<RejectionTarget | null>(null);
 
   const requestQueue = useCallback(async (): Promise<QueueResult> => {
     const response = await fetch("/api/v1/admin/marketplace/review-queue", {
@@ -195,9 +237,9 @@ export default function AdminHome() {
             : `/api/v1/admin/marketplace/assets/${id}/scan`;
       const body =
         kind === "providers"
-          ? { status: approve ? "active" : "rejected" }
+          ? { status: approve ? "active" : "rejected", ...(approve ? {} : { reviewReason }) }
           : kind === "credentials"
-            ? { reviewStatus: approve ? "approved" : "rejected" }
+            ? { reviewStatus: approve ? "approved" : "rejected", ...(approve ? {} : { reviewNote: reviewReason }) }
             : {
                 scanStatus: approve ? "clean" : "rejected",
                 ...(approve ? {} : { reviewReason }),
@@ -253,7 +295,7 @@ export default function AdminHome() {
         throw new Error("Logout request failed.");
       }
 
-      setQueue({ providers: [], credentials: [], assets: [], assetReviews: [] });
+      setQueue({ providers: [], credentials: [], assets: [], assetReviews: [], providerReviews: [], credentialReviews: [] });
       setEmail("");
       setPassword("");
       setState("signed-out");
@@ -442,7 +484,13 @@ export default function AdminHome() {
                   onChoose={(approve) =>
                     approve
                       ? void review("assets", asset.id, true)
-                      : setAssetToReject(asset)
+                      : setRejectionTarget({
+                          kind: "assets",
+                          id: asset.id,
+                          title: asset.originalName,
+                          context: `${purposeLabel(asset.purpose)} · ${asset.uploadedBy.name}`,
+                          consequence: "It will remain private and won't appear on the user's profile.",
+                        })
                   }
                   rejectLabel="Reject file"
                 />
@@ -503,15 +551,43 @@ export default function AdminHome() {
             title="Provider profiles"
           >
             {queue.providers.map((provider) => (
-              <article key={provider.id}>
-                <h3>{provider.display_name}</h3>
-                <p>{provider.bio}</p>
+              <article className={styles.reviewCard} key={provider.id}>
+                <div className={styles.reviewCardHeading}>
+                  <div><span>Provider application</span><h3>{provider.displayName}</h3></div>
+                  <small>{formatDate(provider.submittedAt)}</small>
+                </div>
+                <p className={styles.reviewBio}>{provider.bio}</p>
+                <dl className={styles.assetDetails}>
+                  <div><dt>Account</dt><dd>{provider.user.name} · {provider.user.email}</dd></div>
+                  <div><dt>Experience</dt><dd>{provider.yearsExperience} years</dd></div>
+                  <div><dt>Services</dt><dd>{provider.services.map((item) => item.name).join(", ")}</dd></div>
+                  <div><dt>Areas</dt><dd>{provider.serviceAreas.map((item) => item.name).join(", ")}</dd></div>
+                  {provider.offersAtShop && <div><dt>Shop</dt><dd>{provider.shopName} · {provider.shopAddress}</dd></div>}
+                </dl>
                 <Actions
+                  approveLabel="Approve profile"
                   busy={reviewingId !== null}
-                  onChoose={(approve) =>
-                    void review("providers", provider.id, approve)
-                  }
+                  onChoose={(approve) => approve
+                    ? void review("providers", provider.id, true)
+                    : setRejectionTarget({ kind: "providers", id: provider.id, title: provider.displayName, context: `Provider profile · ${provider.user.name}`, consequence: "The provider profile will stay unavailable until the user corrects and resubmits it." })}
+                  rejectLabel="Reject profile"
                 />
+              </article>
+            ))}
+          </Queue>
+          <Queue empty="No provider profile reviews yet." icon={<History />} title="Provider review history">
+            {queue.providerReviews.map((review) => (
+              <article className={styles.reviewCard} key={review.id}>
+                <div className={styles.historyHeading}>
+                  <div><span>Provider profile</span><h3>{review.displayName}</h3></div>
+                  <strong data-decision={review.decision}>{review.decision === "approved" ? "Approved" : "Rejected"}</strong>
+                </div>
+                <dl className={styles.assetDetails}>
+                  <div><dt>Account</dt><dd>{review.user.name}</dd></div>
+                  <div><dt>Reviewed by</dt><dd>{review.reviewedBy.name}</dd></div>
+                  <div><dt>Reviewed</dt><dd>{formatDate(review.reviewedAt)}</dd></div>
+                </dl>
+                {review.reviewReason && <p className={styles.historyReason}><strong>Reason</strong>{review.reviewReason}</p>}
               </article>
             ))}
           </Queue>
@@ -521,31 +597,53 @@ export default function AdminHome() {
             title="Credentials"
           >
             {queue.credentials.map((credential) => (
-              <article key={credential.id}>
-                <h3>{credential.label}</h3>
-                <p>{credential.type}</p>
+              <article className={styles.credentialCard} key={credential.id}>
+                <div className={styles.assetPreview}>
+                  {credential.asset.mimeType.startsWith("image/") ? <Image alt={`Preview of ${credential.label}`} height={480} src={credential.asset.previewUrl} unoptimized width={640} /> : <a href={credential.asset.previewUrl} rel="noreferrer" target="_blank"><Eye aria-hidden="true" />Open credential</a>}
+                </div>
+                <div className={styles.reviewCardHeading}><div><span>{credential.type}</span><h3>{credential.label}</h3></div><small>{formatDate(credential.submittedAt)}</small></div>
+                <dl className={styles.assetDetails}>
+                  <div><dt>Provider</dt><dd>{credential.provider.displayName}</dd></div>
+                  <div><dt>Account</dt><dd>{credential.provider.user.name} · {credential.provider.user.email}</dd></div>
+                  <div><dt>File</dt><dd>{credential.asset.mimeType} · {formatBytes(credential.asset.sizeBytes)}</dd></div>
+                  <div><dt>File review</dt><dd>{credential.asset.scanStatus === "clean" ? "Approved" : "Pending or rejected"}</dd></div>
+                </dl>
                 <Actions
+                  approveLabel="Approve credential"
                   busy={reviewingId !== null}
-                  onChoose={(approve) =>
-                    void review("credentials", credential.id, approve)
-                  }
+                  onChoose={(approve) => approve
+                    ? void review("credentials", credential.id, true)
+                    : setRejectionTarget({ kind: "credentials", id: credential.id, title: credential.label, context: `Credential · ${credential.provider.displayName}`, consequence: "The credential will not count toward verification. The provider can submit a corrected document." })}
+                  rejectLabel="Reject credential"
                 />
+              </article>
+            ))}
+          </Queue>
+          <Queue empty="No credential reviews yet." icon={<History />} title="Credential review history">
+            {queue.credentialReviews.map((review) => (
+              <article className={styles.historyCard} key={review.id}>
+                <div className={styles.historyPreview}>{review.asset.mimeType.startsWith("image/") ? <Image alt={`Reviewed credential ${review.label}`} height={180} src={review.asset.previewUrl} unoptimized width={240} /> : <a href={review.asset.previewUrl} rel="noreferrer" target="_blank">Open file</a>}</div>
+                <div className={styles.historyContent}>
+                  <div className={styles.historyHeading}><div><span>{review.type}</span><h3>{review.label}</h3></div><strong data-decision={review.decision}>{review.decision === "approved" ? "Approved" : "Rejected"}</strong></div>
+                  <dl className={styles.assetDetails}><div><dt>Provider</dt><dd>{review.provider.displayName}</dd></div><div><dt>Reviewed by</dt><dd>{review.reviewedBy.name}</dd></div><div><dt>Reviewed</dt><dd>{formatDate(review.reviewedAt)}</dd></div></dl>
+                  {review.reviewReason && <p className={styles.historyReason}><strong>Reason</strong>{review.reviewReason}</p>}
+                </div>
               </article>
             ))}
           </Queue>
         </div>
       )}
-      <RejectAssetDialog
-        asset={assetToReject}
-        busy={assetToReject?.id === reviewingId}
-        key={assetToReject?.id ?? "closed"}
-        onCancel={() => setAssetToReject(null)}
+      <ReviewRejectionDialog
+        busy={rejectionTarget !== null && String(rejectionTarget.id) === reviewingId}
+        key={rejectionTarget ? `${rejectionTarget.kind}-${rejectionTarget.id}` : "closed"}
+        onCancel={() => setRejectionTarget(null)}
         onConfirm={(reason) => {
-          if (!assetToReject) return;
-          void review("assets", assetToReject.id, false, reason).finally(() =>
-            setAssetToReject(null),
+          if (!rejectionTarget) return;
+          void review(rejectionTarget.kind, rejectionTarget.id, false, reason).finally(() =>
+            setRejectionTarget(null),
           );
         }}
+        target={rejectionTarget}
       />
     </main>
   );
@@ -612,13 +710,13 @@ function Actions({
   );
 }
 
-function RejectAssetDialog({
-  asset,
+function ReviewRejectionDialog({
+  target,
   busy,
   onCancel,
   onConfirm,
 }: {
-  asset: Asset | null;
+  target: RejectionTarget | null;
   busy: boolean;
   onCancel: () => void;
   onConfirm: (reason: string) => void;
@@ -628,9 +726,9 @@ function RejectAssetDialog({
 
   useEffect(() => {
     const dialog = dialogRef.current;
-    if (asset && dialog && !dialog.open) dialog.showModal();
-    if (!asset && dialog?.open) dialog.close();
-  }, [asset]);
+    if (target && dialog && !dialog.open) dialog.showModal();
+    if (!target && dialog?.open) dialog.close();
+  }, [target]);
 
   return (
     <dialog
@@ -651,16 +749,16 @@ function RejectAssetDialog({
           <AlertTriangle aria-hidden="true" />
         </div>
         <div className={styles.confirmDialogCopy}>
-          <p>KAILA FILE REVIEW</p>
-          <h2 id="reject-file-title">Reject this file?</h2>
+          <p>KAILA REVIEW</p>
+          <h2 id="reject-file-title">Reject this submission?</h2>
           <p id="reject-file-description">
-            It will remain private and won&apos;t appear on the user&apos;s profile.
+            {target?.consequence}
           </p>
         </div>
-        {asset && (
+        {target && (
           <div className={styles.confirmFile}>
-            <strong>{asset.originalName}</strong>
-            <span>{purposeLabel(asset.purpose)} · {asset.uploadedBy.name}</span>
+            <strong>{target.title}</strong>
+            <span>{target.context}</span>
           </div>
         )}
         <label className={styles.confirmReason} htmlFor="reject-file-reason">
@@ -671,7 +769,7 @@ function RejectAssetDialog({
             id="reject-file-reason"
             maxLength={500}
             onChange={(event) => setReason(event.target.value)}
-            placeholder="Explain what needs to be changed before uploading again."
+            placeholder="Explain what needs to be corrected before submitting again."
             required
             value={reason}
           />

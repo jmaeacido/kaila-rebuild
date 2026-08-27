@@ -73,6 +73,9 @@ class MarketplaceProfileController extends Controller
             $profile = ProviderProfile::query()->updateOrCreate(['user_id' => $user->id], [
                 'display_name' => $data['displayName'], 'bio' => $data['bio'], 'years_experience' => $data['yearsExperience'],
                 'status' => 'pending_review',
+                'reviewed_by' => null,
+                'review_note' => null,
+                'reviewed_at' => null,
                 'offers_at_shop' => $data['offersAtShop'] ?? false,
                 'shop_name' => ($data['offersAtShop'] ?? false) ? $data['shopName'] : null,
                 'shop_address' => ($data['offersAtShop'] ?? false) ? $data['shopAddress'] : null,

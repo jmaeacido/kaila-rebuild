@@ -19,4 +19,16 @@ class ProviderCredential extends Model
     {
         return $this->belongsTo(ProviderProfile::class);
     }
+
+    /** @return BelongsTo<ProfileAsset, $this> */
+    public function asset(): BelongsTo
+    {
+        return $this->belongsTo(ProfileAsset::class);
+    }
+
+    /** @return BelongsTo<User, $this> */
+    public function reviewer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'reviewed_by');
+    }
 }
