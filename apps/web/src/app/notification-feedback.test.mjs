@@ -21,7 +21,21 @@ test("profile review notifications return users to their account", () => {
     data: { type: "profile", reviewStatus: "approved" },
     readAt: null,
     createdAt: new Date().toISOString(),
-  }), "/account");
+  }), "/account?profilePicture=review&reviewStatus=approved&notificationId=notification-profile");
+});
+
+test("rejected profile reviews deep-link to the profile-picture sheet", () => {
+  assert.equal(notificationRoute({
+    id: "notification-profile-rejected",
+    type: "profile.file_rejected",
+    title: "Profile picture not approved",
+    body: "Choose another photo.",
+    resourceType: "profile_asset",
+    resourceId: "asset-2",
+    data: { type: "profile", reviewStatus: "rejected" },
+    readAt: null,
+    createdAt: new Date().toISOString(),
+  }), "/account?profilePicture=review&reviewStatus=rejected&notificationId=notification-profile-rejected");
 });
 
 test("turns durable notification events into visible feedback", () => {

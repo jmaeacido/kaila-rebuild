@@ -128,5 +128,6 @@ test("Header notification clicks persist read state before navigation", () => {
   assert.match(notificationBellSource, /notifications\/\$\{item\.id\}\/read/);
   assert.match(notificationBellSource, /event\.preventDefault\(\)/);
   assert.match(notificationBellSource, /setUnread\(\(current\) => Math\.max\(0, current - 1\)\)/);
-  assert.match(notificationBellSource, /router\.push\(notificationRoute\(item\)\)/);
+  assert.match(notificationBellSource, /const target = notificationRoute\(item\)/);
+  assert.match(notificationBellSource, /router\.push\(target\)/);
 });

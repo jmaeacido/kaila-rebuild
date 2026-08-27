@@ -1,5 +1,6 @@
 package com.kaila.marketplace;
 
+import android.Manifest;
 import android.app.Activity;
 import android.content.Intent;
 import android.net.Uri;
@@ -7,21 +8,46 @@ import android.provider.MediaStore;
 import androidx.activity.result.ActivityResult;
 import androidx.core.content.FileProvider;
 import com.getcapacitor.JSObject;
+import com.getcapacitor.PermissionState;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.ActivityCallback;
 import com.getcapacitor.annotation.CapacitorPlugin;
+import com.getcapacitor.annotation.Permission;
+import com.getcapacitor.annotation.PermissionCallback;
 import java.io.File;
 import java.io.IOException;
 
-@CapacitorPlugin(name = "MediaCapture")
+@CapacitorPlugin(
+    name = "MediaCapture",
+    permissions = {
+        @Permission(alias = "camera", strings = { Manifest.permission.CAMERA })
+    }
+)
 public class MediaCapturePlugin extends Plugin {
     private File pendingFile;
     private String pendingMimeType;
 
     @PluginMethod
     public void capture(PluginCall call) {
+        if (getPermissionState("camera") != PermissionState.GRANTED) {
+            requestPermissionForAlias("camera", call, "cameraPermissionResult");
+            return;
+        }
+        launchCapture(call);
+    }
+
+    @PermissionCallback
+    private void cameraPermissionResult(PluginCall call) {
+        if (getPermissionState("camera") != PermissionState.GRANTED) {
+            call.reject("Camera permission is required to take a photo or video", "CAMERA_PERMISSION_DENIED");
+            return;
+        }
+        launchCapture(call);
+    }
+
+    private void launchCapture(PluginCall call) {
         String kind = call.getString("kind", "photo");
         if (!"photo".equals(kind) && !"video".equals(kind)) {
             call.reject("Unsupported capture kind");

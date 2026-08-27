@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Bell, CheckCheck, ChevronRight, RefreshCw, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { notificationRoute, type NotificationRecord } from "./notification-route";
+import { notificationRoute, profilePictureReviewEvent, type NotificationRecord } from "./notification-route";
 import { useRealtimeInvalidation } from "./use-realtime-invalidation";
 import { prepareCsrf } from "./auth-client";
 import { NotificationGlyph } from "./notification-glyph";
@@ -80,7 +80,14 @@ export function NotificationBell() {
         void load();
       }
     }
-    router.push(notificationRoute(item));
+    const target = notificationRoute(item);
+    router.push(target);
+    if (target.startsWith("/account?profilePicture=review")) {
+      window.dispatchEvent(new CustomEvent(profilePictureReviewEvent, { detail: {
+        reviewStatus: item.data.reviewStatus,
+        reviewReason: item.data.reviewReason,
+      } }));
+    }
   }, [load, router]);
 
   const markAllRead = useCallback(async () => {

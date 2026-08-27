@@ -27,6 +27,7 @@ import { prepareCsrf } from "../auth-client";
 import { AddressHierarchy, type AreaReference } from "../address-hierarchy";
 import styles from "./account.module.css";
 import { useRealtimeInvalidation } from "../use-realtime-invalidation";
+import { profilePictureReviewEvent, type NotificationRecord } from "../notification-route";
 
 type User = {
   name: string;
@@ -54,6 +55,10 @@ export default function AccountPage() {
   const [notice, setNotice] = useState("");
   const [avatarNotice, setAvatarNotice] = useState("");
   const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
+  const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [avatarReviewOutcome, setAvatarReviewOutcome] = useState<"approved" | "rejected" | null>(null);
+  const [avatarReviewReason, setAvatarReviewReason] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setStatus("loading");
@@ -97,6 +102,45 @@ export default function AccountPage() {
     return () => window.clearTimeout(initialLoad);
   }, [load]);
 
+  useEffect(
+    () => () => {
+      if (avatarPreviewUrl) URL.revokeObjectURL(avatarPreviewUrl);
+    },
+    [avatarPreviewUrl],
+  );
+
+  useEffect(() => {
+    let active = true;
+    const openReview = (reviewStatus?: unknown, reviewReason?: unknown) => {
+      setAvatarReviewOutcome(reviewStatus === "approved" ? "approved" : "rejected");
+      setAvatarReviewReason(typeof reviewReason === "string" && reviewReason.trim() ? reviewReason.trim() : null);
+      setAvatarMenuOpen(true);
+    };
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("profilePicture") === "review") {
+      openReview(params.get("reviewStatus"));
+      const notificationId = params.get("notificationId");
+      if (notificationId) {
+        void fetch("/api/v1/notifications", { credentials: "include", headers: { Accept: "application/json" }, cache: "no-store" })
+          .then(async (response) => {
+            if (!response.ok) return;
+            const item = ((await response.json()) as { data: NotificationRecord[] }).data.find((notification) => notification.id === notificationId);
+            if (active && item) openReview(item.data.reviewStatus, item.data.reviewReason);
+          })
+          .catch(() => undefined);
+      }
+    }
+    const handleReview = (event: Event) => {
+      const detail = (event as CustomEvent<{ reviewStatus?: unknown; reviewReason?: unknown }>).detail;
+      openReview(detail?.reviewStatus, detail?.reviewReason);
+    };
+    window.addEventListener(profilePictureReviewEvent, handleReview);
+    return () => {
+      active = false;
+      window.removeEventListener(profilePictureReviewEvent, handleReview);
+    };
+  }, []);
+
   async function saveProfile(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setStatus("saving");
@@ -120,6 +164,8 @@ export default function AccountPage() {
   }
 
   async function uploadAvatarFile(file: File) {
+    setAvatarPreviewUrl(URL.createObjectURL(file));
+    setUploadProgress(0);
     setStatus("uploading");
     setAvatarNotice("");
     try {
@@ -127,17 +173,25 @@ export default function AccountPage() {
       const body = new FormData();
       body.append("purpose", "avatar");
       body.append("file", file);
-      const response = await fetch("/api/v1/me/profile-assets", {
-        method: "POST",
-        headers: {
-          Accept: "application/json",
-          ...(token ? { "X-XSRF-TOKEN": token } : {}),
-        },
-        body,
+      const responseStatus = await new Promise<number>((resolve, reject) => {
+        const request = new XMLHttpRequest();
+        request.open("POST", "/api/v1/me/profile-assets");
+        request.setRequestHeader("Accept", "application/json");
+        if (token) request.setRequestHeader("X-XSRF-TOKEN", token);
+        request.upload.addEventListener("progress", (event) => {
+          if (event.lengthComputable) {
+            setUploadProgress(Math.round((event.loaded / event.total) * 100));
+          }
+        });
+        request.addEventListener("load", () => resolve(request.status));
+        request.addEventListener("error", () => reject(new Error("upload-failed")));
+        request.addEventListener("abort", () => reject(new Error("upload-failed")));
+        request.send(body);
       });
-      if (!response.ok) {
-        throw new Error(response.status === 422 ? "invalid-file" : "upload-failed");
+      if (responseStatus < 200 || responseStatus >= 300) {
+        throw new Error(responseStatus === 422 ? "invalid-file" : "upload-failed");
       }
+      setUploadProgress(100);
       setAvatarNotice("Uploaded. Your picture will appear after review.");
       setStatus("ready");
     } catch (error) {
@@ -223,7 +277,11 @@ export default function AccountPage() {
             aria-label="Change profile picture"
             className={styles.avatarTrigger}
             disabled={status === "uploading"}
-            onClick={() => setAvatarMenuOpen((open) => !open)}
+            onClick={() => {
+              setAvatarReviewOutcome(null);
+              setAvatarReviewReason(null);
+              setAvatarMenuOpen((open) => !open);
+            }}
             type="button"
           >
             <Camera aria-hidden="true" />
@@ -251,8 +309,56 @@ export default function AccountPage() {
             eyebrow="Profile picture"
             title="Choose a photo"
             onClose={() => setAvatarMenuOpen(false)}
+            wide
           >
             <div className={styles.avatarModalBody}>
+              {avatarReviewOutcome && (
+                <div className={styles.reviewOutcome} data-kind={avatarReviewOutcome} role="status">
+                  {avatarReviewOutcome === "approved" ? <Check aria-hidden="true" /> : <ShieldCheck aria-hidden="true" />}
+                  <div>
+                    <strong>{avatarReviewOutcome === "approved" ? "Profile picture approved" : "Profile picture not approved"}</strong>
+                    {avatarReviewOutcome === "approved" ? (
+                      <p>Your approved picture is now available on KAILA.</p>
+                    ) : (
+                      <>
+                        <div className={styles.reviewReason}>
+                          <strong>Reason</strong>
+                          <p>{avatarReviewReason || "The reviewer did not provide a reason."}</p>
+                        </div>
+                        <p>Choose another clear photo to submit for review.</p>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+              <div className={styles.avatarPreview}>
+                {avatarPreviewUrl || user.avatarUrl ? (
+                  <Image
+                    src={avatarPreviewUrl || user.avatarUrl || ""}
+                    alt="Profile picture preview"
+                    width={160}
+                    height={160}
+                    unoptimized
+                  />
+                ) : (
+                  <span aria-hidden="true">{user.name.charAt(0).toUpperCase()}</span>
+                )}
+              </div>
+              {status === "uploading" && (
+                <div className={styles.uploadStatus} role="status">
+                  <div><strong>Uploading photo</strong><span>{uploadProgress}%</span></div>
+                  <progress aria-label="Photo upload progress" max="100" value={uploadProgress} />
+                </div>
+              )}
+              {avatarPreviewUrl && status === "ready" && avatarNotice && (
+                <div className={styles.reviewStatus} role="status">
+                  <ShieldCheck aria-hidden="true" />
+                  <div><strong>Waiting for review</strong><p>Your current profile picture stays visible until this photo is approved.</p></div>
+                </div>
+              )}
+              {avatarPreviewUrl && status === "error" && avatarNotice && (
+                <p className={styles.uploadError} role="alert">{avatarNotice}</p>
+              )}
             <AttachmentSourceActions
               kinds={["image"]}
               facingMode="user"
@@ -263,7 +369,6 @@ export default function AccountPage() {
               onFiles={(files) => {
                 const next = files[0];
                 if (next) {
-                  setAvatarMenuOpen(false);
                   void uploadAvatarFile(next);
                 }
               }}

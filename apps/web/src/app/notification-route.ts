@@ -10,8 +10,18 @@ export type NotificationRecord = {
   createdAt: string;
 };
 
+export const profilePictureReviewEvent = "kaila:open-profile-picture-review";
+
 export function notificationRoute(notification: NotificationRecord): string {
-  if (notification.resourceType === "profile_asset" || notification.data.type === "profile") return "/account";
+  if (notification.resourceType === "profile_asset" || notification.data.type === "profile") {
+    const reviewStatus = notification.data.reviewStatus === "approved" ? "approved" : "rejected";
+    const params = new URLSearchParams({
+      profilePicture: "review",
+      reviewStatus,
+      notificationId: notification.id,
+    });
+    return `/account?${params.toString()}`;
+  }
   if (notification.resourceType === "direct_conversation") return "/messages";
   if (notification.resourceType === "support_case" && /^[A-Za-z0-9-]+$/.test(notification.resourceId)) return `/support/${notification.resourceId}`;
   if (notification.resourceType === "call_session" || notification.data.type === "call") {

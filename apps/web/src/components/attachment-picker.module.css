@@ -86,6 +86,61 @@
   color: var(--color-danger);
 }
 
+.cameraCapture {
+  display: grid;
+  gap: var(--spacing-16);
+}
+
+.cameraPreview {
+  align-items: center;
+  aspect-ratio: 4 / 3;
+  background: var(--color-background);
+  border-radius: var(--radius-card);
+  display: flex;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+}
+
+.cameraPreview video {
+  height: 100%;
+  object-fit: cover;
+  width: 100%;
+}
+
+.cameraPreview p {
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-body);
+  padding: var(--spacing-24);
+  position: absolute;
+  text-align: center;
+}
+
+.cameraActions {
+  display: grid;
+}
+
+.cameraActions button {
+  align-items: center;
+  background: var(--color-primary);
+  border: 0;
+  border-radius: var(--radius-button);
+  color: var(--color-on-primary);
+  cursor: pointer;
+  display: flex;
+  font: inherit;
+  font-weight: var(--font-weight-semibold);
+  gap: var(--spacing-8);
+  justify-content: center;
+  min-height: var(--control-min-height);
+  padding: var(--spacing-12) var(--spacing-16);
+}
+
+.cameraActions svg {
+  height: var(--spacing-24);
+  width: var(--spacing-24);
+}
+
 .files {
   display: grid;
   gap: var(--spacing-8);

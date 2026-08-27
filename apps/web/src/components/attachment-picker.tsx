@@ -6,6 +6,7 @@ import Image from "next/image";
 import { captureNativeMedia, nativeMediaCaptureAvailable } from "@kaila/mobile/media-capture";
 import mediaStyles from "./attachment-media.module.css";
 import styles from "./attachment-picker.module.css";
+import { ActionModal } from "./action-modal";
 
 const defaultMaxFiles = 5;
 const maxBytes = 10 * 1024 * 1024;
@@ -59,6 +60,7 @@ export function AttachmentSourceActions({
   const photoInput = useRef<HTMLInputElement>(null);
   const videoInput = useRef<HTMLInputElement>(null);
   const libraryInput = useRef<HTMLInputElement>(null);
+  const [webCameraOpen, setWebCameraOpen] = useState(false);
   const allowImage = kinds.includes("image");
   const allowVideo = kinds.includes("video");
   const accept = acceptFor(kinds);
@@ -74,7 +76,11 @@ export function AttachmentSourceActions({
 
   async function capture(kind: "photo" | "video") {
     if (!nativeMediaCaptureAvailable()) {
-      (kind === "photo" ? photoInput : videoInput).current?.click();
+      if (kind === "photo" && typeof navigator !== "undefined" && typeof navigator.mediaDevices?.getUserMedia === "function") {
+        setWebCameraOpen(true);
+      } else {
+        (kind === "photo" ? photoInput : videoInput).current?.click();
+      }
       return;
     }
     try {
@@ -138,7 +144,95 @@ export function AttachmentSourceActions({
         disabled={disabled}
         onChange={take}
       />
+      {webCameraOpen && (
+        <WebCameraCapture
+          facingMode={facingMode}
+          onCancel={() => setWebCameraOpen(false)}
+          onCapture={(file) => {
+            setWebCameraOpen(false);
+            onFiles([file]);
+          }}
+          onUseFiles={() => {
+            setWebCameraOpen(false);
+            window.setTimeout(() => photoInput.current?.click(), 0);
+          }}
+        />
+      )}
     </div>
+  );
+}
+
+function WebCameraCapture({
+  facingMode,
+  onCancel,
+  onCapture,
+  onUseFiles,
+}: {
+  facingMode: "user" | "environment";
+  onCancel: () => void;
+  onCapture: (file: File) => void;
+  onUseFiles: () => void;
+}) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const [state, setState] = useState<"starting" | "ready" | "error">("starting");
+
+  useEffect(() => {
+    let active = true;
+
+    void navigator.mediaDevices
+      .getUserMedia({ audio: false, video: { facingMode: { ideal: facingMode } } })
+      .then(async (stream) => {
+        if (!active) {
+          stream.getTracks().forEach((track) => track.stop());
+          return;
+        }
+        streamRef.current = stream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          await videoRef.current.play();
+        }
+        if (active) setState("ready");
+      })
+      .catch(() => {
+        if (active) setState("error");
+      });
+
+    return () => {
+      active = false;
+      streamRef.current?.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    };
+  }, [facingMode]);
+
+  async function takePhoto() {
+    const video = videoRef.current;
+    if (!video || video.videoWidth === 0 || video.videoHeight === 0) return;
+    const canvas = document.createElement("canvas");
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const context = canvas.getContext("2d");
+    if (!context) return;
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.9));
+    if (!blob) return;
+    onCapture(new File([blob], `kaila-photo-${Date.now()}.jpg`, { type: "image/jpeg", lastModified: Date.now() }));
+  }
+
+  return (
+    <ActionModal eyebrow="Camera" title="Take a photo" onClose={onCancel}>
+      <div className={styles.cameraCapture}>
+        <div className={styles.cameraPreview}>
+          <video ref={videoRef} muted playsInline aria-label="Camera preview" />
+          {state === "starting" && <p role="status">Starting camera…</p>}
+          {state === "error" && <p role="alert">Camera access is unavailable. Allow camera access in your browser, or choose a file instead.</p>}
+        </div>
+        <div className={styles.cameraActions}>
+          {state === "ready" && <button type="button" onClick={() => void takePhoto()}><Camera aria-hidden="true" />Capture photo</button>}
+          {state === "error" && <button type="button" onClick={onUseFiles}><FolderOpen aria-hidden="true" />Use files instead</button>}
+        </div>
+      </div>
+    </ActionModal>
   );
 }
 

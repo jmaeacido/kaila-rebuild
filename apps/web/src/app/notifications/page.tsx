@@ -6,7 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Feedback } from "@kaila/ui";
 import { prepareCsrf } from "../auth-client";
-import { notificationRoute, type NotificationRecord } from "../notification-route";
+import { notificationRoute, profilePictureReviewEvent, type NotificationRecord } from "../notification-route";
 import { useRealtimeInvalidation } from "../use-realtime-invalidation";
 import { notificationsChangedName } from "../notification-bell";
 import { NotificationGlyph } from "../notification-glyph";
@@ -42,7 +42,14 @@ export default function NotificationsPage() {
 
   async function open(item: NotificationRecord) {
     if (!item.readAt) await mutate(`/api/v1/notifications/${item.id}/read`, "PUT");
-    router.push(notificationRoute(item));
+    const target = notificationRoute(item);
+    router.push(target);
+    if (target.startsWith("/account?profilePicture=review")) {
+      window.dispatchEvent(new CustomEvent(profilePictureReviewEvent, { detail: {
+        reviewStatus: item.data.reviewStatus,
+        reviewReason: item.data.reviewReason,
+      } }));
+    }
   }
 
   return (

@@ -11,9 +11,10 @@ type ActionModalProps = {
   onClose: () => void;
   children: ReactNode;
   danger?: boolean;
+  wide?: boolean;
 };
 
-export function ActionModal({ title, eyebrow, onClose, children, danger = false }: ActionModalProps) {
+export function ActionModal({ title, eyebrow, onClose, children, danger = false, wide = false }: ActionModalProps) {
   const titleId = useId();
   const closeRef = useRef<HTMLButtonElement>(null);
   const onCloseRef = useRef(onClose);
@@ -47,7 +48,7 @@ export function ActionModal({ title, eyebrow, onClose, children, danger = false 
       }}
     >
       <section
-        className={`${styles.panel}${danger ? ` ${styles.danger}` : ""}`}
+        className={`${styles.panel}${danger ? ` ${styles.danger}` : ""}${wide ? ` ${styles.wide}` : ""}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}

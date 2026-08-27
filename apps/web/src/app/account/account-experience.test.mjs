@@ -27,6 +27,23 @@ test("profile picture actions stay behind the avatar camera control", () => {
   assert.match(styles, /\.avatarTrigger \{[^}]*inset:0[^}]*opacity:0/);
 });
 
+test("profile picture modal previews and tracks uploads awaiting review", () => {
+  assert.match(page, /alt="Profile picture preview"/);
+  assert.match(page, /request\.upload\.addEventListener\("progress"/);
+  assert.match(page, /aria-label="Photo upload progress"/);
+  assert.match(page, /Waiting for review/);
+  assert.match(page, /current profile picture stays visible until this photo is approved/i);
+  const fileSelection = page.match(/onFiles=\{\(files\) => \{([\s\S]*?)\n\s*\}\}/)?.[1] ?? "";
+  assert.doesNotMatch(fileSelection, /setAvatarMenuOpen\(false\)/);
+});
+
+test("rejected profile reviews show the moderator reason", () => {
+  assert.match(page, /notificationId/);
+  assert.match(page, /item\.data\.reviewReason/);
+  assert.match(page, /className=\{styles\.reviewReason\}/);
+  assert.match(page, /The reviewer did not provide a reason\./);
+});
+
 test("saved city-level home areas populate the address hierarchy", () => {
   assert.match(addressHierarchy, /areas\.find\(\(area\) => String\(area\.id\) === value\) \?\?/);
   assert.match(addressHierarchy, /\["city", "municipality"\]\.includes\(selectedArea\.type/);
