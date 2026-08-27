@@ -19,6 +19,7 @@
   --color-warning-surface: #fff8e6;
   --color-success-surface: #eaf8f2;
   --color-call-backdrop: #0a1220;
+  --color-modal-backdrop: rgb(10 18 32 / 68%);
   --color-theme-meta: #f7f9fc;
   --gradient-primary: linear-gradient(135deg, #1463ff, #27b7ff);
   --gradient-hero: linear-gradient(135deg, #0f4bff, #3cc8ff);
@@ -87,6 +88,7 @@
   --color-warning-surface: #3a2c14;
   --color-success-surface: #143528;
   --color-call-backdrop: #050a12;
+  --color-modal-backdrop: rgb(5 10 18 / 76%);
   --color-theme-meta: #0c1524;
   --gradient-primary: linear-gradient(135deg, #1463ff, #3cc8ff);
   --gradient-hero: linear-gradient(135deg, #0f4bff, #4ec8ff);
@@ -125,6 +127,7 @@ html[data-theme="dark"] {
     --color-warning-surface: #3a2c14;
     --color-success-surface: #143528;
     --color-call-backdrop: #050a12;
+    --color-modal-backdrop: rgb(5 10 18 / 76%);
     --color-theme-meta: #0c1524;
     --gradient-primary: linear-gradient(135deg, #1463ff, #3cc8ff);
     --gradient-hero: linear-gradient(135deg, #0f4bff, #4ec8ff);

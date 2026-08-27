@@ -1,10 +1,12 @@
 "use client";
 
-import { FormEvent, ReactNode, useCallback, useEffect, useState } from "react";
+import { FormEvent, ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import {
+  AlertTriangle,
   Check,
   Eye,
   EyeOff,
+  History,
   LogIn,
   LogOut,
   RefreshCw,
@@ -22,13 +24,25 @@ type Provider = { id: number; display_name: string; bio: string };
 type Credential = { id: number; label: string; type: string };
 type Asset = {
   id: string;
-  original_name: string;
-  mime_type: string;
+  originalName: string;
+  mimeType: string;
+  sizeBytes: number;
+  purpose: "avatar" | "portfolio" | "credential";
+  createdAt: string | null;
+  previewUrl: string;
+  uploadedBy: { id: number; name: string; email: string | null };
+};
+type AssetReview = Asset & {
+  decision: "approved" | "rejected";
+  reviewReason: string | null;
+  reviewedAt: string | null;
+  reviewedBy: { id: number | null; name: string; email: string | null };
 };
 type QueueData = {
   providers: Provider[];
   credentials: Credential[];
   assets: Asset[];
+  assetReviews: AssetReview[];
 };
 type ViewState = "loading" | "ready" | "signed-out" | "forbidden" | "error";
 type QueueResult =
@@ -49,6 +63,7 @@ export default function AdminHome() {
     providers: [],
     credentials: [],
     assets: [],
+    assetReviews: [],
   });
   const [state, setState] = useState<ViewState>("loading");
   const [email, setEmail] = useState("");
@@ -58,6 +73,10 @@ export default function AdminHome() {
   const [signingIn, setSigningIn] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const [logoutMessage, setLogoutMessage] = useState("");
+  const [reviewingId, setReviewingId] = useState<string | null>(null);
+  const [reviewMessage, setReviewMessage] = useState("");
+  const [reviewError, setReviewError] = useState("");
+  const [assetToReject, setAssetToReject] = useState<Asset | null>(null);
 
   const requestQueue = useCallback(async (): Promise<QueueResult> => {
     const response = await fetch("/api/v1/admin/marketplace/review-queue", {
@@ -160,39 +179,60 @@ export default function AdminHome() {
     kind: "providers" | "credentials" | "assets",
     id: number | string,
     approve: boolean,
+    reviewReason?: string,
   ) {
-    await fetch("/api/v1/auth/csrf", { credentials: "include" });
-    const token = csrfToken();
-    const url =
-      kind === "providers"
-        ? `/api/v1/admin/marketplace/providers/${id}/status`
-        : kind === "credentials"
-          ? `/api/v1/admin/marketplace/credentials/${id}/review`
-          : `/api/v1/admin/marketplace/assets/${id}/scan`;
-    const body =
-      kind === "providers"
-        ? { status: approve ? "active" : "rejected" }
-        : kind === "credentials"
-          ? { reviewStatus: approve ? "approved" : "rejected" }
-          : { scanStatus: approve ? "clean" : "rejected" };
+    setReviewingId(String(id));
+    setReviewMessage("");
+    setReviewError("");
+    try {
+      await fetch("/api/v1/auth/csrf", { credentials: "include" });
+      const token = csrfToken();
+      const url =
+        kind === "providers"
+          ? `/api/v1/admin/marketplace/providers/${id}/status`
+          : kind === "credentials"
+            ? `/api/v1/admin/marketplace/credentials/${id}/review`
+            : `/api/v1/admin/marketplace/assets/${id}/scan`;
+      const body =
+        kind === "providers"
+          ? { status: approve ? "active" : "rejected" }
+          : kind === "credentials"
+            ? { reviewStatus: approve ? "approved" : "rejected" }
+            : {
+                scanStatus: approve ? "clean" : "rejected",
+                ...(approve ? {} : { reviewReason }),
+              };
 
-    const response = await fetch(url, {
-      method: "PUT",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-        ...(token ? { "X-XSRF-TOKEN": token } : {}),
-      },
-      body: JSON.stringify(body),
-    });
+      const response = await fetch(url, {
+        method: "PUT",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { "X-XSRF-TOKEN": token } : {}),
+        },
+        body: JSON.stringify(body),
+      });
 
-    if (response.status === 401) {
-      setState("signed-out");
-      notifyAdminSignedOut();
-      return;
+      if (response.status === 401) {
+        setState("signed-out");
+        notifyAdminSignedOut();
+        return;
+      }
+      if (!response.ok) throw new Error("Review request failed.");
+
+      applyQueueResult(await requestQueue());
+      setReviewMessage(
+        kind === "assets"
+          ? approve
+            ? "The file was approved."
+            : "The file was rejected."
+          : "The review decision was saved.",
+      );
+    } catch {
+      setReviewError("The decision could not be saved. Try again.");
+    } finally {
+      setReviewingId(null);
     }
-
-    await load();
   }
 
   async function signOut() {
@@ -213,7 +253,7 @@ export default function AdminHome() {
         throw new Error("Logout request failed.");
       }
 
-      setQueue({ providers: [], credentials: [], assets: [] });
+      setQueue({ providers: [], credentials: [], assets: [], assetReviews: [] });
       setEmail("");
       setPassword("");
       setState("signed-out");
@@ -351,22 +391,109 @@ export default function AdminHome() {
       {state === "loading" && (
         <div className={styles.loading}>Loading review queue…</div>
       )}
+      {reviewMessage && (
+        <div className={styles.success} role="status">
+          {reviewMessage}
+        </div>
+      )}
+      {reviewError && (
+        <div className={styles.error} role="alert">
+          {reviewError}
+        </div>
+      )}
       {state === "ready" && (
         <div className={styles.columns}>
           <Queue
-            empty="No files need scan review."
+            empty="No files need review."
             icon={<ShieldCheck />}
-            title="Safety scans"
+            title="File reviews"
           >
             {queue.assets.map((asset) => (
-              <article key={asset.id}>
-                <h3>{asset.original_name}</h3>
-                <p>{asset.mime_type}</p>
+              <article className={styles.assetCard} key={asset.id}>
+                <div className={styles.assetPreview}>
+                  {asset.mimeType.startsWith("image/") ? (
+                    <Image
+                      alt={`Preview of ${asset.originalName}`}
+                      height={480}
+                      src={asset.previewUrl}
+                      unoptimized
+                      width={640}
+                    />
+                  ) : (
+                    <a href={asset.previewUrl} rel="noreferrer" target="_blank">
+                      <Eye aria-hidden="true" />
+                      Open file preview
+                    </a>
+                  )}
+                </div>
+                <div className={styles.assetHeading}>
+                  <span>{purposeLabel(asset.purpose)}</span>
+                  <h3>{asset.originalName}</h3>
+                </div>
+                <dl className={styles.assetDetails}>
+                  <div><dt>Uploaded by</dt><dd>{asset.uploadedBy.name}</dd></div>
+                  <div><dt>Account</dt><dd>{asset.uploadedBy.email ?? `User #${asset.uploadedBy.id}`}</dd></div>
+                  <div><dt>File</dt><dd>{asset.mimeType} · {formatBytes(asset.sizeBytes)}</dd></div>
+                  <div><dt>Uploaded</dt><dd>{formatDate(asset.createdAt)}</dd></div>
+                </dl>
                 <Actions
+                  approveLabel="Approve file"
+                  busy={reviewingId !== null}
                   onChoose={(approve) =>
-                    void review("assets", asset.id, approve)
+                    approve
+                      ? void review("assets", asset.id, true)
+                      : setAssetToReject(asset)
                   }
+                  rejectLabel="Reject file"
                 />
+              </article>
+            ))}
+          </Queue>
+          <Queue
+            empty="No file reviews have been completed yet."
+            icon={<History />}
+            title="Review history"
+          >
+            {queue.assetReviews.map((review) => (
+              <article className={styles.historyCard} key={review.id}>
+                <div className={styles.historyPreview}>
+                  {review.mimeType.startsWith("image/") ? (
+                    <Image
+                      alt={`Reviewed file ${review.originalName}`}
+                      height={180}
+                      src={review.previewUrl}
+                      unoptimized
+                      width={240}
+                    />
+                  ) : (
+                    <a href={review.previewUrl} rel="noreferrer" target="_blank">
+                      <Eye aria-hidden="true" />
+                      Open file
+                    </a>
+                  )}
+                </div>
+                <div className={styles.historyContent}>
+                  <div className={styles.historyHeading}>
+                    <div>
+                      <span>{purposeLabel(review.purpose)}</span>
+                      <h3>{review.originalName}</h3>
+                    </div>
+                    <strong data-decision={review.decision}>
+                      {review.decision === "approved" ? "Approved" : "Rejected"}
+                    </strong>
+                  </div>
+                  <dl className={styles.assetDetails}>
+                    <div><dt>Uploaded by</dt><dd>{review.uploadedBy.name}</dd></div>
+                    <div><dt>Reviewed by</dt><dd>{review.reviewedBy.name}</dd></div>
+                    <div><dt>Reviewed</dt><dd>{formatDate(review.reviewedAt)}</dd></div>
+                  </dl>
+                  {review.reviewReason && (
+                    <p className={styles.historyReason}>
+                      <strong>Reason</strong>
+                      {review.reviewReason}
+                    </p>
+                  )}
+                </div>
               </article>
             ))}
           </Queue>
@@ -380,6 +507,7 @@ export default function AdminHome() {
                 <h3>{provider.display_name}</h3>
                 <p>{provider.bio}</p>
                 <Actions
+                  busy={reviewingId !== null}
                   onChoose={(approve) =>
                     void review("providers", provider.id, approve)
                   }
@@ -397,6 +525,7 @@ export default function AdminHome() {
                 <h3>{credential.label}</h3>
                 <p>{credential.type}</p>
                 <Actions
+                  busy={reviewingId !== null}
                   onChoose={(approve) =>
                     void review("credentials", credential.id, approve)
                   }
@@ -406,6 +535,18 @@ export default function AdminHome() {
           </Queue>
         </div>
       )}
+      <RejectAssetDialog
+        asset={assetToReject}
+        busy={assetToReject?.id === reviewingId}
+        key={assetToReject?.id ?? "closed"}
+        onCancel={() => setAssetToReject(null)}
+        onConfirm={(reason) => {
+          if (!assetToReject) return;
+          void review("assets", assetToReject.id, false, reason).finally(() =>
+            setAssetToReject(null),
+          );
+        }}
+      />
     </main>
   );
 }
@@ -438,27 +579,141 @@ function Queue({
 
 function Actions({
   onChoose,
+  approveLabel = "Approve",
+  rejectLabel = "Reject",
+  busy = false,
 }: {
   onChoose: (approve: boolean) => void;
+  approveLabel?: string;
+  rejectLabel?: string;
+  busy?: boolean;
 }) {
   return (
     <div className={styles.actions}>
       <button
         className={styles.approve}
+        disabled={busy}
         onClick={() => onChoose(true)}
         type="button"
       >
         <Check aria-hidden="true" />
-        Approve
+        {busy ? "Saving…" : approveLabel}
       </button>
       <button
         className={styles.reject}
+        disabled={busy}
         onClick={() => onChoose(false)}
         type="button"
       >
         <X aria-hidden="true" />
-        Reject
+        {rejectLabel}
       </button>
     </div>
   );
+}
+
+function RejectAssetDialog({
+  asset,
+  busy,
+  onCancel,
+  onConfirm,
+}: {
+  asset: Asset | null;
+  busy: boolean;
+  onCancel: () => void;
+  onConfirm: (reason: string) => void;
+}) {
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const [reason, setReason] = useState("");
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (asset && dialog && !dialog.open) dialog.showModal();
+    if (!asset && dialog?.open) dialog.close();
+  }, [asset]);
+
+  return (
+    <dialog
+      aria-labelledby="reject-file-title"
+      aria-describedby="reject-file-description"
+      className={styles.confirmDialog}
+      onCancel={(event) => {
+        event.preventDefault();
+        if (!busy) onCancel();
+      }}
+      onClick={(event) => {
+        if (event.target === event.currentTarget && !busy) onCancel();
+      }}
+      ref={dialogRef}
+    >
+      <div className={styles.confirmDialogContent}>
+        <div className={styles.confirmDialogIcon}>
+          <AlertTriangle aria-hidden="true" />
+        </div>
+        <div className={styles.confirmDialogCopy}>
+          <p>KAILA FILE REVIEW</p>
+          <h2 id="reject-file-title">Reject this file?</h2>
+          <p id="reject-file-description">
+            It will remain private and won&apos;t appear on the user&apos;s profile.
+          </p>
+        </div>
+        {asset && (
+          <div className={styles.confirmFile}>
+            <strong>{asset.originalName}</strong>
+            <span>{purposeLabel(asset.purpose)} · {asset.uploadedBy.name}</span>
+          </div>
+        )}
+        <label className={styles.confirmReason} htmlFor="reject-file-reason">
+          Reason for rejection
+          <textarea
+            autoFocus
+            disabled={busy}
+            id="reject-file-reason"
+            maxLength={500}
+            onChange={(event) => setReason(event.target.value)}
+            placeholder="Explain what needs to be changed before uploading again."
+            required
+            value={reason}
+          />
+          <span>{reason.length}/500 · Minimum 10 characters</span>
+        </label>
+        <div className={styles.confirmActions}>
+          <button disabled={busy} onClick={onCancel} type="button">
+            Keep file
+          </button>
+          <button
+            className={styles.confirmReject}
+            disabled={busy || reason.trim().length < 10}
+            onClick={() => onConfirm(reason.trim())}
+            type="button"
+          >
+            <X aria-hidden="true" />
+            {busy ? "Rejecting…" : "Reject file"}
+          </button>
+        </div>
+      </div>
+    </dialog>
+  );
+}
+
+function purposeLabel(purpose: Asset["purpose"]): string {
+  return purpose === "avatar"
+    ? "Profile picture"
+    : purpose === "portfolio"
+      ? "Portfolio image"
+      : "Credential";
+}
+
+function formatBytes(bytes: number): string {
+  return bytes >= 1024 * 1024
+    ? `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+    : `${Math.max(1, Math.round(bytes / 1024))} KB`;
+}
+
+function formatDate(value: string | null): string {
+  if (!value) return "Unknown";
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(value));
 }

@@ -15,7 +15,7 @@ return [
 
     'default' => env('FILESYSTEM_DISK', 'local'),
 
-    'private_assets_disk' => env('PRIVATE_ASSET_DISK', 'private-assets'),
+    'private_assets_disk' => env('PRIVATE_ASSET_DISK', 'private-local'),
 
     /*
     |--------------------------------------------------------------------------
@@ -57,6 +57,24 @@ return [
             'visibility' => 'public',
             'throw' => false,
             'report' => false,
+        ],
+
+        'private-local' => [
+            'driver' => 'local',
+            'root' => storage_path('app/private-assets'),
+            'visibility' => 'private',
+            'throw' => true,
+            'report' => true,
+            'permissions' => [
+                'file' => [
+                    'public' => 0660,
+                    'private' => 0660,
+                ],
+                'dir' => [
+                    'public' => 0770,
+                    'private' => 0770,
+                ],
+            ],
         ],
 
         's3' => [

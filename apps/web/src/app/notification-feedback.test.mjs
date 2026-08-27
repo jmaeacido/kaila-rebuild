@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { feedbackForDomainEvent, isEphemeralRealtimeEvent } from "./notification-feedback.ts";
+import { notificationRoute } from "./notification-route.ts";
 import { readFileSync } from "node:fs";
 
 const globals = readFileSync(new URL("./globals.css", import.meta.url), "utf8");
@@ -8,6 +9,20 @@ const runtime = readFileSync(new URL("./notification-runtime.tsx", import.meta.u
 const realtime = readFileSync(new URL("./realtime-provider.tsx", import.meta.url), "utf8");
 const invalidation = readFileSync(new URL("./use-realtime-invalidation.ts", import.meta.url), "utf8");
 const home = readFileSync(new URL("./home/page.tsx", import.meta.url), "utf8");
+
+test("profile review notifications return users to their account", () => {
+  assert.equal(notificationRoute({
+    id: "notification-profile",
+    type: "profile.file_approved",
+    title: "Profile picture approved",
+    body: "Your profile picture is now available on KAILA.",
+    resourceType: "profile_asset",
+    resourceId: "asset-1",
+    data: { type: "profile", reviewStatus: "approved" },
+    readAt: null,
+    createdAt: new Date().toISOString(),
+  }), "/account");
+});
 
 test("turns durable notification events into visible feedback", () => {
   assert.deepEqual(feedbackForDomainEvent({

@@ -186,6 +186,141 @@ class MarketplaceProfilesTest extends TestCase
             ->assertHeader('X-Content-Type-Options', 'nosniff');
     }
 
+    public function test_admin_review_queue_includes_asset_context_and_private_preview(): void
+    {
+        $disk = (string) config('filesystems.private_assets_disk');
+        Storage::fake($disk);
+        $uploader = User::factory()->create([
+            'name' => 'Profile Uploader',
+            'email' => 'uploader@example.com',
+        ]);
+        $admin = User::factory()->create(['is_admin' => true]);
+        $asset = ProfileAsset::query()->create([
+            'user_id' => $uploader->id,
+            'purpose' => 'avatar',
+            'disk' => $disk,
+            'object_key' => 'profiles/review/profile.png',
+            'original_name' => 'profile.png',
+            'mime_type' => 'image/png',
+            'size_bytes' => 8,
+            'scan_status' => 'pending',
+        ]);
+        Storage::disk($disk)->put($asset->object_key, 'png-data');
+
+        $this->actingAs($admin)
+            ->getJson('/api/v1/admin/marketplace/review-queue')
+            ->assertOk()
+            ->assertJsonPath('data.assets.0.id', $asset->id)
+            ->assertJsonPath('data.assets.0.purpose', 'avatar')
+            ->assertJsonPath('data.assets.0.uploadedBy.name', 'Profile Uploader')
+            ->assertJsonPath('data.assets.0.uploadedBy.email', 'uploader@example.com')
+            ->assertJsonPath('data.assets.0.previewUrl', "/api/v1/admin/marketplace/assets/{$asset->id}/preview");
+
+        $this->actingAs($uploader)
+            ->get("/api/v1/admin/marketplace/assets/{$asset->id}/preview")
+            ->assertForbidden();
+        $this->actingAs($admin)
+            ->get("/api/v1/admin/marketplace/assets/{$asset->id}/preview")
+            ->assertOk()
+            ->assertHeader('Content-Type', 'image/png')
+            ->assertHeader('Cache-Control', 'max-age=0, no-store, private')
+            ->assertHeader('X-Content-Type-Options', 'nosniff');
+    }
+
+    public function test_png_avatar_upload_is_accepted(): void
+    {
+        $disk = (string) config('filesystems.private_assets_disk');
+        Storage::fake($disk);
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user)->post('/api/v1/me/profile-assets', [
+            'purpose' => 'avatar',
+            'file' => UploadedFile::fake()->image('profile.png', 512, 512),
+        ], ['Accept' => 'application/json']);
+
+        $response->assertCreated()
+            ->assertJsonPath('data.purpose', 'avatar')
+            ->assertJsonPath('data.original_name', 'profile.png');
+
+        $asset = ProfileAsset::query()->findOrFail($response->json('data.id'));
+        $this->assertSame('image/png', $asset->mime_type);
+        Storage::disk($disk)->assertExists($asset->object_key);
+    }
+
+    public function test_user_is_notified_when_profile_files_are_approved_or_rejected(): void
+    {
+        $user = User::factory()->create();
+        $admin = User::factory()->create(['is_admin' => true]);
+        $approved = ProfileAsset::query()->create([
+            'user_id' => $user->id,
+            'purpose' => 'avatar',
+            'disk' => 'private-local',
+            'object_key' => 'profiles/approved.png',
+            'original_name' => 'approved.png',
+            'mime_type' => 'image/png',
+            'size_bytes' => 100,
+            'scan_status' => 'pending',
+        ]);
+        $rejected = ProfileAsset::query()->create([
+            'user_id' => $user->id,
+            'purpose' => 'portfolio',
+            'disk' => 'private-local',
+            'object_key' => 'profiles/rejected.png',
+            'original_name' => 'rejected.png',
+            'mime_type' => 'image/png',
+            'size_bytes' => 100,
+            'scan_status' => 'pending',
+        ]);
+
+        $this->actingAs($admin)
+            ->putJson("/api/v1/admin/marketplace/assets/{$approved->id}/scan", ['scanStatus' => 'clean'])
+            ->assertOk();
+        $this->putJson("/api/v1/admin/marketplace/assets/{$rejected->id}/scan", ['scanStatus' => 'rejected'])
+            ->assertUnprocessable();
+        $this->putJson("/api/v1/admin/marketplace/assets/{$rejected->id}/scan", [
+            'scanStatus' => 'rejected',
+            'reviewReason' => 'The image is too blurry to identify the subject.',
+        ])
+            ->assertOk();
+
+        $this->assertDatabaseHas('durable_notifications', [
+            'user_id' => $user->id,
+            'type' => 'profile.file_approved',
+            'resource_type' => 'profile_asset',
+            'resource_id' => $approved->id,
+            'title' => 'Profile picture approved',
+        ]);
+        $this->assertDatabaseHas('durable_notifications', [
+            'user_id' => $user->id,
+            'type' => 'profile.file_rejected',
+            'resource_type' => 'profile_asset',
+            'resource_id' => $rejected->id,
+            'title' => 'Portfolio image not approved',
+            'body' => "Your portfolio image wasn't approved. Reason: The image is too blurry to identify the subject.",
+        ]);
+        $this->assertDatabaseHas('profile_assets', [
+            'id' => $rejected->id,
+            'reviewed_by' => $admin->id,
+            'review_note' => 'The image is too blurry to identify the subject.',
+        ]);
+        $this->assertDatabaseCount('durable_notifications', 2);
+        $this->assertDatabaseHas('outbox_events', ['event_type' => 'notification.created']);
+
+        $this->getJson('/api/v1/admin/marketplace/review-queue')
+            ->assertOk()
+            ->assertJsonCount(2, 'data.assetReviews')
+            ->assertJsonFragment([
+                'id' => $approved->id,
+                'decision' => 'approved',
+                'reviewReason' => null,
+            ])
+            ->assertJsonFragment([
+                'id' => $rejected->id,
+                'decision' => 'rejected',
+                'reviewReason' => 'The image is too blurry to identify the subject.',
+            ]);
+    }
+
     public function test_public_profile_exposes_only_clean_portfolio_metadata(): void
     {
         [$category, $area] = $this->referenceData();

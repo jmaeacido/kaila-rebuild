@@ -115,6 +115,7 @@ class NotificationService
             str_starts_with($type, 'review') => 'review',
             str_starts_with($type, 'security.') => 'security',
             str_starts_with($type, 'support.') => 'support',
+            str_starts_with($type, 'profile.') => 'profile',
             default => 'job',
         };
     }

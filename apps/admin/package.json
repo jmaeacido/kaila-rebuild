@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --test src/app/appearance-default.test.mjs && vitest run src/app/admin-notification-routes.test.ts src/app/components/admin-push-guard.test.ts src/app/components/admin-shell-nav.test.ts",
+    "test": "node --test src/app/appearance-default.test.mjs src/app/admin-review-dialog.test.mjs && vitest run src/app/admin-notification-routes.test.ts src/app/components/admin-push-guard.test.ts src/app/components/admin-shell-nav.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

@@ -294,6 +294,7 @@ Route::middleware('auth')->group(function (): void {
         Route::post('/reports/{moderationReport}/assign', [AdminReportController::class, 'assign']);
         Route::post('/reports/{moderationReport}/decision', [AdminReportController::class, 'decide']);
         Route::get('/review-queue', [AdminMarketplaceController::class, 'queue']);
+        Route::get('/assets/{profileAsset}/preview', [AdminMarketplaceController::class, 'assetPreview']);
         Route::post('/categories', [AdminMarketplaceController::class, 'category']);
         Route::put('/categories/{serviceCategory}', [AdminMarketplaceController::class, 'category']);
         Route::post('/areas', [AdminMarketplaceController::class, 'area']);

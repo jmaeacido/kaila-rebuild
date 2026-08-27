@@ -7,6 +7,13 @@ use Tests\TestCase;
 
 class PrivateAssetStorageTest extends TestCase
 {
+    public function test_local_private_asset_disk_is_private_and_fails_loudly(): void
+    {
+        $this->assertSame('local', config('filesystems.disks.private-local.driver'));
+        $this->assertSame('private', config('filesystems.disks.private-local.visibility'));
+        $this->assertTrue(config('filesystems.disks.private-local.throw'));
+    }
+
     public function test_private_asset_disk_is_provider_neutral_and_not_public(): void
     {
         $this->assertSame('s3', config('filesystems.disks.private-assets.driver'));

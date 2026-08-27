@@ -45,6 +45,7 @@ export default function AccountPage() {
     "loading" | "ready" | "saving" | "uploading" | "error"
   >("loading");
   const [notice, setNotice] = useState("");
+  const [avatarNotice, setAvatarNotice] = useState("");
 
   const load = useCallback(async () => {
     setStatus("loading");
@@ -112,7 +113,7 @@ export default function AccountPage() {
 
   async function uploadAvatarFile(file: File) {
     setStatus("uploading");
-    setNotice("");
+    setAvatarNotice("");
     try {
       const token = await prepareCsrf();
       const body = new FormData();
@@ -126,14 +127,18 @@ export default function AccountPage() {
         },
         body,
       });
-      if (!response.ok) throw new Error();
-      setNotice(
-        "Profile picture uploaded. It will appear after the safety scan.",
-      );
+      if (!response.ok) {
+        throw new Error(response.status === 422 ? "invalid-file" : "upload-failed");
+      }
+      setAvatarNotice("Uploaded. Your picture will appear after review.");
       setStatus("ready");
-    } catch {
+    } catch (error) {
       setStatus("error");
-      setNotice("We couldn’t upload that picture. Use JPG, PNG, or WebP.");
+      setAvatarNotice(
+        error instanceof Error && error.message === "invalid-file"
+          ? "That picture isn't supported. Use JPG, PNG, or WebP up to 10 MB."
+          : "We couldn't upload your picture right now. Try again.",
+      );
     }
   }
 
@@ -223,8 +228,17 @@ export default function AccountPage() {
           </div>
           <span className={styles.safetyNote}>
             <ShieldCheck aria-hidden="true" />
-            Pictures are checked before they appear
+            Pictures are reviewed before they appear
           </span>
+          {avatarNotice && (
+            <p
+              className={styles.avatarNotice}
+              data-kind={status === "error" ? "error" : "success"}
+              role={status === "error" ? "alert" : "status"}
+            >
+              {avatarNotice}
+            </p>
+          )}
         </div>
       </section>
 
