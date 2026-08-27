@@ -539,16 +539,15 @@
 
 .bottomNav {
   background: color-mix(in srgb, var(--color-surface) 96%, transparent);
-  border: var(--control-border-width) solid var(--color-border);
-  border-radius: var(--radius-dialog);
-  bottom: max(var(--spacing-12), env(safe-area-inset-bottom));
+  border-top: var(--control-border-width) solid var(--color-border);
+  bottom: 0;
   box-shadow: var(--shadow-sheet);
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  left: var(--spacing-12);
-  padding: var(--spacing-8);
+  left: 0;
+  padding: var(--spacing-4) max(var(--spacing-8), env(safe-area-inset-right)) max(var(--spacing-4), env(safe-area-inset-bottom)) max(var(--spacing-8), env(safe-area-inset-left));
   position: fixed;
-  right: var(--spacing-12);
+  right: 0;
   z-index: 10;
 }
 
@@ -637,8 +636,7 @@
   }
 
   .bottomNav {
-    margin: 0 auto;
-    max-width: 40rem;
+    padding-inline: max(var(--spacing-8), env(safe-area-inset-left)) max(var(--spacing-8), env(safe-area-inset-right));
   }
 
   .opportunityPopup {
@@ -658,11 +656,6 @@
 @media (max-width: 29.999rem) {
   .hero {
     padding: var(--spacing-24) var(--spacing-16);
-  }
-
-  .bottomNav {
-    left: var(--spacing-8);
-    right: var(--spacing-8);
   }
 
   .bottomNav a {
