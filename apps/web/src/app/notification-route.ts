@@ -11,7 +11,7 @@ export type NotificationRecord = {
 };
 
 export function notificationRoute(notification: NotificationRecord): string {
-  if (notification.resourceType === "direct_conversation" && /^[A-Za-z0-9-]+$/.test(notification.resourceId)) return `/messages/${notification.resourceId}`;
+  if (notification.resourceType === "direct_conversation") return "/messages";
   if (notification.resourceType === "support_case" && /^[A-Za-z0-9-]+$/.test(notification.resourceId)) return `/support/${notification.resourceId}`;
   if (notification.resourceType === "call_session" || notification.data.type === "call") {
     const contextId = String(notification.data.contextId ?? "");

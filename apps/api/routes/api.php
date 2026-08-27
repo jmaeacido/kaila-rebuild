@@ -105,6 +105,7 @@ Route::middleware('mobile.auth')->group(function (): void {
     Route::post('/auth/mobile/offers/{offerThread}/withdraw', [OfferController::class, 'withdraw']);
     Route::post('/auth/mobile/offers/{offerThread}/decline', [OfferController::class, 'decline']);
     Route::post('/auth/mobile/jobs/{serviceJob}/select-offer', [OfferController::class, 'select']);
+    Route::get('/auth/mobile/job-conversations', [ConversationController::class, 'index']);
     Route::get('/auth/mobile/jobs/{serviceJob}/conversation', [ConversationController::class, 'show']);
     Route::post('/auth/mobile/jobs/{serviceJob}/conversation/messages', [ConversationController::class, 'send']);
     Route::post('/auth/mobile/messages/{conversationMessage}/assets', [MessageAssetController::class, 'store']);
@@ -209,6 +210,7 @@ Route::middleware('auth')->group(function (): void {
     Route::post('/offers/{offerThread}/withdraw', [OfferController::class, 'withdraw']);
     Route::post('/offers/{offerThread}/decline', [OfferController::class, 'decline']);
     Route::post('/jobs/{serviceJob}/select-offer', [OfferController::class, 'select']);
+    Route::get('/job-conversations', [ConversationController::class, 'index']);
     Route::get('/jobs/{serviceJob}/conversation', [ConversationController::class, 'show']);
     Route::post('/jobs/{serviceJob}/conversation/messages', [ConversationController::class, 'send']);
     Route::put('/messages/{conversationMessage}/reaction', [ConversationController::class, 'react']);

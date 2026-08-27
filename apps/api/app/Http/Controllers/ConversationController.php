@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\CallSession;
+use App\Models\AcceptedOfferSnapshot;
 use App\Models\ConversationMessage;
 use App\Models\JobConversation;
 use App\Models\ProfileAsset;
+use App\Models\ProviderProfile;
 use App\Models\ServiceJob;
 use App\Models\User;
 use App\Support\HiredJobAccess;
@@ -23,6 +25,75 @@ class ConversationController extends Controller
     private const ALLOWED_REACTIONS = ['👍', '👎', '❤️', '😂', '🤣', '😮', '😢', '😭', '😡', '🎉', '🔥', '👏', '🙏', '💯', '✅', '👀', '🤔', '🙌'];
 
     public function __construct(private readonly HiredJobAccess $access, private readonly OutboxRecorder $outbox, private readonly NotificationService $notifications) {}
+
+    public function index(Request $request): JsonResponse
+    {
+        $actor = $request->user();
+        abort_unless($actor instanceof User, 401);
+        $messageableStatuses = ['provider_selected', 'provider_traveling', 'working', 'completion_submitted'];
+        $providerProfileIds = ProviderProfile::query()->where('user_id', $actor->id)->pluck('id');
+        $providerJobIds = AcceptedOfferSnapshot::query()->whereIn('provider_profile_id', $providerProfileIds)->pluck('service_job_id');
+        $jobs = ServiceJob::query()
+            ->whereIn('status', $messageableStatuses)
+            ->where(function ($query) use ($actor, $providerProfileIds, $providerJobIds): void {
+                $query->where('client_user_id', $actor->id)
+                    ->orWhereIn('id', $providerJobIds)
+                    ->orWhereIn('direct_provider_profile_id', $providerProfileIds);
+            })
+            ->latest('updated_at')
+            ->limit(100)
+            ->get();
+
+        $snapshots = AcceptedOfferSnapshot::query()->whereIn('service_job_id', $jobs->pluck('id'))->get()->keyBy('service_job_id');
+        $selectedProfileIds = $jobs->map(fn (ServiceJob $job) => $snapshots->get($job->id)?->provider_profile_id ?? $job->direct_provider_profile_id)->filter()->unique();
+        $profiles = ProviderProfile::query()->whereIn('id', $selectedProfileIds)->get()->keyBy('id');
+        $counterpartUserIds = $jobs->map(function (ServiceJob $job) use ($actor, $snapshots, $profiles): ?int {
+            if ($job->client_user_id !== $actor->id) return $job->client_user_id;
+            $profileId = $snapshots->get($job->id)?->provider_profile_id ?? $job->direct_provider_profile_id;
+
+            return $profiles->get($profileId)?->user_id;
+        })->filter()->unique();
+        $users = User::query()->whereIn('id', $counterpartUserIds)->get()->keyBy('id');
+        $avatars = ProfileAsset::query()
+            ->whereIn('user_id', $counterpartUserIds)
+            ->where('purpose', 'avatar')
+            ->where('scan_status', 'clean')
+            ->orderByRaw("CASE WHEN origin = 'upload' THEN 0 ELSE 1 END")
+            ->latest()->get()->unique('user_id')->keyBy('user_id');
+        $conversations = JobConversation::query()->whereIn('service_job_id', $jobs->pluck('id'))->get()->keyBy('service_job_id');
+        $lastMessages = ConversationMessage::query()
+            ->whereIn('conversation_id', $conversations->pluck('id'))
+            ->orderByDesc('sequence')->get()->unique('conversation_id')->keyBy('conversation_id');
+
+        $data = $jobs->map(function (ServiceJob $job) use ($actor, $snapshots, $profiles, $users, $avatars, $conversations, $lastMessages): array {
+            $profileId = $snapshots->get($job->id)?->provider_profile_id ?? $job->direct_provider_profile_id;
+            $counterpartId = $job->client_user_id === $actor->id ? $profiles->get($profileId)?->user_id : $job->client_user_id;
+            $counterpart = $users->get($counterpartId);
+            abort_unless($counterpart instanceof User, 404);
+            $conversation = $conversations->get($job->id);
+            $lastMessage = $conversation ? $lastMessages->get($conversation->id) : null;
+
+            return [
+                'jobId' => $job->id,
+                'jobTitle' => $job->title,
+                'jobStatus' => $job->status,
+                'role' => $job->client_user_id === $actor->id ? 'client' : 'provider',
+                'otherParty' => [
+                    'id' => $counterpart->id,
+                    'name' => $counterpart->name,
+                    'avatarUrl' => $avatars->get($counterpart->id) ? "/api/v1/profile-assets/{$avatars->get($counterpart->id)->getKey()}" : null,
+                ],
+                'lastMessage' => $lastMessage ? [
+                    'body' => $lastMessage->body_ciphertext === null ? 'Sent an attachment' : Crypt::decryptString($lastMessage->body_ciphertext),
+                    'sentByMe' => $lastMessage->sender_user_id === $actor->id,
+                    'createdAt' => $lastMessage->created_at?->toIso8601String(),
+                ] : null,
+                'updatedAt' => ($conversation?->updated_at ?? $job->updated_at)?->toIso8601String(),
+            ];
+        });
+
+        return response()->json(['data' => $data]);
+    }
 
     public function show(Request $request, ServiceJob $serviceJob): JsonResponse
     {

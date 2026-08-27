@@ -26,6 +26,15 @@ class PhaseFiveCommunicationTravelTest extends TestCase
         $payload = ['body' => 'hello', 'commandId' => 'message-1'];
         $this->actingAs($provider)->postJson("/api/v1/jobs/$job/conversation/messages", $payload)->assertCreated()->assertJsonPath('data.sequence', 1);
         $this->postJson("/api/v1/jobs/$job/conversation/messages", $payload)->assertCreated()->assertJsonPath('data.sequence', 1);
+        $this->actingAs($client)->getJson('/api/v1/job-conversations')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.jobId', $job)
+            ->assertJsonPath('data.0.jobTitle', 'Fix leaking tap')
+            ->assertJsonPath('data.0.jobStatus', 'provider_selected')
+            ->assertJsonPath('data.0.otherParty.id', $provider->id)
+            ->assertJsonPath('data.0.lastMessage.body', 'hello')
+            ->assertJsonPath('data.0.lastMessage.sentByMe', false);
         $this->actingAs($client)->getJson("/api/v1/jobs/$job/conversation")->assertOk()->assertJsonPath('data.messages.0.body', 'hello');
         $this->assertDatabaseMissing('conversation_messages', ['body_ciphertext' => 'hello']);
         $this->putJson("/api/v1/jobs/$job/conversation/read", ['sequence' => 1])->assertOk();
