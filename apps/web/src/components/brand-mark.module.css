@@ -19,6 +19,14 @@
   width: 100%;
 }
 
+.lockup.withBull .bull {
+  display: block;
+}
+
+.lockup.withBull .wordmark {
+  width: 74%;
+}
+
 @media (min-width: 48rem) {
   .bull {
     display: block;

@@ -2,6 +2,7 @@
 "use client";
 
 import { FormEvent, use, useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import {
   ArrowLeft,
   FileText,
@@ -263,7 +264,7 @@ export default function ConversationPage({ params }: { params: Promise<{ jobId: 
     <main className={styles.chatShell}>
       <section className={styles.chatWindow}>
         <header className={styles.chatHeader}>
-          <a href={`/jobs/${jobId}`} aria-label="Back to job"><ArrowLeft /></a>
+          <Link href={`/jobs/${jobId}`} aria-label="Back to job"><ArrowLeft /></Link>
           <span className={styles.chatAvatar}>
             {conversation?.otherParty.avatarUrl
               ? <img src={conversation.otherParty.avatarUrl} alt={`${otherName} profile`} />

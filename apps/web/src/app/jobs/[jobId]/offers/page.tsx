@@ -2,6 +2,7 @@
 "use client";
 
 import { use, useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { ArrowLeft, BadgeCheck, Clock3, MapPin, MessageSquareQuote, Navigation, RefreshCw, Star, UsersRound } from "lucide-react";
 import { Button, Feedback } from "@kaila/ui";
 import { ActionModal } from "../../../../components/action-modal";
@@ -97,7 +98,7 @@ export default function CompareOffersPage({ params }: { params: Promise<{ jobId:
 
   return (
     <main className={styles.shell}>
-      <a className={styles.back} href={`/jobs/${jobId}`}><ArrowLeft aria-hidden="true" />Job details</a>
+      <Link className={styles.back} href={`/jobs/${jobId}`}><ArrowLeft aria-hidden="true" />Job details</Link>
       <header className={styles.compareHeader}><div><p>Choose with confidence</p><h1>Compare offers</h1><span>Price, timing, location, and trust in one place.</span></div><Button variant="secondary" onClick={() => void load()}><RefreshCw aria-hidden="true" />Refresh</Button></header>
       {notice && <Feedback kind="success" title="Negotiation updated">{notice}</Feedback>}
       {state === "loading" && <div className={styles.skeletons} aria-label="Loading offers"><span /><span /></div>}

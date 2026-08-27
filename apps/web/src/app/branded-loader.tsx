@@ -1,4 +1,4 @@
-import Image from "next/image";
+import { BrandMark } from "../components/brand-mark";
 
 type BrandedLoaderProps = {
   label?: string;
@@ -14,26 +14,23 @@ export function BrandedLoader({
       className="brandedLoader"
       role="status"
     >
-      <div className="brandedLoaderMark" aria-hidden="true">
-        <span className="brandedLoaderHalo" />
-        <Image
-          src="/brand/kaila-bull-app-icon-v2.png"
-          alt=""
-          width={533}
-          height={556}
-          priority
-        />
-      </div>
-      <div className="brandedLoaderCopy">
-        <strong>KAILA</strong>
-        <p>{label}</p>
-      </div>
-      <div className="brandedLoaderRoute" aria-hidden="true">
+      <div className="brandedLoaderBackdrop" aria-hidden="true">
         <span />
         <i />
         <i />
-        <i />
       </div>
+      <section className="brandedLoaderCard">
+        <BrandMark className="brandedLoaderLogo" priority showBull />
+        <div className="brandedLoaderCopy">
+        <p>{label}</p>
+        </div>
+        <div className="brandedLoaderRoute" aria-hidden="true">
+          <span />
+          <i />
+          <i />
+          <i />
+        </div>
+      </section>
     </main>
   );
 }

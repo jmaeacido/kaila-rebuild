@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Bell, CheckCheck, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button, Feedback } from "@kaila/ui";
 import { prepareCsrf } from "../auth-client";
 import { notificationRoute, type NotificationRecord } from "../notification-route";
@@ -14,6 +15,7 @@ import styles from "./notifications.module.css";
 type State = "loading" | "ready" | "error";
 
 export default function NotificationsPage() {
+  const router = useRouter();
   const [items, setItems] = useState<NotificationRecord[]>([]);
   const [state, setState] = useState<State>("loading");
   const load = useCallback(async () => {
@@ -40,7 +42,7 @@ export default function NotificationsPage() {
 
   async function open(item: NotificationRecord) {
     if (!item.readAt) await mutate(`/api/v1/notifications/${item.id}/read`, "PUT");
-    window.location.assign(notificationRoute(item));
+    router.push(notificationRoute(item));
   }
 
   return (

@@ -223,7 +223,7 @@
 
 @media (max-width: 63.999rem) {
   .launcher {
-    bottom: calc(var(--spacing-64) + var(--spacing-48) + max(var(--spacing-12), env(safe-area-inset-bottom)));
+    position: static;
     height: var(--spacing-48);
     padding: 0;
     width: var(--spacing-48);

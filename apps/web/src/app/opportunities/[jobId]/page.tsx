@@ -1,7 +1,8 @@
-/* eslint-disable @next/next/no-html-link-for-pages, @next/next/no-img-element */
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import { use, useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import {
   ArrowLeft,
   CheckCircle2,
@@ -190,7 +191,7 @@ export default function MakeOfferPage({ params }: { params: Promise<{ jobId: str
 
   return (
     <main className={`${styles.shell} ${styles.offerShell}`}>
-      <a className={styles.back} href="/opportunities"><ArrowLeft aria-hidden="true" />Opportunities</a>
+      <Link className={styles.back} href="/opportunities"><ArrowLeft aria-hidden="true" />Opportunities</Link>
       {opportunity && (
         <section className={styles.requestSummary}>
           <div className={styles.client}>

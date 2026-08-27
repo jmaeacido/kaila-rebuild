@@ -75,23 +75,23 @@ export function SessionMenu({ loggingOut = false, onSignOut }: SessionMenuProps)
       </button>
       {open ? (
         <div className={styles.menu} id={menuId} role="menu" aria-label="Options">
-          <Link className={styles.item} href="/account" prefetch={false} role="menuitem" onClick={close}>
+          <Link className={styles.item} href="/account" role="menuitem" onClick={close}>
             <UserRound aria-hidden="true" />
             <span>Account</span>
           </Link>
-          <Link className={styles.item} href="/settings" prefetch={false} role="menuitem" onClick={close}>
+          <Link className={styles.item} href="/settings" role="menuitem" onClick={close}>
             <Settings aria-hidden="true" />
             <span>Settings</span>
           </Link>
-          <Link className={styles.item} href="/support" prefetch={false} role="menuitem" onClick={close}>
+          <Link className={styles.item} href="/support" role="menuitem" onClick={close}>
             <LifeBuoy aria-hidden="true" />
             <span>Support</span>
           </Link>
-          <Link className={styles.item} href="/faqs" prefetch={false} role="menuitem" onClick={close}>
+          <Link className={styles.item} href="/faqs" role="menuitem" onClick={close}>
             <CircleHelp aria-hidden="true" />
             <span>FAQs</span>
           </Link>
-          <Link className={styles.item} href="/safety" prefetch={false} role="menuitem" onClick={close}>
+          <Link className={styles.item} href="/safety" role="menuitem" onClick={close}>
             <ShieldCheck aria-hidden="true" />
             <span>Safety</span>
           </Link>
@@ -120,7 +120,7 @@ export function SessionMenu({ loggingOut = false, onSignOut }: SessionMenuProps)
           </div>
 
           <div className={styles.separator} role="separator" />
-          <Link className={styles.item} href="/home" prefetch={false} role="menuitem" onClick={close}>
+          <Link className={styles.item} href="/home" role="menuitem" onClick={close}>
             <Home aria-hidden="true" />
             <span>Home</span>
           </Link>

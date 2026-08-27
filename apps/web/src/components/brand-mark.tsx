@@ -12,6 +12,7 @@ type BrandMarkProps = {
   variant?: "auto" | "ink" | "onDark";
   width?: number;
   height?: number;
+  showBull?: boolean;
 };
 
 function markFor(variant: BrandMarkProps["variant"], resolved: ResolvedTheme): string {
@@ -28,10 +29,11 @@ export function BrandMark({
   variant = "auto",
   width = 2023,
   height = 526,
+  showBull = false,
 }: BrandMarkProps) {
   const { resolved } = useTheme();
   return (
-    <span className={`${styles.lockup}${className ? ` ${className}` : ""}`}>
+    <span className={`${styles.lockup}${showBull ? ` ${styles.withBull}` : ""}${className ? ` ${className}` : ""}`}>
       <Image
         className={styles.bull}
         src="/brand/kaila-bull-app-icon-v2.png"

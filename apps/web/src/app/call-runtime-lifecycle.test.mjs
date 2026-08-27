@@ -8,10 +8,10 @@ const realtimeProvider = readFileSync(new URL("./realtime-provider.tsx", import.
 
 test("CallProvider remains mounted while a protected route authenticates", () => {
   const provider = authGuard.indexOf("<CallProvider>");
-  const sessionGate = authGuard.indexOf("allowedPath !== pathname ?", provider);
+  const sessionGate = authGuard.indexOf("{sessionReady ? (", provider);
   assert.ok(provider >= 0);
   assert.ok(sessionGate > provider);
-  assert.doesNotMatch(authGuard.slice(0, provider), /allowedPath !== pathname[\s\S]*?return/);
+  assert.match(authGuard.slice(sessionGate), /<BrandedLoader label="Getting KAILA ready for you/);
 });
 
 test("native answer can read incoming call state without waiting for a React effect", () => {

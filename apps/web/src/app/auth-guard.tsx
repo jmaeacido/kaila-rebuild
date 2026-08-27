@@ -40,7 +40,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { applyAccountTheme } = useTheme();
-  const [allowedPath, setAllowedPath] = useState<string | null>(null);
+  const [sessionReady, setSessionReady] = useState(false);
   const [userName, setUserName] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [loggingOut, setLoggingOut] = useState(false);
@@ -50,39 +50,25 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     if (isPublic) {
       return;
     }
+    if (sessionReady) return;
 
     let active = true;
-    void fetch("/api/v1/auth/session-status", {
+    void fetch("/api/v1/me", {
       credentials: "include",
       headers: { Accept: "application/json" },
+      cache: "no-store",
     })
       .then(async (response) => {
         if (!active) {
           return;
         }
         if (!response.ok) {
-          throw new Error("Session status request failed.");
-        }
-        const body = (await response.json()) as {
-          data: { authenticated: boolean };
-        };
-        if (!body.data.authenticated) {
+          if (response.status !== 401) throw new Error("Current user request failed.");
           const destination = `${pathname}${window.location.search}`;
           router.replace(`/login?next=${encodeURIComponent(destination)}`);
           return;
         }
-
-        const userResponse = await fetch("/api/v1/me", {
-          credentials: "include",
-          headers: { Accept: "application/json" },
-        });
-        if (!active) {
-          return;
-        }
-        if (!userResponse.ok) {
-          throw new Error("Current user request failed.");
-        }
-        const userBody = (await userResponse.json()) as {
+        const userBody = (await response.json()) as {
           data: { name: string; avatarUrl: string | null; appearanceTheme?: string };
         };
         setUserName(userBody.data.name);
@@ -90,7 +76,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
         if (isThemePreference(userBody.data.appearanceTheme)) {
           applyAccountTheme(userBody.data.appearanceTheme);
         }
-        setAllowedPath(pathname);
+        setSessionReady(true);
         const capacitor = (window as Window & { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor;
         if (capacitor?.isNativePlatform?.()) {
           void ensureMobileSession(window.location.origin).catch(() => undefined);
@@ -105,7 +91,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     return () => {
       active = false;
     };
-  }, [applyAccountTheme, isPublic, pathname, router]);
+  }, [applyAccountTheme, isPublic, pathname, router, sessionReady]);
 
   if (isPublic) {
     return children;
@@ -125,6 +111,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
       });
       await clearSession().catch(() => undefined);
     } finally {
+      setSessionReady(false);
       window.dispatchEvent(new CustomEvent<boolean>(realtimeAuthChangedName, { detail: false }));
       router.replace("/login");
       router.refresh();
@@ -137,13 +124,11 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 
   return (
     <CallProvider>
-      {allowedPath !== pathname ? (
-        <BrandedLoader label="Checking your KAILA session…" />
-      ) : (
+      {sessionReady ? (
         <>
           <PullToRefresh />
           <header className="appSessionBar">
-            <Link href="/home" aria-label="KAILA home" prefetch={false}>
+            <Link href="/home" aria-label="KAILA home">
               <BrandMark className="sessionLogo" priority />
             </Link>
             <div>
@@ -151,7 +136,6 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
                 className="sessionAvatar"
                 href="/account"
                 aria-label="Open account"
-                prefetch={false}
               >
                 <span aria-hidden="true">{userName.charAt(0).toUpperCase()}</span>
                 {avatarUrl ? (
@@ -166,13 +150,15 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
               </Link>
               <span className="sessionName">{userName}</span>
               <NotificationBell />
+              {pathname !== "/help/katabang" && <FloatingKatabang />}
               <SessionMenu loggingOut={loggingOut} onSignOut={() => void signOut()} />
             </div>
           </header>
           <AreaMismatchBanner />
           {children}
-          {pathname !== "/help/katabang" && <FloatingKatabang />}
         </>
+      ) : (
+        <BrandedLoader label="Getting KAILA ready for you…" />
       )}
     </CallProvider>
   );

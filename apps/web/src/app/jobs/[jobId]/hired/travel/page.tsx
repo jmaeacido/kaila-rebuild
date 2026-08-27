@@ -2,6 +2,7 @@
 "use client";
 
 import { use, useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { ArrowLeft, ArrowUp, Check, ChevronLeft, ChevronRight, LocateFixed, MessageCircle, Navigation, RotateCcw, ShieldCheck, Square } from "lucide-react";
 import { Button, Feedback } from "@kaila/ui";
 import { BackgroundNavigation } from "@kaila/mobile/background-navigation";
@@ -352,12 +353,12 @@ export default function TravelPage({ params }: { params: Promise<{ jobId: string
     />
 
     <header className={styles.navigationTop}>
-      <a href={`/jobs/${jobId}`} aria-label="Back to job"><ArrowLeft /></a>
+      <Link href={`/jobs/${jobId}`} aria-label="Back to job"><ArrowLeft /></Link>
       <div>
         <strong>{travel?.arrivedAt ? `Arrived at ${destinationName}` : active ? travelerNavigating ? `Navigating to ${destinationName}` : `${shopService ? "Client" : "Provider"} on the way` : "Navigation"}</strong>
         <span>{lastUpdate ? `Updated ${lastUpdate.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}` : `Waiting for ${travelerName} GPS (point A)`}</span>
       </div>
-      <a href={`/jobs/${jobId}/hired/conversation`} aria-label="Message job participant"><MessageCircle /></a>
+      <Link href={`/jobs/${jobId}/hired/conversation`} aria-label="Message job participant"><MessageCircle /></Link>
     </header>
 
     {travelerNavigating && !travel?.arrivedAt && <section className={styles.turnCard} aria-live="polite">

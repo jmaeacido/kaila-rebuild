@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Bell, CheckCheck, ChevronRight, RefreshCw, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { notificationRoute, type NotificationRecord } from "./notification-route";
 import { useRealtimeInvalidation } from "./use-realtime-invalidation";
 import { prepareCsrf } from "./auth-client";
@@ -11,6 +12,7 @@ import { NotificationGlyph } from "./notification-glyph";
 export const notificationsChangedName = "kaila:notifications-changed";
 
 export function NotificationBell() {
+  const router = useRouter();
   const [items, setItems] = useState<NotificationRecord[]>([]);
   const [unread, setUnread] = useState(0);
   const [open, setOpen] = useState(false);
@@ -78,8 +80,8 @@ export function NotificationBell() {
         void load();
       }
     }
-    window.location.assign(notificationRoute(item));
-  }, [load]);
+    router.push(notificationRoute(item));
+  }, [load, router]);
 
   const markAllRead = useCallback(async () => {
     if (unread === 0) return;

@@ -7,6 +7,8 @@ const opportunitiesSource = readFileSync(new URL("../opportunities/page.tsx", im
 const opportunityDetailsSource = readFileSync(new URL("../opportunities/[jobId]/page.tsx", import.meta.url), "utf8");
 const jobDetailsSource = readFileSync(new URL("../jobs/[jobId]/page.tsx", import.meta.url), "utf8");
 const notificationBellSource = readFileSync(new URL("../notification-bell.tsx", import.meta.url), "utf8");
+const authGuardSource = readFileSync(new URL("../auth-guard.tsx", import.meta.url), "utf8");
+const brandedLoaderSource = readFileSync(new URL("../branded-loader.tsx", import.meta.url), "utf8");
 
 test("Home keeps every non-terminal job active and terminal jobs in history", () => {
   assert.match(source, /const activeClientJobs = jobs\.filter/);
@@ -14,6 +16,43 @@ test("Home keeps every non-terminal job active and terminal jobs in history", ()
   assert.match(source, /activeJobs\.map\(\(job\)/);
   assert.match(source, /\["completed", "rated_closed", "cancelled"\]\.includes\(job\.status\)/);
   assert.doesNotMatch(source, /job\.id !== currentJob\?\.id/);
+});
+
+test("Client Home presents one empty jobs state and role-aware primary navigation", () => {
+  assert.match(source, /No jobs yet/);
+  assert.match(source, /jobHistory\.length > 0 && <section/);
+  assert.doesNotMatch(source, /No hired jobs yet/);
+  assert.match(source, /<EmptyJobsIllustration \/>/);
+  assert.match(source, />\s*Jobs\s*<\/Link>/);
+  assert.match(source, />\s*Opportunities\s*<\/Link>/);
+  assert.doesNotMatch(source, /user\.providerEligible \? "\/opportunities" : "\/provider-profile"/);
+});
+
+test("Home keeps the hero action primary and removes duplicate discovery actions", () => {
+  assert.match(source, /className=\{styles\.secondaryAction\} href="\/providers"/);
+  assert.match(source, />Find a provider</);
+  assert.match(source, />\s*View more services/);
+  assert.doesNotMatch(source, /categories\.length > 6 &&/);
+  assert.doesNotMatch(source, /Find a specific provider/);
+  assert.doesNotMatch(source, /<Link href="\/post-job">\s*<Search/);
+});
+
+test("The mobile Katabang trigger lives with header controls instead of covering content", () => {
+  assert.match(authGuardSource, /<NotificationBell \/>\s*\{pathname !== "\/help\/katabang" && <FloatingKatabang \/>\}/);
+});
+
+test("Authenticated loading uses the approved KAILA lockup and human-facing copy", () => {
+  assert.match(brandedLoaderSource, /<BrandMark className="brandedLoaderLogo" priority showBull \/>/);
+  assert.match(brandedLoaderSource, /className="brandedLoaderBackdrop"/);
+  assert.match(authGuardSource, /Getting KAILA ready for you/);
+});
+
+test("Authenticated navigation retains the verified session and lets pages own loading UI", () => {
+  assert.match(authGuardSource, /if \(sessionReady\) return/);
+  assert.match(authGuardSource, /\{sessionReady \? \(/);
+  assert.doesNotMatch(authGuardSource, /<AuthenticatedRouteTransition/);
+  assert.doesNotMatch(authGuardSource, /MutationObserver/);
+  assert.doesNotMatch(authGuardSource, /image\.complete/);
 });
 
 test("Every job-card surface uses its service category icon", () => {
@@ -82,5 +121,5 @@ test("Header notification clicks persist read state before navigation", () => {
   assert.match(notificationBellSource, /notifications\/\$\{item\.id\}\/read/);
   assert.match(notificationBellSource, /event\.preventDefault\(\)/);
   assert.match(notificationBellSource, /setUnread\(\(current\) => Math\.max\(0, current - 1\)\)/);
-  assert.match(notificationBellSource, /window\.location\.assign\(notificationRoute\(item\)\)/);
+  assert.match(notificationBellSource, /router\.push\(notificationRoute\(item\)\)/);
 });

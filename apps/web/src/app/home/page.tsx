@@ -7,14 +7,15 @@ import {
   ArrowRight,
   BriefcaseBusiness,
   ChevronRight,
+  ClipboardList,
   Home,
   MapPin,
   MessageCircle,
   Navigation,
   Plus,
   Search,
-  Settings,
   Star,
+  UserRound,
 } from "lucide-react";
 import { Feedback } from "@kaila/ui";
 import { ServiceCategoryIcon } from "../../components/service-category-icon";
@@ -209,7 +210,7 @@ export default function AuthenticatedHomePage() {
         <p className={styles.heroReputation}>
           <Star aria-hidden="true" />
           {user.reputation.averageRating === null
-            ? "New · No published reviews yet"
+            ? "New member · No reviews yet"
             : `${user.reputation.averageRating.toFixed(1)} overall · ${user.reputation.reviewCount} review${user.reputation.reviewCount === 1 ? "" : "s"}`}
         </p>
         <h1 id="home-title">
@@ -240,10 +241,6 @@ export default function AuthenticatedHomePage() {
               <p className={styles.eyebrow}>POPULAR NEAR YOU</p>
               <h2 id="services-title">Choose a service</h2>
             </div>
-            <Link href="/post-job">
-              <Search aria-hidden="true" />
-              Post a job
-            </Link>
           </header>
           <div className={styles.categoryGrid}>
             {categories.slice(0, 6).map((category) => {
@@ -260,7 +257,11 @@ export default function AuthenticatedHomePage() {
               );
             })}
           </div>
-          <Link className={styles.primaryAction} href="/providers"><Search aria-hidden="true" />Find a specific provider<ArrowRight aria-hidden="true" /></Link>
+          <Link className={styles.moreServices} href="/post-job">
+            View more services
+            <ChevronRight aria-hidden="true" />
+          </Link>
+          <Link className={styles.secondaryAction} href="/providers"><Search aria-hidden="true" />Find a provider<ArrowRight aria-hidden="true" /></Link>
         </section>
       )}
 
@@ -269,10 +270,10 @@ export default function AuthenticatedHomePage() {
         <header>
           <div>
             <p className={styles.eyebrow}>
-              {activeJobs.length ? `YOUR ACTIVE JOB${activeJobs.length === 1 ? "" : "S"}` : isProvider ? "YOUR NEXT OPPORTUNITY" : "YOUR LATEST JOB"}
+              {activeJobs.length ? `YOUR ACTIVE JOB${activeJobs.length === 1 ? "" : "S"}` : isProvider ? "YOUR NEXT OPPORTUNITY" : "YOUR JOBS"}
             </p>
             <h2 id="current-title">
-              {activeJobs.length ? "Hired work" : isProvider ? "Nearby work" : "Current activity"}
+              {activeJobs.length ? "Hired work" : isProvider ? "Nearby work" : "Your activity"}
             </h2>
           </div>
           <Link href={currentJob ? `/jobs/${currentJob.id}` : isProvider ? "/opportunities" : "/post-job"}>
@@ -302,13 +303,13 @@ export default function AuthenticatedHomePage() {
           </div>
         ) : (
           <div className={styles.empty}>
-            <BriefcaseBusiness aria-hidden="true" />
+            <EmptyJobsIllustration />
             <div>
-              <h3>{isProvider ? "No nearby jobs yet" : "No active jobs"}</h3>
+              <h3>{isProvider ? "No nearby jobs yet" : "No jobs yet"}</h3>
               <p>
                 {isProvider
                   ? "We’ll show matching local work here when it becomes available."
-                  : "Completed work stays in Job history. Post a new job whenever you need help."}
+                  : "Tell us what you need and hear from local providers."}
               </p>
             </div>
             <Link href={primaryHref}>{primaryLabel}</Link>
@@ -342,7 +343,7 @@ export default function AuthenticatedHomePage() {
         </section>
       )}
 
-      <section className={styles.history} aria-labelledby="history-title" id="job-history">
+      {jobHistory.length > 0 && <section className={styles.history} aria-labelledby="history-title" id="job-history">
           <header>
             <div>
               <p className={styles.eyebrow}>{isProvider ? "YOUR WORK" : "YOUR JOBS"}</p>
@@ -350,8 +351,7 @@ export default function AuthenticatedHomePage() {
             </div>
             <span>{jobHistory.length} job{jobHistory.length === 1 ? "" : "s"}</span>
           </header>
-          {jobHistory.length ? (
-            <div className={styles.historyList}>
+          <div className={styles.historyList}>
               {jobHistory.map((job) => (
                 <Link href={`/jobs/${job.id}`} key={job.id}>
                   <span className={`${styles.historyIcon} ${job.counterpart ? styles.personAvatar : ""}`}>{job.counterpart?.avatarUrl ? <Image src={job.counterpart.avatarUrl} alt={`${job.counterpart.displayName} profile`} width={48} height={48} unoptimized /> : job.counterpart ? job.counterpart.displayName.charAt(0).toUpperCase() : <ServiceCategoryIcon icon={job.category.icon} aria-hidden="true" />}</span>
@@ -372,45 +372,64 @@ export default function AuthenticatedHomePage() {
                   <ChevronRight aria-hidden="true" />
                 </Link>
               ))}
-            </div>
-          ) : (
-            <div className={styles.empty}>
-              <BriefcaseBusiness aria-hidden="true" />
-              <div>
-                <h3>No hired jobs yet</h3>
-                <p>{isProvider ? "Jobs appear here after a client accepts your offer." : "Posted jobs appear here as they move from offers to completion."}</p>
-              </div>
-              <Link href={isProvider ? "/opportunities" : "/post-job"}>{isProvider ? "Find nearby work" : "Post a job"}</Link>
-            </div>
-          )}
-        </section>
+          </div>
+        </section>}
 
       <nav className={styles.bottomNav} aria-label="Marketplace navigation">
-        <Link aria-current="page" href="/home" prefetch={false}>
+        <Link aria-current="page" href="/home">
           <Home aria-hidden="true" />
           Home
         </Link>
-        <Link href="/post-job" prefetch={false}>
-          <Plus aria-hidden="true" />
-          Post
-        </Link>
-        <Link
-          href={user.providerEligible ? "/opportunities" : "/provider-profile"}
-          prefetch={false}
-        >
-          <BriefcaseBusiness aria-hidden="true" />
-          Work
-        </Link>
-        <Link href="/messages" prefetch={false}>
+        {isProvider ? (
+          <Link href="/opportunities">
+            <Search aria-hidden="true" />
+            Opportunities
+          </Link>
+        ) : (
+          <Link href="/home#current-title">
+            <ClipboardList aria-hidden="true" />
+            Jobs
+          </Link>
+        )}
+        {isProvider ? (
+          <Link href="/home#current-title">
+            <BriefcaseBusiness aria-hidden="true" />
+            Work
+          </Link>
+        ) : (
+          <Link href="/post-job">
+            <Plus aria-hidden="true" />
+            Post
+          </Link>
+        )}
+        <Link href="/messages">
           <MessageCircle aria-hidden="true" />
           Messages
         </Link>
-        <Link href="/account" prefetch={false}>
-          <Settings aria-hidden="true" />
-          Account
+        <Link href="/account">
+          <UserRound aria-hidden="true" />
+          Profile
         </Link>
       </nav>
     </main>
+  );
+}
+
+function EmptyJobsIllustration() {
+  return (
+    <svg
+      className={styles.emptyIllustration}
+      viewBox="0 0 160 112"
+      role="img"
+      aria-label="A KAILA service bag ready for a new job"
+    >
+      <path className={styles.illustrationRoute} d="M12 82c24-33 52 12 80-19 19-21 37-15 56-43" />
+      <circle className={styles.illustrationPin} cx="13" cy="82" r="6" />
+      <circle className={styles.illustrationPin} cx="148" cy="20" r="6" />
+      <rect className={styles.illustrationBag} x="48" y="35" width="64" height="50" rx="14" />
+      <path className={styles.illustrationHandle} d="M65 36v-5c0-8 6-14 15-14s15 6 15 14v5" />
+      <path className={styles.illustrationDetail} d="M48 55h64M72 55v9h16v-9" />
+    </svg>
   );
 }
 
