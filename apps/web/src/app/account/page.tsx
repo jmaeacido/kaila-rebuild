@@ -6,15 +6,22 @@ import Link from "next/link";
 import {
   Bell,
   BriefcaseBusiness,
+  Camera,
   Check,
   ChevronRight,
+  ClipboardList,
+  Home,
   MapPin,
+  MessageCircle,
+  Plus,
+  Search,
   Settings,
   ShieldCheck,
   Star,
   UserRound,
 } from "lucide-react";
 import { Button, Feedback } from "@kaila/ui";
+import { ActionModal } from "../../components/action-modal";
 import { AttachmentSourceActions } from "../../components/attachment-picker";
 import { prepareCsrf } from "../auth-client";
 import { AddressHierarchy, type AreaReference } from "../address-hierarchy";
@@ -46,6 +53,7 @@ export default function AccountPage() {
   >("loading");
   const [notice, setNotice] = useState("");
   const [avatarNotice, setAvatarNotice] = useState("");
+  const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
 
   const load = useCallback(async () => {
     setStatus("loading");
@@ -210,22 +218,20 @@ export default function AccountPage() {
               unoptimized
             />
           ) : null}
+          <button
+            aria-expanded={avatarMenuOpen}
+            aria-label="Change profile picture"
+            className={styles.avatarTrigger}
+            disabled={status === "uploading"}
+            onClick={() => setAvatarMenuOpen((open) => !open)}
+            type="button"
+          >
+            <Camera aria-hidden="true" />
+          </button>
         </div>
         <div>
           <h2 id="identity-title">{user.name}</h2>
           <p>{user.email}</p>
-          <div className={styles.avatarActions}>
-            <AttachmentSourceActions
-              kinds={["image"]}
-              facingMode="user"
-              compact
-              disabled={status === "uploading"}
-              onFiles={(files) => {
-                const next = files[0];
-                if (next) void uploadAvatarFile(next);
-              }}
-            />
-          </div>
           <span className={styles.safetyNote}>
             <ShieldCheck aria-hidden="true" />
             Pictures are reviewed before they appear
@@ -240,29 +246,36 @@ export default function AccountPage() {
             </p>
           )}
         </div>
-      </section>
-
-      <Link className={styles.reputationCard} href="/support">
-        <Image src="/support/support-icon.png" alt="" width={64} height={64} />
-        <div><p className={styles.eyebrow}>CUSTOMER CARE</p><h2>Support</h2><p>Ask a question or follow your support requests.</p></div>
-        <ChevronRight aria-hidden="true" />
-      </Link>
-
-      <section className={styles.reputationCard} aria-labelledby="reputation-title">
-        <span className={styles.reputationIcon}><Star aria-hidden="true" /></span>
-        <div>
-          <p className={styles.eyebrow}>YOUR REPUTATION</p>
-          <h2 id="reputation-title">
-            {user.reputation.averageRating === null
-              ? "New to KAILA"
-              : `${user.reputation.averageRating.toFixed(1)} overall rating`}
-          </h2>
-          <p>
-            {user.reputation.reviewCount === 0
-              ? "Your rating will appear after a completed job review is published."
-              : `Based on ${user.reputation.reviewCount} published review${user.reputation.reviewCount === 1 ? "" : "s"} from your completed jobs.`}
-          </p>
-        </div>
+        {avatarMenuOpen && (
+          <ActionModal
+            eyebrow="Profile picture"
+            title="Choose a photo"
+            onClose={() => setAvatarMenuOpen(false)}
+          >
+            <div className={styles.avatarModalBody}>
+            <AttachmentSourceActions
+              kinds={["image"]}
+              facingMode="user"
+              compact
+              compactColumns={2}
+              className={styles.avatarSourceActions}
+              disabled={status === "uploading"}
+              onFiles={(files) => {
+                const next = files[0];
+                if (next) {
+                  setAvatarMenuOpen(false);
+                  void uploadAvatarFile(next);
+                }
+              }}
+            />
+              <p>Choose a clear photo of yourself. JPG, PNG, and WebP files up to 10 MB are supported.</p>
+              <span className={styles.safetyNote}>
+                <ShieldCheck aria-hidden="true" />
+                Pictures are reviewed before they appear
+              </span>
+            </div>
+          </ActionModal>
+        )}
       </section>
 
       {notice && (
@@ -274,6 +287,8 @@ export default function AccountPage() {
         </Feedback>
       )}
 
+      <div className={styles.accountGrid}>
+      <div className={styles.primaryColumn}>
       <section className={styles.card} aria-labelledby="mode-title">
         <p className={styles.eyebrow}>MARKETPLACE MODE</p>
         <h2 id="mode-title">How are you using KAILA?</h2>
@@ -347,8 +362,32 @@ export default function AccountPage() {
           Save profile
         </Button>
       </form>
+      </div>
+
+      <aside className={styles.secondaryColumn} aria-label="Account overview and destinations">
+      <section className={styles.reputationCard} aria-labelledby="reputation-title">
+        <span className={styles.reputationIcon}><Star aria-hidden="true" /></span>
+        <div>
+          <p className={styles.eyebrow}>YOUR REPUTATION</p>
+          <h2 id="reputation-title">
+            {user.reputation.averageRating === null
+              ? "New to KAILA"
+              : `${user.reputation.averageRating.toFixed(1)} overall rating`}
+          </h2>
+          <p>
+            {user.reputation.reviewCount === 0
+              ? "Your rating will appear after a completed job review is published."
+              : `Based on ${user.reputation.reviewCount} published review${user.reputation.reviewCount === 1 ? "" : "s"} from your completed jobs.`}
+          </p>
+        </div>
+      </section>
 
       <section className={styles.links} aria-label="Account destinations">
+        <Link href="/support">
+          <span className={styles.supportIcon}><Image src="/support/support-icon.png" alt="" width={48} height={48} /></span>
+          <div><strong>Support</strong><small>Ask a question or follow your requests</small></div>
+          <ChevronRight aria-hidden="true" />
+        </Link>
         <Link href="/safety">
           <span><ShieldCheck aria-hidden="true" /></span>
           <div><strong>Trust and safety</strong><small>Report a concern and track its outcome</small></div>
@@ -375,6 +414,16 @@ export default function AccountPage() {
           <ChevronRight aria-hidden="true" />
         </Link>
       </section>
+      </aside>
+      </div>
+
+      <nav className={styles.bottomNav} aria-label="Marketplace navigation">
+        <Link href="/home"><Home aria-hidden="true" />Home</Link>
+        {profile.activeMode === "provider" ? <Link href="/opportunities"><Search aria-hidden="true" />Find work</Link> : <Link href="/home#current-title"><ClipboardList aria-hidden="true" />Jobs</Link>}
+        {profile.activeMode === "provider" ? <Link href="/home#current-title"><BriefcaseBusiness aria-hidden="true" />Work</Link> : <Link href="/post-job"><Plus aria-hidden="true" />Post</Link>}
+        <Link href="/messages"><MessageCircle aria-hidden="true" />Messages</Link>
+        <Link aria-current="page" href="/account"><UserRound aria-hidden="true" />Profile</Link>
+      </nav>
     </main>
   );
 }

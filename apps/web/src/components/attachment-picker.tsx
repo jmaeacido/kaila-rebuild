@@ -45,12 +45,16 @@ export function AttachmentSourceActions({
   facingMode = "environment",
   onFiles,
   compact = false,
+  compactColumns = 3,
+  className,
 }: {
   kinds?: AttachmentKind[];
   disabled?: boolean;
   facingMode?: "user" | "environment";
   onFiles: (files: File[]) => void;
   compact?: boolean;
+  compactColumns?: 2 | 3;
+  className?: string;
 }) {
   const photoInput = useRef<HTMLInputElement>(null);
   const videoInput = useRef<HTMLInputElement>(null);
@@ -86,7 +90,7 @@ export function AttachmentSourceActions({
   }
 
   return (
-    <div className={compact ? styles.actionsCompact : styles.actions} role="group" aria-label="Add media">
+    <div className={[compact ? (compactColumns === 2 ? styles.actionsCompactTwo : styles.actionsCompact) : styles.actions, className].filter(Boolean).join(" ")} role="group" aria-label="Add media">
       {allowImage && (
         <button type="button" className={styles.action} disabled={disabled} onClick={() => void capture("photo")}>
           <Camera aria-hidden="true" />

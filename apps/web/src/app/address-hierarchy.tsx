@@ -110,14 +110,19 @@ export function AddressHierarchy({
 
     void (async () => {
       try {
-        const barangay = await fetchArea(value);
-        if (!active || barangay.type !== "barangay" || barangay.parent_id == null) return;
+        const selectedArea: AreaReference & { parent?: AreaReference | null } =
+          areas.find((area) => String(area.id) === value) ??
+          (await fetchArea(value));
+        if (!active) return;
 
-        const city =
-          barangay.parent &&
-          ["city", "municipality"].includes(barangay.parent.type ?? "")
-            ? barangay.parent
-            : areas.find((area) => area.id === barangay.parent_id);
+        const city = ["city", "municipality"].includes(selectedArea.type ?? "")
+          ? selectedArea
+          : selectedArea.type === "barangay" && selectedArea.parent_id != null
+            ? selectedArea.parent &&
+              ["city", "municipality"].includes(selectedArea.parent.type ?? "")
+              ? selectedArea.parent
+              : areas.find((area) => area.id === selectedArea.parent_id)
+            : null;
 
         if (!city) return;
 
@@ -217,7 +222,7 @@ export function AddressHierarchy({
         <select
           required={!optional && Boolean(cityId)}
           disabled={!cityId || barangaysLoading}
-          value={value}
+          value={barangays.some((barangay) => String(barangay.id) === value) ? value : ""}
           onChange={(event) => onChange(event.target.value)}
         >
           <option value="">{barangaysLoading ? "Loading barangays…" : "Choose barangay"}</option>
