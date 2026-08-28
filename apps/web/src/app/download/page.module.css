@@ -22,6 +22,7 @@
 
 .brandLogo {
   height: auto;
+  width: clamp(9.5rem, 36vw, 11.5rem);
 }
 
 .headerActions {

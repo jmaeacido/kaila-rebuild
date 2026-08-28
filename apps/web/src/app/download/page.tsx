@@ -18,7 +18,7 @@ export default function DownloadPage() {
     <main className={styles.page}>
       <header className={styles.topbar}>
         <Link className={styles.brand} href="/" aria-label="KAILA home">
-          <BrandMark className={styles.brandLogo} priority showBull compact />
+          <BrandMark className={styles.brandLogo} priority showBull />
         </Link>
         <div className={styles.headerActions}>
           <ThemeToggle className={styles.headerTheme} />

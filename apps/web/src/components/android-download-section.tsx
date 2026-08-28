@@ -11,6 +11,7 @@ import {
   ANDROID_APK_PATH,
   ANDROID_DOWNLOAD,
 } from "../app/android-download";
+import { BrandWordmark } from "./brand-mark";
 import { AndroidDownloadQr } from "./android-download-qr";
 import styles from "./android-download-section.module.css";
 
@@ -49,7 +50,7 @@ export function AndroidDownloadSection({
       aria-labelledby={`${id}-title`}
     >
       <div className={styles.inner}>
-        <div className={styles.copy}>
+        <div className={styles.hero}>
           <div className={styles.intro}>
             {showIntro && <p className={styles.kicker}>ANDROID APP</p>}
             <p className={styles.badge}>
@@ -58,30 +59,32 @@ export function AndroidDownloadSection({
             </p>
           </div>
           <h2 className={styles.title} id={`${id}-title`}>
-            Get KAILA on your <em>Android</em> phone
+            Get <BrandWordmark className={styles.titleBrand} /> on your{" "}
+            <em>Android</em> phone
           </h2>
           <p className={styles.lead}>
             Install the KAILA app to post jobs, chat with providers, follow work
             in real time, and get notified when something needs your attention.
           </p>
-          <div className={styles.downloadPanel}>
-            <div className={styles.meta}>
-              <span>Version {ANDROID_DOWNLOAD.versionName}</span>
-              <span>{ANDROID_DOWNLOAD.minAndroid}</span>
-            </div>
-            <a
-              className={styles.downloadButton}
-              href={ANDROID_APK_PATH}
-              download={ANDROID_DOWNLOAD.fileName}
-            >
-              <Download aria-hidden="true" />
-              Download APK
-            </a>
-            <p className={styles.directLink}>
-              Direct link:{" "}
-              <a href={ANDROID_APK_DOWNLOAD_URL}>{ANDROID_APK_DOWNLOAD_URL}</a>
-            </p>
+        </div>
+
+        <div className={styles.downloadPanel}>
+          <div className={styles.meta}>
+            <span>Version {ANDROID_DOWNLOAD.versionName}</span>
+            <span>{ANDROID_DOWNLOAD.minAndroid}</span>
           </div>
+          <a
+            className={styles.downloadButton}
+            href={ANDROID_APK_PATH}
+            download={ANDROID_DOWNLOAD.fileName}
+          >
+            <Download aria-hidden="true" />
+            Download APK
+          </a>
+          <p className={styles.directLink}>
+            Direct link:{" "}
+            <a href={ANDROID_APK_DOWNLOAD_URL}>{ANDROID_APK_DOWNLOAD_URL}</a>
+          </p>
         </div>
 
         <div className={styles.visual}>
@@ -96,7 +99,7 @@ export function AndroidDownloadSection({
                 height={1254}
                 priority={false}
               />
-              <strong>KAILA</strong>
+              <BrandWordmark className={styles.phoneWordmark} />
               <span>Nearby help, made simple.</span>
             </div>
           </div>

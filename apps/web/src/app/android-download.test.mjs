@@ -20,3 +20,21 @@ test("landing page exposes the download section and navigation", () => {
   assert.match(landing, /href="\/download">Download<\/Link>/);
   assert.match(publicRoutes, /"\/download"/);
 });
+
+test("download section keeps hero, actions, and visuals on separate desktop rows", () => {
+  const section = readFileSync(
+    new URL("../components/android-download-section.tsx", import.meta.url),
+    "utf8",
+  );
+  const styles = readFileSync(
+    new URL("../components/android-download-section.module.css", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(section, /className=\{styles\.hero\}/);
+  assert.match(section, /className=\{styles\.downloadPanel\}/);
+  assert.match(section, /<BrandWordmark className=\{styles\.titleBrand\} \/>/);
+  assert.match(section, /<BrandWordmark className=\{styles\.phoneWordmark\} \/>/);
+  assert.match(styles, /"hero hero"/);
+  assert.match(styles, /"download visual"/);
+});

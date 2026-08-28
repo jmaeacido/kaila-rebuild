@@ -22,7 +22,7 @@
   max-width: 78rem;
 }
 
-.copy {
+.hero {
   width: 100%;
 }
 
@@ -69,6 +69,13 @@
 .title em {
   color: var(--color-primary);
   font-style: normal;
+}
+
+.titleBrand {
+  display: inline-block;
+  height: 0.9em;
+  vertical-align: -0.1em;
+  width: auto;
 }
 
 .lead,
@@ -207,9 +214,9 @@
   width: 4rem;
 }
 
-.phoneScreen strong {
-  color: var(--color-ink);
-  font-size: var(--font-card-title-size);
+.phoneWordmark {
+  height: 1.35rem;
+  width: auto;
 }
 
 .phoneScreen span {
@@ -339,17 +346,25 @@
   .inner {
     align-items: start;
     column-gap: var(--spacing-48);
+    grid-template-areas:
+      "hero hero"
+      "download visual"
+      "steps steps";
     grid-template-columns: minmax(0, 1fr) minmax(20rem, 22rem);
     row-gap: var(--spacing-48);
   }
 
-  .copy {
-    max-width: 36rem;
+  .hero {
+    grid-area: hero;
+    max-width: 42rem;
   }
 
   .downloadPanel {
+    align-content: start;
+    align-self: stretch;
     gap: var(--spacing-24);
-    max-width: 28rem;
+    grid-area: download;
+    max-width: none;
     padding: var(--spacing-32);
   }
 
@@ -360,15 +375,18 @@
   }
 
   .visual {
+    align-self: stretch;
     display: grid;
     gap: var(--spacing-24);
+    grid-area: visual;
     grid-template-columns: 1fr;
-    justify-self: end;
+    justify-self: stretch;
     width: 100%;
   }
 
   .steps {
     gap: var(--spacing-16);
+    grid-area: steps;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     margin-top: var(--spacing-24);
     padding-top: var(--spacing-48);
@@ -384,6 +402,10 @@
   .inner {
     column-gap: var(--spacing-64);
     grid-template-columns: minmax(0, 1fr) minmax(28rem, 34rem);
+  }
+
+  .hero {
+    max-width: 48rem;
   }
 
   .visual {

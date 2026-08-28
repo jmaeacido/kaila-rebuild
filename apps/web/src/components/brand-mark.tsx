@@ -25,6 +25,26 @@ function markFor(variant: BrandMarkProps["variant"], resolved: ResolvedTheme): s
     : "/brand/kaila-wordmark.png";
 }
 
+export function BrandWordmark({
+  className,
+  priority = false,
+  variant = "auto",
+  width = 2023,
+  height = 526,
+}: Pick<BrandMarkProps, "className" | "priority" | "variant" | "width" | "height">) {
+  const { resolved } = useTheme();
+  return (
+    <Image
+      className={className}
+      src={markFor(variant, resolved)}
+      alt="KAILA"
+      width={width}
+      height={height}
+      priority={priority}
+    />
+  );
+}
+
 export function BrandMark({
   className,
   priority = false,

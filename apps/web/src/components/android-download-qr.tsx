@@ -5,6 +5,7 @@ import Image from "next/image";
 import QRCode from "qrcode";
 import { useTheme } from "../app/theme-provider";
 import { ANDROID_DOWNLOAD_PAGE_URL } from "../app/android-download";
+import { BrandWordmark } from "./brand-mark";
 import styles from "./android-download-qr.module.css";
 
 type AndroidDownloadQrProps = {
@@ -74,7 +75,7 @@ export function AndroidDownloadQr({ label }: AndroidDownloadQrProps) {
         </span>
       </div>
       <p className={styles.qrLabel}>{label}</p>
-      <p className={styles.qrBrand}>KAILA</p>
+      <BrandWordmark className={styles.qrWordmark} />
     </div>
   );
 }
