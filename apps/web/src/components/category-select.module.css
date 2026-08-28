@@ -54,6 +54,7 @@
   max-height: min(20rem, calc(100dvh - var(--spacing-24)));
   overflow-y: auto;
   overscroll-behavior: contain;
+  touch-action: pan-y;
   -webkit-overflow-scrolling: touch;
   padding: var(--spacing-4);
   position: absolute;

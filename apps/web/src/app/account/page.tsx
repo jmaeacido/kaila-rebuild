@@ -28,6 +28,7 @@ import { AddressHierarchy, type AreaReference } from "../address-hierarchy";
 import styles from "./account.module.css";
 import { useRealtimeInvalidation } from "../use-realtime-invalidation";
 import { profilePictureReviewEvent, type NotificationRecord } from "../notification-route";
+import { areaProfileChangedEvent } from "../../components/area-mismatch-banner";
 
 type User = {
   name: string;
@@ -155,6 +156,7 @@ export default function AccountPage() {
         }),
       });
       if (!response.ok) throw new Error();
+      window.dispatchEvent(new Event(areaProfileChangedEvent));
       setNotice("Your profile details are saved.");
       await load();
     } catch {

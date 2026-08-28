@@ -18,6 +18,7 @@ export function CategorySelect({
   disabled = false,
   placeholder = "Choose a service",
   label = "Service",
+  bottomBoundaryId,
 }: {
   categories: ServiceCategory[];
   value: string;
@@ -25,6 +26,7 @@ export function CategorySelect({
   disabled?: boolean;
   placeholder?: string;
   label?: string;
+  bottomBoundaryId?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [placement, setPlacement] = useState<"below" | "above">("below");
@@ -52,7 +54,11 @@ export function CategorySelect({
       if (!rect) return;
 
       const viewportPadding = 16;
-      const spaceBelow = window.innerHeight - rect.bottom - viewportPadding;
+      const boundaryTop = bottomBoundaryId
+        ? document.getElementById(bottomBoundaryId)?.getBoundingClientRect().top
+        : undefined;
+      const usableBottom = Math.min(window.visualViewport?.height ?? window.innerHeight, boundaryTop ?? Number.POSITIVE_INFINITY);
+      const spaceBelow = usableBottom - rect.bottom - viewportPadding;
       const spaceAbove = rect.top - viewportPadding;
       const nextPlacement = spaceBelow < 12 * 16 && spaceAbove > spaceBelow ? "above" : "below";
       const available = Math.max(160, nextPlacement === "below" ? spaceBelow : spaceAbove);
@@ -68,7 +74,7 @@ export function CategorySelect({
       window.removeEventListener("resize", updatePlacement);
       window.removeEventListener("scroll", updatePlacement, true);
     };
-  }, [open, categories.length]);
+  }, [open, categories.length, bottomBoundaryId]);
 
   function focusOption(direction: 1 | -1) {
     const options = Array.from(

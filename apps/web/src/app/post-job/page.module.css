@@ -4,14 +4,14 @@
   min-height: 100vh;
   padding: var(--spacing-16);
 }
-.shell header {
+.flowHeader {
   align-items: center;
   display: grid;
   gap: var(--spacing-12);
   grid-template-columns: var(--spacing-48) 1fr;
   margin-bottom: var(--spacing-16);
 }
-.shell header a {
+.flowHeader a {
   align-items: center;
   border-radius: var(--radius-pill);
   color: var(--color-ink);
@@ -20,21 +20,47 @@
   justify-content: center;
   width: var(--spacing-48);
 }
-.shell header a:hover {
+.flowHeader a:hover {
   background: var(--color-surface);
 }
-.shell header div {
+.progressBlock {
   display: grid;
   gap: var(--spacing-8);
 }
-.shell header span {
+.progressBlock > span {
   color: var(--color-text-secondary);
   font-size: var(--font-small-size);
 }
-.shell progress {
+.progressBlock > strong {
+  color: var(--color-ink);
+  font-size: var(--font-card-title-size);
+}
+.flowHeader progress {
   accent-color: var(--color-primary);
   height: var(--spacing-8);
   width: 100%;
+}
+.stepLabels {
+  display: grid;
+  font-size: var(--font-caption-size);
+  gap: var(--spacing-8);
+  grid-template-columns: repeat(3, 1fr);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.stepLabels li {
+  color: var(--color-text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.stepLabels li[data-state="current"] {
+  color: var(--color-primary);
+  font-weight: var(--font-weight-semibold);
+}
+.stepLabels li[data-state="complete"] {
+  color: var(--color-success);
 }
 .card {
   background: var(--color-surface);
@@ -49,6 +75,12 @@
   color: var(--color-ink);
   font-size: var(--font-heading-size);
   line-height: var(--line-height-tight);
+}
+.intro {
+  color: var(--color-text-secondary);
+  font-size: var(--font-small-size);
+  line-height: var(--line-height-body);
+  margin-top: calc(var(--spacing-8) * -1);
 }
 .eyebrow {
   align-items: center;
@@ -87,8 +119,22 @@
   outline-offset: var(--spacing-4);
 }
 .card textarea {
-  min-height: 8rem;
+  min-height: calc(var(--spacing-48) * 2);
   resize: vertical;
+}
+.fieldHint,
+.fieldMeta {
+  color: var(--color-text-secondary);
+  font-size: var(--font-caption-size);
+  font-weight: var(--font-weight-regular);
+}
+.fieldMeta {
+  display: flex;
+  gap: var(--spacing-12);
+  justify-content: space-between;
+}
+.fieldMeta small:first-child {
+  max-width: 75%;
 }
 .choices {
   display: grid;
@@ -316,6 +362,30 @@
   display: grid;
   gap: var(--spacing-8);
 }
+.clearPin {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-button);
+  color: var(--color-danger);
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  font-size: var(--font-small-size);
+  font-weight: var(--font-weight-semibold);
+  gap: var(--spacing-8);
+  justify-self: start;
+  min-height: var(--control-min-height);
+  padding: var(--spacing-8) var(--spacing-12);
+}
+.clearPin:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-focus);
+  outline-offset: var(--spacing-4);
+}
+.clearPin svg {
+  height: var(--spacing-20);
+  width: var(--spacing-20);
+}
 .locationActions button {
   justify-content: center;
   width: 100%;
@@ -417,6 +487,71 @@
   font-weight: var(--font-weight-medium);
   margin: 0;
 }
+.sectionTitle {
+  color: var(--color-ink);
+  font-size: var(--font-card-title-size);
+}
+.reviewCard {
+  align-items: center;
+  background: color-mix(in srgb, var(--color-primary) 8%, var(--color-background));
+  border: var(--control-border-width) solid color-mix(in srgb, var(--color-primary) 36%, var(--color-border));
+  border-radius: var(--radius-card);
+  display: grid;
+  gap: var(--spacing-12);
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  padding: var(--spacing-12);
+}
+.reviewIcon {
+  align-items: center;
+  background: var(--color-primary);
+  border-radius: var(--radius-pill);
+  color: var(--color-on-primary);
+  display: flex;
+  height: var(--spacing-48);
+  justify-content: center;
+  width: var(--spacing-48);
+}
+.reviewIcon svg {
+  height: var(--spacing-20);
+  width: var(--spacing-20);
+}
+.reviewCard div {
+  min-width: 0;
+}
+.reviewCard strong,
+.reviewCard p {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.reviewCard strong {
+  color: var(--color-ink);
+}
+.reviewCard p {
+  color: var(--color-text-secondary);
+  font-size: var(--font-caption-size);
+  margin: var(--spacing-4) 0 0;
+}
+.reviewCard button {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-button);
+  color: var(--color-primary);
+  cursor: pointer;
+  display: flex;
+  font: inherit;
+  font-size: var(--font-small-size);
+  font-weight: var(--font-weight-semibold);
+  gap: var(--spacing-4);
+  min-height: var(--control-min-height);
+  padding: var(--spacing-8);
+}
+.reviewCard button svg {
+  height: var(--spacing-16);
+  width: var(--spacing-16);
+}
 .shell footer {
   background: color-mix(in srgb, var(--color-background) 92%, transparent);
   bottom: 0;
@@ -426,6 +561,9 @@
   padding: var(--spacing-12) 0 var(--spacing-16);
   position: sticky;
   z-index: var(--z-toast);
+}
+.shell footer[data-has-back="true"] {
+  grid-template-columns: minmax(6.5rem, .38fr) minmax(0, 1fr);
 }
 .shell footer button {
   width: 100%;
@@ -479,6 +617,9 @@
     padding: var(--spacing-24) 0;
     position: static;
   }
+  .shell footer[data-has-back="true"] {
+    grid-template-columns: unset;
+  }
   .shell footer button {
     width: auto;
   }
@@ -490,6 +631,9 @@
   .card {
     border-radius: var(--radius-card);
     padding: var(--spacing-16);
+  }
+  .stepLabels {
+    gap: var(--spacing-4);
   }
   .card h1 {
     font-size: var(--font-section-size);

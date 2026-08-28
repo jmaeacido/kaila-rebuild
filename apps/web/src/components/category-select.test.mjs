@@ -8,6 +8,9 @@ const styles = readFileSync(new URL("./category-select.module.css", import.meta.
 test("CategorySelect keeps options scrollable within the viewport", () => {
   assert.match(styles, /overflow-y:\s*auto/);
   assert.match(styles, /overscroll-behavior:\s*contain/);
+  assert.match(styles, /touch-action:\s*pan-y/);
   assert.match(source, /data-placement/);
   assert.match(source, /setMaxHeight/);
+  assert.match(source, /document\.getElementById\(bottomBoundaryId\)/);
+  assert.match(source, /const usableBottom = Math\.min/);
 });

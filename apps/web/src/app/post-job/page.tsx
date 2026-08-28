@@ -14,6 +14,8 @@ import {
   Video,
   Send,
   X,
+  Pencil,
+  Navigation,
 } from "lucide-react";
 import { Button, Feedback } from "@kaila/ui";
 import { JobLocationMap, type JobLocation } from "./job-location-map";
@@ -31,6 +33,7 @@ type Reference = {
 type Category = Reference & ServiceCategory;
 type Step = 1 | 2 | 3;
 type LocationStatus = "idle" | "locating" | "resolving" | "pinned" | "error";
+const stepLabels = ["Job details", "Location", "Review & send"] as const;
 
 export default function PostJobPage() {
   const [directProvider, setDirectProvider] = useState<{ id: number; displayName: string } | null>(null);
@@ -45,6 +48,7 @@ export default function PostJobPage() {
   const pinRequest = useRef(0);
   const [showMap, setShowMap] = useState(false);
   const [locationStatus, setLocationStatus] = useState<LocationStatus>("idle");
+  const [resolvedAreaLabel, setResolvedAreaLabel] = useState("");
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -64,6 +68,7 @@ export default function PostJobPage() {
     form.latitude && form.longitude
       ? { latitude: Number(form.latitude), longitude: Number(form.longitude) }
       : null;
+  const selectedCategory = categories.find((category) => String(category.id) === form.categoryId);
 
   useEffect(() => {
     void fetch("/api/v1/marketplace/reference-data", { cache: "no-store" })
@@ -98,6 +103,7 @@ export default function PostJobPage() {
 
   async function pin(location: JobLocation, source: "current" | "map") {
     const request = ++pinRequest.current;
+    setResolvedAreaLabel("");
     setForm((current) => ({
       ...current,
       areaId: "",
@@ -123,6 +129,7 @@ export default function PostJobPage() {
       setForm((current) => ({ ...current, areaId: String(body.data?.id ?? "") }));
       setLocationStatus("pinned");
       const area = [body.data.name, body.data.city].filter(Boolean).join(", ");
+      setResolvedAreaLabel(area);
       setMessage(
         `${source === "current" ? "Current location" : "Job site"} pinned in ${area}.`,
       );
@@ -154,7 +161,7 @@ export default function PostJobPage() {
           },
           "current",
         );
-        setShowMap(true);
+        setShowMap(false);
       },
       (error) => {
         setLocationStatus("error");
@@ -177,6 +184,7 @@ export default function PostJobPage() {
       longitude: "",
     }));
     setLocationStatus("idle");
+    setResolvedAreaLabel("");
     setMessage("");
   }
 
@@ -270,23 +278,32 @@ export default function PostJobPage() {
 
   return (
     <main className={styles.shell}>
-      <header>
+      <header className={styles.flowHeader}>
         <Link href="/home" aria-label="Back to home">
           <ArrowLeft aria-hidden="true" />
         </Link>
-        <div>
-          <span>Step {step} of 3</span>
+        <div className={styles.progressBlock}>
+          <span>Request a service · Step {step} of 3</span>
+          <strong>{stepLabels[step - 1]}</strong>
           <progress value={step} max="3">
             {step} of 3
           </progress>
+          <ol className={styles.stepLabels} aria-label="Job request progress">
+            {stepLabels.map((label, index) => (
+              <li key={label} data-state={index + 1 === step ? "current" : index + 1 < step ? "complete" : "upcoming"}>
+                {label}
+              </li>
+            ))}
+          </ol>
         </div>
       </header>
       <form onSubmit={submit}>
         <section className={styles.card}>
           {step === 1 && (
             <>
-              <p className={styles.eyebrow}>{directProvider ? `Requesting ${directProvider.displayName}` : "Tell us what you need"}</p>
+              <p className={styles.eyebrow}>{directProvider ? `Requesting ${directProvider.displayName}` : "Step 1 · Job details"}</p>
               <h1>{directProvider ? "What service do you need?" : "What can we help with?"}</h1>
+              <p className={styles.intro}>Give providers enough detail to decide whether they’re the right fit.</p>
               <label>
                 Service
                 <CategorySelect
@@ -296,6 +313,7 @@ export default function PostJobPage() {
                     field("categoryId", value);
                     setMessage("");
                   }}
+                  bottomBoundaryId="post-job-actions"
                 />
               </label>
               {message && <p className={styles.fieldError} role="alert">{message}</p>}
@@ -308,6 +326,7 @@ export default function PostJobPage() {
                   onChange={(event) => field("title", event.target.value)}
                   placeholder="Fix a leaking kitchen tap"
                 />
+                <small className={styles.fieldHint}>Keep it specific, such as “Repair leaking kitchen tap.”</small>
               </label>
               <label>
                 What needs to be done?
@@ -319,6 +338,7 @@ export default function PostJobPage() {
                   onChange={(event) => field("description", event.target.value)}
                   placeholder="Add the details a provider needs to understand the job."
                 />
+                <span className={styles.fieldMeta}><small>Include the problem, size, and anything already tried.</small><small>{form.description.length} / 3,000</small></span>
               </label>
               <fieldset className={styles.locationMode}>
                 <legend>Where will the service happen?</legend>
@@ -340,9 +360,10 @@ export default function PostJobPage() {
           {step === 2 && (
             <>
               <p className={styles.eyebrow}>
-                <MapPin aria-hidden="true" /> Nearby help
+                <MapPin aria-hidden="true" /> Step 2 · Location
               </p>
               <h1>{form.serviceLocationMode === "at_client" ? "Where is the job?" : "Where are you starting from?"}</h1>
+              <p className={styles.intro}>A precise pin improves distance estimates. Providers only receive the exact location after hiring.</p>
               <label>
                 Landmark <span className={styles.optionalLabel}>(optional)</span>
                 <input
@@ -357,28 +378,18 @@ export default function PostJobPage() {
                   <strong id="job-site-pin">{form.serviceLocationMode === "at_client" ? "Job site pin" : "Your area pin"}</strong>
                   <p>
                     {pinnedLocation
-                      ? "Pinned. Providers can see approximate distance."
+                      ? "Location ready"
                       : form.serviceLocationMode === "at_client" ? "Use GPS only if you are already at the job site, or choose it on the map." : "This helps KAILA find suitable providers and estimate your trip."}
                   </p>
                 </div>
                 <div className={styles.locationActions}>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    disabled={locationStatus === "locating"}
-                    onClick={locate}
-                  >
+                  {!pinnedLocation && <Button type="button" variant="secondary" disabled={locationStatus === "locating"} onClick={locate}>
                     <LocateFixed aria-hidden="true" />
-                    {locationStatus === "locating" ? "Finding location…" : form.serviceLocationMode === "at_client" ? "I am at the job site" : "Use my location"}
+                    {locationStatus === "locating" ? "Finding location…" : form.serviceLocationMode === "at_client" ? "Use my current location" : "Use my location"}
+                  </Button>}
+                  <Button type="button" variant="secondary" onClick={() => setShowMap((visible) => !visible)}>
+                    <MapPinned aria-hidden="true" /> {showMap ? "Hide map" : pinnedLocation ? "Adjust on map" : "Choose on map"}
                   </Button>
-                  <Button type="button" variant="secondary" onClick={() => setShowMap(true)}>
-                    <MapPinned aria-hidden="true" /> Pick on map
-                  </Button>
-                  {pinnedLocation && (
-                    <Button type="button" variant="danger" onClick={clearPin}>
-                      <X aria-hidden="true" /> Clear pin
-                    </Button>
-                  )}
                 </div>
                 {showMap && (
                   <JobLocationMap
@@ -397,22 +408,36 @@ export default function PostJobPage() {
                     {message}
                   </p>
                 )}
+                {pinnedLocation && (
+                  <button type="button" className={styles.clearPin} onClick={clearPin}>
+                    <X aria-hidden="true" /> Remove this pin
+                  </button>
+                )}
                 <p className={styles.locationNote}>
                   Map photos and labels may be older or incomplete. KAILA uses the pin for provider
                   distance.
                 </p>
               </section>
               <p className={styles.privacy}>
-                {form.serviceLocationMode === "at_client" ? "Providers see the approximate address before hiring; your exact pin is shared only after hiring." : "Providers see your approximate starting area. After hiring, navigation routes you to the provider’s saved shop location."}
+                {form.serviceLocationMode === "at_client" ? "Before hiring, providers see only the approximate area." : "Providers see your approximate starting area. After hiring, navigation routes you to the provider’s saved shop location."}
               </p>
             </>
           )}
           {step === 3 && (
             <>
               <p className={styles.eyebrow}>
-                <CalendarClock aria-hidden="true" /> Timing and budget
+                <CalendarClock aria-hidden="true" /> Step 3 · Review & send
               </p>
-              <h1>When do you need help?</h1>
+              <h1>Review your request</h1>
+              <section className={styles.reviewCard} aria-labelledby="request-summary-title">
+                <span className={styles.reviewIcon}><Navigation aria-hidden="true" /></span>
+                <div>
+                  <strong id="request-summary-title">{form.title}</strong>
+                  <p>{selectedCategory?.name ?? "Service"} · {resolvedAreaLabel || "Location pinned"}</p>
+                </div>
+                <button type="button" onClick={() => setStep(1)}><Pencil aria-hidden="true" /> Edit</button>
+              </section>
+              <h2 className={styles.sectionTitle}>When do you need help?</h2>
               <div className={styles.choices}>
                 <label>
                   <input
@@ -463,7 +488,7 @@ export default function PostJobPage() {
             </Feedback>
           )}
         </section>
-        <footer>
+        <footer id="post-job-actions" data-has-back={step > 1}>
           {step > 1 && (
             <Button
               type="button"

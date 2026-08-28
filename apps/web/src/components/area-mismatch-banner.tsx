@@ -28,6 +28,7 @@ type Warning = {
 };
 
 const DISMISS_PREFIX = "kaila.areaMismatch.";
+export const areaProfileChangedEvent = "kaila:area-profile-changed";
 
 function readDismissed(key: string): boolean {
   try {
@@ -108,14 +109,17 @@ export function AreaMismatchBanner() {
 
   useEffect(() => {
     let active = true;
+    let evaluation = 0;
 
     const evaluate = async () => {
+      const currentEvaluation = ++evaluation;
+      setWarning(null);
       try {
         const [profileResponse, referenceResponse] = await Promise.all([
           fetch("/api/v1/me/marketplace-profile", { credentials: "include", cache: "no-store" }),
           fetch("/api/v1/marketplace/reference-data", { credentials: "include", cache: "no-store" }),
         ]);
-        if (!profileResponse.ok || !referenceResponse.ok) return;
+        if (!profileResponse.ok || !referenceResponse.ok || !active || currentEvaluation !== evaluation) return;
 
         const profile = ((await profileResponse.json()) as { data: ProfilePayload }).data;
         const areas = ((await referenceResponse.json()) as { data: { areas: AreaReference[] } }).data.areas;
@@ -141,7 +145,7 @@ export function AreaMismatchBanner() {
         if (homeCityIds.size === 0) return;
 
         const position = await readPosition();
-        if (!active) return;
+        if (!active || currentEvaluation !== evaluation) return;
 
         const resolveResponse = await fetch(
           `/api/v1/jobs/resolve-area?latitude=${encodeURIComponent(String(position.coords.latitude))}&longitude=${encodeURIComponent(String(position.coords.longitude))}`,
@@ -150,7 +154,7 @@ export function AreaMismatchBanner() {
         if (!resolveResponse.ok) return;
 
         const resolved = ((await resolveResponse.json()) as { data: ResolvedLocation }).data;
-        if (!active || resolved.cityId == null) return;
+        if (!active || currentEvaluation !== evaluation || resolved.cityId == null) return;
         if (homeCityIds.has(resolved.cityId)) return;
 
         const dismissKey = `${isProvider ? "provider" : "client"}:${[...homeCityIds].sort().join("-")}:${resolved.cityId}`;
@@ -182,9 +186,13 @@ export function AreaMismatchBanner() {
     };
 
     const timer = window.setTimeout(() => void evaluate(), 0);
+    const reevaluate = () => void evaluate();
+    window.addEventListener(areaProfileChangedEvent, reevaluate);
     return () => {
       active = false;
+      evaluation += 1;
       window.clearTimeout(timer);
+      window.removeEventListener(areaProfileChangedEvent, reevaluate);
     };
   }, []);
 
