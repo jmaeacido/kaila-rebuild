@@ -76,6 +76,22 @@ a {
   min-height: 44px;
 }
 
+body button:not([data-flat-button]) {
+  box-shadow: var(--shadow-control-raised);
+  transition:
+    box-shadow var(--duration-fast) ease-out,
+    opacity var(--duration-fast) ease-out,
+    transform var(--duration-fast) ease-out;
+}
+
+body button:not([data-flat-button]):is(:active, [aria-checked="true"], [aria-expanded="true"], [aria-pressed="true"], [aria-selected="true"]):not(:disabled) {
+  box-shadow: var(--shadow-control-pressed);
+}
+
+body button:not([data-flat-button]):disabled {
+  box-shadow: var(--shadow-card);
+}
+
 :focus-visible {
   outline: 3px solid var(--color-accent);
   outline-offset: 3px;
@@ -112,6 +128,12 @@ a {
   position: fixed;
   text-align: center;
   z-index: var(--z-modal);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body button:not([data-flat-button]) {
+    transition: none;
+  }
 }
 
 .authenticatedRouteContent[aria-hidden="true"] {

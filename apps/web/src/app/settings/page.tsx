@@ -40,6 +40,10 @@ type Session = {
   lastActiveAt: string;
   current: boolean;
 };
+type SessionGroup = {
+  id: string;
+  sessions: Session[];
+};
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -106,29 +110,38 @@ export default function SettingsPage() {
     }
   }
 
-  async function revoke(session: Session) {
-    if (session.current) return;
+  async function revoke(sessionGroup: SessionGroup) {
+    const revocableSessions = sessionGroup.sessions.filter((session) => !session.current);
+    if (!revocableSessions.length) return;
     setStatus("saving");
+    setNotice("");
     try {
       const token = await prepareCsrf();
-      const response = await fetch(
-        `/api/v1/me/sessions/${encodeURIComponent(session.id)}`,
-        {
-          method: "DELETE",
-          headers: {
-            Accept: "application/json",
-            ...(token ? { "X-XSRF-TOKEN": token } : {}),
-          },
-        },
+      await Promise.all(
+        revocableSessions.map(async (session) => {
+          const response = await fetch(
+            `/api/v1/me/sessions/${encodeURIComponent(session.id)}`,
+            {
+              method: "DELETE",
+              headers: {
+                Accept: "application/json",
+                ...(token ? { "X-XSRF-TOKEN": token } : {}),
+              },
+            },
+          );
+          if (!response.ok) throw new Error();
+        }),
       );
-      if (!response.ok) throw new Error();
+      const revokedIds = new Set(revocableSessions.map((session) => session.id));
       setSessions((current) =>
-        current.filter((item) => item.id !== session.id),
+        current.filter((item) => !revokedIds.has(item.id)),
       );
-      setNotice("That device has been signed out.");
+      setNotice(revocableSessions.length === 1
+        ? "That session has been signed out."
+        : "Those sessions have been signed out.");
       setStatus("ready");
     } catch {
-      setNotice("We couldn’t sign out that device. Try again.");
+      setNotice("We couldn’t sign out those sessions. Refresh and try again.");
       setStatus("error");
     }
   }
@@ -174,17 +187,17 @@ export default function SettingsPage() {
   }
 
   return (
-    <main className={styles.shell}>
-      <header className={styles.pageHeader}>
+    <main className={`${styles.shell} ${settingsStyles.shell}`}>
+      <header className={settingsStyles.pageHeader}>
+        <Link className={settingsStyles.backLink} href="/account">
+          <ArrowLeft aria-hidden="true" />
+          Account
+        </Link>
         <div>
           <p className={styles.eyebrow}>PREFERENCES AND SECURITY</p>
           <h1>Settings</h1>
           <p>Control appearance, routine alerts, and where your account is signed in.</p>
         </div>
-        <Link href="/account">
-          <ArrowLeft aria-hidden="true" />
-          Account
-        </Link>
       </header>
 
       {notice && (
@@ -250,12 +263,13 @@ export default function SettingsPage() {
           <span>
             <MessageCircle aria-hidden="true" />
             <span>
-              <strong>Message alerts</strong>
-              <small>Mute new-message notifications</small>
+              <strong>Mute message alerts</strong>
+              <small>Pause notifications for new messages</small>
             </span>
           </span>
           <input
             checked={preferences.muteMessages}
+            disabled={status === "saving"}
             onChange={(event) =>
               setPreferences((current) =>
                 current
@@ -263,19 +277,24 @@ export default function SettingsPage() {
                   : current,
               )
             }
+            role="switch"
             type="checkbox"
           />
+          <span className={settingsStyles.switchControl} aria-hidden="true">
+            <span className={settingsStyles.switchThumb} />
+          </span>
         </label>
         <label className={settingsStyles.toggle}>
           <span>
             <Clock3 aria-hidden="true" />
             <span>
-              <strong>Routine reminders</strong>
-              <small>Mute non-urgent reminders</small>
+              <strong>Mute routine reminders</strong>
+              <small>Pause non-urgent reminders</small>
             </span>
           </span>
           <input
             checked={preferences.muteRoutineReminders}
+            disabled={status === "saving"}
             onChange={(event) =>
               setPreferences((current) =>
                 current
@@ -286,8 +305,12 @@ export default function SettingsPage() {
                   : current,
               )
             }
+            role="switch"
             type="checkbox"
           />
+          <span className={settingsStyles.switchControl} aria-hidden="true">
+            <span className={settingsStyles.switchThumb} />
+          </span>
         </label>
         <div className={settingsStyles.protected}>
           <ShieldCheck aria-hidden="true" />
@@ -358,33 +381,42 @@ export default function SettingsPage() {
         </div>
         {sessions.length ? (
           <div className={settingsStyles.sessionList}>
-            {sessions.map((session) => {
+            {groupSessions(sessions).map((sessionGroup) => {
+              const currentSession = sessionGroup.sessions.find((session) => session.current);
+              const session = currentSession || sessionGroup.sessions[0];
+              const latestSession = sessionGroup.sessions[0];
+              const revocableCount = sessionGroup.sessions.filter((item) => !item.current).length;
               const mobile = /android|iphone|mobile/i.test(
                 session.userAgent || "",
               );
               const DeviceIcon = mobile ? Smartphone : Laptop;
               return (
-                <article key={session.id}>
+                <article key={sessionGroup.id}>
                   <span>
                     <DeviceIcon aria-hidden="true" />
                   </span>
                   <div>
                     <strong>
                       {deviceName(session.userAgent)}
-                      {session.current && " · This device"}
+                      {currentSession && " · This device"}
                     </strong>
                     <small>
-                      Last active {new Date(session.lastActiveAt).toLocaleString()}
-                      {session.ipAddress && ` · ${session.ipAddress}`}
+                      {sessionGroup.sessions.length > 1 && `${sessionGroup.sessions.length} sessions · `}
+                      Last active {new Date(latestSession.lastActiveAt).toLocaleString()}
+                      {latestSession.ipAddress && ` · ${latestSession.ipAddress}`}
                     </small>
                   </div>
-                  {!session.current && (
+                  {revocableCount > 0 && (
                     <Button
                       disabled={status === "saving"}
-                      onClick={() => void revoke(session)}
+                      onClick={() => void revoke(sessionGroup)}
                       variant="secondary"
                     >
-                      Sign out
+                      {currentSession
+                        ? "Sign out others"
+                        : sessionGroup.sessions.length > 1
+                          ? "Sign out all"
+                          : "Sign out"}
                     </Button>
                   )}
                 </article>
@@ -433,4 +465,23 @@ function deviceName(userAgent: string | null): string {
   if (/chrome/i.test(userAgent)) return "Google Chrome";
   if (/safari/i.test(userAgent)) return "Safari";
   return "Web browser";
+}
+
+function groupSessions(sessions: Session[]): SessionGroup[] {
+  const grouped = new Map<string, Session[]>();
+
+  sessions.forEach((session) => {
+    const key = `${deviceName(session.userAgent)}\u0000${session.ipAddress || "unknown"}`;
+    grouped.set(key, [...(grouped.get(key) || []), session]);
+  });
+
+  return Array.from(grouped.values())
+    .map((groupedSessions) => ({
+      id: groupedSessions[0].id,
+      sessions: groupedSessions,
+    }))
+    .sort((left, right) =>
+      Number(right.sessions.some((session) => session.current))
+      - Number(left.sessions.some((session) => session.current)),
+    );
 }

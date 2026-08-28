@@ -12,7 +12,7 @@
   justify-content: center;
   min-height: var(--control-min-height);
   padding: var(--spacing-12) var(--spacing-24);
-  transition: opacity var(--duration-fast), transform var(--duration-fast);
+  transition: box-shadow var(--duration-fast), opacity var(--duration-fast), transform var(--duration-fast);
 }
 
 .kaila-button--primary { background: var(--color-primary); color: var(--color-on-primary); }
