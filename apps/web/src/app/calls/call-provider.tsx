@@ -515,6 +515,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
         <CallOverlay
           call={call}
           muted={muted}
+          cameraOff={cameraOff}
           notice={notice}
           remoteVideo={remoteVideo}
           remoteAudio={remoteAudio}
@@ -522,6 +523,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
           onAnswer={() => void answerCall()}
           onDeclineOrEnd={() => void endCall(call.direction === "incoming" && call.status === "ringing" ? "decline" : "end")}
           onToggleMute={toggleMute}
+          onToggleCamera={toggleCamera}
         />
       )}
     </CallContext.Provider>
