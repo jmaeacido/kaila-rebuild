@@ -2,9 +2,13 @@
 
 namespace Tests\Feature;
 
+use App\Jobs\ScanModerationReportEvidence;
 use App\Models\ModerationReport;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class ReportWorkflowTest extends TestCase
@@ -47,5 +51,48 @@ class ReportWorkflowTest extends TestCase
         $this->actingAs($other)->getJson("/api/v1/reports/$id")->assertNotFound();
         $this->actingAs($reporter)->postJson('/api/v1/reports', [...$payload, 'targetId' => (string) $reporter->id])->assertUnprocessable();
         $this->assertSame(1, ModerationReport::query()->count());
+    }
+
+    public function test_user_can_submit_a_general_safety_concern_without_an_item_id(): void
+    {
+        $reporter = User::factory()->create();
+
+        $this->actingAs($reporter)->postJson('/api/v1/reports', [
+            'category' => 'unsafe',
+            'details' => 'I need help identifying repeated unsafe conduct in the app.',
+        ])->assertCreated()
+            ->assertJsonPath('data.targetType', null)
+            ->assertJsonPath('data.targetId', null);
+
+        $this->assertDatabaseHas('moderation_reports', [
+            'reporter_user_id' => $reporter->id,
+            'target_type' => null,
+            'target_id' => null,
+        ]);
+    }
+
+    public function test_user_can_attach_private_scanned_evidence_to_a_report(): void
+    {
+        Storage::fake((string) config('filesystems.private_assets_disk'));
+        Queue::fake();
+        $reporter = User::factory()->create();
+
+        $response = $this->actingAs($reporter)->post('/api/v1/reports', [
+            'category' => 'unsafe',
+            'details' => 'This screenshot and photo show the unsafe behavior clearly.',
+            'evidence' => [
+                UploadedFile::fake()->image('screenshot.jpg'),
+                UploadedFile::fake()->create('conversation.pdf', 200, 'application/pdf'),
+            ],
+        ])->assertCreated()->assertJsonCount(2, 'data.evidence');
+
+        $reportId = $response->json('data.id');
+        $this->assertDatabaseCount('moderation_report_evidence', 2);
+        $this->assertDatabaseHas('moderation_report_evidence', [
+            'moderation_report_id' => $reportId,
+            'submitted_by_user_id' => $reporter->id,
+            'scan_status' => 'pending',
+        ]);
+        Queue::assertPushed(ScanModerationReportEvidence::class, 2);
     }
 }

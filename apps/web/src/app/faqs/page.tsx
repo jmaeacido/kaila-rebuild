@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { BrandMark } from "../../components/brand-mark";
 import { SUPPORT_EMAIL } from "../../lib/support-email";
+import { usePublicSessionStatus } from "../auth-guard";
 import styles from "./faqs.module.css";
 
 type FaqItem = {
@@ -238,6 +239,7 @@ function FaqAccordionItem({
 }
 
 export default function FaqsPage() {
+  const publicSessionStatus = usePublicSessionStatus();
   const [query, setQuery] = useState("");
   const [openId, setOpenId] = useState<string | null>(groups[0]?.items[0]?.id ?? null);
 
@@ -267,15 +269,17 @@ export default function FaqsPage() {
           __html: JSON.stringify(faqStructuredData).replace(/</g, "\\u003c"),
         }}
       />
-      <nav className={styles.topbar} aria-label="FAQs navigation">
-        <Link className={styles.brand} href="/" aria-label="KAILA home">
-          <BrandMark priority />
-        </Link>
-        <Link className={styles.back} href="/">
-          <ArrowLeft aria-hidden="true" />
-          Back home
-        </Link>
-      </nav>
+      {publicSessionStatus === "anonymous" ? (
+        <nav className={styles.topbar} aria-label="FAQs navigation">
+          <Link className={styles.brand} href="/" aria-label="KAILA public home">
+            <BrandMark priority />
+          </Link>
+          <Link className={styles.back} href="/">
+            <ArrowLeft aria-hidden="true" />
+            KAILA home
+          </Link>
+        </nav>
+      ) : null}
 
       <header className={styles.hero}>
         <div className={styles.heroCopy}>

@@ -25,6 +25,7 @@ import styles from "../account/account.module.css";
 import settingsStyles from "./settings.module.css";
 import { useTheme } from "../theme-provider";
 import type { ThemePreference } from "../theme";
+import { SelectField } from "../../components/select-field";
 
 type Preferences = {
   muteMessages: boolean;
@@ -352,19 +353,18 @@ export default function SettingsPage() {
         </fieldset>
         <label>
           Timezone
-          <select
-            onChange={(event) =>
+          <SelectField
+            label="Timezone"
+            onChange={(timezone) =>
               setPreferences((current) =>
                 current
-                  ? { ...current, timezone: event.target.value }
+                  ? { ...current, timezone }
                   : current,
               )
             }
             value={preferences.timezone}
-          >
-            <option value="Asia/Manila">Philippines — Asia/Manila</option>
-            <option value="UTC">UTC</option>
-          </select>
+            options={[{value:"Asia/Manila",label:"Philippines — Asia/Manila"},{value:"UTC",label:"UTC"}]}
+          />
         </label>
         <Button isLoading={status === "saving"} onClick={() => void save()}>
           Save settings

@@ -293,6 +293,7 @@ Route::middleware('auth')->group(function (): void {
         Route::get('/reports/{moderationReport}', [AdminReportController::class, 'show']);
         Route::post('/reports/{moderationReport}/assign', [AdminReportController::class, 'assign']);
         Route::post('/reports/{moderationReport}/decision', [AdminReportController::class, 'decide']);
+        Route::get('/report-evidence/{moderationReportEvidence}', [AdminReportController::class, 'evidence']);
         Route::get('/review-queue', [AdminMarketplaceController::class, 'queue']);
         Route::get('/assets/{profileAsset}/preview', [AdminMarketplaceController::class, 'assetPreview']);
         Route::post('/categories', [AdminMarketplaceController::class, 'category']);

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import Image from "next/image";
 import { BrandMark } from "../components/brand-mark";
 import Link from "next/link";
@@ -37,6 +37,14 @@ function isPublicPath(pathname: string): boolean {
   return pathname.startsWith("/status/");
 }
 
+type PublicSessionStatus = "checking" | "authenticated" | "anonymous";
+
+const PublicSessionContext = createContext<PublicSessionStatus>("anonymous");
+
+export function usePublicSessionStatus(): PublicSessionStatus {
+  return useContext(PublicSessionContext);
+}
+
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -46,9 +54,13 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [loggingOut, setLoggingOut] = useState(false);
   const isPublic = isPublicPath(pathname);
+  const isSessionAwarePublic = pathname === "/faqs";
+  const [publicSessionStatus, setPublicSessionStatus] = useState<PublicSessionStatus>(
+    isSessionAwarePublic ? "checking" : "anonymous",
+  );
 
   useEffect(() => {
-    if (isPublic) {
+    if (isPublic && !isSessionAwarePublic) {
       return;
     }
     if (sessionReady) return;
@@ -65,6 +77,10 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
         }
         if (!response.ok) {
           if (response.status !== 401) throw new Error("Current user request failed.");
+          if (isSessionAwarePublic) {
+            setPublicSessionStatus("anonymous");
+            return;
+          }
           const destination = `${pathname}${window.location.search}`;
           router.replace(`/login?next=${encodeURIComponent(destination)}`);
           return;
@@ -78,6 +94,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
           applyAccountTheme(userBody.data.appearanceTheme);
         }
         setSessionReady(true);
+        if (isSessionAwarePublic) setPublicSessionStatus("authenticated");
         const capacitor = (window as Window & { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor;
         if (capacitor?.isNativePlatform?.()) {
           void ensureMobileSession(window.location.origin).catch(() => undefined);
@@ -85,6 +102,10 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
       })
       .catch(() => {
         if (active) {
+          if (isSessionAwarePublic) {
+            setPublicSessionStatus("anonymous");
+            return;
+          }
           router.replace(`/login?next=${encodeURIComponent(pathname)}`);
         }
       });
@@ -92,10 +113,18 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     return () => {
       active = false;
     };
-  }, [applyAccountTheme, isPublic, pathname, router, sessionReady]);
+  }, [applyAccountTheme, isPublic, isSessionAwarePublic, pathname, router, sessionReady]);
 
-  if (isPublic) {
+  if (isPublic && !isSessionAwarePublic) {
     return children;
+  }
+
+  if (isSessionAwarePublic && !sessionReady) {
+    return (
+      <PublicSessionContext.Provider value={publicSessionStatus}>
+        {children}
+      </PublicSessionContext.Provider>
+    );
   }
 
   async function signOut() {
@@ -156,7 +185,9 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
             </div>
           </header>
           <AreaMismatchBanner />
-          {children}
+          <PublicSessionContext.Provider value="authenticated">
+            {children}
+          </PublicSessionContext.Provider>
         </InitialUiGate>
       ) : (
         <BrandedLoader label="Getting KAILA ready for you…" />

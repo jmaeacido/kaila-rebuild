@@ -21,6 +21,7 @@ import {
 import { Button, Feedback } from "@kaila/ui";
 import { BrandMark } from "../components/brand-mark";
 import { ThemeToggle } from "../components/theme-toggle";
+import { SelectField } from "../components/select-field";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signedInHome, SignedInUser } from "./auth-client";
@@ -288,17 +289,7 @@ export default function LandingPage() {
         <div className={styles.searchCard} aria-label="Find local providers">
           <label>
             <span>Service</span>
-            <select
-              value={categoryId}
-              onChange={(event) => setCategoryId(event.target.value)}
-            >
-              <option value="">Choose a service</option>
-              {categories.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.name}
-                </option>
-              ))}
-            </select>
+            <SelectField label="Service" value={categoryId} onChange={setCategoryId} placeholder="Choose a service" options={categories.map((item) => ({ value:String(item.id), label:item.name }))} />
           </label>
           <div className={styles.searchAddress}>
             <span>Area</span>

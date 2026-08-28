@@ -60,7 +60,7 @@ export function AttachmentSourceActions({
   const photoInput = useRef<HTMLInputElement>(null);
   const videoInput = useRef<HTMLInputElement>(null);
   const libraryInput = useRef<HTMLInputElement>(null);
-  const [webCameraOpen, setWebCameraOpen] = useState(false);
+  const [webCaptureKind, setWebCaptureKind] = useState<"photo" | "video" | null>(null);
   const allowImage = kinds.includes("image");
   const allowVideo = kinds.includes("video");
   const accept = acceptFor(kinds);
@@ -76,11 +76,7 @@ export function AttachmentSourceActions({
 
   async function capture(kind: "photo" | "video") {
     if (!nativeMediaCaptureAvailable()) {
-      if (kind === "photo" && typeof navigator !== "undefined" && typeof navigator.mediaDevices?.getUserMedia === "function") {
-        setWebCameraOpen(true);
-      } else {
-        (kind === "photo" ? photoInput : videoInput).current?.click();
-      }
+      setWebCaptureKind(kind);
       return;
     }
     try {
@@ -144,17 +140,19 @@ export function AttachmentSourceActions({
         disabled={disabled}
         onChange={take}
       />
-      {webCameraOpen && (
+      {webCaptureKind && (
         <WebCameraCapture
+          kind={webCaptureKind}
           facingMode={facingMode}
-          onCancel={() => setWebCameraOpen(false)}
+          onCancel={() => setWebCaptureKind(null)}
           onCapture={(file) => {
-            setWebCameraOpen(false);
+            setWebCaptureKind(null);
             onFiles([file]);
           }}
           onUseFiles={() => {
-            setWebCameraOpen(false);
-            window.setTimeout(() => photoInput.current?.click(), 0);
+            const fallback = webCaptureKind === "photo" ? photoInput : videoInput;
+            setWebCaptureKind(null);
+            window.setTimeout(() => fallback.current?.click(), 0);
           }}
         />
       )}
@@ -163,11 +161,13 @@ export function AttachmentSourceActions({
 }
 
 function WebCameraCapture({
+  kind,
   facingMode,
   onCancel,
   onCapture,
   onUseFiles,
 }: {
+  kind: "photo" | "video";
   facingMode: "user" | "environment";
   onCancel: () => void;
   onCapture: (file: File) => void;
@@ -175,13 +175,24 @@ function WebCameraCapture({
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
   const [state, setState] = useState<"starting" | "ready" | "error">("starting");
+  const [recording, setRecording] = useState(false);
 
   useEffect(() => {
     let active = true;
+    if (typeof navigator.mediaDevices?.getUserMedia !== "function") {
+      queueMicrotask(() => {
+        if (active) setState("error");
+      });
+      return () => {
+        active = false;
+      };
+    }
 
     void navigator.mediaDevices
-      .getUserMedia({ audio: false, video: { facingMode: { ideal: facingMode } } })
+      .getUserMedia({ audio: kind === "video", video: { facingMode: { ideal: facingMode } } })
       .then(async (stream) => {
         if (!active) {
           stream.getTracks().forEach((track) => track.stop());
@@ -200,10 +211,15 @@ function WebCameraCapture({
 
     return () => {
       active = false;
+      if (recorderRef.current?.state === "recording") {
+        recorderRef.current.ondataavailable = null;
+        recorderRef.current.onstop = null;
+        recorderRef.current.stop();
+      }
       streamRef.current?.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
     };
-  }, [facingMode]);
+  }, [facingMode, kind]);
 
   async function takePhoto() {
     const video = videoRef.current;
@@ -219,16 +235,52 @@ function WebCameraCapture({
     onCapture(new File([blob], `kaila-photo-${Date.now()}.jpg`, { type: "image/jpeg", lastModified: Date.now() }));
   }
 
+  function startRecording() {
+    const stream = streamRef.current;
+    if (!stream || typeof MediaRecorder === "undefined") {
+      setState("error");
+      return;
+    }
+    const preferredTypes = ["video/webm;codecs=vp9,opus", "video/webm;codecs=vp8,opus", "video/webm", "video/mp4"];
+    const mimeType = preferredTypes.find((type) => MediaRecorder.isTypeSupported(type));
+    const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+    chunksRef.current = [];
+    recorderRef.current = recorder;
+    recorder.ondataavailable = (event) => {
+      if (event.data.size > 0) chunksRef.current.push(event.data);
+    };
+    recorder.onstop = () => {
+      const recordedType = recorder.mimeType || mimeType || "video/webm";
+      const resolvedType = recordedType.includes("mp4") ? "video/mp4" : "video/webm";
+      const blob = new Blob(chunksRef.current, { type: resolvedType });
+      recorderRef.current = null;
+      chunksRef.current = [];
+      setRecording(false);
+      if (blob.size > 0) {
+        const extension = resolvedType === "video/mp4" ? "mp4" : "webm";
+        onCapture(new File([blob], `kaila-video-${Date.now()}.${extension}`, { type: resolvedType, lastModified: Date.now() }));
+      }
+    };
+    recorder.start(1000);
+    setRecording(true);
+  }
+
+  function stopRecording() {
+    if (recorderRef.current?.state === "recording") recorderRef.current.stop();
+  }
+
   return (
-    <ActionModal eyebrow="Camera" title="Take a photo" onClose={onCancel}>
+    <ActionModal eyebrow="Camera" title={kind === "photo" ? "Take a photo" : "Record a video"} onClose={onCancel}>
       <div className={styles.cameraCapture}>
         <div className={styles.cameraPreview}>
           <video ref={videoRef} muted playsInline aria-label="Camera preview" />
           {state === "starting" && <p role="status">Starting camera…</p>}
-          {state === "error" && <p role="alert">Camera access is unavailable. Allow camera access in your browser, or choose a file instead.</p>}
+          {state === "error" && <p role="alert">Camera access or recording is unavailable. Allow camera and microphone access in your browser, or choose a file instead.</p>}
         </div>
         <div className={styles.cameraActions}>
-          {state === "ready" && <button type="button" onClick={() => void takePhoto()}><Camera aria-hidden="true" />Capture photo</button>}
+          {state === "ready" && kind === "photo" && <button type="button" onClick={() => void takePhoto()}><Camera aria-hidden="true" />Capture photo</button>}
+          {state === "ready" && kind === "video" && !recording && <button type="button" onClick={startRecording}><Video aria-hidden="true" />Start recording</button>}
+          {state === "ready" && kind === "video" && recording && <button type="button" className={styles.stopRecording} onClick={stopRecording}><span aria-hidden="true" className={styles.stopIcon} />Stop and use video</button>}
           {state === "error" && <button type="button" onClick={onUseFiles}><FolderOpen aria-hidden="true" />Use files instead</button>}
         </div>
       </div>
@@ -267,6 +319,21 @@ export function AttachmentPicker({
     },
     [],
   );
+
+  useEffect(() => {
+    const form = formInput.current?.closest("form");
+    if (!form) return;
+    const reset = () => {
+      attachmentsRef.current.forEach(({ previewUrl }) => {
+        if (previewUrl) URL.revokeObjectURL(previewUrl);
+      });
+      attachmentsRef.current = [];
+      setAttachments([]);
+      setError("");
+    };
+    form.addEventListener("reset", reset);
+    return () => form.removeEventListener("reset", reset);
+  }, []);
 
   function commit(next: File[]) {
     const transfer = new DataTransfer();

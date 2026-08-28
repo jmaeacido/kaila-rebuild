@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { SelectField } from "../components/select-field";
 import styles from "./address-hierarchy.module.css";
 
 export type AreaReference = {
@@ -185,53 +186,18 @@ export function AddressHierarchy({
     <div className={styles.fields}>
       <label>
         Province{optional && <small>Optional</small>}
-        <select
-          required={!optional}
-          value={provinceId}
-          onChange={(event) => chooseProvince(event.target.value)}
-        >
-          <option value="">Choose province</option>
-          {provinces.map((province) => (
-            <option key={province.id} value={province.id}>
-              {province.name}
-            </option>
-          ))}
-          {independentLocalities.length > 0 && (
-            <option value={independentLocality}>Independent City</option>
-          )}
-        </select>
+        <SelectField label="Province" required={!optional} value={provinceId} onChange={chooseProvince} placeholder="Choose province" options={[
+          ...provinces.map((province) => ({ value:String(province.id), label:province.name })),
+          ...(independentLocalities.length > 0 ? [{ value:independentLocality, label:"Independent City" }] : []),
+        ]} />
       </label>
       <label>
         City / Municipality
-        <select
-          required={!optional && Boolean(provinceId)}
-          disabled={!provinceId}
-          value={cityId}
-          onChange={(event) => chooseCity(event.target.value)}
-        >
-          <option value="">Choose city or municipality</option>
-          {cities.map((city) => (
-            <option key={city.id} value={city.id}>
-              {city.name}
-            </option>
-          ))}
-        </select>
+        <SelectField label="City or municipality" required={!optional && Boolean(provinceId)} disabled={!provinceId} value={cityId} onChange={chooseCity} placeholder="Choose city or municipality" options={cities.map((city) => ({ value:String(city.id), label:city.name }))} />
       </label>
       <label>
         Barangay
-        <select
-          required={!optional && Boolean(cityId)}
-          disabled={!cityId || barangaysLoading}
-          value={barangays.some((barangay) => String(barangay.id) === value) ? value : ""}
-          onChange={(event) => onChange(event.target.value)}
-        >
-          <option value="">{barangaysLoading ? "Loading barangays…" : "Choose barangay"}</option>
-          {barangays.map((barangay) => (
-            <option key={barangay.id} value={barangay.id}>
-              {barangay.name}
-            </option>
-          ))}
-        </select>
+        <SelectField label="Barangay" required={!optional && Boolean(cityId)} disabled={!cityId || barangaysLoading} value={barangays.some((barangay) => String(barangay.id) === value) ? value : ""} onChange={onChange} placeholder={barangaysLoading ? "Loading barangays…" : "Choose barangay"} options={barangays.map((barangay) => ({ value:String(barangay.id), label:barangay.name }))} />
       </label>
     </div>
   );

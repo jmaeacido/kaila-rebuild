@@ -10,8 +10,8 @@ use Illuminate\Support\Carbon;
 /**
  * @property string $id
  * @property int $reporter_user_id
- * @property string $target_type
- * @property string $target_id
+ * @property string|null $target_type
+ * @property string|null $target_id
  * @property string $category
  * @property string $details
  * @property string $status
@@ -33,5 +33,11 @@ class ModerationReport extends Model
     public function actions(): HasMany
     {
         return $this->hasMany(ModerationReportAction::class);
+    }
+
+    /** @return HasMany<ModerationReportEvidence, $this> */
+    public function evidence(): HasMany
+    {
+        return $this->hasMany(ModerationReportEvidence::class);
     }
 }

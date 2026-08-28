@@ -6,13 +6,16 @@ use App\Models\CommunityPost;
 use App\Models\ConversationMessage;
 use App\Models\JobReview;
 use App\Models\ModerationReport;
+use App\Models\ModerationReportEvidence;
 use App\Models\ServiceJob;
 use App\Models\User;
 use App\Support\NotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AdminReportController extends Controller
 {
@@ -41,7 +44,20 @@ class AdminReportController extends Controller
             DB::table('moderation_report_access_audits')->insert(['id' => (string) Str::uuid(), 'moderation_report_id' => $moderationReport->id, 'staff_user_id' => $staff->id, 'reason' => $data['accessReason'], 'accessed_at' => now(), 'created_at' => now(), 'updated_at' => now()]);
         });
 
-        return response()->json(['data' => $this->present($moderationReport->refresh()->load('actions'))]);
+        return response()->json(['data' => $this->present($moderationReport->refresh()->load(['actions', 'evidence']))]);
+    }
+
+    public function evidence(Request $request, ModerationReportEvidence $moderationReportEvidence): StreamedResponse
+    {
+        $staff = $this->staff($request);
+        abort_unless(DB::table('moderation_report_access_audits')->where('moderation_report_id', $moderationReportEvidence->moderation_report_id)->where('staff_user_id', $staff->id)->exists(), 403, 'Record an access reason before viewing evidence.');
+        abort_unless($moderationReportEvidence->scan_status === 'clean', 404);
+
+        return Storage::disk($moderationReportEvidence->disk)->response(
+            $moderationReportEvidence->object_key,
+            $moderationReportEvidence->original_name,
+            ['Content-Type' => $moderationReportEvidence->mime_type],
+        );
     }
 
     public function assign(Request $request, ModerationReport $moderationReport): JsonResponse
@@ -114,7 +130,15 @@ class AdminReportController extends Controller
     /** @return array<string, mixed> */
     private function present(ModerationReport $report): array
     {
-        return [...$report->toArray(), 'targetSummary' => $this->targetSummary($report)];
+        $data = [...$report->toArray(), 'targetSummary' => $this->targetSummary($report)];
+        if ($report->relationLoaded('evidence')) {
+            $data['evidence'] = $report->evidence->map(fn ($item) => [
+                ...$item->only(['id', 'original_name', 'mime_type', 'size_bytes', 'scan_status']),
+                'url' => $item->scan_status === 'clean' ? "/api/v1/admin/marketplace/report-evidence/{$item->id}" : null,
+            ])->values();
+        }
+
+        return $data;
     }
 
     /** @return array<string, mixed> */

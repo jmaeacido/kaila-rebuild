@@ -20,6 +20,9 @@ test("attachment picker exposes camera, video, and library sources", () => {
   assert.match(picker, /<WebCameraCapture/);
   assert.match(picker, /context\.drawImage\(video/);
   assert.match(picker, /canvas\.toBlob\(resolve, "image\/jpeg"/);
+  assert.match(picker, /new MediaRecorder\(stream/);
+  assert.match(picker, /recorder\.start\(1000\)/);
+  assert.match(picker, /Stop and use video/);
   assert.match(picker, /accept="image\/\*"/);
   assert.match(picker, /accept="video\/\*"/);
   assert.match(styles, /\.actions/);
@@ -36,4 +39,10 @@ test("hired chat attach tray uses the shared camera sources", () => {
   assert.match(conversation, /AttachmentSourceActions/);
   assert.match(conversation, /kinds=\{\["image", "video", "pdf"\]\}/);
   assert.match(conversation, /showAttach/);
+});
+
+test("attachment previews clear when their parent form resets", () => {
+  assert.match(picker, /closest\("form"\)/);
+  assert.match(picker, /form\.addEventListener\("reset", reset\)/);
+  assert.match(picker, /setAttachments\(\[\]\)/);
 });

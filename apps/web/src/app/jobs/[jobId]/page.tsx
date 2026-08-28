@@ -24,6 +24,7 @@ import { Button, Feedback } from "@kaila/ui";
 import { areaPathLabel, type AreaReference } from "../../address-hierarchy";
 import { AttachmentPicker, attachmentFiles } from "../../../components/attachment-picker";
 import { ActionModal } from "../../../components/action-modal";
+import { SelectField } from "../../../components/select-field";
 import { JobLocationMap, type JobLocation } from "../../post-job/job-location-map";
 import styles from "./job-details.module.css";
 import assetStyles from "./job-assets.module.css";
@@ -381,9 +382,7 @@ export default function JobDetailsPage({ params }: { params: Promise<{ jobId: st
           <label>What needs to be done?<textarea name="description" required minLength={10} maxLength={3000} defaultValue={job.description} /></label>
           <label>
             Service
-            <select name="categoryId" required defaultValue={job.category.id} disabled={!isDraft}>
-              {categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
-            </select>
+            <SelectField name="categoryId" label="Service" required defaultValue={String(job.category.id)} disabled={!isDraft} options={categories.map((category) => ({ value:String(category.id), label:category.name }))} />
           </label>
           <input type="hidden" name="areaId" value={editAreaId || job.area.id} />
           <input type="hidden" name="categoryId" value={job.category.id} disabled={isDraft} />

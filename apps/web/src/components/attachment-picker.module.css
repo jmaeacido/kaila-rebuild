@@ -64,11 +64,16 @@
   line-height: var(--line-height-body);
 }
 
-.hiddenInput {
+.hiddenInput,
+input.hiddenInput {
+  border: 0 !important;
   height: 1px;
+  left: 0;
+  max-width: 1px;
   opacity: 0;
+  padding: 0 !important;
   position: absolute;
-  width: 1px;
+  width: 1px !important;
 }
 
 .hint,
@@ -139,6 +144,17 @@
 .cameraActions svg {
   height: var(--spacing-24);
   width: var(--spacing-24);
+}
+
+.cameraActions .stopRecording {
+  background: var(--color-danger);
+}
+
+.stopIcon {
+  background: currentColor;
+  border-radius: var(--spacing-4);
+  height: var(--spacing-16);
+  width: var(--spacing-16);
 }
 
 .files {

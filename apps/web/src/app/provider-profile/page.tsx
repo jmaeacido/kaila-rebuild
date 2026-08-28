@@ -5,6 +5,7 @@ import { ArrowLeft, BadgeCheck, CheckCircle2, LocateFixed, MapPin, Store, UserRo
 import { Button, Feedback, TextField } from "@kaila/ui";
 import Link from "next/link";
 import { CategorySelect, type ServiceCategory } from "../../components/category-select";
+import { SelectField } from "../../components/select-field";
 import { useRealtimeInvalidation } from "../use-realtime-invalidation";
 import styles from "./profile.module.css";
 
@@ -420,37 +421,11 @@ export default function ProviderProfilePage() {
             <div className={styles.addressFields}>
               <label>
                 Province
-                <select
-                  required
-                  value={provinceId}
-                  onChange={(event) => chooseProvince(event.target.value)}
-                >
-                  <option value="">Choose province</option>
-                  {provinces.map((province) => (
-                    <option key={province.id} value={province.id}>
-                      {province.name}
-                    </option>
-                  ))}
-                  {independentLocalities.length > 0 && (
-                    <option value={independentCity}>Independent City</option>
-                  )}
-                </select>
+                <SelectField label="Province" required value={provinceId} onChange={chooseProvince} placeholder="Choose province" options={[...provinces.map((province)=>({value:String(province.id),label:province.name})),...(independentLocalities.length>0?[{value:independentCity,label:"Independent City"}]:[])]} />
               </label>
               <label>
                 City / Municipality
-                <select
-                  required
-                  disabled={!provinceId}
-                  value={cityId}
-                  onChange={(event) => chooseCity(event.target.value)}
-                >
-                  <option value="">Choose city or municipality</option>
-                  {cities.map((city) => (
-                    <option key={city.id} value={city.id}>
-                      {city.name}
-                    </option>
-                  ))}
-                </select>
+                <SelectField label="City or municipality" required disabled={!provinceId} value={cityId} onChange={chooseCity} placeholder="Choose city or municipality" options={cities.map((city)=>({value:String(city.id),label:city.name}))} />
               </label>
             </div>
             <div className={styles.coverageChoices}>

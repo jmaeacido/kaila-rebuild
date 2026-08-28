@@ -5,6 +5,7 @@ import { HeartHandshake, MapPin } from "lucide-react";
 import { Button, Feedback } from "@kaila/ui";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { SelectField } from "../../../components/select-field";
 import {
   AddressHierarchy,
   type AreaReference,
@@ -88,11 +89,7 @@ export default function ShareCommunityPostPage() {
         <form className={styles.form} onSubmit={(event) => void publish(event)}>
           <label>
             Post type
-            <select value={kind} onChange={(event) => setKind(event.target.value)}>
-              <option value="local_tip">Local tip</option>
-              <option value="work_story">Work story</option>
-              <option value="service_question">Service question</option>
-            </select>
+            <SelectField label="Post type" value={kind} onChange={setKind} options={[{value:"local_tip",label:"Local tip"},{value:"work_story",label:"Work story"},{value:"service_question",label:"Service question"}]} />
           </label>
           <label>
             Title

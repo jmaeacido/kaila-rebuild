@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, Mail, Send } from "lucide-react";
 import { prepareCsrf } from "../../auth-client";
 import { SUPPORT_EMAIL } from "../../../lib/support-email";
+import { SelectField } from "../../../components/select-field";
 import styles from "../support.module.css";
 
 export default function NewSupportCase() {
@@ -70,15 +71,7 @@ export default function NewSupportCase() {
         <form className={styles.form} onSubmit={submit}>
           <label>
             What do you need help with?
-            <select value={category} onChange={(e) => setCategory(e.target.value)}>
-              <option value="account">Account</option>
-              <option value="booking">Booking or job</option>
-              <option value="payment">Payment</option>
-              <option value="provider">Provider experience</option>
-              <option value="technical">App problem</option>
-              <option value="feedback">Feedback</option>
-              <option value="other">Something else</option>
-            </select>
+            <SelectField label="What do you need help with?" value={category} onChange={setCategory} options={[{value:"account",label:"Account"},{value:"booking",label:"Booking or job"},{value:"payment",label:"Payment"},{value:"provider",label:"Provider experience"},{value:"technical",label:"App problem"},{value:"feedback",label:"Feedback"},{value:"other",label:"Something else"}]} />
           </label>
           <label>
             Short summary

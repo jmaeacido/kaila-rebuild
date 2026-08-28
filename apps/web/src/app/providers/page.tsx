@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { ArrowLeft, BadgeCheck, BriefcaseBusiness, MapPin, Search, Star } from "lucide-react";
 import { Button, Feedback } from "@kaila/ui";
+import { SelectField } from "../../components/select-field";
 import styles from "./providers.module.css";
 
 type Reference = { id: number; name: string; parent_id?: number | null; type?: string };
@@ -30,8 +31,8 @@ export default function FindProvidersPage() {
   return <main className={styles.shell}>
     <header className={styles.header}><Link href="/home" aria-label="Back to Home"><ArrowLeft /></Link><div><p>Provider discovery</p><h1>Find providers</h1></div></header>
     <form className={styles.filters} onSubmit={search}>
-      <label>Service<select value={filters.categoryId} onChange={e => setFilters(current => ({ ...current, categoryId: e.target.value }))}><option value="">All services</option>{references.categories.map(item => <option value={item.id} key={item.id}>{item.name}</option>)}</select></label>
-      <label>City or municipality<select value={filters.areaId} onChange={e => setFilters(current => ({ ...current, areaId: e.target.value }))}><option value="">All cities and municipalities</option>{references.areas.filter(item => ["city", "municipality"].includes(item.type || "")).map(item => <option value={item.id} key={item.id}>{item.name}</option>)}</select></label>
+      <label>Service<SelectField label="Service" value={filters.categoryId} onChange={categoryId => setFilters(current => ({ ...current, categoryId }))} placeholder="All services" options={references.categories.map(item => ({value:String(item.id),label:item.name}))} /></label>
+      <label>City or municipality<SelectField label="City or municipality" value={filters.areaId} onChange={areaId => setFilters(current => ({ ...current, areaId }))} placeholder="All cities and municipalities" options={references.areas.filter(item => ["city", "municipality"].includes(item.type || "")).map(item => ({value:String(item.id),label:item.name}))} /></label>
       <label>Provider or business name<div className={styles.searchField}><Search /><input value={filters.query} onChange={e => setFilters(current => ({ ...current, query: e.target.value }))} placeholder="Search by name" /></div></label>
       <Button disabled={status === "searching"}>{status === "searching" ? "Searching…" : "Search providers"}</Button>
     </form>
