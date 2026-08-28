@@ -1,22 +1,40 @@
 .qrCard {
   align-items: center;
   background: var(--color-surface);
-  border: var(--control-border-width) solid var(--color-border);
   border-radius: var(--radius-card);
-  box-shadow: var(--shadow-floating);
+  box-shadow: var(--shadow-control-raised);
   display: grid;
   gap: var(--spacing-12);
+  height: 100%;
   justify-items: center;
-  padding: var(--spacing-24);
+  padding: var(--spacing-20);
   text-align: center;
+  width: 100%;
+}
+
+.qrFrame {
+  background: #ffffff;
+  border: var(--control-border-width) solid
+    color-mix(in srgb, var(--color-primary) 24%, var(--color-border));
+  border-radius: var(--radius-input);
+  box-shadow:
+    var(--shadow-control-raised),
+    0 0 0 3px color-mix(in srgb, var(--color-primary) 10%, transparent);
+  display: grid;
+  isolation: isolate;
+  padding: var(--spacing-12);
+  place-items: center;
+  position: relative;
 }
 
 .qrImage,
 .qrPlaceholder {
-  border-radius: var(--radius-input);
+  border-radius: calc(var(--radius-input) - var(--spacing-4));
   display: block;
-  height: 11rem;
-  width: 11rem;
+  height: auto;
+  max-height: 10rem;
+  max-width: 100%;
+  width: 10rem;
 }
 
 .qrPlaceholder {
@@ -24,9 +42,43 @@
   background: color-mix(in srgb, var(--color-border) 70%, transparent);
 }
 
-.qrCard p {
+.qrLogo {
+  align-items: center;
+  background: #ffffff;
+  border: var(--control-border-width) solid
+    color-mix(in srgb, var(--color-primary) 18%, #ffffff);
+  border-radius: 0.85rem;
+  box-shadow: var(--shadow-card);
+  display: flex;
+  height: 2.75rem;
+  justify-content: center;
+  left: 50%;
+  overflow: hidden;
+  padding: var(--spacing-4);
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 2.75rem;
+}
+
+.qrLogo img {
+  border-radius: 0.65rem;
+  height: 100%;
+  object-fit: cover;
+  width: 100%;
+}
+
+.qrLabel {
   color: var(--color-text-secondary);
   font-size: var(--font-small-size);
+  margin: 0;
+}
+
+.qrBrand {
+  color: var(--color-primary);
+  font-size: var(--font-caption-size);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.14em;
   margin: 0;
 }
 

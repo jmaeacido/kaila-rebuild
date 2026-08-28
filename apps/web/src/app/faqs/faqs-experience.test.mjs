@@ -18,7 +18,7 @@ test("FAQ uses the authenticated session header without duplicating its public t
   assert.match(page, /usePublicSessionStatus/);
   assert.match(page, /publicSessionStatus === "anonymous"/);
   assert.match(page, /KAILA public home/);
-  assert.match(authGuard, /isSessionAwarePublic = pathname === "\/faqs"/);
+  assert.match(authGuard, /SESSION_AWARE_PUBLIC_PATHS\.has\(pathname\)/);
   assert.match(authGuard, /<Link href="\/home" aria-label="KAILA home">/);
   assert.match(authGuard, /PublicSessionContext\.Provider value="authenticated"/);
 });

@@ -1,8 +1,7 @@
 import Image from "next/image";
 import {
-  ArrowDownToLine,
-  BadgeCheck,
   Download,
+  LogIn,
   ScanLine,
   ShieldCheck,
   Smartphone,
@@ -11,7 +10,6 @@ import {
   ANDROID_APK_DOWNLOAD_URL,
   ANDROID_APK_PATH,
   ANDROID_DOWNLOAD,
-  ANDROID_DOWNLOAD_PAGE_URL,
 } from "../app/android-download";
 import { AndroidDownloadQr } from "./android-download-qr";
 import styles from "./android-download-section.module.css";
@@ -26,10 +24,10 @@ const installSteps = [
     icon: ShieldCheck,
     title: "Allow the install",
     description:
-      "If Android asks, allow installs from your browser. KAILA is distributed directly while Play Store review continues.",
+      "If Android asks, allow installs from your browser when prompted.",
   },
   {
-    icon: BadgeCheck,
+    icon: LogIn,
     title: "Open KAILA",
     description: "Sign in, post a job, or build your provider profile from the same app.",
   },
@@ -52,11 +50,13 @@ export function AndroidDownloadSection({
     >
       <div className={styles.inner}>
         <div className={styles.copy}>
-          {showIntro && <p className={styles.kicker}>ANDROID APP</p>}
-          <p className={styles.badge}>
-            <Smartphone aria-hidden="true" />
-            Currently available for Android
-          </p>
+          <div className={styles.intro}>
+            {showIntro && <p className={styles.kicker}>ANDROID APP</p>}
+            <p className={styles.badge}>
+              <Smartphone aria-hidden="true" />
+              Currently available for Android
+            </p>
+          </div>
           <h2 className={styles.title} id={`${id}-title`}>
             Get KAILA on your <em>Android</em> phone
           </h2>
@@ -64,23 +64,24 @@ export function AndroidDownloadSection({
             Install the KAILA app to post jobs, chat with providers, follow work
             in real time, and get notified when something needs your attention.
           </p>
-          <div className={styles.meta}>
-            <span>Version {ANDROID_DOWNLOAD.versionName}</span>
-            <span>{ANDROID_DOWNLOAD.minAndroid}</span>
+          <div className={styles.downloadPanel}>
+            <div className={styles.meta}>
+              <span>Version {ANDROID_DOWNLOAD.versionName}</span>
+              <span>{ANDROID_DOWNLOAD.minAndroid}</span>
+            </div>
+            <a
+              className={styles.downloadButton}
+              href={ANDROID_APK_PATH}
+              download={ANDROID_DOWNLOAD.fileName}
+            >
+              <Download aria-hidden="true" />
+              Download APK
+            </a>
+            <p className={styles.directLink}>
+              Direct link:{" "}
+              <a href={ANDROID_APK_DOWNLOAD_URL}>{ANDROID_APK_DOWNLOAD_URL}</a>
+            </p>
           </div>
-          <a
-            className={styles.downloadButton}
-            href={ANDROID_APK_PATH}
-            download={ANDROID_DOWNLOAD.fileName}
-          >
-            <Download aria-hidden="true" />
-            Download APK
-            <ArrowDownToLine aria-hidden="true" />
-          </a>
-          <p className={styles.note}>
-            Google Play review is still in progress. This direct download is the
-            official consumer build for Android.
-          </p>
         </div>
 
         <div className={styles.visual}>
@@ -99,10 +100,7 @@ export function AndroidDownloadSection({
               <span>Nearby help, made simple.</span>
             </div>
           </div>
-          <AndroidDownloadQr
-            label="Scan to open the download page"
-            url={ANDROID_DOWNLOAD_PAGE_URL}
-          />
+          <AndroidDownloadQr label="Scan to open the download page" />
         </div>
 
         <ol className={styles.steps}>
@@ -110,11 +108,13 @@ export function AndroidDownloadSection({
             const Icon = step.icon;
             return (
               <li key={step.title}>
-                <span className={styles.stepNumber}>{index + 1}</span>
+                <span className={styles.stepNumber} aria-hidden="true">
+                  {index + 1}
+                </span>
                 <span className={styles.stepIcon}>
                   <Icon aria-hidden="true" />
                 </span>
-                <div>
+                <div className={styles.stepCopy}>
                   <h3>{step.title}</h3>
                   <p>{step.description}</p>
                 </div>
@@ -122,11 +122,6 @@ export function AndroidDownloadSection({
             );
           })}
         </ol>
-
-        <p className={styles.directLink}>
-          Direct APK link:{" "}
-          <a href={ANDROID_APK_DOWNLOAD_URL}>{ANDROID_APK_DOWNLOAD_URL}</a>
-        </p>
       </div>
     </section>
   );

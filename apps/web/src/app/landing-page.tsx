@@ -291,7 +291,7 @@ export default function LandingPage() {
         </div>
 
         <div className={styles.searchCard} aria-label="Find local providers">
-          <label>
+          <label className={styles.searchService}>
             <span>Service</span>
             <SelectField label="Service" value={categoryId} onChange={setCategoryId} placeholder="Choose a service" options={categories.map((item) => ({ value:String(item.id), label:item.name }))} />
           </label>
@@ -299,13 +299,15 @@ export default function LandingPage() {
             <span>Area</span>
             <AddressHierarchy areas={areas} value={areaId} onChange={setAreaId} />
           </div>
-          <Button
-            onClick={() => void discover()}
-            disabled={!categoryId || !areaId || status === "searching"}
-          >
-            <Search aria-hidden="true" />
-            {status === "searching" ? "Searching…" : "Find providers"}
-          </Button>
+          <div className={styles.searchActions}>
+            <Button
+              onClick={() => void discover()}
+              disabled={!categoryId || !areaId || status === "searching"}
+            >
+              <Search aria-hidden="true" />
+              {status === "searching" ? "Searching…" : "Find providers"}
+            </Button>
+          </div>
         </div>
 
         {status === "loading" && (

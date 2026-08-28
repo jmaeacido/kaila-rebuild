@@ -13,8 +13,10 @@ test("android download metadata points at the public APK and download page", () 
 
 test("landing page exposes the download section and navigation", () => {
   const landing = readFileSync(new URL("./landing-page.tsx", import.meta.url), "utf8");
+  const publicRoutes = readFileSync(new URL("./public-routes.ts", import.meta.url), "utf8");
 
   assert.match(landing, /<AndroidDownloadSection \/>/);
   assert.match(landing, /href="#download">Download<\/a>/);
   assert.match(landing, /href="\/download">Download<\/Link>/);
+  assert.match(publicRoutes, /"\/download"/);
 });

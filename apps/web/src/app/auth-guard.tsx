@@ -18,24 +18,9 @@ import { realtimeAuthChangedName } from "./realtime-provider";
 import { useTheme } from "./theme-provider";
 import { isThemePreference } from "./theme";
 import { clearSession, ensureMobileSession } from "@kaila/mobile/session";
+import { isPublicPath, normalizePublicPath } from "./public-routes";
 
-const PUBLIC_PATHS = new Set([
-  "/",
-  "/forgot-password",
-  "/login",
-  "/privacy",
-  "/register",
-  "/reset-password",
-  "/terms",
-  "/account-deletion",
-  "/maintenance",
-  "/faqs",
-]);
-
-function isPublicPath(pathname: string): boolean {
-  if (PUBLIC_PATHS.has(pathname)) return true;
-  return pathname.startsWith("/status/");
-}
+const SESSION_AWARE_PUBLIC_PATHS = new Set(["/faqs"]);
 
 type PublicSessionStatus = "checking" | "authenticated" | "anonymous";
 
@@ -46,7 +31,7 @@ export function usePublicSessionStatus(): PublicSessionStatus {
 }
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
+  const pathname = normalizePublicPath(usePathname());
   const router = useRouter();
   const { applyAccountTheme } = useTheme();
   const [sessionReady, setSessionReady] = useState(false);
@@ -54,7 +39,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [loggingOut, setLoggingOut] = useState(false);
   const isPublic = isPublicPath(pathname);
-  const isSessionAwarePublic = pathname === "/faqs";
+  const isSessionAwarePublic = SESSION_AWARE_PUBLIC_PATHS.has(pathname);
   const [publicSessionStatus, setPublicSessionStatus] = useState<PublicSessionStatus>(
     isSessionAwarePublic ? "checking" : "anonymous",
   );
@@ -81,6 +66,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
             setPublicSessionStatus("anonymous");
             return;
           }
+          if (isPublicPath(pathname)) return;
           const destination = `${pathname}${window.location.search}`;
           router.replace(`/login?next=${encodeURIComponent(destination)}`);
           return;
@@ -106,6 +92,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
             setPublicSessionStatus("anonymous");
             return;
           }
+          if (isPublicPath(pathname)) return;
           router.replace(`/login?next=${encodeURIComponent(pathname)}`);
         }
       });
