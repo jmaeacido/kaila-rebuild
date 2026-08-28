@@ -145,7 +145,9 @@ function RegisterForm() {
     <main className={styles.page}>
       <aside className={styles.brandPanel}>
         <div>
-          <BrandMark className={styles.brandLogo} variant="onDark" priority />
+          <Link className={styles.brandLink} href="/" aria-label="KAILA home">
+            <BrandMark className={styles.brandLogo} variant="onDark" priority showBull />
+          </Link>
           <h2>One account. Two ways to get things done.</h2>
           <p>
             Find trusted help as a client or turn your skills into nearby work
@@ -156,8 +158,8 @@ function RegisterForm() {
       <section className={styles.formSide}>
         <div className={styles.card}>
           <header className={styles.cardHeader}>
-            <Link href="/" aria-label="Back to KAILA home">
-              <BrandMark className={styles.brandLogo} priority />
+            <Link className={styles.brandLink} href="/" aria-label="KAILA home">
+              <BrandMark className={styles.brandLogo} priority showBull />
             </Link>
             <h1>Create your KAILA account</h1>
             <p>Choose how you want to begin. You can switch modes later.</p>

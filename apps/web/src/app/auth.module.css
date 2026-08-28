@@ -31,6 +31,12 @@
   width: 8rem;
 }
 
+.brandLink {
+  align-items: center;
+  display: inline-flex;
+  text-decoration: none;
+}
+
 .brandPanel h2 {
   font-size: var(--font-display-size);
   line-height: var(--line-height-tight);
