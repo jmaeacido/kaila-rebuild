@@ -57,7 +57,7 @@ test("desktop session branding stays compact and only shows the bull when reques
   assert.match(globalStylesSource, /\.appSessionBar \.sessionLogo \{[^}]*display: inline-flex/);
   assert.doesNotMatch(brandStylesSource, /@media[^}]+\.bull\s*\{\s*display: block/);
   assert.match(brandStylesSource, /\.lockup\.withBull \.bull \{\s*display: block/);
-  assert.match(authGuardSource, /<BrandMark className="sessionLogo" priority showBull \/>/);
+  assert.match(authGuardSource, /<BrandMark className="sessionLogo" priority showBull compact \/>/);
 });
 
 test("Authenticated navigation retains the session and reveals pages after their initial UI settles", () => {

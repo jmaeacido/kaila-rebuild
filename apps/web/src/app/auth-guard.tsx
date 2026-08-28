@@ -146,7 +146,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
           <PullToRefresh />
           <header className="appSessionBar">
             <Link href="/home" aria-label="KAILA home">
-              <BrandMark className="sessionLogo" priority showBull />
+              <BrandMark className="sessionLogo" priority showBull compact />
             </Link>
             <div>
               <Link

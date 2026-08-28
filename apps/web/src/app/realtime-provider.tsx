@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { io, type Socket } from "socket.io-client";
+import { isPublicPath, normalizePublicPath } from "./public-routes";
 
 export type DomainEvent = {
   eventId: string;
@@ -21,16 +22,6 @@ export const realtimeAuthChangedName = "kaila:realtime-auth-changed";
 
 export type RealtimeStatus = "connecting" | "connected" | "disconnected";
 
-const PUBLIC_PATHS = new Set([
-  "/",
-  "/forgot-password",
-  "/login",
-  "/privacy",
-  "/register",
-  "/reset-password",
-  "/terms",
-]);
-
 let latestRealtimeStatus: RealtimeStatus = "disconnected";
 
 export function getRealtimeStatus(): RealtimeStatus {
@@ -42,7 +33,7 @@ type TicketResponse = { data: { ticket: string } };
 export function RealtimeProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const seenEventIds = useRef(new Set<string>());
-  const isPublic = PUBLIC_PATHS.has(pathname);
+  const isPublic = isPublicPath(normalizePublicPath(pathname));
 
   useEffect(() => {
     const publishStatus = (status: RealtimeStatus) => {

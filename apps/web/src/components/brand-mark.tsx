@@ -13,6 +13,8 @@ type BrandMarkProps = {
   width?: number;
   height?: number;
   showBull?: boolean;
+  /** Bull icon only — for compact headers where the wordmark would clip. */
+  compact?: boolean;
 };
 
 function markFor(variant: BrandMarkProps["variant"], resolved: ResolvedTheme): string {
@@ -30,10 +32,13 @@ export function BrandMark({
   width = 2023,
   height = 526,
   showBull = false,
+  compact = false,
 }: BrandMarkProps) {
   const { resolved } = useTheme();
   return (
-    <span className={`${styles.lockup}${showBull ? ` ${styles.withBull}` : ""}${className ? ` ${className}` : ""}`}>
+    <span
+      className={`${styles.lockup}${showBull ? ` ${styles.withBull}` : ""}${compact ? ` ${styles.compact}` : ""}${className ? ` ${className}` : ""}`}
+    >
       <Image
         className={styles.bull}
         src="/brand/kaila-bull-app-icon-v2.png"

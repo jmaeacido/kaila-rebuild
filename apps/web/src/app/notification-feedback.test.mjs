@@ -197,7 +197,7 @@ test("realtime feedback advances a bounded non-blocking queue", () => {
 test("realtime starts with resilient polling and reconciles visible screens", () => {
   assert.match(realtime, /transports: \["polling", "websocket"\]/);
   assert.match(realtime, /window\.location\.hostname}:3100/);
-  assert.match(realtime, /PUBLIC_PATHS/);
+  assert.match(realtime, /isPublicPath\(normalizePublicPath\(pathname\)\)/);
   assert.match(realtime, /getRealtimeStatus/);
   assert.match(invalidation, /getRealtimeStatus\(\) === "connected"/);
   assert.match(invalidation, /document\.visibilityState === "visible" && !realtimeConnected/);
