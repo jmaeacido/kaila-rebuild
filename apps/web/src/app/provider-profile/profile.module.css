@@ -28,10 +28,71 @@
   color: var(--color-ink);
   font-size: var(--font-heading-size);
 }
+.intro {
+  align-items: flex-start;
+  display: grid;
+  gap: var(--spacing-12);
+  grid-template-columns: var(--spacing-48) minmax(0, 1fr);
+}
+.intro > div {
+  display: grid;
+  gap: var(--spacing-8);
+}
+.intro > div > p:last-child {
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-body);
+}
+.introIcon {
+  align-items: center;
+  background: color-mix(in srgb, var(--color-primary) 12%, var(--color-surface));
+  border-radius: var(--radius-pill);
+  color: var(--color-primary);
+  display: flex;
+  height: var(--spacing-48);
+  justify-content: center;
+  width: var(--spacing-48);
+}
+.introIcon svg { height: var(--spacing-24); width: var(--spacing-24); }
 .eyebrow {
   color: var(--color-primary);
   font-size: var(--font-caption-size);
   font-weight: var(--font-weight-bold);
+}
+.steps {
+  background: var(--color-background);
+  border: var(--control-border-width) solid var(--color-border);
+  border-radius: var(--radius-card);
+  display: grid;
+  gap: var(--spacing-4);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  list-style: none;
+  padding: var(--spacing-8);
+}
+.steps li {
+  align-items: center;
+  color: var(--color-text-secondary);
+  display: flex;
+  font-size: var(--font-caption-size);
+  font-weight: var(--font-weight-semibold);
+  gap: var(--spacing-4);
+  justify-content: center;
+  min-width: 0;
+  text-align: center;
+}
+.steps span,
+.formSection legend > span,
+.serviceArea legend > span,
+.shopService legend > span {
+  align-items: center;
+  background: var(--color-primary);
+  border-radius: var(--radius-pill);
+  color: var(--color-on-primary);
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-size: var(--font-caption-size);
+  height: var(--spacing-24);
+  justify-content: center;
+  width: var(--spacing-24);
 }
 .form {
   display: grid;
@@ -68,6 +129,7 @@
   min-height: 8rem;
   resize: vertical;
 }
+.formSection,
 .shopService {
   background: var(--color-background);
   border: var(--control-border-width) solid var(--color-border);
@@ -77,6 +139,7 @@
   margin: 0;
   padding: var(--spacing-16);
 }
+.formSection legend,
 .shopService legend {
   align-items: center;
   color: var(--color-ink);
@@ -86,7 +149,16 @@
   gap: var(--spacing-8);
   padding-inline: var(--spacing-8);
 }
+.formSection legend svg,
 .shopService legend svg { color: var(--color-primary); height: var(--spacing-24); width: var(--spacing-24); }
+.formSection > p,
+.formSection label > small {
+  color: var(--color-text-secondary);
+  font-size: var(--font-small-size);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-body);
+}
+.basicGrid { display: grid; gap: var(--spacing-12); }
 .shopToggle { align-items: flex-start; background: var(--color-surface); border: var(--control-border-width) solid var(--color-border); border-radius: var(--radius-input); cursor: pointer; grid-template-columns: auto 1fr; padding: var(--spacing-12); }
 .shopToggle input { min-height: var(--spacing-24); width: var(--spacing-24); }
 .shopToggle span,.shopFields { display: grid; gap: var(--spacing-12); }
@@ -114,6 +186,27 @@
   height: var(--spacing-24);
   width: var(--spacing-24);
 }
+.submitBar {
+  align-items: center;
+  background: color-mix(in srgb, var(--color-surface) 96%, transparent);
+  border-top: var(--control-border-width) solid var(--color-border);
+  bottom: 0;
+  display: grid;
+  gap: var(--spacing-8);
+  margin: 0 calc(var(--spacing-16) * -1) calc(var(--spacing-16) * -1);
+  padding: var(--spacing-12) var(--spacing-16) calc(var(--spacing-12) + env(safe-area-inset-bottom));
+  position: sticky;
+  z-index: 2;
+}
+.submitBar > span {
+  align-items: center;
+  color: var(--color-text-secondary);
+  display: flex;
+  font-size: var(--font-caption-size);
+  gap: var(--spacing-8);
+}
+.submitBar > span svg { color: var(--color-primary); height: var(--spacing-16); width: var(--spacing-16); }
+.submitBar button { width: 100%; }
 .serviceArea > p {
   color: var(--color-text-secondary);
   font-size: var(--font-small-size);
@@ -191,10 +284,29 @@
     padding: var(--spacing-32);
   }
   .addressFields,
-  .coverageChoices {
+  .coverageChoices,
+  .basicGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .barangayGrid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
+  .submitBar {
+    grid-template-columns: minmax(0, 1fr) auto;
+    margin-inline: 0;
+    padding-inline: 0;
+  }
+  .submitBar button { width: auto; }
+}
+
+@media (max-width: 30rem) {
+  .page { padding-top: var(--spacing-12); }
+  .back { margin-bottom: var(--spacing-12); }
+  .panel { padding: var(--spacing-16); }
+  .intro { grid-template-columns: 1fr; }
+  .introIcon { display: none; }
+  .steps li { flex-direction: column; }
+  .formSection,
+  .serviceArea,
+  .shopService { padding: var(--spacing-12); }
 }

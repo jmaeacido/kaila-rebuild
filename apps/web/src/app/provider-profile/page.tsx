@@ -1,7 +1,7 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
-import { ArrowLeft, CheckCircle2, LocateFixed, MapPin, Store } from "lucide-react";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { ArrowLeft, BadgeCheck, CheckCircle2, LocateFixed, MapPin, Store, UserRound, Wrench } from "lucide-react";
 import { Button, Feedback, TextField } from "@kaila/ui";
 import Link from "next/link";
 import styles from "./profile.module.css";
@@ -23,6 +23,7 @@ export default function ProviderProfilePage() {
   const [coverageMode, setCoverageMode] = useState<"city" | "barangays">("city");
   const [barangayIds, setBarangayIds] = useState<string[]>([]);
   const [barangays, setBarangays] = useState<Item[]>([]);
+  const [referenceStatus, setReferenceStatus] = useState<"loading" | "ready" | "error">("loading");
   const [loadedBarangaysCityId, setLoadedBarangaysCityId] = useState("");
   const barangaysLoading = Boolean(cityId) && loadedBarangaysCityId !== cityId;
   const [message, setMessage] = useState<"idle" | "saving" | "saved" | "error">("idle");
@@ -53,8 +54,9 @@ export default function ProviderProfilePage() {
     [areas, independentLocalities, provinceId],
   );
 
-  useEffect(() => {
-    void fetch("/api/v1/marketplace/reference-data", { cache: "no-store" })
+  const loadReferenceData = useCallback(async () => {
+    setReferenceStatus("loading");
+    await fetch("/api/v1/marketplace/reference-data", { cache: "no-store" })
       .then(async (response) => {
         if (!response.ok) throw new Error();
         return response.json() as Promise<{
@@ -64,9 +66,14 @@ export default function ProviderProfilePage() {
       .then((body) => {
         setCategories(body.data.categories);
         setAreas(body.data.areas);
+        setReferenceStatus("ready");
       })
-      .catch(() => setMessage("error"));
+      .catch(() => setReferenceStatus("error"));
   }, []);
+
+  useEffect(() => {
+    void loadReferenceData();
+  }, [loadReferenceData]);
 
   useEffect(() => {
     let active = true;
@@ -167,36 +174,62 @@ export default function ProviderProfilePage() {
         <ArrowLeft aria-hidden="true" /> Home
       </Link>
       <section className={styles.panel} aria-labelledby="profile-title">
-        <p className={styles.eyebrow}>PROVIDER ONBOARDING</p>
-        <h1 id="profile-title">Help clients know and trust you</h1>
-        <p>Tell people what you do and where you work. Your profile is reviewed before it appears in search.</p>
+        <div className={styles.intro}>
+          <span className={styles.introIcon}><BadgeCheck aria-hidden="true" /></span>
+          <div>
+            <p className={styles.eyebrow}>PROVIDER ONBOARDING</p>
+            <h1 id="profile-title">Build a profile clients can trust</h1>
+            <p>Show what you do and where you work. KAILA reviews every profile before it appears in search.</p>
+          </div>
+        </div>
+        <ol className={styles.steps} aria-label="Profile sections">
+          <li><span>1</span>About you</li>
+          <li><span>2</span>Service area</li>
+          <li><span>3</span>Shop option</li>
+        </ol>
+        {referenceStatus === "error" && (
+          <Feedback kind="error" title="Services and locations didn’t load">
+            Check your connection, then try again.
+            <Button type="button" variant="secondary" onClick={() => void loadReferenceData()}>Try again</Button>
+          </Feedback>
+        )}
         <form onSubmit={(event) => void submit(event)} className={styles.form}>
-          <TextField id="displayName" name="displayName" label="Business or display name" required />
-          <label>
-            About your work
-            <textarea name="bio" required minLength={20} maxLength={1200} />
-          </label>
-          <TextField
-            id="yearsExperience"
-            name="yearsExperience"
-            label="Years of experience"
-            type="number"
-            required
-          />
-          <label>
-            Primary service
-            <select name="serviceId" required>
-              <option value="">Choose a service</option>
-              {categories.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
-          </label>
+          <fieldset className={styles.formSection}>
+            <legend><span>1</span><UserRound aria-hidden="true" /> About you</legend>
+            <p>Use the name clients should recognize and describe the work you do best.</p>
+            <TextField id="displayName" name="displayName" label="Business or display name" autoComplete="organization" required />
+            <label>
+              About your work
+              <textarea name="bio" required minLength={20} maxLength={1200} placeholder="Describe your services, experience, and what clients can expect." />
+              <small>At least 20 characters. Don’t include private contact details.</small>
+            </label>
+            <div className={styles.basicGrid}>
+              <TextField
+                id="yearsExperience"
+                name="yearsExperience"
+                label="Years of experience"
+                type="number"
+                inputMode="numeric"
+                min={0}
+                max={80}
+                required
+              />
+              <label>
+                Primary service
+                <select name="serviceId" required disabled={referenceStatus !== "ready"}>
+                  <option value="">{referenceStatus === "loading" ? "Loading services…" : "Choose a service"}</option>
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          </fieldset>
           <fieldset className={styles.serviceArea}>
             <legend>
-              <MapPin aria-hidden="true" /> Service area
+              <span>2</span><MapPin aria-hidden="true" /> Service area
             </legend>
             <p>Cover the whole city or municipality, or choose several barangays.</p>
             <div className={styles.addressFields}>
@@ -292,7 +325,7 @@ export default function ProviderProfilePage() {
             )}
           </fieldset>
           <fieldset className={styles.shopService}>
-            <legend><Store aria-hidden="true" /> Shop service</legend>
+            <legend><span>3</span><Store aria-hidden="true" /> Shop service</legend>
             <label className={styles.shopToggle}>
               <input type="checkbox" checked={offersAtShop} onChange={(event) => setOffersAtShop(event.target.checked)} />
               <span><strong>Clients can also come to my shop</strong><small>Keep this enabled alongside your home-service coverage if you offer both.</small></span>
@@ -306,9 +339,12 @@ export default function ProviderProfilePage() {
               <p>{shopLocation ? `${shopLocation.latitude.toFixed(5)}, ${shopLocation.longitude.toFixed(5)}` : "Use this while physically at the shop. Clients receive this destination only when they hire you for shop service."}</p>
             </div>}
           </fieldset>
-          <Button type="submit" isLoading={message === "saving"}>
-            Submit for review
-          </Button>
+          <div className={styles.submitBar}>
+            <span><Wrench aria-hidden="true" /> You can update your profile after review.</span>
+            <Button type="submit" isLoading={message === "saving"} disabled={referenceStatus !== "ready"}>
+              Submit for review
+            </Button>
+          </div>
         </form>
         {message === "saved" && (
           <Feedback kind="success" title="Profile sent for review">
