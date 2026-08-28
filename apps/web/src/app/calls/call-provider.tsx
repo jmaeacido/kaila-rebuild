@@ -504,8 +504,8 @@ export function CallProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ call, muted, notice, startCall, answerCall, endCall, toggleMute }),
-    [answerCall, call, endCall, muted, notice, startCall, toggleMute],
+    () => ({ call, muted, cameraOff, notice, startCall, answerCall, endCall, toggleMute, toggleCamera }),
+    [answerCall, call, cameraOff, endCall, muted, notice, startCall, toggleCamera, toggleMute],
   );
 
   return (
