@@ -19,7 +19,7 @@
     "android:sync": "pnpm build && cap sync android",
     "android:verify": "node scripts/verify-android-release.mjs",
     "lint": "tsc --noEmit",
-    "test": "vitest run",
+    "test": "vitest run && node --test scripts/publish-android-download.test.mjs",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

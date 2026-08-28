@@ -42,3 +42,4 @@ run(process.execPath, ["scripts/android-doctor.mjs"]);
 run(pnpm, ["android:sync"]);
 run(pnpm, ["android:verify"]);
 run(gradle, [mode === "release" ? "bundleRelease" : "assembleDebug"], androidDirectory);
+run(process.execPath, ["scripts/publish-android-download.mjs", mode]);

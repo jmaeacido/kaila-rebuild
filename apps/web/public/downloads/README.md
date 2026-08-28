@@ -2,15 +2,15 @@
 
 Place the signed consumer APK here as `kaila-android.apk` before deploying the website.
 
-After building the mobile app:
+After a successful `pnpm --filter @kaila/mobile android:debug` build, the
+consumer APK and `/download` version metadata are copied automatically to:
 
-```powershell
-Copy-Item apps\mobile\android\app\build\outputs\apk\debug\app-debug.apk apps\web\public\downloads\kaila-android.apk
-```
+- `apps/web/public/downloads/kaila-android.apk`
+- `apps/web/src/app/android-download.ts`
 
-For production, copy the release APK you intend to distribute and update
-`apps/web/src/app/android-download.ts` with the matching `versionName` and
-`versionCode`.
+For production, copy the release APK you intend to distribute if it is not
+produced by the debug build, then run a release build so the version metadata
+stays in sync.
 
 The landing page and `/download` route link to this file. The QR code opens
 `/download` on mobile so users can install from one focused page.

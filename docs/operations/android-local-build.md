@@ -43,6 +43,11 @@ The APK is written to:
 apps\mobile\android\app\build\outputs\apk\debug\app-debug.apk
 ```
 
+A successful debug build also copies that APK to
+`apps\web\public\downloads\kaila-android.apk` and updates
+`apps\web\src\app\android-download.ts` so `/download` shows the matching
+`versionName` and `versionCode`.
+
 Set `KAILA_APP_ORIGIN` before building only when testing another HTTPS consumer
 host reachable by the Android device.
 

@@ -1,6 +1,6 @@
 import { SITE_URL } from "./seo";
 
-/** Update when publishing a new consumer APK to public/downloads/. */
+/** Synced automatically by apps/mobile/scripts/publish-android-download.mjs after Android builds. */
 export const ANDROID_DOWNLOAD = {
   versionName: "1.0.0",
   versionCode: 1,
