@@ -7,6 +7,7 @@ use App\Support\KatabangAssistant;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use RuntimeException;
 
@@ -25,7 +26,12 @@ class KatabangController
         abort_unless($user instanceof User, 401);
         try {
             $result = $assistant->answer($data['message'], $data['conversation'] ?? []);
-        } catch (RuntimeException) {
+        } catch (RuntimeException $exception) {
+            Log::warning('Katabang AI request failed.', [
+                'reason' => $exception->getMessage(),
+                'model' => (string) config('services.katabang_ai.model'),
+            ]);
+
             return response()->json(['message' => 'Katabang is temporarily unavailable. Please try again.'], 503);
         }
 

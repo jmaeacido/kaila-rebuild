@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -10,8 +9,10 @@ import {
   Mail,
   MessageCircleQuestion,
   Plus,
+  RefreshCw,
   ShieldAlert,
   Sparkles,
+  Wrench,
 } from "lucide-react";
 import { SUPPORT_EMAIL } from "../../lib/support-email";
 import { useRealtimeInvalidation } from "../use-realtime-invalidation";
@@ -34,6 +35,8 @@ const status = (value: string) =>
     resolved: "Resolved",
     closed: "Closed",
   }[value] ?? value);
+
+const activeStatuses = new Set(["open", "waiting_for_support", "waiting_for_customer"]);
 
 export default function SupportPage() {
   const [items, setItems] = useState<SupportCase[]>([]);
@@ -60,6 +63,8 @@ export default function SupportPage() {
     (event) => event.type.startsWith("support."),
   );
 
+  const activeCount = items.filter((item) => activeStatuses.has(item.status)).length;
+
   return (
     <main className={styles.page}>
       <header className={styles.top}>
@@ -74,16 +79,9 @@ export default function SupportPage() {
         </Link>
       </header>
 
-      <section className={styles.hero}>
-        <Image
-          className={styles.heroIcon}
-          src="/support/support-icon.png"
-          alt=""
-          width={160}
-          height={160}
-          priority
-        />
-        <h1>How can we help?</h1>
+      <section className={styles.hero} aria-labelledby="support-intro-title">
+        <div className={styles.heroSymbol} aria-hidden="true"><Wrench /></div>
+        <h2 id="support-intro-title">How can we help?</h2>
         <p>
           Send us a message about your account, booking, payment, or app experience.
           Your request stays here so you can follow every update.
@@ -93,15 +91,15 @@ export default function SupportPage() {
             <Plus />
             New support request
           </Link>
-          <a className={styles.secondary} href={`mailto:${SUPPORT_EMAIL}`}>
+          <a className={styles.heroEmail} href={`mailto:${SUPPORT_EMAIL}`}>
             <Mail />
-            Email {SUPPORT_EMAIL}
+            Prefer email? {SUPPORT_EMAIL}
           </a>
         </div>
       </section>
 
       <section className={styles.grid}>
-        <article className={styles.card}>
+        <article className={`${styles.card} ${styles.helpCard}`}>
           <h2>Choose the right help</h2>
           <div className={styles.choices}>
             <Link className={styles.choice} href="/faqs">
@@ -131,21 +129,25 @@ export default function SupportPage() {
           </div>
         </article>
 
-        <article className={styles.card}>
-          <h2>Your requests</h2>
-          {state === "loading" && <div className={styles.skeleton} />}
+        <article className={`${styles.card} ${styles.requestsCard}`}>
+          <div className={styles.sectionHeading}>
+            <div><h2>Your requests</h2>{state === "ready" && items.length > 0 && <p>{activeCount} active</p>}</div>
+            <Link className={styles.newRequestLink} href="/support/new" aria-label="Start another support request"><Plus aria-hidden="true" />New</Link>
+          </div>
+          {state === "loading" && <div className={styles.requestSkeletons} aria-label="Loading your requests" aria-busy="true"><div className={styles.skeleton} /><div className={styles.skeleton} /></div>}
           {state === "error" && (
             <div className={styles.error}>
               We couldn’t load your requests.{" "}
-              <button type="button" onClick={() => void load()}>
-                Try again
+              <button className={styles.retry} type="button" onClick={() => void load()}>
+                <RefreshCw aria-hidden="true" />Try again
               </button>
             </div>
           )}
           {state === "ready" && items.length === 0 && (
-            <div>
-              <MessageCircleQuestion />
-              <p className={styles.muted}>No support requests yet.</p>
+            <div className={styles.emptyRequests}>
+              <MessageCircleQuestion aria-hidden="true" />
+              <strong>No requests yet</strong>
+              <p className={styles.muted}>When you contact support, updates will appear here.</p>
               <Link className={styles.link} href="/support/new">
                 Start a request
               </Link>
@@ -158,14 +160,16 @@ export default function SupportPage() {
                   className={`${styles.card} ${styles.case}`}
                   href={`/support/${item.id}`}
                   key={item.id}
+                  aria-label={`${item.subject}, ${item.unread ? "new reply" : status(item.status)}`}
                 >
                   <div>
                     <strong>{item.subject}</strong>
-                    <p className={styles.meta}>
-                      {item.reference} · {new Date(item.lastMessageAt).toLocaleString()}
-                    </p>
+                    <p className={styles.meta}>{item.reference}</p>
+                    <time dateTime={item.lastMessageAt}>
+                      Updated {new Date(item.lastMessageAt).toLocaleString([], { dateStyle: "medium", timeStyle: "short" })}
+                    </time>
                   </div>
-                  <span className={styles.badge}>
+                  <span className={styles.badge} data-status={item.unread ? "unread" : item.status}>
                     {item.unread ? "New reply" : status(item.status)}
                   </span>
                 </Link>
