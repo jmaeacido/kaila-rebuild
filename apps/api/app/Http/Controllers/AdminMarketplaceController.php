@@ -10,6 +10,7 @@ use App\Models\ServiceCategory;
 use App\Models\User;
 use App\Support\NotificationService;
 use App\Support\OutboxRecorder;
+use App\Support\ProviderProfileReviewBaseline;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -157,8 +158,9 @@ class AdminMarketplaceController extends Controller
                 'reviewed_by' => $admin->id,
                 'review_note' => $approved ? null : trim($data['reviewReason']),
                 'reviewed_at' => now(),
+                'review_baseline' => null,
             ]);
-            $this->outbox->record('profile.updated', 'provider_profile', (string) $providerProfile->id, (int) now()->format('U'), ['rooms' => ["user:{$providerProfile->user_id}"], 'providerProfileId' => $providerProfile->id, 'status' => $providerProfile->status]);
+            $this->outbox->record('profile.updated', 'provider_profile', (string) $providerProfile->id, (int) now()->format('U'), ['rooms' => ["user:{$providerProfile->user_id}"], 'providerProfileId' => $providerProfile->id, 'status' => $providerProfile->status, 'reviewReason' => $providerProfile->review_note]);
             $this->notifications->send(
                 $providerProfile->user_id,
                 $approved ? 'profile.provider_approved' : 'profile.provider_rejected',
@@ -252,6 +254,8 @@ class AdminMarketplaceController extends Controller
     /** @return array<string, mixed> */
     private function presentProvider(ProviderProfile $profile, bool $reviewed = false): array
     {
+        $baseline = is_array($profile->review_baseline) ? $profile->review_baseline : null;
+
         return [
             'id' => $profile->id,
             'displayName' => $profile->display_name,
@@ -261,6 +265,8 @@ class AdminMarketplaceController extends Controller
             'shopName' => $profile->shop_name,
             'shopAddress' => $profile->shop_address,
             'submittedAt' => $profile->updated_at?->toIso8601String(),
+            'isUpdate' => $baseline !== null,
+            'changes' => $baseline ? ProviderProfileReviewBaseline::changes($baseline, $profile) : [],
             'user' => ['id' => $profile->user_id, 'name' => $profile->user?->name, 'email' => $profile->user?->email],
             'services' => $profile->services->map->only(['id', 'name'])->values(),
             'serviceAreas' => $profile->serviceAreas->map->only(['id', 'name', 'type'])->values(),

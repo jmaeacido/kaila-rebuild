@@ -309,6 +309,58 @@
   line-height: var(--line-height-body);
 }
 
+.profileChanges {
+  background: color-mix(in srgb, var(--color-primary) 8%, var(--color-surface));
+  border: var(--control-border-width) solid color-mix(in srgb, var(--color-primary) 24%, var(--color-border));
+  border-radius: var(--radius-input);
+  display: grid;
+  gap: var(--spacing-12);
+  padding: var(--spacing-16);
+}
+
+.profileChanges h4 {
+  color: var(--color-ink);
+  font-size: var(--font-small-size);
+  font-weight: var(--font-weight-semibold);
+}
+
+.profileChanges ul {
+  display: grid;
+  gap: var(--spacing-12);
+  list-style: none;
+}
+
+.profileChanges li {
+  display: grid;
+  gap: var(--spacing-4);
+}
+
+.profileChanges li strong {
+  color: var(--color-ink);
+  font-size: var(--font-small-size);
+}
+
+.profileChanges li p {
+  color: var(--color-text-secondary);
+  font-size: var(--font-small-size);
+  line-height: var(--line-height-body);
+  margin: 0;
+}
+
+.profileChanges li p span {
+  color: var(--color-ink);
+  display: inline-block;
+  font-weight: var(--font-weight-semibold);
+  margin-right: var(--spacing-8);
+  min-width: 2.5rem;
+}
+
+.profileChangesEmpty {
+  color: var(--color-text-secondary);
+  font-size: var(--font-small-size);
+  margin: 0;
+}
+
 .columns h3 {
   color: var(--color-ink);
 }

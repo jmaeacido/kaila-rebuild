@@ -35,5 +35,7 @@ describe("admin shell destinations", () => {
     expect(notificationCenter).toContain('/api/v1/notifications');
     expect(notificationCenter).toContain('role="status"');
     expect(notificationCenter).toContain("adminNotificationRoute");
+    expect(notificationCenter).toContain("createPortal");
+    expect(notificationCenter).toContain("document.body");
   });
 });

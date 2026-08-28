@@ -25,4 +25,7 @@ test("provider and credential reviews expose complete cards and histories", () =
   assert.match(page, /title="Credential review history"/);
   assert.match(page, /provider\.services\.map/);
   assert.match(page, /credential\.asset\.previewUrl/);
+  assert.match(page, /Changes in this submission/);
+  assert.match(page, /provider\.changes\.map/);
+  assert.match(page, /Profile update/);
 });

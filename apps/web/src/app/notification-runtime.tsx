@@ -254,7 +254,7 @@ export function NotificationRuntime() {
         playNotificationSound(soundForNotification(detail.type));
       }
       const feedback = feedbackForDomainEvent(detail);
-      if (feedback) show({ ...feedback, eventKey: detail.eventId });
+      if (feedback) show({ ...feedback, eventKey: feedback.eventKey ?? detail.eventId });
     };
     window.addEventListener(domainEventName, domainEvent);
     return () => window.removeEventListener(domainEventName, domainEvent);

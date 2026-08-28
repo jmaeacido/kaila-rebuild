@@ -139,6 +139,9 @@ class MarketplaceProfilesTest extends TestCase
         $user = User::query()->findOrFail($provider->user_id);
 
         $payload = $this->validProfile($category, $city);
+        $payload['displayName'] = 'Updated Provider Name';
+        $payload['bio'] = 'Updated bio with enough detail for marketplace review workflows.';
+        $payload['yearsExperience'] = 8;
         $this->actingAs($user)
             ->putJson('/api/v1/me/provider-profile', $payload)
             ->assertOk()
@@ -148,7 +151,53 @@ class MarketplaceProfilesTest extends TestCase
         $this->actingAs($admin)
             ->getJson('/api/v1/admin/marketplace/review-queue')
             ->assertOk()
-            ->assertJsonPath('data.providers.0.id', $provider->id);
+            ->assertJsonPath('data.providers.0.id', $provider->id)
+            ->assertJsonPath('data.providers.0.isUpdate', true)
+            ->assertJsonFragment(['field' => 'displayName', 'label' => 'Display name', 'previous' => 'City-wide Provider', 'current' => 'Updated Provider Name'])
+            ->assertJsonFragment(['field' => 'yearsExperience', 'label' => 'Experience', 'previous' => '4 years', 'current' => '8 years']);
+    }
+
+    public function test_first_provider_submission_does_not_mark_review_as_an_update(): void
+    {
+        [$category, $area] = $this->referenceData();
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->putJson('/api/v1/me/provider-profile', $this->validProfile($category, $area))
+            ->assertOk()
+            ->assertJsonPath('data.status', 'pending_review');
+
+        $admin = User::factory()->create(['is_admin' => true]);
+        $this->actingAs($admin)
+            ->getJson('/api/v1/admin/marketplace/review-queue')
+            ->assertOk()
+            ->assertJsonPath('data.providers.0.isUpdate', false)
+            ->assertJsonPath('data.providers.0.changes', []);
+    }
+
+    public function test_approving_a_provider_profile_notifies_the_provider(): void
+    {
+        [$category, $area] = $this->referenceData();
+        $profile = $this->provider('Approved Provider', 'pending_review', $category, $area);
+        $user = User::query()->findOrFail($profile->user_id);
+        $admin = User::factory()->create(['is_admin' => true]);
+
+        $this->actingAs($admin)
+            ->putJson("/api/v1/admin/marketplace/providers/{$profile->id}/status", ['status' => 'active'])
+            ->assertOk()
+            ->assertJsonPath('data.status', 'active');
+
+        $this->assertDatabaseHas('durable_notifications', [
+            'user_id' => $user->id,
+            'type' => 'profile.provider_approved',
+            'title' => 'Provider profile approved',
+        ]);
+        $this->assertDatabaseHas('outbox_events', ['event_type' => 'notification.created']);
+        $this->assertDatabaseHas('outbox_events', [
+            'event_type' => 'profile.updated',
+            'resource_type' => 'provider_profile',
+            'resource_id' => (string) $profile->id,
+        ]);
     }
 
     public function test_verified_badge_appears_only_after_clean_asset_and_approved_credential(): void

@@ -20,6 +20,7 @@ export type FeedbackMessage = {
   kind?: string;
   maintenanceEndsAt?: number;
   maintenanceScheduledAt?: string;
+  eventKey?: string;
 };
 
 const ephemeralEventTypes = new Set([
@@ -80,6 +81,32 @@ export function feedbackForDomainEvent(event: DomainEvent): FeedbackMessage | nu
   if (isEphemeralRealtimeEvent(event.type)) return null;
   // Global CallProvider owns incoming/active call UX; avoid duplicate toasts.
   if (event.type === "call.ringing" || event.type === "call.status.changed") return null;
+
+  if (event.type === "profile.updated" && event.resourceType === "provider_profile") {
+    const status = event.data.status;
+    if (status === "active") {
+      return {
+        title: "Provider profile approved",
+        body: "Your provider profile is approved and can now appear in KAILA discovery.",
+        href: "/provider-profile?reviewStatus=approved",
+        persistent: true,
+        actionLabel: "View profile",
+        eventKey: `provider-profile-status:${event.resourceId}:approved`,
+      };
+    }
+    if (status === "rejected") {
+      const reason = typeof event.data.reviewReason === "string" ? event.data.reviewReason : null;
+      return {
+        title: "Provider profile not approved",
+        body: reason || "Update your provider profile and submit again for review.",
+        href: "/provider-profile?reviewStatus=rejected",
+        persistent: true,
+        actionLabel: "Review profile",
+        eventKey: `provider-profile-status:${event.resourceId}:rejected`,
+      };
+    }
+  }
+
   if (notificationBackedEventTypes.has(event.type)) return null;
 
   if (event.type === "notification.created") {
@@ -91,14 +118,20 @@ export function feedbackForDomainEvent(event: DomainEvent): FeedbackMessage | nu
     if (record.data.hideFromInbox === "1" || record.data.hideFromInbox === true) return null;
     const matched = record.type === "opportunity.matched";
     const jobId = typeof record.data.jobId === "string" ? record.data.jobId : String(record.resourceId);
+    const providerStatusKey = record.type === "profile.provider_approved"
+      ? `provider-profile-status:${record.resourceId}:approved`
+      : record.type === "profile.provider_rejected"
+        ? `provider-profile-status:${record.resourceId}:rejected`
+        : undefined;
     return {
       title: matched ? record.body : record.title,
       body: matched ? record.title : record.body,
       href: realtimeNotificationRoute(record),
       persistent: true,
-      actionLabel: matched ? "View job" : "View update",
+      actionLabel: matched ? "View job" : record.type.startsWith("profile.provider_") ? "View profile" : "View update",
       eyebrow: matched ? "NEW MATCH NEAR YOU" : undefined,
       matchJobId: matched && /^[A-Za-z0-9-]+$/.test(jobId) ? jobId : undefined,
+      eventKey: providerStatusKey,
     };
   }
 
@@ -148,7 +181,17 @@ export function feedbackForDomainEvent(event: DomainEvent): FeedbackMessage | nu
 }
 
 function realtimeNotificationRoute(notification: RealtimeNotification): string {
-  if (notification.resourceType === "direct_conversation" && /^[A-Za-z0-9-]+$/.test(notification.resourceId)) return `/messages/${notification.resourceId}`;
+  if (notification.type === "profile.provider_approved" || notification.type === "profile.provider_rejected") {
+    const reviewStatus = notification.data.reviewStatus === "approved" ? "approved" : "rejected";
+    return `/provider-profile?reviewStatus=${reviewStatus}`;
+  }
+  if (notification.resourceType === "profile_asset" || notification.type.startsWith("profile.file_")) {
+    const reviewStatus = notification.data.reviewStatus === "approved" ? "approved" : "rejected";
+    return `/account?profilePicture=review&reviewStatus=${reviewStatus}`;
+  }
+  if (notification.resourceType === "direct_conversation" && /^[A-Za-z0-9-]+$/.test(notification.resourceId)) {
+    return `/messages/${notification.resourceId}`;
+  }
   if (notification.resourceType === "call_session") {
     const contextId = String(notification.data.contextId ?? "");
     if (notification.data.contextType === "job" && /^[A-Za-z0-9-]+$/.test(contextId)) {

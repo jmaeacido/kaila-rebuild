@@ -29,6 +29,8 @@ type Provider = {
   shopName: string | null;
   shopAddress: string | null;
   submittedAt: string | null;
+  isUpdate: boolean;
+  changes: Array<{ field: string; label: string; previous: string; current: string }>;
   user: { id: number; name: string; email: string };
   services: Array<{ id: number; name: string }>;
   serviceAreas: Array<{ id: number; name: string; type: string }>;
@@ -553,9 +555,26 @@ export default function AdminHome() {
             {queue.providers.map((provider) => (
               <article className={styles.reviewCard} key={provider.id}>
                 <div className={styles.reviewCardHeading}>
-                  <div><span>Provider application</span><h3>{provider.displayName}</h3></div>
+                  <div><span>{provider.isUpdate ? "Profile update" : "Provider application"}</span><h3>{provider.displayName}</h3></div>
                   <small>{formatDate(provider.submittedAt)}</small>
                 </div>
+                {provider.isUpdate && provider.changes.length > 0 && (
+                  <section className={styles.profileChanges} aria-label="Changes in this submission">
+                    <h4>Changes in this submission</h4>
+                    <ul>
+                      {provider.changes.map((change) => (
+                        <li key={change.field}>
+                          <strong>{change.label}</strong>
+                          <p><span>Was</span>{change.previous}</p>
+                          <p><span>Now</span>{change.current}</p>
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                )}
+                {provider.isUpdate && provider.changes.length === 0 && (
+                  <p className={styles.profileChangesEmpty}>No profile fields changed in this resubmission.</p>
+                )}
                 <p className={styles.reviewBio}>{provider.bio}</p>
                 <dl className={styles.assetDetails}>
                   <div><dt>Account</dt><dd>{provider.user.name} · {provider.user.email}</dd></div>

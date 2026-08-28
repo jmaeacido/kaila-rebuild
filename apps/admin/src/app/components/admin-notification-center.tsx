@@ -3,6 +3,7 @@
 import { Bell, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { io, type Socket } from "socket.io-client";
 import { adminNotificationRoute } from "../admin-notification-routes";
 import styles from "./admin-notification-center.module.css";
@@ -47,6 +48,7 @@ export function AdminNotificationCenter() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [open, setOpen] = useState(false);
   const [toast, setToast] = useState<AdminNotification | null>(null);
+  const [portalReady, setPortalReady] = useState(false);
   const knownIds = useRef(new Set<string>());
 
   const reconcile = useCallback(async (announceNew = false) => {
@@ -116,6 +118,10 @@ export function AdminNotificationCenter() {
   }, [reconcile, router]);
 
   useEffect(() => {
+    setPortalReady(true);
+  }, []);
+
+  useEffect(() => {
     if (!toast) return;
     const timer = window.setTimeout(() => setToast(null), 10_000);
     return () => window.clearTimeout(timer);
@@ -166,7 +172,7 @@ export function AdminNotificationCenter() {
         </section>
       )}
 
-      {toast && (
+      {portalReady && toast && createPortal(
         <aside className={styles.toast} role="status" aria-live="polite">
           <button className={styles.dismiss} type="button" aria-label="Dismiss notification" onClick={() => setToast(null)}>
             <X aria-hidden="true" />
@@ -174,7 +180,8 @@ export function AdminNotificationCenter() {
           <strong>{toast.title}</strong>
           <p>{toast.body}</p>
           <button className={styles.view} type="button" onClick={() => void openNotification(toast)}>View request</button>
-        </aside>
+        </aside>,
+        document.body,
       )}
     </div>
   );

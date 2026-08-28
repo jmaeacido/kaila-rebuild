@@ -5,6 +5,7 @@ import { ArrowLeft, BadgeCheck, CheckCircle2, LocateFixed, MapPin, Store, UserRo
 import { Button, Feedback, TextField } from "@kaila/ui";
 import Link from "next/link";
 import { CategorySelect, type ServiceCategory } from "../../components/category-select";
+import { useRealtimeInvalidation } from "../use-realtime-invalidation";
 import styles from "./profile.module.css";
 
 type Item = {
@@ -215,6 +216,13 @@ export default function ProviderProfilePage() {
     void loadReferenceData();
   }, [loadReferenceData]);
 
+  useRealtimeInvalidation(
+    () => void loadReferenceData(),
+    (event) =>
+      (event.type === "profile.updated" && event.resourceType === "provider_profile")
+      || event.type.startsWith("notification."),
+  );
+
   useEffect(() => {
     let active = true;
 
@@ -331,14 +339,14 @@ export default function ProviderProfilePage() {
           <li><span>2</span>Service area</li>
           <li><span>3</span>Shop option</li>
         </ol>
+        {profileStatus === "active" && (
+          <Feedback kind="success" title="Profile approved">
+            Your provider profile is live. Saving changes sends it back for review.
+          </Feedback>
+        )}
         {profileStatus === "pending_review" && (
           <Feedback kind="info" title="Profile under review">
             We&apos;re reviewing your profile. You can still update details here if something changed.
-          </Feedback>
-        )}
-        {profileStatus === "active" && (
-          <Feedback kind="info" title="Profile active">
-            Your profile is live. Saving changes sends it back for review.
           </Feedback>
         )}
         {profileStatus === "rejected" && (

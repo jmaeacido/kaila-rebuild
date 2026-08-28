@@ -23,7 +23,7 @@ class ProviderProfile extends Model
 
     protected function casts(): array
     {
-        return ['rating' => 'decimal:2', 'offers_at_shop' => 'boolean', 'shop_latitude' => 'decimal:7', 'shop_longitude' => 'decimal:7', 'reviewed_at' => 'datetime'];
+        return ['rating' => 'decimal:2', 'offers_at_shop' => 'boolean', 'shop_latitude' => 'decimal:7', 'shop_longitude' => 'decimal:7', 'reviewed_at' => 'datetime', 'review_baseline' => 'array'];
     }
 
     /** @return BelongsTo<User, $this> */

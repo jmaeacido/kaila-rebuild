@@ -24,6 +24,72 @@ test("profile review notifications return users to their account", () => {
   }), "/account?profilePicture=review&reviewStatus=approved&notificationId=notification-profile");
 });
 
+test("provider profile review notifications return users to their provider profile", () => {
+  assert.equal(notificationRoute({
+    id: "notification-provider",
+    type: "profile.provider_approved",
+    title: "Provider profile approved",
+    body: "Your provider profile is approved and can now appear in KAILA discovery.",
+    resourceType: "provider_profile",
+    resourceId: "12",
+    data: { type: "profile", reviewStatus: "approved", providerProfileId: 12 },
+    readAt: null,
+    createdAt: new Date().toISOString(),
+  }), "/provider-profile?reviewStatus=approved&notificationId=notification-provider");
+});
+
+test("provider profile approval toasts deep-link to the provider profile", () => {
+  assert.deepEqual(feedbackForDomainEvent({
+    eventId: "event-provider-approved",
+    type: "notification.created",
+    occurredAt: new Date().toISOString(),
+    resourceType: "notification",
+    resourceId: "notification-provider",
+    version: 1,
+    data: {
+      notification: {
+        id: "notification-provider",
+        type: "profile.provider_approved",
+        title: "Provider profile approved",
+        body: "Your provider profile is approved and can now appear in KAILA discovery.",
+        resourceType: "provider_profile",
+        resourceId: "12",
+        data: { type: "profile", reviewStatus: "approved", providerProfileId: 12 },
+        readAt: null,
+        createdAt: new Date().toISOString(),
+      },
+    },
+  }), {
+    title: "Provider profile approved",
+    body: "Your provider profile is approved and can now appear in KAILA discovery.",
+    href: "/provider-profile?reviewStatus=approved",
+    persistent: true,
+    actionLabel: "View profile",
+    eyebrow: undefined,
+    matchJobId: undefined,
+    eventKey: "provider-profile-status:12:approved",
+  });
+});
+
+test("profile.updated provider status changes surface approval feedback", () => {
+  assert.deepEqual(feedbackForDomainEvent({
+    eventId: "event-profile-updated",
+    type: "profile.updated",
+    occurredAt: new Date().toISOString(),
+    resourceType: "provider_profile",
+    resourceId: "12",
+    version: 2,
+    data: { status: "active", providerProfileId: 12 },
+  }), {
+    title: "Provider profile approved",
+    body: "Your provider profile is approved and can now appear in KAILA discovery.",
+    href: "/provider-profile?reviewStatus=approved",
+    persistent: true,
+    actionLabel: "View profile",
+    eventKey: "provider-profile-status:12:approved",
+  });
+});
+
 test("rejected profile reviews deep-link to the profile-picture sheet", () => {
   assert.equal(notificationRoute({
     id: "notification-profile-rejected",
@@ -51,6 +117,7 @@ test("turns durable notification events into visible feedback", () => {
     actionLabel: "View update",
     eyebrow: undefined,
     matchJobId: undefined,
+    eventKey: undefined,
   });
 });
 
@@ -67,6 +134,7 @@ test("job matches use the shared non-blocking dialog copy", () => {
     actionLabel: "View job",
     eyebrow: "NEW MATCH NEAR YOU",
     matchJobId: "job-2",
+    eventKey: undefined,
   });
 });
 
@@ -115,7 +183,7 @@ test("mobile notifications are viewport bounded and independently scrollable", (
 });
 
 test("realtime feedback advances a bounded non-blocking queue", () => {
-  assert.match(runtime, /eventKey: detail\.eventId/);
+  assert.match(runtime, /eventKey: feedback\.eventKey \?\? detail\.eventId/);
   assert.match(runtime, /dismiss\(active\.id\), 6_000/);
   assert.match(runtime, /next\.slice\(-19\)/);
   assert.match(runtime, /aria-modal="false"/);

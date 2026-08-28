@@ -12,6 +12,8 @@ test("Provider profile loads saved data from marketplace profile", () => {
   assert.match(source, /value=\{displayName\}/);
   assert.match(source, /value=\{bio\}/);
   assert.match(source, /<CategorySelect/);
+  assert.match(source, /useRealtimeInvalidation/);
+  assert.match(source, /profile\.updated/);
 });
 
 test("Area mismatch banner reads provider service areas from API shape", () => {

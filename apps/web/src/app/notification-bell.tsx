@@ -32,7 +32,7 @@ export function NotificationBell() {
     }
   }, []);
 
-  useRealtimeInvalidation(() => void load(), (event) => event.type.startsWith("notification."));
+  useRealtimeInvalidation(() => void load(), (event) => event.type.startsWith("notification.") || (event.type === "profile.updated" && event.resourceType === "provider_profile"));
 
   useEffect(() => {
     const timer = window.setTimeout(() => void load(), 0);

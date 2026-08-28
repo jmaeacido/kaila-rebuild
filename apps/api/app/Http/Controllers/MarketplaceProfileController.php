@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Support\AdminNotificationService;
 use App\Support\OpportunityMatchingService;
 use App\Support\OutboxRecorder;
+use App\Support\ProviderProfileReviewBaseline;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -70,12 +71,19 @@ class MarketplaceProfileController extends Controller
         ]);
         /** @var User $user */ $user = $request->user();
         $profile = DB::transaction(function () use ($user, $data): ProviderProfile {
+            $existing = ProviderProfile::query()
+                ->where('user_id', $user->id)
+                ->with(['services:id,name', 'serviceAreas:id,name,type', 'availability'])
+                ->first();
+            $reviewBaseline = $existing ? ProviderProfileReviewBaseline::capture($existing) : null;
+
             $profile = ProviderProfile::query()->updateOrCreate(['user_id' => $user->id], [
                 'display_name' => $data['displayName'], 'bio' => $data['bio'], 'years_experience' => $data['yearsExperience'],
                 'status' => 'pending_review',
                 'reviewed_by' => null,
                 'review_note' => null,
                 'reviewed_at' => null,
+                'review_baseline' => $reviewBaseline,
                 'offers_at_shop' => $data['offersAtShop'] ?? false,
                 'shop_name' => ($data['offersAtShop'] ?? false) ? $data['shopName'] : null,
                 'shop_address' => ($data['offersAtShop'] ?? false) ? $data['shopAddress'] : null,
