@@ -36,12 +36,16 @@ function prefersReducedMotion(): boolean {
 type CallContextValue = {
   call: ActiveCall | null;
   muted: boolean;
+  cameraOff: boolean;
   notice: string;
   startCall: (input: StartCallInput) => Promise<void>;
   answerCall: () => Promise<void>;
   endCall: (action?: "decline" | "end") => Promise<void>;
   toggleMute: () => void;
+  toggleCamera: () => void;
 };
+
+export const callAuditEventName = "kaila:call-audit";
 
 const CallContext = createContext<CallContextValue | null>(null);
 
@@ -54,6 +58,7 @@ export function useCall(): CallContextValue {
 export function CallProvider({ children }: { children: ReactNode }) {
   const [call, setCall] = useState<ActiveCall | null>(null);
   const [muted, setMuted] = useState(false);
+  const [cameraOff, setCameraOff] = useState(false);
   const [notice, setNotice] = useState("");
   const peer = useRef<RTCPeerConnection | null>(null);
   const peerCallId = useRef<string | null>(null);
@@ -119,6 +124,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
     callRef.current = null;
     setCall(null);
     setMuted(false);
+    setCameraOff(false);
     hadConnected.current = false;
     if (cue === "ended") playUiSound("callEnded");
     if (cue === "failed") playUiSound("callFailed");
@@ -128,6 +134,16 @@ export function CallProvider({ children }: { children: ReactNode }) {
       void IncomingCallNative.cancelIncoming().catch(() => undefined);
     }
   }, [stopRingback, stopRingtone]);
+
+  const toggleCamera = useCallback(() => {
+    const track = localStream.current?.getVideoTracks()[0];
+    if (track) {
+      track.enabled = !track.enabled;
+      setCameraOff(!track.enabled);
+      return;
+    }
+    setCameraOff((off) => !off);
+  }, []);
 
   const sendSignal = useCallback(async (callId: string, payload: Omit<CallSignal, "callId" | "media">) => {
     await sendCallSignal(callId, payload);
