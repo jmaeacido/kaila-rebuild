@@ -44,8 +44,8 @@ export default function MessagesPage() {
   const isProvider = userMode?.activeMode === "provider" && userMode.providerEligible; const jobsDestination = isProvider ? "/opportunities" : "/home#current-title";
 
   return <main className={styles.page}><div className={styles.inboxShell}>
-    <header className={styles.header}><div><p className={styles.eyebrow}>Your hired jobs</p><h1>Messages</h1><p>Message your client or provider after the provider has been hired for a job.</p></div><Link className={styles.secondaryAction} href={jobsDestination}>{isProvider ? "View work" : "View jobs"}</Link></header>
-    <aside className={styles.availabilityNote}><ShieldCheck aria-hidden="true" /><div><strong>Messaging is for accepted jobs</strong><p>A conversation becomes available once a client hires a provider.</p></div></aside>
+    <header className={styles.header}><div><p className={styles.eyebrow}>Your hired jobs</p><h1>Messages</h1><p>Messaging only works with accepted jobs.</p></div><Link className={styles.secondaryAction} href={jobsDestination}>{isProvider ? "View work" : "View jobs"}</Link></header>
+    <aside className={styles.availabilityNote}><ShieldCheck aria-hidden="true" /><div><strong>Messaging only works with accepted jobs</strong><p>You can message each other after the client hires a provider.</p></div></aside>
     {state === "loading" && <div className={styles.skeletonList} aria-label="Loading job conversations"><span /><span /><span /></div>}
     {state === "error" && <Feedback kind="error" title="We couldn't load your job messages"><p>Check your connection and try again.</p><Button variant="secondary" onClick={() => void load()}>Try again</Button></Feedback>}
     {state === "ready" && items.length === 0 && <section className={styles.empty}><EmptyMessagesIllustration /><h2>No accepted-job conversations yet</h2><p>Messages will appear here after a provider is hired for a job.</p><Link className={styles.primaryAction} href={jobsDestination}>{isProvider ? "View your work" : "View your jobs"}</Link></section>}

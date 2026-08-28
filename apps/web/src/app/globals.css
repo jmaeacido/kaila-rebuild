@@ -277,11 +277,10 @@ a {
 }
 
 .appSessionBar .sessionLogo {
-  aspect-ratio: 1102 / 248;
-  display: block;
+  display: inline-flex;
+  flex: 0 0 auto;
   height: auto;
   max-height: var(--spacing-32);
-  object-fit: contain;
   width: calc(var(--spacing-64) + var(--spacing-48));
 }
 

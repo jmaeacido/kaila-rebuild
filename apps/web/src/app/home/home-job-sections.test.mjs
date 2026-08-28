@@ -11,6 +11,7 @@ const authGuardSource = readFileSync(new URL("../auth-guard.tsx", import.meta.ur
 const brandedLoaderSource = readFileSync(new URL("../branded-loader.tsx", import.meta.url), "utf8");
 const initialUiGateSource = readFileSync(new URL("../initial-ui-gate.tsx", import.meta.url), "utf8");
 const globalStylesSource = readFileSync(new URL("../globals.css", import.meta.url), "utf8");
+const brandStylesSource = readFileSync(new URL("../../components/brand-mark.module.css", import.meta.url), "utf8");
 
 test("Home keeps every non-terminal job active and terminal jobs in history", () => {
   assert.match(source, /const activeClientJobs = jobs\.filter/);
@@ -50,6 +51,13 @@ test("Authenticated loading uses the approved KAILA lockup and human-facing copy
   assert.match(globalStylesSource, /animation: branded-loader-orbit/);
   assert.match(globalStylesSource, /animation: branded-loader-marker/);
   assert.match(globalStylesSource, /prefers-reduced-motion: reduce/);
+});
+
+test("desktop session branding stays compact and only shows the bull when requested", () => {
+  assert.match(globalStylesSource, /\.appSessionBar \.sessionLogo \{[^}]*display: inline-flex/);
+  assert.doesNotMatch(brandStylesSource, /@media[^}]+\.bull\s*\{\s*display: block/);
+  assert.match(brandStylesSource, /\.lockup\.withBull \.bull \{\s*display: block/);
+  assert.match(authGuardSource, /<BrandMark className="sessionLogo" priority showBull \/>/);
 });
 
 test("Authenticated navigation retains the session and reveals pages after their initial UI settles", () => {

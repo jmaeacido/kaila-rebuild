@@ -24,11 +24,7 @@
 }
 
 .lockup.withBull .wordmark {
-  width: 74%;
-}
-
-@media (min-width: 48rem) {
-  .bull {
-    display: block;
-  }
+  flex: 1 1 0;
+  min-width: 0;
+  width: auto;
 }

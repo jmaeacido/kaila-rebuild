@@ -7,8 +7,8 @@ const chat = readFileSync(new URL("./[conversationId]/page.tsx", import.meta.url
 const styles = readFileSync(new URL("./messages.module.css", import.meta.url), "utf8");
 
 test("Messages clearly limits the inbox to accepted job conversations", () => {
-  assert.match(inbox, /Messaging is for accepted jobs/);
-  assert.match(inbox, /once a client hires a provider/);
+  assert.match(inbox, /Messaging only works with accepted jobs/);
+  assert.match(inbox, /after the client hires a provider/);
   assert.match(inbox, /\/api\/v1\/job-conversations/);
   assert.match(inbox, /\/jobs\/\$\{item\.jobId\}\/hired\/conversation/);
   assert.match(inbox, /lastMessage\.body/);
