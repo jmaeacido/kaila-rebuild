@@ -175,10 +175,49 @@
 
 .thinking {
   color: var(--color-text-secondary);
+  align-items: center;
+  background: var(--color-surface);
+  border: var(--control-border-width) solid var(--color-border);
+  border-radius: var(--radius-card) var(--radius-card) var(--radius-card) var(--radius-input);
+  display: flex;
+  gap: var(--spacing-4);
+  justify-self: start;
+  min-height: var(--control-min-height);
+  width: 4rem;
 }
+
+.thinking > span:not(.srOnly) {
+  animation: thinking-pulse var(--duration-slow) ease-in-out infinite alternate;
+  background: var(--color-text-secondary);
+  border-radius: var(--radius-pill);
+  height: var(--spacing-4);
+  width: var(--spacing-4);
+}
+.thinking > span:nth-child(2) { animation-delay: 150ms; }
+.thinking > span:nth-child(3) { animation-delay: 300ms; }
+.srOnly { clip: rect(0,0,0,0); clip-path: inset(50%); height: 1px; overflow: hidden; position: absolute; white-space: nowrap; width: 1px; }
 
 .error {
   color: var(--color-danger);
+  background: var(--color-danger-surface);
+  border-radius: var(--radius-card);
+  display: grid;
+  gap: var(--spacing-8);
+  justify-self: start;
+  max-width: 90%;
+}
+
+.error button {
+  background: transparent;
+  border: var(--control-border-width) solid currentColor;
+  border-radius: var(--radius-button);
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  font-weight: var(--font-weight-semibold);
+  min-height: var(--control-min-height);
+  padding: var(--spacing-8) var(--spacing-12);
+  width: fit-content;
 }
 
 .panel form {
@@ -242,3 +281,9 @@
   bottom: max(var(--spacing-8), env(safe-area-inset-bottom));
   height: calc(var(--kaila-viewport-height, 100dvh) - var(--spacing-16));
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .thinking > span:not(.srOnly) { animation: none; }
+}
+
+@keyframes thinking-pulse { to { opacity: var(--opacity-disabled); } }

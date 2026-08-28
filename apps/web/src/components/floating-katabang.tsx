@@ -21,6 +21,7 @@ export function FloatingKatabang() {
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState("");
   const [exchanges, setExchanges] = useState<Exchange[]>([]);
+  const [pendingQuestion, setPendingQuestion] = useState<string | null>(null);
   const [state, setState] = useState<"ready" | "loading" | "error">("ready");
   const inputRef = useRef<HTMLInputElement>(null);
   const conversationRef = useRef<HTMLDivElement>(null);
@@ -42,12 +43,9 @@ export function FloatingKatabang() {
     });
   }, [exchanges, state]);
 
-  async function ask(event: FormEvent) {
-    event.preventDefault();
-    const question = message.trim();
-    if (!question || state === "loading") return;
-
+  async function sendQuestion(question: string) {
     setState("loading");
+    setPendingQuestion(question);
     setMessage("");
     try {
       const token = await prepareCsrf();
@@ -69,11 +67,18 @@ export function FloatingKatabang() {
       if (!response.ok) throw new Error("Katabang request failed.");
       const answer = ((await response.json()) as { data: Answer }).data;
       setExchanges((current) => [...current, { question, answer }]);
+      setPendingQuestion(null);
       setState("ready");
     } catch {
-      setMessage(question);
       setState("error");
     }
+  }
+
+  async function ask(event: FormEvent) {
+    event.preventDefault();
+    const question = message.trim();
+    if (!question || state === "loading") return;
+    await sendQuestion(question);
   }
 
   if (!open) {
@@ -111,7 +116,7 @@ export function FloatingKatabang() {
       </header>
 
       <div className={styles.conversation} ref={conversationRef}>
-        {exchanges.length === 0 && (
+        {exchanges.length === 0 && !pendingQuestion && (
           <div className={styles.welcome}>
             <Sparkles aria-hidden="true" />
             <strong>How can I help?</strong>
@@ -128,11 +133,22 @@ export function FloatingKatabang() {
             </div>
           </div>
         ))}
-        {state === "loading" && <p className={styles.thinking}>Katabang is thinking…</p>}
-        {state === "error" && (
-          <p className={styles.error} role="alert">
-            Katabang is unavailable. Check your connection and try again.
-          </p>
+        {pendingQuestion && (
+          <div className={styles.exchange}>
+            <p className={styles.question}>{pendingQuestion}</p>
+            {state === "loading" && (
+              <div className={styles.thinking} role="status">
+                <span aria-hidden="true" /><span aria-hidden="true" /><span aria-hidden="true" />
+                <span className={styles.srOnly}>Katabang is thinking…</span>
+              </div>
+            )}
+            {state === "error" && (
+              <div className={styles.error} role="alert">
+                <p>Katabang is unavailable. Check your connection and try again.</p>
+                <button type="button" onClick={() => void sendQuestion(pendingQuestion)}>Try again</button>
+              </div>
+            )}
+          </div>
         )}
       </div>
 
@@ -142,10 +158,7 @@ export function FloatingKatabang() {
           type="text"
           value={message}
           maxLength={500}
-          onChange={(event) => {
-            setMessage(event.target.value);
-            if (state === "error") setState("ready");
-          }}
+          onChange={(event) => setMessage(event.target.value)}
           placeholder="Ask Katabang…"
           aria-label="Message Katabang"
         />

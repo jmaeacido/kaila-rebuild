@@ -19,6 +19,8 @@
 .empty { align-items: center; background: var(--color-surface); border-radius: var(--radius-card); display: grid; gap: var(--spacing-12); justify-items: center; padding: var(--spacing-32); text-align: center; }
 .empty svg { color: var(--color-accent); height: var(--spacing-48); width: var(--spacing-48); }
 .skeleton { animation: pulse var(--duration-slow) ease-out infinite alternate; background: var(--color-border); border-radius: var(--radius-card); height: 8rem; }
+.assistantThinking { align-items: center; color: var(--color-text-secondary); display: flex; gap: var(--spacing-8); min-height: var(--control-min-height); }
+.assistantThinking svg { animation: pulse var(--duration-slow) ease-out infinite alternate; color: var(--color-primary); height: var(--spacing-24); width: var(--spacing-24); }
 @media (min-width: 48rem) { .page { padding: var(--spacing-32); }.grid { grid-template-columns: repeat(2, 1fr); } }
-@media (prefers-reduced-motion: reduce) { .skeleton { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .skeleton, .assistantThinking svg { animation: none; } }
 @keyframes pulse { to { opacity: var(--opacity-disabled); } }
