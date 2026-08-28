@@ -1,0 +1,269 @@
+.section {
+  background:
+    radial-gradient(
+      circle at 12% 18%,
+      color-mix(in srgb, var(--color-primary) 18%, transparent),
+      transparent 34%
+    ),
+    linear-gradient(
+      160deg,
+      color-mix(in srgb, var(--color-primary) 10%, var(--color-background)),
+      var(--color-background) 58%
+    );
+  border-top: var(--control-border-width) solid var(--color-border);
+  padding: var(--spacing-48) var(--spacing-16);
+}
+
+.inner {
+  display: grid;
+  gap: var(--spacing-32);
+  margin: auto;
+  max-width: 78rem;
+}
+
+.copy {
+  max-width: 40rem;
+}
+
+.kicker,
+.badge {
+  color: var(--color-primary);
+  font-size: var(--font-caption-size);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.08em;
+}
+
+.badge {
+  align-items: center;
+  background: color-mix(in srgb, var(--color-primary) 9%, transparent);
+  border-radius: var(--radius-pill);
+  display: inline-flex;
+  gap: var(--spacing-8);
+  letter-spacing: 0;
+  margin-top: var(--spacing-8);
+  padding: var(--spacing-8) var(--spacing-12);
+}
+
+.badge svg {
+  height: var(--spacing-16);
+  width: var(--spacing-16);
+}
+
+.title {
+  color: var(--color-ink);
+  font-size: clamp(1.9rem, 5vw, 2.8rem);
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  margin: var(--spacing-16) 0;
+}
+
+.title em {
+  color: var(--color-primary);
+  font-style: normal;
+}
+
+.lead,
+.note,
+.directLink,
+.steps p {
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-body);
+}
+
+.lead {
+  font-size: var(--font-card-title-size);
+  max-width: 36rem;
+}
+
+.meta {
+  color: var(--color-text-secondary);
+  display: flex;
+  flex-wrap: wrap;
+  font-size: var(--font-small-size);
+  gap: var(--spacing-12);
+  margin: var(--spacing-16) 0 var(--spacing-24);
+}
+
+.meta span {
+  background: color-mix(in srgb, var(--color-surface) 88%, transparent);
+  border: var(--control-border-width) solid var(--color-border);
+  border-radius: var(--radius-pill);
+  padding: var(--spacing-8) var(--spacing-12);
+}
+
+.downloadButton {
+  align-items: center;
+  background: var(--color-primary);
+  border-radius: var(--radius-button);
+  color: var(--color-on-primary);
+  display: inline-flex;
+  font-weight: var(--font-weight-semibold);
+  gap: var(--spacing-8);
+  justify-content: center;
+  min-height: var(--control-min-height);
+  padding: var(--spacing-12) var(--spacing-20);
+  text-decoration: none;
+}
+
+.downloadButton svg {
+  height: var(--spacing-16);
+  width: var(--spacing-16);
+}
+
+.note {
+  font-size: var(--font-small-size);
+  margin-top: var(--spacing-16);
+  max-width: 34rem;
+}
+
+.visual {
+  display: grid;
+  gap: var(--spacing-16);
+  justify-items: center;
+}
+
+.phoneCard {
+  background: var(--color-surface);
+  border: var(--control-border-width) solid var(--color-border);
+  border-radius: 2rem;
+  box-shadow: var(--shadow-floating);
+  max-width: 16rem;
+  padding: var(--spacing-12);
+  width: 100%;
+}
+
+.phoneTop {
+  background: var(--color-border);
+  border-radius: var(--radius-pill);
+  height: var(--spacing-8);
+  margin: 0 auto var(--spacing-12);
+  width: 4rem;
+}
+
+.phoneScreen {
+  align-items: center;
+  background:
+    radial-gradient(
+      circle at 50% 0%,
+      color-mix(in srgb, var(--color-primary) 16%, transparent),
+      transparent 58%
+    ),
+    color-mix(in srgb, var(--color-primary) 5%, var(--color-background));
+  border: var(--control-border-width) solid var(--color-border);
+  border-radius: 1.4rem;
+  display: grid;
+  gap: var(--spacing-8);
+  justify-items: center;
+  min-height: 16rem;
+  padding: var(--spacing-24) var(--spacing-16);
+  text-align: center;
+}
+
+.appIcon {
+  border-radius: 1.1rem;
+  box-shadow: var(--shadow-card);
+  height: 4.5rem;
+  width: 4.5rem;
+}
+
+.phoneScreen strong {
+  color: var(--color-ink);
+  font-size: var(--font-card-title-size);
+}
+
+.phoneScreen span {
+  color: var(--color-text-secondary);
+  font-size: var(--font-small-size);
+}
+
+.steps {
+  display: grid;
+  gap: var(--spacing-16);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.steps li {
+  background: var(--color-surface);
+  border: var(--control-border-width) solid var(--color-border);
+  border-radius: var(--radius-card);
+  display: grid;
+  gap: var(--spacing-12);
+  grid-template-columns: auto auto 1fr;
+  padding: var(--spacing-20);
+  position: relative;
+}
+
+.stepNumber {
+  color: color-mix(in srgb, var(--color-primary) 28%, var(--color-border));
+  font-size: var(--font-display-size);
+  font-weight: var(--font-weight-bold);
+  line-height: 1;
+  position: absolute;
+  right: var(--spacing-16);
+  top: var(--spacing-12);
+}
+
+.stepIcon {
+  align-items: center;
+  background: color-mix(in srgb, var(--color-primary) 9%, transparent);
+  border-radius: var(--radius-card);
+  color: var(--color-primary);
+  display: flex;
+  height: var(--spacing-48);
+  justify-content: center;
+  width: var(--spacing-48);
+}
+
+.stepIcon svg {
+  height: var(--spacing-24);
+  width: var(--spacing-24);
+}
+
+.steps h3 {
+  color: var(--color-ink);
+  font-size: var(--font-card-title-size);
+  margin-bottom: var(--spacing-4);
+}
+
+.directLink {
+  font-size: var(--font-small-size);
+  word-break: break-word;
+}
+
+.directLink a {
+  color: var(--color-primary);
+}
+
+@media (min-width: 48rem) {
+  .section {
+    padding: var(--spacing-64) var(--spacing-32);
+  }
+
+  .inner {
+    grid-template-columns: minmax(0, 1.1fr) minmax(18rem, 0.9fr);
+    align-items: center;
+  }
+
+  .steps,
+  .directLink {
+    grid-column: 1 / -1;
+  }
+
+  .steps {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .visual {
+    align-self: stretch;
+    justify-items: end;
+  }
+}
+
+@media (min-width: 64rem) {
+  .section {
+    padding-left: max(var(--spacing-32), calc((100vw - 78rem) / 2));
+    padding-right: max(var(--spacing-32), calc((100vw - 78rem) / 2));
+  }
+}

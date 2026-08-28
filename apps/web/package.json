@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --experimental-strip-types --test src/components/area-mismatch-banner.test.mjs src/app/account/account-experience.test.mjs src/app/post-job/post-job-experience.test.mjs src/app/auth-client.test.mjs src/app/work-copy.test.mjs src/app/pull-to-refresh-gesture.test.mjs src/app/notification-feedback.test.mjs src/app/home/home-job-sections.test.mjs src/app/hired-experience.test.mjs src/components/attachment-picker.test.mjs src/components/category-select.test.mjs src/components/select-field.test.mjs src/app/theme.test.mjs src/app/notification-sounds.test.mjs src/app/travel-navigation.test.mjs src/app/landing-safe-area.test.mjs src/app/call-runtime-lifecycle.test.mjs src/app/call-overlay-experience.test.mjs src/app/seo-contract.test.mjs src/app/faqs/faqs-experience.test.mjs src/app/safety/safety-experience.test.mjs src/app/messages/messages-experience.test.mjs src/app/support/support-experience.test.mjs src/app/katabang-experience.test.mjs src/app/provider-profile/provider-profile.test.mjs",
+    "test": "node --experimental-strip-types --test src/components/area-mismatch-banner.test.mjs src/app/account/account-experience.test.mjs src/app/post-job/post-job-experience.test.mjs src/app/auth-client.test.mjs src/app/work-copy.test.mjs src/app/pull-to-refresh-gesture.test.mjs src/app/notification-feedback.test.mjs src/app/home/home-job-sections.test.mjs src/app/hired-experience.test.mjs src/components/attachment-picker.test.mjs src/components/category-select.test.mjs src/components/select-field.test.mjs src/app/theme.test.mjs src/app/notification-sounds.test.mjs src/app/travel-navigation.test.mjs src/app/landing-safe-area.test.mjs src/app/call-runtime-lifecycle.test.mjs src/app/call-overlay-experience.test.mjs src/app/seo-contract.test.mjs src/app/faqs/faqs-experience.test.mjs src/app/safety/safety-experience.test.mjs src/app/messages/messages-experience.test.mjs src/app/support/support-experience.test.mjs src/app/katabang-experience.test.mjs src/app/provider-profile/provider-profile.test.mjs src/app/android-download.test.mjs",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -19,12 +19,14 @@
     "lucide-react": "^0.468.0",
     "maplibre-gl": "5.12.0",
     "next": "16.2.11",
+    "qrcode": "^1.5.4",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "socket.io-client": "4.8.1"
   },
   "devDependencies": {
     "@types/node": "^24",
+    "@types/qrcode": "^1.5.6",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",

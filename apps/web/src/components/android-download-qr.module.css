@@ -1,0 +1,43 @@
+.qrCard {
+  align-items: center;
+  background: var(--color-surface);
+  border: var(--control-border-width) solid var(--color-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-floating);
+  display: grid;
+  gap: var(--spacing-12);
+  justify-items: center;
+  padding: var(--spacing-24);
+  text-align: center;
+}
+
+.qrImage,
+.qrPlaceholder {
+  border-radius: var(--radius-input);
+  display: block;
+  height: 11rem;
+  width: 11rem;
+}
+
+.qrPlaceholder {
+  animation: pulse var(--duration-slow) ease-out infinite alternate;
+  background: color-mix(in srgb, var(--color-border) 70%, transparent);
+}
+
+.qrCard p {
+  color: var(--color-text-secondary);
+  font-size: var(--font-small-size);
+  margin: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .qrPlaceholder {
+    animation: none;
+  }
+}
+
+@keyframes pulse {
+  to {
+    opacity: var(--opacity-disabled);
+  }
+}

@@ -19,6 +19,7 @@ import {
   Wrench,
 } from "lucide-react";
 import { Button, Feedback } from "@kaila/ui";
+import { AndroidDownloadSection } from "../components/android-download-section";
 import { BrandMark } from "../components/brand-mark";
 import { ThemeToggle } from "../components/theme-toggle";
 import { SelectField } from "../components/select-field";
@@ -148,6 +149,7 @@ export default function LandingPage() {
         <nav className={styles.primaryNav} aria-label="Main navigation">
           <a href="#find-help">Find help</a>
           <a href="#how-it-works">How it works</a>
+          <a href="#download">Download</a>
           <Link href="/community">Community</Link>
         </nav>
         <div className={styles.headerActions}>
@@ -243,6 +245,8 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+
+      <AndroidDownloadSection />
 
       <section
         className={styles.findSection}
@@ -446,6 +450,7 @@ export default function LandingPage() {
         <p>Nearby help, made simple.</p>
         <nav aria-label="Footer navigation">
           <Link href="/community">Community</Link>
+          <Link href="/download">Download</Link>
           <Link href="/faqs">FAQs</Link>
           <Link href="/privacy">Privacy</Link>
           <Link href="/terms">Terms</Link>

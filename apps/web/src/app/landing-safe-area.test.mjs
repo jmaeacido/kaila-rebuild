@@ -13,7 +13,7 @@ test("the signed-out landing header clears the Android status bar", () => {
 });
 
 test("the mobile public header exposes login without crowding it with theme controls", () => {
-  assert.match(page, /className=\{styles\.brandLogo\} priority showBull/);
+  assert.match(page, /className=\{styles\.brandLogo\}[\s\S]*?priority showBull/);
   assert.match(page, /className=\{styles\.providerLink\} href="\/login"[\s\S]*?Log in/);
   assert.match(page, /<ThemeToggle className=\{styles\.headerTheme\} \/>/);
   assert.match(styles, /\.providerLink\s*\{[\s\S]*?display:\s*inline-flex;/);

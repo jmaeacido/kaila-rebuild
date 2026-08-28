@@ -29,6 +29,19 @@ const nextConfig: NextConfig = {
       "/status/:path*",
     ];
     return [
+      {
+        source: "/downloads/:file*.apk",
+        headers: [
+          {
+            key: "Content-Type",
+            value: "application/vnd.android.package-archive",
+          },
+          {
+            key: "Content-Disposition",
+            value: 'attachment; filename="kaila-android.apk"',
+          },
+        ],
+      },
       ...privateRoutes.map((source) => ({
         source,
         headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow, noarchive" }],
