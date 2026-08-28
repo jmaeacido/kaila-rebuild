@@ -27,7 +27,7 @@
 
 .brandLogo {
   height: auto;
-  width: 8rem;
+  width: clamp(9.5rem, 36vw, 11.5rem);
 }
 
 .primaryNav {

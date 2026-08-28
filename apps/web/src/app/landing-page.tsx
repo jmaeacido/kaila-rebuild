@@ -144,7 +144,7 @@ export default function LandingPage() {
     <main className={styles.page}>
       <header className={styles.topbar}>
         <Link className={styles.brand} href="/" aria-label="KAILA home">
-          <BrandMark className={styles.brandLogo} priority showBull compact />
+          <BrandMark className={styles.brandLogo} priority showBull />
         </Link>
         <nav className={styles.primaryNav} aria-label="Main navigation">
           <a href="#find-help">Find help</a>
