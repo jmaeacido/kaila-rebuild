@@ -4,6 +4,7 @@ import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { ArrowLeft, BadgeCheck, CheckCircle2, LocateFixed, MapPin, Store, UserRound, Wrench } from "lucide-react";
 import { Button, Feedback, TextField } from "@kaila/ui";
 import Link from "next/link";
+import { CategorySelect, type ServiceCategory } from "../../components/category-select";
 import styles from "./profile.module.css";
 
 type Item = {
@@ -111,7 +112,7 @@ async function applyServiceAreas(
 }
 
 export default function ProviderProfilePage() {
-  const [categories, setCategories] = useState<Item[]>([]);
+  const [categories, setCategories] = useState<ServiceCategory[]>([]);
   const [areas, setAreas] = useState<Item[]>([]);
   const [provinceId, setProvinceId] = useState("");
   const [cityId, setCityId] = useState("");
@@ -167,7 +168,7 @@ export default function ProviderProfilePage() {
       if (!referenceResponse.ok) throw new Error();
 
       const referenceBody = (await referenceResponse.json()) as {
-        data: { categories: Item[]; areas: Item[] };
+        data: { categories: ServiceCategory[]; areas: Item[] };
       };
       const nextAreas = referenceBody.data.areas;
       setCategories(referenceBody.data.categories);
@@ -271,7 +272,7 @@ export default function ProviderProfilePage() {
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const selectedAreaIds = coverageMode === "city" ? [cityId] : barangayIds;
-    if (!cityId || selectedAreaIds.length === 0 || (offersAtShop && !shopLocation)) {
+    if (!cityId || selectedAreaIds.length === 0 || !serviceId || (offersAtShop && !shopLocation)) {
       setMessage("error");
       return;
     }
@@ -392,20 +393,14 @@ export default function ProviderProfilePage() {
               />
               <label>
                 Primary service
-                <select
-                  name="serviceId"
-                  required
-                  disabled={referenceStatus !== "ready"}
+                <CategorySelect
+                  categories={categories}
                   value={serviceId}
-                  onChange={(event) => setServiceId(event.target.value)}
-                >
-                  <option value="">{referenceStatus === "loading" ? "Loading services…" : "Choose a service"}</option>
-                  {categories.map((category) => (
-                    <option key={category.id} value={category.id}>
-                      {category.name}
-                    </option>
-                  ))}
-                </select>
+                  onChange={setServiceId}
+                  disabled={referenceStatus !== "ready"}
+                  placeholder={referenceStatus === "loading" ? "Loading services…" : "Choose a service"}
+                  label="Primary service"
+                />
               </label>
             </div>
           </fieldset>

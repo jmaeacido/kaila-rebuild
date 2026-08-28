@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --experimental-strip-types --test src/app/account/account-experience.test.mjs src/app/auth-client.test.mjs src/app/work-copy.test.mjs src/app/pull-to-refresh-gesture.test.mjs src/app/notification-feedback.test.mjs src/app/home/home-job-sections.test.mjs src/app/hired-experience.test.mjs src/components/attachment-picker.test.mjs src/app/theme.test.mjs src/app/notification-sounds.test.mjs src/app/travel-navigation.test.mjs src/app/landing-safe-area.test.mjs src/app/call-runtime-lifecycle.test.mjs src/app/seo-contract.test.mjs src/app/messages/messages-experience.test.mjs src/app/support/support-experience.test.mjs src/app/katabang-experience.test.mjs src/app/provider-profile/provider-profile.test.mjs",
+    "test": "node --experimental-strip-types --test src/app/account/account-experience.test.mjs src/app/auth-client.test.mjs src/app/work-copy.test.mjs src/app/pull-to-refresh-gesture.test.mjs src/app/notification-feedback.test.mjs src/app/home/home-job-sections.test.mjs src/app/hired-experience.test.mjs src/components/attachment-picker.test.mjs src/components/category-select.test.mjs src/app/theme.test.mjs src/app/notification-sounds.test.mjs src/app/travel-navigation.test.mjs src/app/landing-safe-area.test.mjs src/app/call-runtime-lifecycle.test.mjs src/app/seo-contract.test.mjs src/app/messages/messages-experience.test.mjs src/app/support/support-experience.test.mjs src/app/katabang-experience.test.mjs src/app/provider-profile/provider-profile.test.mjs",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

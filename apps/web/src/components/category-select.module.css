@@ -1,0 +1,93 @@
+.root {
+  position: relative;
+}
+
+.trigger {
+  align-items: center;
+  background: var(--color-surface);
+  border: var(--control-border-width) solid var(--color-border);
+  border-radius: var(--radius-input);
+  color: var(--color-ink);
+  cursor: pointer;
+  display: flex;
+  font: inherit;
+  justify-content: space-between;
+  min-height: var(--control-min-height);
+  padding: var(--spacing-12);
+  width: 100%;
+}
+
+.trigger:disabled {
+  cursor: not-allowed;
+  opacity: var(--opacity-disabled);
+}
+
+.trigger > span {
+  align-items: center;
+  display: flex;
+  gap: var(--spacing-12);
+  min-width: 0;
+}
+
+.trigger svg,
+.options svg {
+  color: var(--color-primary);
+  flex: none;
+  height: var(--spacing-20);
+  width: var(--spacing-20);
+}
+
+.trigger:focus-visible,
+.options button:focus-visible {
+  border-color: var(--color-primary);
+  outline: var(--focus-ring-width) solid var(--color-focus);
+  outline-offset: var(--spacing-4);
+}
+
+.options {
+  background: var(--color-surface);
+  border: var(--control-border-width) solid var(--color-border);
+  border-radius: var(--radius-input);
+  box-shadow: var(--shadow-floating);
+  display: grid;
+  left: 0;
+  max-height: min(20rem, calc(100dvh - var(--spacing-24)));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: var(--spacing-4);
+  position: absolute;
+  right: 0;
+  top: calc(100% + var(--spacing-4));
+  z-index: var(--z-toast);
+}
+
+.options[data-placement="above"] {
+  bottom: calc(100% + var(--spacing-4));
+  top: auto;
+}
+
+.options button {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-input);
+  color: var(--color-ink);
+  cursor: pointer;
+  display: grid;
+  font: inherit;
+  gap: var(--spacing-12);
+  grid-template-columns: var(--spacing-24) 1fr var(--spacing-24);
+  min-height: var(--control-min-height);
+  padding: var(--spacing-12);
+  text-align: left;
+}
+
+.options button:hover,
+.options button[aria-selected="true"] {
+  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+}
+
+.options button svg:last-child {
+  color: var(--color-success);
+}
