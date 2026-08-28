@@ -86,6 +86,7 @@ During implementation:
 3. Preserve working behavior unless the task explicitly changes it.
 4. Record significant architecture decisions in `docs/decisions/`.
 5. Keep progress verifiable through small coherent commits.
+6. Rebuild Android apps with production managed origins and matching store versions (source `C:\secure\kaila-release-session.ps1` or `kaila-admin-release-session.ps1`, then run `android:debug` or `android:bundle`). Override `KAILA_APP_ORIGIN` or `KAILA_ADMIN_ORIGIN` only when testing another HTTPS host.
 
 After implementation:
 

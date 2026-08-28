@@ -6,10 +6,20 @@ separate from the consumer/provider application and defaults to the managed orig
 
 ## Local debug APK
 
+Debug APKs use the same `versionCode` and `versionName` as release bundles.
 Install JDK 21 and Android SDK Platform 36, Build Tools 36.0.0, and Platform Tools.
 Set `JAVA_HOME` and either `ANDROID_HOME` or `ANDROID_SDK_ROOT`, then run:
 
-```bash
+```powershell
+. C:\secure\kaila-admin-release-session.ps1
+pnpm --filter @kaila/admin-mobile android:debug
+```
+
+Or set the version variables explicitly:
+
+```powershell
+$env:KAILA_ADMIN_VERSION_CODE = "1"
+$env:KAILA_ADMIN_VERSION_NAME = "1.0.0"
 pnpm --filter @kaila/admin-mobile android:debug
 ```
 
@@ -23,9 +33,13 @@ Set `KAILA_ADMIN_ORIGIN` before building only when testing another HTTPS admin h
 
 ## Signed release bundle
 
-Set `KAILA_ADMIN_ANDROID_KEYSTORE`, `KAILA_ADMIN_ANDROID_STORE_PASSWORD`,
-`KAILA_ADMIN_ANDROID_KEY_ALIAS`, `KAILA_ADMIN_ANDROID_KEY_PASSWORD`,
-`KAILA_ADMIN_VERSION_CODE`, and `KAILA_ADMIN_VERSION_NAME`, then run:
+Source the admin release session script (or set the version and signing variables),
+then run:
+
+```powershell
+. C:\secure\kaila-admin-release-session.ps1
+pnpm --filter @kaila/admin-mobile android:bundle
+```
 
 Create a Firebase Android app for package `com.kaila.admin` in the production FCM
 project and place its organization-owned configuration at
@@ -34,7 +48,7 @@ app's package configuration. Debug APKs built without that file must not call
 FCM registration; `AdminPushGuard` keeps the shell from crash-looping after the
 notification permission prompt (Decision 0043).
 
-```bash
+```powershell
 pnpm --filter @kaila/admin-mobile android:bundle
 ```
 

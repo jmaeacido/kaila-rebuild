@@ -1,7 +1,15 @@
 apply plugin: 'com.android.application'
 
-def kailaAdminVersionCode = (System.getenv('KAILA_ADMIN_VERSION_CODE') ?: '1').toInteger()
-def kailaAdminVersionName = System.getenv('KAILA_ADMIN_VERSION_NAME') ?: '1.0.0-dev'
+def kailaAdminVersionCodeRaw = System.getenv('KAILA_ADMIN_VERSION_CODE')
+if (!kailaAdminVersionCodeRaw) {
+    throw new GradleException('KAILA_ADMIN_VERSION_CODE must be set for Android builds.')
+}
+def kailaAdminVersionCode = kailaAdminVersionCodeRaw.toInteger()
+
+def kailaAdminVersionName = System.getenv('KAILA_ADMIN_VERSION_NAME')
+if (!kailaAdminVersionName) {
+    throw new GradleException('KAILA_ADMIN_VERSION_NAME must be set for Android builds.')
+}
 
 android {
     namespace = "com.kaila.admin"

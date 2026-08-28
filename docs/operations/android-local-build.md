@@ -1,8 +1,9 @@
 # Android local build
 
-KAILA's Android application is the Capacitor package in `apps/mobile`. Production
-loads the managed HTTPS consumer application; the bundled web assets provide the
-branded recovery experience when no managed origin is configured.
+KAILA's Android application is the Capacitor package in `apps/mobile`. Local
+debug and release builds default to the managed HTTPS consumer application at
+`https://app.kaila-app.com`. Bundled web assets remain available as the branded
+recovery experience when the managed origin is unreachable.
 
 ## Windows prerequisites
 
@@ -17,12 +18,22 @@ Android compiler toolchain.
 
 ## Debug APK
 
-From PowerShell in the repository root:
+Debug APKs use the same `versionCode` and `versionName` as release bundles. Set
+them for the current PowerShell session before building:
 
 ```powershell
 cd C:\laragon\www\kaila
 pnpm install --frozen-lockfile
+. C:\secure\kaila-release-session.ps1
 pnpm --filter @kaila/mobile android:doctor
+pnpm --filter @kaila/mobile android:debug
+```
+
+Or set the version variables explicitly:
+
+```powershell
+$env:KAILA_VERSION_CODE = "1"
+$env:KAILA_VERSION_NAME = "1.0.0"
 pnpm --filter @kaila/mobile android:debug
 ```
 
@@ -32,17 +43,23 @@ The APK is written to:
 apps\mobile\android\app\build\outputs\apk\debug\app-debug.apk
 ```
 
-The debug command builds the embedded recovery shell. To load a development web
-deployment instead, set `KAILA_APP_ORIGIN` to an HTTPS origin reachable by the
-Android device before running the command.
+Set `KAILA_APP_ORIGIN` before building only when testing another HTTPS consumer
+host reachable by the Android device.
 
 ## Signed release bundle
 
-Never keep signing passwords or the keystore inside the repository. Set them only
-for the current PowerShell session:
+Never keep signing passwords or the keystore inside the repository. Source the
+release session script (or set the version and signing variables) only for the
+current PowerShell session:
 
 ```powershell
-$env:KAILA_APP_ORIGIN = "https://app.kaila-app.com"
+. C:\secure\kaila-release-session.ps1
+pnpm --filter @kaila/mobile android:bundle
+```
+
+Or set them explicitly:
+
+```powershell
 $env:KAILA_VERSION_CODE = "1"
 $env:KAILA_VERSION_NAME = "1.0.0"
 $env:KAILA_ANDROID_KEYSTORE = "C:\secure\kaila-release.jks"

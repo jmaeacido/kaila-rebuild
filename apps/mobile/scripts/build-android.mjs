@@ -7,7 +7,7 @@ if (mode !== "debug" && mode !== "release") {
   throw new Error("Usage: node scripts/build-android.mjs <debug|release>");
 }
 
-const requiredVariables = ["KAILA_APP_ORIGIN"];
+const requiredVariables = ["KAILA_VERSION_CODE", "KAILA_VERSION_NAME"];
 
 if (mode === "release") {
   requiredVariables.push(
@@ -15,8 +15,6 @@ if (mode === "release") {
     "KAILA_ANDROID_STORE_PASSWORD",
     "KAILA_ANDROID_KEY_ALIAS",
     "KAILA_ANDROID_KEY_PASSWORD",
-    "KAILA_VERSION_CODE",
-    "KAILA_VERSION_NAME",
   );
 }
 

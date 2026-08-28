@@ -1,7 +1,9 @@
 import type { CapacitorConfig } from "@capacitor/cli";
 
-const appOrigin = process.env.KAILA_APP_ORIGIN;
-if (appOrigin && !appOrigin.startsWith("https://")) {
+const appOrigin = process.env.KAILA_APP_ORIGIN ?? "https://app.kaila-app.com";
+const parsedOrigin = new URL(appOrigin);
+
+if (parsedOrigin.protocol !== "https:") {
   throw new Error("KAILA_APP_ORIGIN must use HTTPS.");
 }
 
@@ -17,13 +19,11 @@ const config: CapacitorConfig = {
       releaseType: "AAB",
     },
   },
-  server: appOrigin
-    ? {
-        url: appOrigin,
-        cleartext: false,
-        allowNavigation: [new URL(appOrigin).hostname],
-      }
-    : undefined,
+  server: {
+    url: parsedOrigin.origin,
+    cleartext: false,
+    allowNavigation: [parsedOrigin.hostname],
+  },
   plugins: {
     PushNotifications: {
       presentationOptions: ["badge", "sound", "alert"],

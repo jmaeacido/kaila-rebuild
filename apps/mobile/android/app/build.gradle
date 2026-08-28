@@ -1,7 +1,15 @@
 apply plugin: 'com.android.application'
 
-def kailaVersionCode = (System.getenv('KAILA_VERSION_CODE') ?: '1').toInteger()
-def kailaVersionName = System.getenv('KAILA_VERSION_NAME') ?: '1.0.0-dev'
+def kailaVersionCodeRaw = System.getenv('KAILA_VERSION_CODE')
+if (!kailaVersionCodeRaw) {
+    throw new GradleException('KAILA_VERSION_CODE must be set for Android builds.')
+}
+def kailaVersionCode = kailaVersionCodeRaw.toInteger()
+
+def kailaVersionName = System.getenv('KAILA_VERSION_NAME')
+if (!kailaVersionName) {
+    throw new GradleException('KAILA_VERSION_NAME must be set for Android builds.')
+}
 
 android {
     namespace = "com.kaila.marketplace"

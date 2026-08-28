@@ -8,15 +8,14 @@ if (mode !== "debug" && mode !== "release") {
   throw new Error("Usage: node scripts/build-android.mjs <debug|release>");
 }
 
-const requiredVariables = [];
+const requiredVariables = ["KAILA_ADMIN_VERSION_CODE", "KAILA_ADMIN_VERSION_NAME"];
+
 if (mode === "release") {
   requiredVariables.push(
     "KAILA_ADMIN_ANDROID_KEYSTORE",
     "KAILA_ADMIN_ANDROID_STORE_PASSWORD",
     "KAILA_ADMIN_ANDROID_KEY_ALIAS",
     "KAILA_ADMIN_ANDROID_KEY_PASSWORD",
-    "KAILA_ADMIN_VERSION_CODE",
-    "KAILA_ADMIN_VERSION_NAME",
   );
   if (!existsSync("android/app/google-services.json")) {
     throw new Error("android/app/google-services.json for com.kaila.admin is required for release push notifications.");
