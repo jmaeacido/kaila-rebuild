@@ -447,7 +447,7 @@ export default function LandingPage() {
 
       <footer className={styles.footer}>
         <Link className={styles.brand} href="/">
-          <BrandMark className={styles.brandLogo} variant="onDark" />
+          <BrandMark className={styles.brandLogo} />
         </Link>
         <p>Nearby help, made simple.</p>
         <nav aria-label="Footer navigation">

@@ -12,11 +12,10 @@ test("the signed-out landing header clears the Android status bar", () => {
   assert.match(topbar, /padding:\s*calc\(var\(--spacing-8\) \+ env\(safe-area-inset-top\)\)/);
 });
 
-test("the mobile public header exposes login without crowding it with theme controls", () => {
+test("the mobile public header exposes login and appearance controls", () => {
   assert.match(page, /className=\{styles\.brandLogo\}[\s\S]*?priority showBull/);
   assert.match(page, /className=\{styles\.providerLink\} href="\/login"[\s\S]*?Log in/);
   assert.match(page, /<ThemeToggle className=\{styles\.headerTheme\} \/>/);
   assert.match(styles, /\.providerLink\s*\{[\s\S]*?display:\s*inline-flex;/);
-  assert.match(styles, /\.headerTheme\s*\{\s*display:\s*none;/);
-  assert.match(styles, /@media \(min-width: 40rem\)[\s\S]*?\.headerTheme\s*\{\s*display:\s*block;/);
+  assert.doesNotMatch(styles, /\.headerTheme\s*\{\s*display:\s*none;/);
 });
