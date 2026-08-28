@@ -75,6 +75,10 @@ export function SessionMenu({ loggingOut = false, onSignOut }: SessionMenuProps)
       </button>
       {open ? (
         <div className={styles.menu} id={menuId} role="menu" aria-label="Options">
+          <Link className={styles.item} href="/home" role="menuitem" onClick={close}>
+            <Home aria-hidden="true" />
+            <span>Home</span>
+          </Link>
           <Link className={styles.item} href="/account" role="menuitem" onClick={close}>
             <UserRound aria-hidden="true" />
             <span>Account</span>
@@ -120,10 +124,6 @@ export function SessionMenu({ loggingOut = false, onSignOut }: SessionMenuProps)
           </div>
 
           <div className={styles.separator} role="separator" />
-          <Link className={styles.item} href="/home" role="menuitem" onClick={close}>
-            <Home aria-hidden="true" />
-            <span>Home</span>
-          </Link>
           <button
             type="button"
             className={`${styles.dangerItem} sessionMenuDanger`}
