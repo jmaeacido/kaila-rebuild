@@ -4,11 +4,17 @@ import { useId, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
+  ArrowRight,
+  BriefcaseBusiness,
   ChevronDown,
   CircleHelp,
   LifeBuoy,
   Search,
+  ShieldCheck,
+  Smartphone,
   Sparkles,
+  Users,
+  X,
 } from "lucide-react";
 import { BrandMark } from "../../components/brand-mark";
 import { SUPPORT_EMAIL } from "../../lib/support-email";
@@ -167,6 +173,14 @@ const groups: FaqGroup[] = [
   },
 ];
 
+const groupIcons = {
+  "getting-started": Sparkles,
+  clients: Users,
+  providers: BriefcaseBusiness,
+  "trust-safety": ShieldCheck,
+  "app-help": Smartphone,
+} as const;
+
 const faqStructuredData = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
@@ -242,6 +256,9 @@ export default function FaqsPage() {
       .filter((group) => group.items.length > 0);
   }, [query]);
 
+  const resultCount = filtered.reduce((total, group) => total + group.items.length, 0);
+  const hasQuery = query.trim().length > 0;
+
   return (
     <main className={styles.page}>
       <script
@@ -261,30 +278,72 @@ export default function FaqsPage() {
       </nav>
 
       <header className={styles.hero}>
-        <span className={styles.heroIcon} aria-hidden="true"><CircleHelp /></span>
-        <p className={styles.eyebrow}>Help center</p>
-        <h1>Frequently asked questions</h1>
-        <p>Short answers about hiring locally, offering services, and staying safe on KAILA.</p>
-        <label className={styles.search}>
-          <Search aria-hidden="true" />
-          <span className={styles.srOnly}>Search FAQs</span>
-          <input
-            type="search"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search questions…"
-            autoComplete="off"
-          />
-        </label>
+        <div className={styles.heroCopy}>
+          <span className={styles.heroIcon} aria-hidden="true"><CircleHelp /></span>
+          <p className={styles.eyebrow}>Help center</p>
+          <h1>How can we help?</h1>
+          <p>Find quick answers about hiring, offering services, and staying safe on KAILA.</p>
+        </div>
+        <div className={styles.searchArea}>
+          <label className={styles.search}>
+            <Search aria-hidden="true" />
+            <span className={styles.srOnly}>Search frequently asked questions</span>
+            <input
+              type="search"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="What do you need help with?"
+              autoComplete="off"
+            />
+            {hasQuery ? (
+              <button type="button" onClick={() => setQuery("")} aria-label="Clear FAQ search">
+                <X aria-hidden="true" />
+              </button>
+            ) : null}
+          </label>
+          <p className={styles.searchHint}>Try “offers”, “coverage”, or “account”.</p>
+        </div>
       </header>
+
+      {!hasQuery ? (
+        <nav className={styles.topicNav} aria-label="Browse FAQs by topic">
+          <div className={styles.sectionIntro}>
+            <p className={styles.eyebrow}>Browse by topic</p>
+            <h2>Choose what you need help with</h2>
+          </div>
+          <div className={styles.topicList}>
+            {groups.map((group) => {
+              const Icon = groupIcons[group.id as keyof typeof groupIcons];
+              return (
+                <a href={`#faq-group-${group.id}`} key={group.id}>
+                  <span aria-hidden="true"><Icon /></span>
+                  <strong>{group.title}</strong>
+                  <small>{group.items.length} questions</small>
+                  <ArrowRight aria-hidden="true" />
+                </a>
+              );
+            })}
+          </div>
+        </nav>
+      ) : null}
 
       <div className={styles.layout}>
         <section className={styles.groups} aria-label="FAQ groups">
+          {hasQuery ? (
+            <div className={styles.results} aria-live="polite">
+              <div>
+                <p className={styles.eyebrow}>Search results</p>
+                <h2>{resultCount === 1 ? "1 answer found" : `${resultCount} answers found`}</h2>
+              </div>
+              <button type="button" onClick={() => setQuery("")}>Clear search</button>
+            </div>
+          ) : null}
           {filtered.length === 0 ? (
             <div className={styles.empty}>
               <CircleHelp aria-hidden="true" />
               <strong>No matching questions</strong>
-              <p>Try another search, ask Katabang, or contact support.</p>
+              <p>Try a different word, or contact support for personal help.</p>
+              <button type="button" onClick={() => setQuery("")}>Show all questions</button>
             </div>
           ) : null}
           {filtered.map((group) => (
@@ -306,19 +365,21 @@ export default function FaqsPage() {
 
         <aside className={styles.aside} aria-label="More help">
           <article className={styles.card}>
-            <Sparkles aria-hidden="true" />
-            <h2>Ask Katabang</h2>
-            <p>Get quick guidance while you use KAILA. Katabang never chooses providers or prices.</p>
-            <Link href="/home">Open Home to chat</Link>
+            <span className={styles.cardIcon} aria-hidden="true"><Sparkles /></span>
+            <div>
+              <h2>Ask Katabang</h2>
+              <p>Get quick guidance while you use KAILA. Katabang never chooses providers or prices.</p>
+            </div>
+            <Link href="/home">Open Home to chat <ArrowRight aria-hidden="true" /></Link>
           </article>
           <article className={styles.card}>
-            <LifeBuoy aria-hidden="true" />
-            <h2>Still need help?</h2>
-            <p>
-              Send a support request and follow replies in one thread, or email{" "}
-              <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>.
-            </p>
-            <Link href="/support">Contact support</Link>
+            <span className={styles.cardIcon} aria-hidden="true"><LifeBuoy /></span>
+            <div>
+              <h2>Still need help?</h2>
+              <p>Send a support request and follow replies in one place.</p>
+            </div>
+            <Link href="/support">Contact support <ArrowRight aria-hidden="true" /></Link>
+            <a className={styles.email} href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>
           </article>
         </aside>
       </div>
