@@ -9,7 +9,7 @@ import styles from "./area-mismatch-banner.module.css";
 type ProfilePayload = {
   activeMode: "client" | "provider" | null;
   client: { area_id: number | null } | null;
-  provider: { serviceAreas: Array<{ id: number; name: string; type?: string }> } | null;
+  provider: { service_areas: Array<{ id: number; name: string; type?: string }> } | null;
 };
 
 type ResolvedLocation = {
@@ -124,7 +124,7 @@ export function AreaMismatchBanner() {
         const homeCityIds = new Set<number>();
         const homeLabels: string[] = [];
         if (isProvider) {
-          for (const serviceArea of profile.provider?.serviceAreas ?? []) {
+          for (const serviceArea of profile.provider?.service_areas ?? []) {
             const city = await resolveCity(areas, serviceArea.id, serviceArea);
             if (!city || homeCityIds.has(city.cityId)) continue;
             homeCityIds.add(city.cityId);
