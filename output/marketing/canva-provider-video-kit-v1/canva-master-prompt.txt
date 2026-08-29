@@ -1,0 +1,27 @@
+Create a polished 30-second vertical 9:16 recruitment video for KAILA, a friendly local-services marketplace. The audience is electricians, plumbers, carpenters, painters, welders, cleaners, aircon and appliance technicians, mechanics, gadget technicians, beauticians, massage therapists, tutors, freelancers, and small service businesses.
+
+Campaign idea: “KAILA ANG SKILLS MO.”
+Primary message: Skilled service providers can create a professional profile, showcase their work, and become discoverable to potential clients near them.
+Primary action: Register as a Service Provider.
+Secondary action: Download the KAILA Android App.
+
+Use the uploaded official KAILA wordmark and bull mascot exactly as supplied. Never redraw, restyle, recolor, distort, or animate their internal features. Use the uploaded service-provider illustration as the visual style reference. Use the uploaded QR images exactly as supplied and keep them perfectly square and unobstructed.
+
+Visual style: premium modern flat-vector advertising, friendly rounded geometry, subtle dimensional layers, route lines, map pins, tool icons, soft shadows, quick purposeful motion, optimistic and trustworthy. Use KAILA Blue #1463FF, Cyan #27B7FF, Ink #0A1220, white, and pale blue backgrounds. No realistic people, no photographs, no AI-generated humans, no stock-footage look, no dashboard visuals, no clutter, and no unrelated logos.
+
+Build seven scenes with energetic but readable pacing:
+
+1. 0:00–0:03 — KAILA bull mascot enters with a subtle scale-up and thumbs-up. Service tools appear along a curved route. On-screen text: “MAY SKILLS KA?”
+2. 0:03–0:07 — Wrench, paint roller, cleaning spray, electrical plug, scissors, laptop, and toolbox animate into a balanced service collage. Text: “REPAIR • INSTALL • CLEAN • CREATE”
+3. 0:07–0:11 — Bold KAILA blue-to-cyan hero transition with the official mascot. Text: “KAILA ANG SKILLS MO.”
+4. 0:11–0:16 — Vector phone profile card with service icons, portfolio tiles, service area pin, and reputation stars. Text: “SHOWCASE WHAT YOU DO BEST”
+5. 0:16–0:21 — Curved route connects a provider profile to nearby map pins and opportunity cards. Text: “GET DISCOVERED NEAR YOU”
+6. 0:21–0:25 — Android phone outline and official KAILA mascot appear with a quick cyan sweep. Text: “ANDROID APP AVAILABLE NOW”
+7. 0:25–0:30 — Clean final CTA frame. Place the registration QR prominently on the left and Android-download QR on the right. Keep both still, large, high-contrast, and fully visible. Text: “REGISTER AS A SERVICE PROVIDER” and “kaila-app.com/register”. Add a smaller label: “OR DOWNLOAD THE ANDROID APP”. Keep this final frame visible for the full five seconds.
+
+Motion: use 150–250 ms fades, slides, scale-ins, route drawing, and gentle parallax. Do not use bounce, spinning pages, rapid flashes, or transitions that delay reading. Keep key elements in the Reels safe zone.
+
+Audio: upbeat modern instrumental with a friendly Filipino community feel, 105–115 BPM, light percussion and warm melodic accents, no lyrics. Lower music beneath the voiceover and add subtle confirmation sounds when route pins and CTA elements appear.
+
+Do not invent or rewrite any claims. Do not state guaranteed jobs, guaranteed clients, guaranteed income, free registration, or instant approval. Generate the visual sequence, then preserve the supplied exact text and official assets.
+
