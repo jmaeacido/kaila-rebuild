@@ -2,6 +2,7 @@
 
 use App\Console\Commands\ActivateScheduledMaintenance;
 use App\Console\Commands\ImportLegacyUsers;
+use App\Console\Commands\SendTestMail;
 use App\Http\Middleware\AssignRequestContext;
 use App\Http\Middleware\AuthenticateMobileAccessToken;
 use App\Http\Middleware\EnsureAdministrator;
@@ -21,7 +22,7 @@ use Illuminate\View\Middleware\ShareErrorsFromSession;
 use Symfony\Component\HttpFoundation\Response;
 
 return Application::configure(basePath: dirname(__DIR__))
-    ->withCommands([ImportLegacyUsers::class, ActivateScheduledMaintenance::class])
+    ->withCommands([ImportLegacyUsers::class, ActivateScheduledMaintenance::class, SendTestMail::class])
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
         api: __DIR__.'/../routes/api.php',

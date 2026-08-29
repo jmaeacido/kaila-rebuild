@@ -52,7 +52,8 @@ In-app support cases remain the primary tracked channel (ADR-0032). Email is the
 
 ```bash
 cd /var/www/kaila-rebuild/apps/api
-php artisan tinker --execute="Mail::raw('KAILA mail check', fn (\$m) => \$m->to('you@example.com')->subject('KAILA mail check'));"
+php artisan mail:test you@example.com
 ```
 
-Check Brevo → **Transactional** for delivery status.
+The command sends the same KAILA-branded HTML and plain-text layout used by
+production notifications. Check Brevo → **Transactional** for delivery status.
