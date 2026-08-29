@@ -303,7 +303,7 @@ body button:not([data-flat-button]):disabled {
   flex: 0 0 auto;
   height: auto;
   max-height: var(--spacing-32);
-  width: calc(var(--spacing-64) + var(--spacing-48));
+  width: clamp(5.75rem, 26vw, calc(var(--spacing-64) + var(--spacing-48)));
 }
 
 .appSessionBar > div {
@@ -440,7 +440,7 @@ body button:not([data-flat-button]):disabled {
   }
 
   .appSessionBar .sessionLogo {
-    width: calc(var(--spacing-64) + var(--spacing-32));
+    width: clamp(5.5rem, 24vw, calc(var(--spacing-64) + var(--spacing-32)));
   }
 
   .appSessionBar > a {
@@ -471,7 +471,7 @@ body button:not([data-flat-button]):disabled {
   }
 
   .appSessionBar .sessionLogo {
-    width: calc(var(--spacing-64) + var(--spacing-16));
+    width: clamp(5.25rem, 22vw, calc(var(--spacing-64) + var(--spacing-16)));
   }
 
   .appSessionBar > div {

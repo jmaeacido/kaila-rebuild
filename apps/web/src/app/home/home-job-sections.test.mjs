@@ -53,11 +53,12 @@ test("Authenticated loading uses the approved KAILA lockup and human-facing copy
   assert.match(globalStylesSource, /prefers-reduced-motion: reduce/);
 });
 
-test("desktop session branding stays compact and only shows the bull when requested", () => {
+test("session branding shows the approved bull and wordmark lockup", () => {
   assert.match(globalStylesSource, /\.appSessionBar \.sessionLogo \{[^}]*display: inline-flex/);
   assert.doesNotMatch(brandStylesSource, /@media[^}]+\.bull\s*\{\s*display: block/);
   assert.match(brandStylesSource, /\.lockup\.withBull \.bull \{\s*display: block/);
-  assert.match(authGuardSource, /<BrandMark className="sessionLogo" priority showBull compact \/>/);
+  assert.match(authGuardSource, /<BrandMark className="sessionLogo" priority showBull \/>/);
+  assert.doesNotMatch(authGuardSource, /sessionLogo" priority showBull compact/);
 });
 
 test("Authenticated navigation retains the session and reveals pages after their initial UI settles", () => {
