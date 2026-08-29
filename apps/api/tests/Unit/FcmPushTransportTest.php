@@ -77,6 +77,30 @@ class FcmPushTransportTest extends TestCase
         ]);
     }
 
+    public function test_admin_devices_use_the_persistent_high_importance_admin_channel(): void
+    {
+        config()->set('services.fcm.project_id', 'kaila-test');
+        Http::fake(['https://fcm.googleapis.com/*' => Http::response(['name' => 'message-id'])]);
+        $tokens = Mockery::mock(FcmAccessTokenProvider::class);
+        $tokens->shouldReceive('token')->once()->andReturn('oauth-token');
+        $notification = new DurableNotification([
+            'title' => 'Provider profile needs review',
+            'body' => 'A provider submitted a profile.',
+            'type' => 'admin.review.provider_submitted',
+            'resource_id' => 'provider-1',
+            'data' => ['type' => 'profile', 'eventType' => 'admin.review.provider_submitted'],
+        ]);
+        $notification->id = 'admin-notification-1';
+        $device = new PushDevice(['platform' => 'admin_android', 'token_encrypted' => 'admin-token']);
+
+        (new FcmPushTransport($tokens))->send($device, $notification);
+
+        Http::assertSent(fn ($request) => $request['message']['android']['priority'] === 'high'
+            && $request['message']['android']['ttl'] === '86400s'
+            && $request['message']['android']['notification']['channel_id'] === 'kaila_admin_actions_v2'
+            && $request['message']['android']['notification']['sound'] === 'default');
+    }
+
     public function test_it_uses_call_data_primary_and_silent_channels_when_required(): void
     {
         config()->set('services.fcm.project_id', 'kaila-test');

@@ -47,6 +47,11 @@
 }
 
 @media (max-width: 30rem) {
+  .switcher {
+    bottom: calc(env(safe-area-inset-bottom, 0px) + var(--spacing-8));
+    right: var(--spacing-8);
+  }
+
   .choice span {
     clip: rect(0 0 0 0);
     clip-path: inset(50%);

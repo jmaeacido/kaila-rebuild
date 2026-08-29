@@ -32,6 +32,9 @@ describe("admin shell destinations", () => {
   it("surfaces durable realtime notifications in the authenticated shell", () => {
     expect(shell).toContain("<AdminNotificationCenter />");
     expect(notificationCenter).toContain('socket.on("domain.event"');
+    expect(notificationCenter).toContain("publishAdminRealtime");
+    expect(notificationCenter).toContain('setRealtimeState("live")');
+    expect(notificationCenter).toContain('setRealtimeState("offline")');
     expect(notificationCenter).toContain('/api/v1/notifications');
     expect(notificationCenter).toContain('role="status"');
     expect(notificationCenter).toContain("adminNotificationRoute");

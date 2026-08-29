@@ -4,6 +4,7 @@ import { FormEvent, Suspense, useCallback, useEffect, useMemo, useRef, useState 
 import { Archive, ArrowLeft, CheckCircle2, Clock3, Inbox, RefreshCw, Search, Send, UserRound } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { prepareCsrf } from "../auth-client";
+import { useAdminRealtimeRefresh } from "../admin-realtime";
 import styles from "./support.module.css";
 
 type Message = { id: string; body: string; senderRole: string; senderName: string; createdAt: string };
@@ -47,6 +48,12 @@ function SupportWorkspace() {
       setState("ready");
     } catch { setState("error"); }
   }, []);
+
+  const reconcileRealtime = useCallback(async () => {
+    await load();
+    if (selected?.id) await openCase(selected.id);
+  }, [load, openCase, selected]);
+  useAdminRealtimeRefresh(reconcileRealtime);
 
   useEffect(() => { const timer = window.setTimeout(() => void load(), 200); return () => window.clearTimeout(timer); }, [load]);
   useEffect(() => {

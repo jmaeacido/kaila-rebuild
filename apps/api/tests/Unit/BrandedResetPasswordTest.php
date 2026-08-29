@@ -28,6 +28,7 @@ class BrandedResetPasswordTest extends TestCase
         $this->assertStringContainsString('Reset password', $html);
         $this->assertStringContainsString('admin.kaila-app.com/reset-password', $html);
         $this->assertStringContainsString('https://kaila-app.com/brand/kaila-wordmark.png', $html);
+        $this->assertStringContainsString('https://kaila-app.com/brand/kaila-bull-app-icon-v2.png', $html);
         $this->assertStringContainsString('kaila-app.com', $html);
         $this->assertStringContainsString('mailto:support@kaila-app.com', $html);
         $this->assertStringNotContainsString('rebuild.kaila-app.com', $html);

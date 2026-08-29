@@ -87,21 +87,25 @@
   }
 
   .bar nav {
-    display: grid;
+    display: flex;
     gap: var(--spacing-4);
-    grid-template-columns: repeat(4, minmax(0, 1fr));
     margin: 0;
-    overflow: visible;
+    margin-inline: calc(var(--spacing-16) * -1);
+    overflow-x: auto;
+    padding-inline: var(--spacing-16);
+    scroll-padding-inline: var(--spacing-16);
+    scroll-snap-type: x proximity;
     width: 100%;
   }
 
   .bar nav a {
-    flex-direction: column;
+    flex-direction: row;
     font-size: var(--font-caption-size);
     gap: var(--spacing-4);
     justify-content: center;
-    min-width: 0;
-    padding: var(--spacing-8) var(--spacing-4);
+    min-width: max-content;
+    padding: var(--spacing-8) var(--spacing-12);
+    scroll-snap-align: start;
     text-align: center;
   }
 
@@ -109,12 +113,12 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    width: 100%;
+    width: auto;
   }
 
   .bar nav svg {
-    height: var(--spacing-24);
-    width: var(--spacing-24);
+    height: var(--spacing-16);
+    width: var(--spacing-16);
   }
 }
 

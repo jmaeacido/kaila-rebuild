@@ -9,5 +9,6 @@ public class MainActivity extends BridgeActivity {
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(AdminPushGuardPlugin.class);
         super.onCreate(savedInstanceState);
+        AdminNotificationChannels.ensure(this);
     }
 }

@@ -32,6 +32,7 @@ type Account = {
   accountStatus: AccountStatus;
   isSelf: boolean;
   createdAt: string | null;
+  lastActiveAt: string | null;
   actions: {
     canEdit: boolean;
     canActivate: boolean;
@@ -444,6 +445,8 @@ export default function UsersDirectoryPage() {
                   <th scope="col">Person</th>
                   <th scope="col">Role</th>
                   <th scope="col">Status</th>
+                  <th scope="col">Registered</th>
+                  <th scope="col">Last activity</th>
                   <th scope="col">Actions</th>
                 </tr>
               </thead>
@@ -456,6 +459,12 @@ export default function UsersDirectoryPage() {
                     </td>
                     <td><span className={styles.roleBadge}>{roleLabel[account.staffRole]}</span></td>
                     <td><span className={statusClass(account.accountStatus, styles)}>{account.accountStatus}</span></td>
+                    <td className={styles.dateCell} title={formatExactDate(account.createdAt)}>
+                      {formatDate(account.createdAt)}
+                    </td>
+                    <td className={styles.dateCell} title={formatExactDate(account.lastActiveAt)}>
+                      {formatDate(account.lastActiveAt, "Never")}
+                    </td>
                     <td>{renderActions(account)}</td>
                   </tr>
                 ))}
@@ -586,4 +595,24 @@ function statusClass(status: AccountStatus, stylesMap: Record<string, string>) {
   if (status === "active") return stylesMap.doneBadge;
   if (status === "deleted") return stylesMap.dangerBadge;
   return stylesMap.blockBadge;
+}
+
+function formatDate(value: string | null, fallback = "Unknown"): string {
+  if (!value) return fallback;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return fallback;
+
+  return new Intl.DateTimeFormat(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(date);
+}
+
+function formatExactDate(value: string | null): string | undefined {
+  if (!value) return undefined;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? undefined : date.toLocaleString();
 }

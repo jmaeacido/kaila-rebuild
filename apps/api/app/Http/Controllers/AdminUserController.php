@@ -7,6 +7,8 @@ use App\Support\AdminAccountService;
 use App\Support\StaffAuthorization;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class AdminUserController extends Controller
@@ -26,7 +28,13 @@ class AdminUserController extends Controller
             'perPage' => ['nullable', 'integer', 'min:1', 'max:100'],
         ]);
 
-        $query = User::query()->orderByDesc('updated_at');
+        $query = User::query()
+            ->addSelect([
+                'last_activity_at' => DB::table('sessions')
+                    ->selectRaw('MAX(last_activity)')
+                    ->whereColumn('sessions.user_id', 'users.id'),
+            ])
+            ->orderByDesc('updated_at');
         if (! empty($data['q'])) {
             $term = '%'.Str::lower($data['q']).'%';
             $query->where(function ($builder) use ($term): void {
@@ -158,9 +166,12 @@ class AdminUserController extends Controller
             'accountStatus' => $status,
             'isSelf' => $actor->is($user),
             'createdAt' => $user->created_at?->toIso8601String(),
+            'lastActiveAt' => is_numeric($user->getAttribute('last_activity_at'))
+                ? Carbon::createFromTimestamp((int) $user->getAttribute('last_activity_at'))->toIso8601String()
+                : null,
             'updatedAt' => $user->updated_at?->toIso8601String(),
             'statusUpdatedAt' => is_string($rawStatusUpdatedAt) && $rawStatusUpdatedAt !== ''
-                ? \Illuminate\Support\Carbon::parse($rawStatusUpdatedAt)->toIso8601String()
+                ? Carbon::parse($rawStatusUpdatedAt)->toIso8601String()
                 : null,
             'actions' => [
                 'canEdit' => StaffAuthorization::canEdit($actor, $user),

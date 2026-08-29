@@ -17,6 +17,7 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { notifyAdminAuthenticated, notifyAdminSignedOut } from "./admin-session-events";
+import { useAdminRealtimeRefresh } from "./admin-realtime";
 import styles from "./page.module.css";
 import { revokeAdminPushDevice } from "./components/admin-push-runtime";
 
@@ -156,6 +157,8 @@ export default function AdminHome() {
       setState("error");
     }
   }, [applyQueueResult, requestQueue]);
+
+  useAdminRealtimeRefresh(load);
 
   useEffect(() => {
     void fetch("/api/v1/auth/session-status", {
@@ -679,13 +682,31 @@ function Queue({
   empty: string;
   children: ReactNode;
 }) {
+  const count = Array.isArray(children) ? children.length : 0;
+  const history = title.toLowerCase().includes("history");
+  const heading = (
+    <h2>
+      {icon}
+      <span>{title}</span>
+      <small className={styles.queueCount}>{count}</small>
+    </h2>
+  );
+
+  if (history) {
+    return (
+      <details className={`${styles.queueSection} ${styles.historyQueue}`}>
+        <summary>{heading}</summary>
+        <div className={styles.queueContent}>
+          {count === 0 ? <p className={styles.empty}>{empty}</p> : children}
+        </div>
+      </details>
+    );
+  }
+
   return (
-    <section>
-      <h2>
-        {icon}
-        {title}
-      </h2>
-      {Array.isArray(children) && children.length === 0 ? (
+    <section className={styles.queueSection}>
+      {heading}
+      {count === 0 ? (
         <p className={styles.empty}>{empty}</p>
       ) : (
         children

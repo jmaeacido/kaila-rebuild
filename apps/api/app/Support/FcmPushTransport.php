@@ -23,7 +23,9 @@ class FcmPushTransport implements PushTransport
         $isCall = ($data['type'] ?? null) === 'call';
         $callStatus = (string) ($data['status'] ?? '');
         $isCallCancel = $isCall && (($data['action'] ?? null) === 'cancel' || in_array($callStatus, ['declined', 'ended', 'active'], true));
-        [$channelId, $sound] = $this->channelAndSound($notification, $silent, $isCall);
+        [$channelId, $sound] = $device->platform === 'admin_android'
+            ? ['kaila_admin_actions_v2', 'default']
+            : $this->channelAndSound($notification, $silent, $isCall);
 
         $payloadData = array_map('strval', array_merge($data, [
             'notificationId' => $notification->id,

@@ -13,7 +13,7 @@
 
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
-            android:value="kaila_admin_actions_v1" />
+            android:value="kaila_admin_actions_v2" />
 
         <activity
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode|navigation|density"

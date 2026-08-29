@@ -27,11 +27,12 @@
 .search input{padding-left:var(--spacing-32);width:100%}
 .notice{background:var(--color-success-surface);color:var(--color-success);margin:0 var(--spacing-24) var(--spacing-16);padding:var(--spacing-12) var(--spacing-16);border-radius:var(--radius-card)}
 .tableWrap{overflow:auto}
-.table{border-collapse:collapse;min-width:48rem;width:100%}
+.table{border-collapse:collapse;min-width:72rem;width:100%}
 .table th,.table td{border-top:var(--control-border-width) solid var(--color-border);padding:var(--spacing-16) var(--spacing-24);text-align:left;vertical-align:top}
 .table th{color:var(--color-text-secondary);font-size:var(--font-caption-size);text-transform:uppercase}
 .table td strong{color:var(--color-ink);display:block}
 .table td span{color:var(--color-text-secondary);display:block;font-size:var(--font-small-size);margin-top:var(--spacing-4)}
+.table .dateCell{color:var(--color-text-secondary);font-size:var(--font-small-size);white-space:nowrap}
 .roleBadge,.doneBadge,.blockBadge,.dangerBadge{border-radius:var(--radius-pill);display:inline-flex;font-size:var(--font-caption-size);font-weight:var(--font-weight-bold);padding:var(--spacing-4) var(--spacing-8);text-transform:uppercase}
 .roleBadge{background:color-mix(in srgb,var(--color-primary) 12%,var(--color-surface));color:var(--color-primary)}
 .doneBadge{background:var(--color-success-surface);color:var(--color-success)}

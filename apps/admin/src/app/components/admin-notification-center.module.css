@@ -1,6 +1,9 @@
 .center { position: relative; }
 .bell { align-items: center; background: var(--color-surface); border: var(--control-border-width) solid var(--color-border); border-radius: var(--radius-button); color: var(--color-text); display: flex; justify-content: center; min-height: var(--control-min-height); min-width: var(--control-min-height); position: relative; }
 .bell svg { height: var(--spacing-24); width: var(--spacing-24); }
+.realtime { background: var(--color-warning); border: 2px solid var(--color-surface); border-radius: var(--radius-pill); bottom: var(--spacing-4); height: var(--spacing-8); position: absolute; right: var(--spacing-4); width: var(--spacing-8); }
+.realtime[data-state="live"] { background: var(--color-success); }
+.realtime[data-state="offline"] { background: var(--color-danger); }
 .bell > span { align-items: center; background: var(--color-danger); border-radius: var(--radius-pill); color: var(--color-on-primary); display: flex; font-size: var(--font-caption-size); font-weight: var(--font-weight-bold); justify-content: center; min-height: var(--spacing-16); min-width: var(--spacing-16); padding: 0 var(--spacing-4); position: absolute; right: calc(var(--spacing-4) * -1); top: calc(var(--spacing-4) * -1); }
 .panel { background: var(--color-surface); border: var(--control-border-width) solid var(--color-border); border-radius: var(--radius-card); box-shadow: var(--shadow-floating); max-height: min(32rem, 70vh); overflow: hidden; position: absolute; right: 0; top: calc(100% + var(--spacing-8)); width: min(24rem, calc(100vw - var(--spacing-32))); z-index: var(--z-toast); }
 .panel header { align-items: center; border-bottom: var(--control-border-width) solid var(--color-border); display: flex; justify-content: space-between; padding: var(--spacing-16); }

@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { io, type Socket } from "socket.io-client";
 import { adminNotificationRoute } from "../admin-notification-routes";
+import { publishAdminRealtime } from "../admin-realtime";
 import styles from "./admin-notification-center.module.css";
 
 type AdminNotification = {
@@ -49,6 +50,7 @@ export function AdminNotificationCenter() {
   const [open, setOpen] = useState(false);
   const [toast, setToast] = useState<AdminNotification | null>(null);
   const [portalReady, setPortalReady] = useState(false);
+  const [realtimeState, setRealtimeState] = useState<"connecting" | "live" | "offline">("connecting");
   const knownIds = useRef(new Set<string>());
 
   const reconcile = useCallback(async (announceNew = false) => {
@@ -93,13 +95,22 @@ export function AdminNotificationCenter() {
           auth: { ticket: body.data.ticket },
           transports: ["polling", "websocket"],
         });
-        socket.on("connect", () => void reconcile(true));
+        socket.on("connect", () => {
+          setRealtimeState("live");
+          publishAdminRealtime({ type: "realtime.connected" });
+          void reconcile(true);
+        });
+        socket.on("disconnect", () => setRealtimeState("offline"));
+        socket.on("connect_error", () => setRealtimeState("offline"));
         socket.on("domain.event", (event: DomainEvent, acknowledge?: () => void) => {
           acknowledge?.();
+          publishAdminRealtime({
+            type: event.type,
+            resourceType: typeof event.data?.resourceType === "string" ? event.data.resourceType : undefined,
+            resourceId: typeof event.data?.resourceId === "string" ? event.data.resourceId : undefined,
+          });
           if (event.type === "notification.created") {
             void reconcile(true);
-          } else if (event.type.startsWith("support.")) {
-            router.refresh();
           }
         });
       } catch {
@@ -118,7 +129,8 @@ export function AdminNotificationCenter() {
   }, [reconcile, router]);
 
   useEffect(() => {
-    setPortalReady(true);
+    const timer = window.setTimeout(() => setPortalReady(true), 0);
+    return () => window.clearTimeout(timer);
   }, []);
 
   useEffect(() => {
@@ -149,11 +161,12 @@ export function AdminNotificationCenter() {
       <button
         className={styles.bell}
         type="button"
-        aria-label={unreadCount ? `Notifications, ${unreadCount} unread` : "Notifications"}
+        aria-label={`${unreadCount ? `Notifications, ${unreadCount} unread` : "Notifications"}. Realtime ${realtimeState}.`}
         aria-expanded={open}
         onClick={() => setOpen((value) => !value)}
       >
         <Bell aria-hidden="true" />
+        <i className={styles.realtime} data-state={realtimeState} title={`Realtime ${realtimeState}`} />
         {unreadCount > 0 && <span>{unreadCount > 99 ? "99+" : unreadCount}</span>}
       </button>
 

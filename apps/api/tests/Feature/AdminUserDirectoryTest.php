@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class AdminUserDirectoryTest extends TestCase
@@ -190,5 +191,44 @@ class AdminUserDirectoryTest extends TestCase
         ])->assertForbidden();
 
         $this->postJson("/api/v1/admin/marketplace/users/{$member->id}/deactivate")->assertForbidden();
+    }
+
+    public function test_directory_includes_registration_and_latest_session_activity_dates(): void
+    {
+        $super = User::factory()->create([
+            'is_admin' => true,
+            'staff_role' => 'super_admin',
+            'account_status' => 'active',
+        ]);
+        $member = User::factory()->create([
+            'created_at' => '2026-08-01 10:30:00',
+        ]);
+        DB::table('sessions')->insert([
+            [
+                'id' => 'older-session',
+                'user_id' => $member->id,
+                'ip_address' => '127.0.0.1',
+                'user_agent' => 'Test browser',
+                'payload' => '',
+                'last_activity' => 1_754_048_800,
+            ],
+            [
+                'id' => 'latest-session',
+                'user_id' => $member->id,
+                'ip_address' => '127.0.0.1',
+                'user_agent' => 'Test browser',
+                'payload' => '',
+                'last_activity' => 1_754_052_400,
+            ],
+        ]);
+
+        $items = $this->actingAs($super)
+            ->getJson('/api/v1/admin/marketplace/users')
+            ->assertOk()
+            ->json('data.items');
+        $presented = collect($items)->firstWhere('id', (string) $member->id);
+
+        $this->assertSame('2026-08-01T10:30:00+00:00', $presented['createdAt']);
+        $this->assertSame('2025-08-01T12:46:40+00:00', $presented['lastActiveAt']);
     }
 }

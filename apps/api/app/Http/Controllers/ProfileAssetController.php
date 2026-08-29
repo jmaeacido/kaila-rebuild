@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\ProfileAsset;
 use App\Models\User;
+use App\Support\AdminNotificationService;
 use App\Support\OutboxRecorder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -15,7 +16,10 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ProfileAssetController extends Controller
 {
-    public function __construct(private readonly OutboxRecorder $outbox) {}
+    public function __construct(
+        private readonly OutboxRecorder $outbox,
+        private readonly AdminNotificationService $adminNotifications,
+    ) {}
 
     public function store(Request $request): JsonResponse
     {
@@ -39,6 +43,14 @@ class ProfileAssetController extends Controller
 
             return $asset;
         });
+        $this->adminNotifications->send(
+            'admin.review.asset_submitted',
+            'File needs review',
+            "{$user->name} uploaded a {$asset->purpose} file.",
+            'profile_asset',
+            (string) $asset->id,
+            ['profileAssetId' => $asset->id],
+        );
 
         return response()->json(['data' => $asset->only(['id', 'purpose', 'original_name', 'scan_status', 'caption'])], 201);
     }

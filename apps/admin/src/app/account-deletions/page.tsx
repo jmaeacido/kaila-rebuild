@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { AlertCircle, CheckCircle2, Clock3, RefreshCw, ShieldCheck, UserRoundX } from "lucide-react";
 import { OperationsHeader } from "../components/operations-header";
+import { useAdminRealtimeRefresh } from "../admin-realtime";
 import styles from "./page.module.css";
 
 type Item = { id: string; reference: string; outcome: "completed" | "blocked"; blockers: { code: string; title: string }[]; requestedAt: string; completedAt: string | null };
@@ -13,6 +14,7 @@ export default function AccountDeletionsPage() {
   const [state, setState] = useState<"loading" | "ready" | "error">("loading");
   const [filter, setFilter] = useState<"all" | "completed" | "blocked">("all");
   const load = useCallback(async () => { setState("loading"); try { const response = await fetch(`/api/v1/admin/marketplace/account-deletions${filter === "all" ? "" : `?outcome=${filter}`}`, { credentials: "include", cache: "no-store" }); if (!response.ok) throw new Error(); setData(((await response.json()) as { data: Data }).data); setState("ready"); } catch { setState("error"); } }, [filter]);
+  useAdminRealtimeRefresh(load);
   useEffect(() => { const timer = window.setTimeout(() => void load(), 0); return () => window.clearTimeout(timer); }, [load]);
 
   return <main className={styles.page}>

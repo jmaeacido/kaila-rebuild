@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Notifications\BrandedWelcome;
 use App\Support\AuditRecorder;
 use App\Support\SocialAvatarImporter;
 use Illuminate\Http\JsonResponse;
@@ -76,7 +77,7 @@ class SocialAuthenticationController extends Controller
 
         try {
             $profile = $this->profile($provider, $request->string('code')->toString());
-            $user = DB::transaction(function () use ($profile, $provider, $pending): User {
+            [$user, $created] = DB::transaction(function () use ($profile, $provider, $pending): array {
                 $subject = $provider.':'.$profile['id'];
                 $user = User::query()->where('auth_subject', $subject)->lockForUpdate()->first();
 
@@ -101,18 +102,22 @@ class SocialAuthenticationController extends Controller
                 if ($user) {
                     $user->forceFill($values)->save();
 
-                    return $user;
+                    return [$user, false];
                 }
 
-                return User::query()->create($values + [
+                return [User::query()->create($values + [
                     'name' => $profile['name'],
                     'email' => $profile['email'],
                     'password' => Str::random(64),
                     'terms_accepted_version' => (string) config('policies.terms_version'),
                     'privacy_accepted_version' => (string) config('policies.privacy_version'),
                     'provider_intent' => (bool) ($pending['provider_intent'] ?? false),
-                ]);
+                ]), true];
             });
+
+            if ($created) {
+                $user->notify(new BrandedWelcome);
+            }
 
             try {
                 $this->avatars->import($user, $provider, $profile['avatar']);

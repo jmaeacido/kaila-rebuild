@@ -24,6 +24,7 @@ class SendTestMailTest extends TestCase
                 && $mail->envelope()->subject === 'KAILA email is working'
                 && str_contains($html, 'KAILA email check')
                 && str_contains($html, 'https://kaila-app.com/brand/kaila-wordmark.png')
+                && str_contains($html, 'https://kaila-app.com/brand/kaila-bull-app-icon-v2.png')
                 && str_contains($html, 'mailto:support@kaila-app.com')
                 && str_contains($html, 'Nearby help, made simple.');
         });

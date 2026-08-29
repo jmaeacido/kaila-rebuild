@@ -55,7 +55,7 @@ export function AdminPushRuntime() {
       if (!(await sessionAuthenticated())) return;
       try {
         await PushNotifications.createChannel({
-          id: "kaila_admin_actions_v1",
+          id: "kaila_admin_actions_v2",
           name: "Admin actions",
           description: "Reviews, approvals, reports, disputes, and support requests requiring attention",
           importance: 5,
@@ -100,7 +100,10 @@ export function AdminPushRuntime() {
           router.push(adminNotificationRoute(notification.data as Record<string, string | undefined>));
           router.refresh();
         }),
-        await PushNotifications.addListener("pushNotificationReceived", () => router.refresh()),
+        await PushNotifications.addListener("pushNotificationReceived", () => {
+          window.dispatchEvent(new Event("kaila:admin-realtime"));
+          router.refresh();
+        }),
         await App.addListener("appStateChange", ({ isActive }) => {
           if (isActive) void register();
         }),

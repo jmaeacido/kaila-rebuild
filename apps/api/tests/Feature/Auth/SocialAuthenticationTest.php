@@ -4,8 +4,10 @@ namespace Tests\Feature\Auth;
 
 use App\Models\ProfileAsset;
 use App\Models\User;
+use App\Notifications\BrandedWelcome;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -47,6 +49,7 @@ class SocialAuthenticationTest extends TestCase
 
     public function test_verified_google_profile_creates_and_authenticates_account(): void
     {
+        Notification::fake();
         $disk = (string) config('filesystems.private_assets_disk');
         Storage::fake($disk);
         Http::fake([
@@ -85,6 +88,32 @@ class SocialAuthenticationTest extends TestCase
         $this->assertSame('image/webp', $asset->mime_type);
         Storage::disk($disk)->assertExists($asset->object_key);
         $this->assertDatabaseHas('audit_events', ['event_type' => 'auth.social_login_succeeded']);
+        Notification::assertSentTo($user, BrandedWelcome::class);
+    }
+
+    public function test_google_login_does_not_resend_welcome_email_to_an_existing_account(): void
+    {
+        Notification::fake();
+        $user = User::factory()->create([
+            'email' => 'juan@example.test',
+            'auth_provider' => 'google',
+            'auth_subject' => 'google:google-user-1',
+        ]);
+        Http::fake([
+            'https://oauth2.googleapis.com/token' => Http::response(['access_token' => 'token']),
+            'https://openidconnect.googleapis.com/v1/userinfo' => Http::response([
+                'sub' => 'google-user-1',
+                'name' => 'Juan Dela Cruz',
+                'email' => 'juan@example.test',
+                'email_verified' => true,
+            ]),
+        ]);
+
+        $state = $this->beginGoogle('/');
+        $this->get("/api/v1/auth/social/google/callback?state=$state&code=valid-code")
+            ->assertRedirect('https://kaila.example.test/');
+
+        Notification::assertNotSentTo($user, BrandedWelcome::class);
     }
 
     public function test_social_login_does_not_overwrite_a_different_social_identity(): void

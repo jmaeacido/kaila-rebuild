@@ -3,14 +3,17 @@
 namespace Tests\Feature;
 
 use App\Models\Area;
+use App\Models\OutboxEvent;
 use App\Models\ProfileAsset;
 use App\Models\ProviderCredential;
 use App\Models\ProviderProfile;
 use App\Models\ServiceCategory;
 use App\Models\User;
+use App\Notifications\BrandedProviderProfileDecision;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -177,6 +180,7 @@ class MarketplaceProfilesTest extends TestCase
 
     public function test_approving_a_provider_profile_notifies_the_provider(): void
     {
+        Notification::fake();
         [$category, $area] = $this->referenceData();
         $profile = $this->provider('Approved Provider', 'pending_review', $category, $area);
         $user = User::query()->findOrFail($profile->user_id);
@@ -198,6 +202,18 @@ class MarketplaceProfilesTest extends TestCase
             'resource_type' => 'provider_profile',
             'resource_id' => (string) $profile->id,
         ]);
+        $profileEvent = OutboxEvent::query()
+            ->where('event_type', 'profile.updated')
+            ->where('resource_id', (string) $profile->id)
+            ->latest('occurred_at')
+            ->firstOrFail();
+        $this->assertContains((string) $admin->id, $profileEvent->payload['recipientUserIds']);
+        $this->assertContains((string) $user->id, $profileEvent->payload['recipientUserIds']);
+        Notification::assertSentTo(
+            $user,
+            BrandedProviderProfileDecision::class,
+            fn (BrandedProviderProfileDecision $notification): bool => $notification->toMail($user)->subject === 'Your KAILA provider profile is approved',
+        );
     }
 
     public function test_verified_badge_appears_only_after_clean_asset_and_approved_credential(): void
@@ -218,6 +234,7 @@ class MarketplaceProfilesTest extends TestCase
 
     public function test_provider_and_credential_rejections_require_reasons_notify_users_and_enter_history(): void
     {
+        Notification::fake();
         [$category, $area] = $this->referenceData();
         $profile = $this->provider('Review Provider', 'pending_review', $category, $area);
         $user = User::query()->findOrFail($profile->user_id);
@@ -259,6 +276,14 @@ class MarketplaceProfilesTest extends TestCase
         $this->assertDatabaseHas('provider_credentials', ['id' => $credential->id, 'reviewed_by' => $admin->id, 'review_note' => 'The license number is cropped out of the document.']);
         $this->assertDatabaseHas('durable_notifications', ['user_id' => $user->id, 'type' => 'profile.provider_rejected']);
         $this->assertDatabaseHas('durable_notifications', ['user_id' => $user->id, 'type' => 'profile.credential_rejected']);
+        Notification::assertSentTo(
+            $user,
+            BrandedProviderProfileDecision::class,
+            fn (BrandedProviderProfileDecision $notification): bool => str_contains(
+                $notification->toMail($user)->render(),
+                'Add a clearer description of your professional experience.',
+            ),
+        );
 
         $this->getJson('/api/v1/admin/marketplace/review-queue')
             ->assertOk()
@@ -273,11 +298,17 @@ class MarketplaceProfilesTest extends TestCase
         $disk = (string) config('filesystems.private_assets_disk');
         Storage::fake($disk);
         $user = User::factory()->create();
+        $admin = User::factory()->create(['is_admin' => true]);
         $response = $this->actingAs($user)->postJson('/api/v1/me/profile-assets', [
             'purpose' => 'portfolio', 'file' => UploadedFile::fake()->image('repair.jpg', 800, 600), 'caption' => 'Completed repair',
         ])->assertCreated()->assertJsonPath('data.scan_status', 'pending');
 
         $asset = ProfileAsset::query()->findOrFail($response->json('data.id'));
+        $this->assertDatabaseHas('durable_notifications', [
+            'user_id' => $admin->id,
+            'type' => 'admin.review.asset_submitted',
+            'resource_id' => $asset->id,
+        ]);
         Storage::disk($disk)->assertExists($asset->object_key);
         $this->getJson("/api/v1/profile-assets/{$asset->id}")->assertStatus(409);
         $asset->update(['scan_status' => 'clean']);

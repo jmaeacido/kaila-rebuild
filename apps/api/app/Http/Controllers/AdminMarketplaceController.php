@@ -8,6 +8,7 @@ use App\Models\ProviderCredential;
 use App\Models\ProviderProfile;
 use App\Models\ServiceCategory;
 use App\Models\User;
+use App\Notifications\BrandedProviderProfileDecision;
 use App\Support\NotificationService;
 use App\Support\OutboxRecorder;
 use App\Support\ProviderProfileReviewBaseline;
@@ -160,7 +161,7 @@ class AdminMarketplaceController extends Controller
                 'reviewed_at' => now(),
                 'review_baseline' => null,
             ]);
-            $this->outbox->record('profile.updated', 'provider_profile', (string) $providerProfile->id, (int) now()->format('U'), ['rooms' => ["user:{$providerProfile->user_id}"], 'providerProfileId' => $providerProfile->id, 'status' => $providerProfile->status, 'reviewReason' => $providerProfile->review_note]);
+            $this->outbox->record('profile.updated', 'provider_profile', (string) $providerProfile->id, (int) now()->format('U'), ['recipientUserIds' => $this->reviewAudience($providerProfile->user_id), 'data' => ['providerProfileId' => $providerProfile->id, 'status' => $providerProfile->status, 'reviewReason' => $providerProfile->review_note]]);
             $this->notifications->send(
                 $providerProfile->user_id,
                 $approved ? 'profile.provider_approved' : 'profile.provider_rejected',
@@ -173,6 +174,12 @@ class AdminMarketplaceController extends Controller
                 ['providerProfileId' => $providerProfile->id, 'reviewStatus' => $approved ? 'approved' : 'rejected', 'reviewReason' => $providerProfile->review_note],
             );
         });
+        User::query()->findOrFail($providerProfile->user_id)->notify(
+            new BrandedProviderProfileDecision(
+                $data['status'] === 'active',
+                $providerProfile->review_note,
+            ),
+        );
 
         return response()->json(['data' => $providerProfile]);
     }
@@ -192,7 +199,7 @@ class AdminMarketplaceController extends Controller
                 'review_note' => $data['scanStatus'] === 'rejected' ? trim($data['reviewReason']) : null,
                 'reviewed_at' => now(),
             ]);
-            $this->outbox->record('profile.media.updated', 'profile_asset', $profileAsset->id, (int) now()->format('U'), ['rooms' => ["user:{$profileAsset->user_id}"], 'profileAssetId' => $profileAsset->id, 'scanStatus' => $profileAsset->scan_status]);
+            $this->outbox->record('profile.media.updated', 'profile_asset', $profileAsset->id, (int) now()->format('U'), ['recipientUserIds' => $this->reviewAudience($profileAsset->user_id), 'data' => ['profileAssetId' => $profileAsset->id, 'scanStatus' => $profileAsset->scan_status]]);
             $approved = $profileAsset->scan_status === 'clean';
             $purpose = match ($profileAsset->purpose) {
                 'avatar' => 'profile picture',
@@ -234,7 +241,7 @@ class AdminMarketplaceController extends Controller
             $approved = $data['reviewStatus'] === 'approved';
             $providerCredential->update(['review_status' => $data['reviewStatus'], 'review_note' => $approved ? null : trim($data['reviewNote']), 'reviewed_by' => $admin->id, 'reviewed_at' => now()]);
             $profile = ProviderProfile::query()->findOrFail($providerCredential->provider_profile_id);
-            $this->outbox->record('profile.updated', 'provider_profile', (string) $profile->id, (int) now()->format('U'), ['rooms' => ["user:{$profile->user_id}"], 'providerProfileId' => $profile->id, 'credentialReviewStatus' => $providerCredential->review_status]);
+            $this->outbox->record('profile.updated', 'provider_profile', (string) $profile->id, (int) now()->format('U'), ['recipientUserIds' => $this->reviewAudience($profile->user_id), 'data' => ['providerProfileId' => $profile->id, 'credentialReviewStatus' => $providerCredential->review_status]]);
             $this->notifications->send(
                 $profile->user_id,
                 $approved ? 'profile.credential_approved' : 'profile.credential_rejected',
@@ -300,5 +307,18 @@ class AdminMarketplaceController extends Controller
                 'reviewedBy' => ['id' => $credential->reviewed_by, 'name' => $credential->reviewer?->name ?? 'Unknown reviewer', 'email' => $credential->reviewer?->email],
             ] : []),
         ];
+    }
+
+    /** @return list<string> */
+    private function reviewAudience(int $subjectUserId): array
+    {
+        return User::query()
+            ->where('is_admin', true)
+            ->pluck('id')
+            ->push($subjectUserId)
+            ->unique()
+            ->map(static fn (int $id): string => (string) $id)
+            ->values()
+            ->all();
     }
 }
