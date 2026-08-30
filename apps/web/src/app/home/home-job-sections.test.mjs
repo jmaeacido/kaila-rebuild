@@ -4,6 +4,7 @@ import test from "node:test";
 
 const source = readFileSync(new URL("./page.tsx", import.meta.url), "utf8");
 const opportunitiesSource = readFileSync(new URL("../opportunities/page.tsx", import.meta.url), "utf8");
+const opportunitiesStyles = readFileSync(new URL("../opportunities/page.module.css", import.meta.url), "utf8");
 const opportunityDetailsSource = readFileSync(new URL("../opportunities/[jobId]/page.tsx", import.meta.url), "utf8");
 const jobDetailsSource = readFileSync(new URL("../jobs/[jobId]/page.tsx", import.meta.url), "utf8");
 const notificationBellSource = readFileSync(new URL("../notification-bell.tsx", import.meta.url), "utf8");
@@ -87,6 +88,26 @@ test("Every job-card surface uses its service category icon", () => {
   assert.match(opportunitiesSource, /ServiceCategoryIcon icon=\{item\.category\.icon\}/);
   assert.match(opportunityDetailsSource, /ServiceCategoryIcon icon=\{opportunity\.category\.icon\}/);
   assert.match(jobDetailsSource, /ServiceCategoryIcon icon=\{job\.category\.icon\}/);
+});
+
+test("Find work keeps the standardized provider bottom navigation", () => {
+  assert.match(opportunitiesSource, /aria-label="Marketplace navigation"/);
+  assert.match(opportunitiesSource, /aria-current="page" href="\/opportunities"/);
+  assert.match(
+    opportunitiesSource,
+    /href="\/home"[\s\S]*?Home[\s\S]*?href="\/opportunities"[\s\S]*?Find work[\s\S]*?href="\/home#current-title"[\s\S]*?Work[\s\S]*?href="\/messages"[\s\S]*?Messages[\s\S]*?href="\/account"[\s\S]*?Profile/,
+  );
+});
+
+test("Find work stacks its header action on narrow phones", () => {
+  assert.match(
+    opportunitiesStyles,
+    /@media\(max-width:30rem\)[^{]*\{[^}]*\.shell > header \{[^}]*display:grid[^}]*gap:var\(--spacing-12\)/,
+  );
+  assert.match(
+    opportunitiesStyles,
+    /\.shell > header button \{[^}]*justify-self:start[^}]*white-space:nowrap/,
+  );
 });
 
 test("Home renders each job's service category icon", () => {
