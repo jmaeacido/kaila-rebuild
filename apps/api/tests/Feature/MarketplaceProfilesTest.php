@@ -3,11 +3,14 @@
 namespace Tests\Feature;
 
 use App\Models\Area;
+use App\Models\JobOpportunity;
 use App\Models\OutboxEvent;
+use App\Models\OfferThread;
 use App\Models\ProfileAsset;
 use App\Models\ProviderCredential;
 use App\Models\ProviderProfile;
 use App\Models\ServiceCategory;
+use App\Models\ServiceJob;
 use App\Models\User;
 use App\Notifications\BrandedProviderProfileDecision;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -59,6 +62,37 @@ class MarketplaceProfilesTest extends TestCase
             'user_id' => $admin->id,
             'type' => 'admin.review.provider_submitted',
             'resource_type' => 'provider_profile',
+        ]);
+    }
+
+    public function test_provider_can_offer_multiple_services(): void
+    {
+        [$category, $area] = $this->referenceData();
+        $computerServices = ServiceCategory::query()->create([
+            'name' => 'Computer & IT Services',
+            'slug' => 'computer-it-services',
+            'icon' => 'MonitorCog',
+            'is_active' => true,
+        ]);
+        $user = User::factory()->create();
+        User::factory()->create(['is_admin' => true]);
+        $profile = $this->validProfile($category, $area);
+        $profile['serviceIds'] = [$category->id, $computerServices->id];
+
+        $this->actingAs($user)
+            ->putJson('/api/v1/me/provider-profile', $profile)
+            ->assertOk()
+            ->assertJsonCount(2, 'data.services')
+            ->assertJsonFragment(['id' => $category->id, 'name' => 'Plumbing'])
+            ->assertJsonFragment(['id' => $computerServices->id, 'name' => 'Computer & IT Services']);
+
+        $this->assertDatabaseHas('provider_services', [
+            'provider_profile_id' => ProviderProfile::query()->where('user_id', $user->id)->value('id'),
+            'service_category_id' => $category->id,
+        ]);
+        $this->assertDatabaseHas('provider_services', [
+            'provider_profile_id' => ProviderProfile::query()->where('user_id', $user->id)->value('id'),
+            'service_category_id' => $computerServices->id,
         ]);
     }
 
@@ -214,6 +248,136 @@ class MarketplaceProfilesTest extends TestCase
             BrandedProviderProfileDecision::class,
             fn (BrandedProviderProfileDecision $notification): bool => $notification->toMail($user)->subject === 'Your KAILA provider profile is approved',
         );
+    }
+
+    public function test_approving_profile_changes_matches_existing_jobs_for_every_selected_service(): void
+    {
+        Notification::fake();
+        [$plumbing, $area] = $this->referenceData();
+        $computerServices = ServiceCategory::query()->create([
+            'name' => 'Computer & IT Services',
+            'slug' => 'computer-it-services',
+            'icon' => 'MonitorCog',
+            'is_active' => true,
+        ]);
+        $profile = $this->provider('Multi-service Provider', 'pending_review', $plumbing, $area);
+        $profile->services()->attach($computerServices);
+        $client = User::factory()->create();
+        $admin = User::factory()->create(['is_admin' => true]);
+
+        foreach ([$plumbing, $computerServices] as $category) {
+            ServiceJob::query()->create([
+                'client_user_id' => $client->id,
+                'service_category_id' => $category->id,
+                'area_id' => $area->id,
+                'status' => 'posted',
+                'title' => "Job for {$category->name}",
+                'description' => 'Existing job awaiting a qualified local provider.',
+                'schedule_type' => 'asap',
+                'posted_at' => now(),
+            ]);
+        }
+
+        $this->actingAs($admin)
+            ->putJson("/api/v1/admin/marketplace/providers/{$profile->id}/status", ['status' => 'active'])
+            ->assertOk();
+
+        $this->assertDatabaseCount('job_opportunities', 2);
+        $this->assertSame(2, DB::table('durable_notifications')
+            ->where('user_id', $profile->user_id)
+            ->where('type', 'opportunity.matched')
+            ->count());
+        $this->assertSame(2, DB::table('outbox_events')
+            ->where('event_type', 'opportunity.matched')
+            ->count());
+    }
+
+    public function test_approving_a_service_area_change_removes_unoffered_old_area_matches(): void
+    {
+        Notification::fake();
+        [$category, $oldArea] = $this->referenceData();
+        $newArea = Area::query()->create([
+            'type' => 'city',
+            'name' => 'Tagum City',
+            'code' => 'TAG',
+            'is_active' => true,
+        ]);
+        $profile = $this->provider('Relocating Provider', 'active', $category, $oldArea);
+        $client = User::factory()->create();
+        $admin = User::factory()->create(['is_admin' => true]);
+        $oldJob = ServiceJob::query()->create([
+            'client_user_id' => $client->id,
+            'service_category_id' => $category->id,
+            'area_id' => $oldArea->id,
+            'status' => 'posted',
+            'title' => 'Old area job',
+            'description' => 'This job is outside the provider new service area.',
+            'schedule_type' => 'asap',
+            'posted_at' => now(),
+        ]);
+        $newJob = ServiceJob::query()->create([
+            'client_user_id' => $client->id,
+            'service_category_id' => $category->id,
+            'area_id' => $newArea->id,
+            'status' => 'posted',
+            'title' => 'New area job',
+            'description' => 'This job is inside the provider new service area.',
+            'schedule_type' => 'asap',
+            'posted_at' => now(),
+        ]);
+        $offeredOldJob = ServiceJob::query()->create([
+            'client_user_id' => $client->id,
+            'service_category_id' => $category->id,
+            'area_id' => $oldArea->id,
+            'status' => 'offers_received',
+            'title' => 'Old area job with an offer',
+            'description' => 'An existing negotiation must survive a coverage change.',
+            'schedule_type' => 'asap',
+            'posted_at' => now(),
+        ]);
+        $profile->serviceAreas()->sync([$newArea->id]);
+        $profile->update(['status' => 'pending_review']);
+        JobOpportunity::query()->create([
+            'service_job_id' => $oldJob->id,
+            'provider_profile_id' => $profile->id,
+        ]);
+        JobOpportunity::query()->create([
+            'service_job_id' => $offeredOldJob->id,
+            'provider_profile_id' => $profile->id,
+            'state' => 'offered',
+        ]);
+        OfferThread::query()->create([
+            'service_job_id' => $offeredOldJob->id,
+            'provider_profile_id' => $profile->id,
+        ]);
+
+        $this->actingAs($admin)
+            ->putJson("/api/v1/admin/marketplace/providers/{$profile->id}/status", ['status' => 'active'])
+            ->assertOk();
+
+        $this->assertDatabaseMissing('job_opportunities', [
+            'service_job_id' => $oldJob->id,
+            'provider_profile_id' => $profile->id,
+        ]);
+        $this->assertDatabaseHas('job_opportunities', [
+            'service_job_id' => $newJob->id,
+            'provider_profile_id' => $profile->id,
+        ]);
+        $this->assertDatabaseHas('job_opportunities', [
+            'service_job_id' => $offeredOldJob->id,
+            'provider_profile_id' => $profile->id,
+            'state' => 'offered',
+        ]);
+        $this->assertDatabaseMissing('durable_notifications', [
+            'user_id' => $profile->user_id,
+            'type' => 'opportunity.matched',
+            'resource_id' => $oldJob->id,
+        ]);
+        $this->assertDatabaseHas('durable_notifications', [
+            'user_id' => $profile->user_id,
+            'type' => 'opportunity.matched',
+            'resource_id' => $newJob->id,
+        ]);
     }
 
     public function test_verified_badge_appears_only_after_clean_asset_and_approved_credential(): void

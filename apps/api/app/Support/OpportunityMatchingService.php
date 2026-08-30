@@ -67,6 +67,18 @@ class OpportunityMatchingService
             ->orderBy('created_at')
             ->get();
 
+        JobOpportunity::query()
+            ->where('provider_profile_id', $provider->id)
+            ->whereNotIn('service_job_id', $jobs->pluck('id'))
+            ->whereHas('job', fn ($job) => $job->whereIn('status', ['posted', 'offers_received']))
+            ->whereNotExists(function ($query) use ($provider): void {
+                $query->selectRaw('1')
+                    ->from('offer_threads')
+                    ->whereColumn('offer_threads.service_job_id', 'job_opportunities.service_job_id')
+                    ->where('offer_threads.provider_profile_id', $provider->id);
+            })
+            ->delete();
+
         foreach ($jobs as $job) {
             if ($job->service_location_mode === 'at_provider' && ! $provider->offers_at_shop) {
                 continue;

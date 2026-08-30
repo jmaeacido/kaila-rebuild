@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Support\MalwareScanResult;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
@@ -24,7 +25,7 @@ class PhaseThreeJobsTest extends TestCase
     {
         [$category, $area] = $this->references();
         $eligible = $this->provider($category, $area, 'active');
-        $this->provider($category, Area::query()->create(['type' => 'city', 'name' => 'Tagum', 'code' => 'TAG', 'is_active' => true]), 'active');
+        $outsideArea = $this->provider($category, Area::query()->create(['type' => 'city', 'name' => 'Tagum', 'code' => 'TAG', 'is_active' => true]), 'active');
         $this->provider($category, $area, 'pending_review');
         $client = User::factory()->create();
 
@@ -36,8 +37,41 @@ class PhaseThreeJobsTest extends TestCase
         $this->assertDatabaseCount('job_opportunities', 1);
         $this->assertDatabaseHas('job_opportunities', ['provider_profile_id' => $eligible->id]);
         $this->assertDatabaseHas('durable_notifications', ['user_id' => $eligible->user_id, 'type' => 'opportunity.matched']);
+        $this->assertDatabaseMissing('job_opportunities', ['provider_profile_id' => $outsideArea->id]);
+        $this->assertDatabaseMissing('durable_notifications', ['user_id' => $outsideArea->user_id, 'type' => 'opportunity.matched']);
         $this->assertDatabaseHas('outbox_events', ['event_type' => 'opportunity.matched']);
         $this->assertDatabaseCount('job_timeline_events', 2);
+    }
+
+    public function test_provider_is_notified_for_jobs_in_each_of_their_selected_services(): void
+    {
+        [$plumbing, $area] = $this->references();
+        $computerServices = ServiceCategory::query()->create([
+            'name' => 'Computer & IT Services',
+            'slug' => 'computer-it-services',
+            'icon' => 'MonitorCog',
+            'is_active' => true,
+        ]);
+        $provider = $this->provider($plumbing, $area, 'active');
+        $provider->services()->attach($computerServices);
+        $client = User::factory()->create();
+
+        foreach ([[$plumbing, 'multi-service-plumbing'], [$computerServices, 'multi-service-computers']] as [$category, $key]) {
+            $created = $this->actingAs($client)
+                ->withHeader('Idempotency-Key', $key)
+                ->postJson('/api/v1/jobs', $this->draft($category, $area))
+                ->assertCreated();
+            $this->postJson("/api/v1/jobs/{$created->json('data.id')}/post")->assertOk();
+        }
+
+        $this->assertDatabaseCount('job_opportunities', 2);
+        $this->assertSame(2, DB::table('durable_notifications')
+            ->where('user_id', $provider->user_id)
+            ->where('type', 'opportunity.matched')
+            ->count());
+        $this->assertSame(2, DB::table('outbox_events')
+            ->where('event_type', 'opportunity.matched')
+            ->count());
     }
 
     public function test_opportunity_never_leaks_exact_location_or_client_identity(): void

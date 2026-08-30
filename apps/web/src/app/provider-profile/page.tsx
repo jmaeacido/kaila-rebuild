@@ -1,11 +1,12 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, BadgeCheck, CheckCircle2, LocateFixed, MapPin, Store, UserRound, Wrench } from "lucide-react";
 import { Button, Feedback, TextField } from "@kaila/ui";
 import Link from "next/link";
-import { CategorySelect, type ServiceCategory } from "../../components/category-select";
+import type { ServiceCategory } from "../../components/category-select";
 import { SelectField } from "../../components/select-field";
+import { ServiceCategoryMultiSelect } from "../../components/service-category-multi-select";
 import { useRealtimeInvalidation } from "../use-realtime-invalidation";
 import styles from "./profile.module.css";
 
@@ -114,6 +115,8 @@ async function applyServiceAreas(
 }
 
 export default function ProviderProfilePage() {
+  const formIsDirty = useRef(false);
+  const loadSequence = useRef(0);
   const [categories, setCategories] = useState<ServiceCategory[]>([]);
   const [areas, setAreas] = useState<Item[]>([]);
   const [provinceId, setProvinceId] = useState("");
@@ -128,13 +131,18 @@ export default function ProviderProfilePage() {
   const [displayName, setDisplayName] = useState("");
   const [bio, setBio] = useState("");
   const [yearsExperience, setYearsExperience] = useState("");
-  const [serviceId, setServiceId] = useState("");
+  const [serviceIds, setServiceIds] = useState<string[]>([]);
   const [profileStatus, setProfileStatus] = useState<string | null>(null);
   const [reviewNote, setReviewNote] = useState<string | null>(null);
   const [offersAtShop, setOffersAtShop] = useState(false);
   const [shopName, setShopName] = useState("");
   const [shopAddress, setShopAddress] = useState("");
   const [shopLocation, setShopLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+
+  const markFormDirty = useCallback(() => {
+    formIsDirty.current = true;
+    loadSequence.current += 1;
+  }, []);
 
   const provinces = useMemo(
     () => areas.filter((area) => area.type === "province"),
@@ -161,6 +169,7 @@ export default function ProviderProfilePage() {
   );
 
   const loadReferenceData = useCallback(async () => {
+    const sequence = ++loadSequence.current;
     setReferenceStatus("loading");
     try {
       const [referenceResponse, profileResponse] = await Promise.all([
@@ -180,13 +189,13 @@ export default function ProviderProfilePage() {
       if (profileResponse.ok) {
         const provider = ((await profileResponse.json()) as { data: { provider: ProviderProfile | null } }).data
           .provider;
-        if (provider) {
+        if (provider && !formIsDirty.current && sequence === loadSequence.current) {
           setDisplayName(provider.display_name ?? "");
           setBio(provider.bio ?? "");
           setYearsExperience(
             provider.years_experience != null ? String(provider.years_experience) : "",
           );
-          setServiceId(provider.services?.[0]?.id ? String(provider.services[0].id) : "");
+          setServiceIds(provider.services?.map((service) => String(service.id)) ?? []);
           setProfileStatus(provider.status ?? null);
           setReviewNote(provider.review_note ?? null);
           setOffersAtShop(Boolean(provider.offers_at_shop));
@@ -258,6 +267,7 @@ export default function ProviderProfilePage() {
   }, [cityId]);
 
   function chooseProvince(value: string) {
+    markFormDirty();
     setProvinceId(value);
     setCityId("");
     setBarangayIds([]);
@@ -266,6 +276,7 @@ export default function ProviderProfilePage() {
   }
 
   function chooseCity(value: string) {
+    markFormDirty();
     setCityId(value);
     setBarangayIds([]);
     setBarangays([]);
@@ -273,6 +284,7 @@ export default function ProviderProfilePage() {
   }
 
   function toggleBarangay(value: string) {
+    markFormDirty();
     setBarangayIds((current) =>
       current.includes(value) ? current.filter((id) => id !== value) : [...current, value],
     );
@@ -281,11 +293,12 @@ export default function ProviderProfilePage() {
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const selectedAreaIds = coverageMode === "city" ? [cityId] : barangayIds;
-    if (!cityId || selectedAreaIds.length === 0 || !serviceId || (offersAtShop && !shopLocation)) {
+    if (!cityId || selectedAreaIds.length === 0 || serviceIds.length === 0 || (offersAtShop && !shopLocation)) {
       setMessage("error");
       return;
     }
     setMessage("saving");
+    loadSequence.current += 1;
     await fetch("/api/v1/auth/csrf", { credentials: "include" });
     const token = document.cookie
       .split("; ")
@@ -303,7 +316,7 @@ export default function ProviderProfilePage() {
         displayName,
         bio,
         yearsExperience: Number(yearsExperience),
-        serviceIds: [Number(serviceId)],
+        serviceIds: serviceIds.map(Number),
         areaIds: selectedAreaIds.map(Number),
         availability: [{ dayOfWeek: 1, startsAt: "08:00", endsAt: "17:00" }],
         offersAtShop,
@@ -317,6 +330,7 @@ export default function ProviderProfilePage() {
       const saved = ((await response.json()) as { data: ProviderProfile }).data;
       setProfileStatus(saved.status ?? "pending_review");
       setReviewNote(saved.review_note ?? null);
+      formIsDirty.current = false;
     }
     setMessage(response.ok ? "saved" : "error");
   }
@@ -361,7 +375,11 @@ export default function ProviderProfilePage() {
             <Button type="button" variant="secondary" onClick={() => void loadReferenceData()}>Try again</Button>
           </Feedback>
         )}
-        <form onSubmit={(event) => void submit(event)} className={styles.form}>
+        <form
+          onInput={markFormDirty}
+          onSubmit={(event) => void submit(event)}
+          className={styles.form}
+        >
           <fieldset className={styles.formSection}>
             <legend><span>1</span><UserRound aria-hidden="true" /> About you</legend>
             <p>Use the name clients should recognize and describe the work you do best.</p>
@@ -400,18 +418,16 @@ export default function ProviderProfilePage() {
                 value={yearsExperience}
                 onChange={(event) => setYearsExperience(event.target.value)}
               />
-              <label>
-                Primary service
-                <CategorySelect
-                  categories={categories}
-                  value={serviceId}
-                  onChange={setServiceId}
-                  disabled={referenceStatus !== "ready"}
-                  placeholder={referenceStatus === "loading" ? "Loading services…" : "Choose a service"}
-                  label="Primary service"
-                />
-              </label>
             </div>
+            <ServiceCategoryMultiSelect
+              categories={categories}
+              values={serviceIds}
+              onChange={(values) => {
+                markFormDirty();
+                setServiceIds(values);
+              }}
+              disabled={referenceStatus !== "ready"}
+            />
           </fieldset>
           <fieldset className={styles.serviceArea}>
             <legend>
@@ -434,7 +450,10 @@ export default function ProviderProfilePage() {
                   type="radio"
                   name="coverageMode"
                   checked={coverageMode === "city"}
-                  onChange={() => setCoverageMode("city")}
+                  onChange={() => {
+                    markFormDirty();
+                    setCoverageMode("city");
+                  }}
                 />
                 <span>
                   <strong>Whole city / municipality</strong>
@@ -446,7 +465,10 @@ export default function ProviderProfilePage() {
                   type="radio"
                   name="coverageMode"
                   checked={coverageMode === "barangays"}
-                  onChange={() => setCoverageMode("barangays")}
+                  onChange={() => {
+                    markFormDirty();
+                    setCoverageMode("barangays");
+                  }}
                 />
                 <span>
                   <strong>Selected barangays</strong>
@@ -511,7 +533,10 @@ export default function ProviderProfilePage() {
                 value={shopAddress}
                 onChange={(event) => setShopAddress(event.target.value)}
               />
-              <Button type="button" variant="secondary" onClick={() => navigator.geolocation?.getCurrentPosition((position) => setShopLocation({ latitude: position.coords.latitude, longitude: position.coords.longitude }), () => setMessage("error"), { enableHighAccuracy: true })}>
+              <Button type="button" variant="secondary" onClick={() => navigator.geolocation?.getCurrentPosition((position) => {
+                markFormDirty();
+                setShopLocation({ latitude: position.coords.latitude, longitude: position.coords.longitude });
+              }, () => setMessage("error"), { enableHighAccuracy: true })}>
                 <LocateFixed aria-hidden="true" /> {shopLocation ? "Shop pin saved" : "Pin my current shop location"}
               </Button>
               <p>{shopLocation ? `${shopLocation.latitude.toFixed(5)}, ${shopLocation.longitude.toFixed(5)}` : "Use this while physically at the shop. Clients receive this destination only when they hire you for shop service."}</p>

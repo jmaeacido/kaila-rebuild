@@ -10,6 +10,7 @@ use App\Models\ServiceCategory;
 use App\Models\User;
 use App\Notifications\BrandedProviderProfileDecision;
 use App\Support\NotificationService;
+use App\Support\OpportunityMatchingService;
 use App\Support\OutboxRecorder;
 use App\Support\ProviderProfileReviewBaseline;
 use Illuminate\Http\JsonResponse;
@@ -25,6 +26,7 @@ class AdminMarketplaceController extends Controller
     public function __construct(
         private readonly OutboxRecorder $outbox,
         private readonly NotificationService $notifications,
+        private readonly OpportunityMatchingService $matching,
     ) {}
 
     public function queue(): JsonResponse
@@ -174,6 +176,9 @@ class AdminMarketplaceController extends Controller
                 ['providerProfileId' => $providerProfile->id, 'reviewStatus' => $approved ? 'approved' : 'rejected', 'reviewReason' => $providerProfile->review_note],
             );
         });
+        if ($providerProfile->status === 'active') {
+            $this->matching->reconcileProvider($providerProfile);
+        }
         User::query()->findOrFail($providerProfile->user_id)->notify(
             new BrandedProviderProfileDecision(
                 $data['status'] === 'active',

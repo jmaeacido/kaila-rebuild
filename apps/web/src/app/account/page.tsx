@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -45,6 +45,8 @@ type Profile = {
 };
 
 export default function AccountPage() {
+  const clientFormIsDirty = useRef(false);
+  const loadSequence = useRef(0);
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [areas, setAreas] = useState<AreaReference[]>([]);
@@ -61,7 +63,13 @@ export default function AccountPage() {
   const [avatarReviewOutcome, setAvatarReviewOutcome] = useState<"approved" | "rejected" | null>(null);
   const [avatarReviewReason, setAvatarReviewReason] = useState<string | null>(null);
 
+  const markClientFormDirty = useCallback(() => {
+    clientFormIsDirty.current = true;
+    loadSequence.current += 1;
+  }, []);
+
   const load = useCallback(async () => {
+    const sequence = ++loadSequence.current;
     setStatus("loading");
     try {
       const [userResponse, profileResponse, referenceResponse] =
@@ -85,12 +93,14 @@ export default function AccountPage() {
       setUser(userData);
       setProfile(profileData);
       setAreas(referenceData.areas);
-      setDisplayName(profileData.client?.display_name || userData.name);
-      setAreaId(
-        profileData.client?.area_id
-          ? String(profileData.client.area_id)
-          : "",
-      );
+      if (!clientFormIsDirty.current && sequence === loadSequence.current) {
+        setDisplayName(profileData.client?.display_name || userData.name);
+        setAreaId(
+          profileData.client?.area_id
+            ? String(profileData.client.area_id)
+            : "",
+        );
+      }
       setStatus("ready");
     } catch {
       setStatus("error");
@@ -146,6 +156,7 @@ export default function AccountPage() {
     event.preventDefault();
     setStatus("saving");
     setNotice("");
+    loadSequence.current += 1;
     try {
       const response = await fetch("/api/v1/me/client-profile", {
         method: "PUT",
@@ -158,6 +169,7 @@ export default function AccountPage() {
       if (!response.ok) throw new Error();
       window.dispatchEvent(new Event(areaProfileChangedEvent));
       setNotice("Your profile details are saved.");
+      clientFormIsDirty.current = false;
       await load();
     } catch {
       setStatus("error");
@@ -441,7 +453,11 @@ export default function AccountPage() {
         )}
       </section>
 
-      <form className={styles.card} onSubmit={(event) => void saveProfile(event)}>
+      <form
+        className={styles.card}
+        onInput={markClientFormDirty}
+        onSubmit={(event) => void saveProfile(event)}
+      >
         <p className={styles.eyebrow}>CLIENT PROFILE</p>
         <h2>How providers know you</h2>
         <label>
@@ -461,7 +477,10 @@ export default function AccountPage() {
           <AddressHierarchy
             areas={areas}
             value={areaId}
-            onChange={setAreaId}
+            onChange={(value) => {
+              markClientFormDirty();
+              setAreaId(value);
+            }}
             optional
           />
         </div>

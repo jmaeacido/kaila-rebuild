@@ -50,3 +50,12 @@ test("saved city-level home areas populate the address hierarchy", () => {
   assert.match(addressHierarchy, /\? selectedArea/);
   assert.match(addressHierarchy, /barangays\.some\(\(barangay\) => String\(barangay\.id\) === value\) \? value : ""/);
 });
+
+test("background profile refreshes do not overwrite unsaved client edits", () => {
+  assert.match(page, /const clientFormIsDirty = useRef\(false\)/);
+  assert.match(page, /const loadSequence = useRef\(0\)/);
+  assert.match(page, /!clientFormIsDirty\.current && sequence === loadSequence\.current/);
+  assert.match(page, /onInput=\{markClientFormDirty\}/);
+  assert.match(page, /markClientFormDirty\(\);\s*setAreaId\(value\)/);
+  assert.match(page, /clientFormIsDirty\.current = false;\s*await load\(\)/);
+});
