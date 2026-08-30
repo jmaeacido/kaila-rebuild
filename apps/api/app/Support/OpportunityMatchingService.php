@@ -17,6 +17,20 @@ class OpportunityMatchingService
 
     public function matchJob(ServiceJob $job, int $excludedUserId): void
     {
+        if ($job->direct_provider_profile_id !== null) {
+            $provider = ProviderProfile::query()
+                ->whereKey($job->direct_provider_profile_id)
+                ->where('status', 'active')
+                ->where('user_id', '!=', $excludedUserId)
+                ->first();
+
+            if ($provider) {
+                $this->createOpportunity($job, $provider);
+            }
+
+            return;
+        }
+
         $jobArea = Area::query()->whereKey($job->area_id)->firstOrFail();
         $matchingAreaIds = array_values(array_filter([$jobArea->id, $jobArea->parent_id]));
         $scheduledAt = $job->scheduled_at;
@@ -59,6 +73,9 @@ class OpportunityMatchingService
         $jobs = ServiceJob::query()
             ->whereIn('status', ['posted', 'offers_received'])
             ->where('client_user_id', '!=', $provider->user_id)
+            ->where(fn ($query) => $query
+                ->whereNull('direct_provider_profile_id')
+                ->orWhere('direct_provider_profile_id', $provider->id))
             ->whereIn('service_category_id', $serviceIds)
             ->where(function ($query) use ($directAreaIds, $cityIds): void {
                 $query->whereIn('area_id', $directAreaIds)
