@@ -383,7 +383,7 @@ export default function AuthenticatedHomePage() {
         {isProvider ? (
           <Link href="/opportunities">
             <Search aria-hidden="true" />
-            Opportunities
+            Find work
           </Link>
         ) : (
           <Link href="/home#current-title">

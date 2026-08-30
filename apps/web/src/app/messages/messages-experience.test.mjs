@@ -19,6 +19,17 @@ test("Legacy direct-conversation routes return to the accepted-job inbox", () =>
   assert.match(chat, /redirect\("\/messages"\)/);
 });
 
+test("Messages keeps provider and client navigation destinations in a stable order", () => {
+  assert.match(
+    inbox,
+    /href=\{isProvider \? "\/opportunities" : "\/home#current-title"\}[\s\S]*?isProvider \? "Find work" : "Jobs"/,
+  );
+  assert.match(
+    inbox,
+    /href=\{isProvider \? "\/home#current-title" : "\/post-job"\}[\s\S]*?isProvider \? "Work" : "Post"/,
+  );
+});
+
 test("Messages supports touch navigation, dark-mode tokens, and reduced motion", () => {
   assert.match(styles, /min-height:var\(--control-min-height\)/);
   assert.match(styles, /var\(--color-background\)/);

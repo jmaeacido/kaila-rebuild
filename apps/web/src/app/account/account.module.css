@@ -77,7 +77,7 @@
 .cardSkeleton { height:20rem; }
 .bottomNav { background:color-mix(in srgb,var(--color-surface) 96%,transparent); border-top:var(--control-border-width) solid var(--color-border); bottom:0; box-shadow:var(--shadow-sheet); display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); left:0; padding:var(--spacing-4) max(var(--spacing-8),env(safe-area-inset-right)) max(var(--spacing-4),env(safe-area-inset-bottom)) max(var(--spacing-8),env(safe-area-inset-left)); position:fixed; right:0; z-index:10; }
 .bottomNav a { align-items:center; border-radius:var(--radius-button); color:var(--color-text-secondary); display:flex; flex-direction:column; font-size:var(--font-caption-size); font-weight:var(--font-weight-medium); gap:var(--spacing-4); justify-content:center; min-height:var(--control-min-height); padding:var(--spacing-8) var(--spacing-4); text-decoration:none; }
-.bottomNav a[aria-current="page"] { background:var(--color-primary); color:var(--color-on-primary); }
+.bottomNav a[aria-current="page"] { color:var(--color-primary); font-weight:var(--font-weight-bold); }
 .bottomNav svg { height:var(--spacing-24); width:var(--spacing-24); }
 :global(html[data-keyboard-open]) .bottomNav { display:none; }
 .visuallyHidden { clip:rect(0 0 0 0); clip-path:inset(50%); height:1px; overflow:hidden; position:absolute; white-space:nowrap; width:1px; }

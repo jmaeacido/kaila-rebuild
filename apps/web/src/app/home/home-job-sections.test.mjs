@@ -12,6 +12,7 @@ const brandedLoaderSource = readFileSync(new URL("../branded-loader.tsx", import
 const initialUiGateSource = readFileSync(new URL("../initial-ui-gate.tsx", import.meta.url), "utf8");
 const globalStylesSource = readFileSync(new URL("../globals.css", import.meta.url), "utf8");
 const brandStylesSource = readFileSync(new URL("../../components/brand-mark.module.css", import.meta.url), "utf8");
+const styles = readFileSync(new URL("./home.module.css", import.meta.url), "utf8");
 
 test("Home keeps every non-terminal job active and terminal jobs in history", () => {
   assert.match(source, /const activeClientJobs = jobs\.filter/);
@@ -27,8 +28,19 @@ test("Client Home presents one empty jobs state and role-aware primary navigatio
   assert.doesNotMatch(source, /No hired jobs yet/);
   assert.match(source, /<EmptyJobsIllustration \/>/);
   assert.match(source, />\s*Jobs\s*<\/Link>/);
-  assert.match(source, />\s*Opportunities\s*<\/Link>/);
+  assert.match(source, />\s*Find work\s*<\/Link>/);
   assert.doesNotMatch(source, /user\.providerEligible \? "\/opportunities" : "\/provider-profile"/);
+});
+
+test("Home uses the same foreground-only active navigation state as Messages", () => {
+  assert.match(
+    styles,
+    /\.bottomNav a\[aria-current="page"\] \{\s*color: var\(--color-primary\);\s*font-weight: var\(--font-weight-bold\);\s*\}/,
+  );
+  assert.doesNotMatch(
+    styles,
+    /\.bottomNav a\[aria-current="page"\][^{]*\{[^}]*background:/,
+  );
 });
 
 test("Home keeps the hero action primary and removes duplicate discovery actions", () => {

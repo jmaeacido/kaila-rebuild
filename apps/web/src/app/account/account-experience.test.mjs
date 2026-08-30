@@ -10,6 +10,14 @@ test("account keeps the five-destination mobile navigation with Profile active",
   assert.match(page, /aria-label="Marketplace navigation"/);
   assert.match(page, /aria-current="page" href="\/account"/);
   assert.match(styles, /grid-template-columns:repeat\(5,minmax\(0,1fr\)\)/);
+  assert.match(
+    styles,
+    /\.bottomNav a\[aria-current="page"\] \{ color:var\(--color-primary\); font-weight:var\(--font-weight-bold\); \}/,
+  );
+  assert.doesNotMatch(
+    styles,
+    /\.bottomNav a\[aria-current="page"\][^{]*\{[^}]*background:/,
+  );
 });
 
 test("account uses a compact mobile identity and a wider desktop composition", () => {
