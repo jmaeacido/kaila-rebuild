@@ -32,6 +32,18 @@ class CommunityComment extends Model
         return $this->belongsTo(User::class, 'author_user_id');
     }
 
+    /** @return BelongsTo<ProviderProfile, $this> */
+    public function featuredProvider(): BelongsTo
+    {
+        return $this->belongsTo(ProviderProfile::class, 'featured_provider_profile_id');
+    }
+
+    /** @return BelongsTo<User, $this> */
+    public function mentionedUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'mentioned_user_id');
+    }
+
     /** @return HasMany<CommunityComment, $this> */
     public function replies(): HasMany
     {

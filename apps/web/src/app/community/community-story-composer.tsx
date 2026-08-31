@@ -3,6 +3,15 @@
 import { ChangeEvent, useEffect, useId, useRef, useState } from "react";
 import Image from "next/image";
 import { ImagePlus, X } from "lucide-react";
+import {
+  clearMentionToken,
+  FeatureProviderButton,
+  mentionToken,
+  MentionCandidate,
+  MentionChip,
+  ProviderMentionMenu,
+  useProviderMention,
+} from "./community-provider-mention";
 import styles from "./community.module.css";
 
 type MediaPreview = {
@@ -15,6 +24,8 @@ type CommunityStoryComposerProps = {
   onBodyChange: (body: string) => void;
   files: File[];
   onFilesChange: (files: File[]) => void;
+  selectedMention: MentionCandidate | null;
+  onSelectedMentionChange: (mention: MentionCandidate | null) => void;
   maxLength?: number;
   placeholder?: string;
 };
@@ -24,13 +35,38 @@ export function CommunityStoryComposer({
   onBodyChange,
   files,
   onFilesChange,
+  selectedMention,
+  onSelectedMentionChange,
   maxLength = 3000,
-  placeholder = "Add up to five hashtags at the end, like #Plumbing #LeakFix",
+  placeholder = "Type @ to mention someone, or add up to five hashtags at the end",
 }: CommunityStoryComposerProps) {
   const inputId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const [previews, setPreviews] = useState<MediaPreview[]>([]);
   const canAddMore = files.length < 4;
+
+  const mention = useProviderMention(body, onBodyChange, selectedMention);
+
+  function handleBodyChange(value: string) {
+    onBodyChange(value);
+    if (selectedMention && !value.includes(mentionToken(selectedMention.displayName))) {
+      onSelectedMentionChange(null);
+    }
+  }
+
+  function selectMention(candidate: MentionCandidate) {
+    mention.insertMention(candidate, mention.mention);
+    onSelectedMentionChange(candidate);
+    mention.closeMention();
+  }
+
+  function clearMention() {
+    if (selectedMention) {
+      onBodyChange(clearMentionToken(body, selectedMention));
+    }
+    onSelectedMentionChange(null);
+    mention.closeMention();
+  }
 
   useEffect(() => {
     const next = files.map((file) => ({ file, url: URL.createObjectURL(file) }));
@@ -54,12 +90,28 @@ export function CommunityStoryComposer({
   return (
     <div className={styles.storyComposer}>
       <textarea
+        ref={mention.textareaRef}
         maxLength={maxLength}
         value={body}
-        onChange={(event) => onBodyChange(event.target.value)}
+        onChange={(event) => {
+          handleBodyChange(event.target.value);
+          mention.syncMentionFromCursor();
+        }}
+        onKeyDown={(event) => mention.handleTextareaKeyDown(event, selectMention)}
+        onClick={mention.syncMentionFromCursor}
+        onKeyUp={mention.syncMentionFromCursor}
+        onSelect={mention.syncMentionFromCursor}
         placeholder={placeholder}
         aria-label="Story"
       />
+      <ProviderMentionMenu
+        open={mention.mentionOpen && !selectedMention}
+        status={mention.mentionStatus}
+        results={mention.mentionResults}
+        highlightIndex={mention.mentionHighlightIndex}
+        onSelect={selectMention}
+      />
+      {selectedMention ? <MentionChip mention={selectedMention} onClear={clearMention} /> : null}
       {previews.length > 0 && (
         <ul className={styles.composerPreviewStrip} aria-label="Selected images">
           {previews.map((preview, index) => (
@@ -74,6 +126,7 @@ export function CommunityStoryComposer({
       )}
       <div className={styles.storyComposerToolbar}>
         <input ref={inputRef} className={styles.hiddenFileInput} id={inputId} type="file" accept="image/*" multiple onChange={pick} />
+        <FeatureProviderButton onClick={mention.openMentionAtCursor} />
         <button
           type="button"
           data-flat-button

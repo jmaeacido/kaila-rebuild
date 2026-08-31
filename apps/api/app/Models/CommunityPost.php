@@ -55,6 +55,18 @@ class CommunityPost extends Model
         return $this->belongsTo(Area::class);
     }
 
+    /** @return BelongsTo<ProviderProfile, $this> */
+    public function featuredProvider(): BelongsTo
+    {
+        return $this->belongsTo(ProviderProfile::class, 'featured_provider_profile_id');
+    }
+
+    /** @return BelongsTo<User, $this> */
+    public function mentionedUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'mentioned_user_id');
+    }
+
     /** @return HasMany<CommunityPostMedia, $this> */
     public function media(): HasMany
     {

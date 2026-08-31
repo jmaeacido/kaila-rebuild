@@ -10,6 +10,7 @@ class CommunityRealtimePublisher
     public function __construct(
         private readonly OutboxRecorder $outbox,
         private readonly CommunityEngagementService $engagement,
+        private readonly CommunityMentionService $mentions,
         private readonly NotificationService $notifications,
     ) {}
 
@@ -52,6 +53,60 @@ class CommunityRealtimePublisher
                 'data' => ['postId' => $post->id, 'action' => 'feed_refresh'],
             ],
         );
+    }
+
+    public function notifyMention(
+        CommunityPost $post,
+        User $actor,
+        int $mentionedUserId,
+        string $surface,
+        ?string $commentId = null,
+        bool $dedupeEngagedRecipients = false,
+    ): void {
+        if ($mentionedUserId === (int) $actor->id) {
+            return;
+        }
+
+        if (in_array($mentionedUserId, $this->mentions->blockedUserIds((int) $actor->id), true)) {
+            return;
+        }
+
+        if ($dedupeEngagedRecipients) {
+            $engagedRecipients = $this->engagement->notificationRecipients($post, (int) $actor->id);
+            if (in_array($mentionedUserId, $engagedRecipients, true)) {
+                return;
+            }
+        }
+
+        [$title, $body] = $this->mentionNotificationCopy($actor, $post, $surface);
+        $payload = ['postId' => $post->id, 'mentionedUserId' => $mentionedUserId, 'surface' => $surface];
+        if ($commentId !== null) {
+            $payload['commentId'] = $commentId;
+        }
+
+        $this->notifications->send(
+            $mentionedUserId,
+            'community.mention.created',
+            $title,
+            $body,
+            'community_post',
+            $post->id,
+            $payload,
+            'routine',
+        );
+    }
+
+    /** @return array{0: string, 1: string} */
+    private function mentionNotificationCopy(User $actor, CommunityPost $post, string $surface): array
+    {
+        $name = $actor->name;
+        $postTitle = mb_strlen($post->title) > 60 ? mb_substr($post->title, 0, 57).'…' : $post->title;
+
+        return match ($surface) {
+            'comment' => ['You were mentioned', "{$name} mentioned you in a comment on \"{$postTitle}\"."],
+            'reply' => ['You were mentioned', "{$name} mentioned you in a reply on \"{$postTitle}\"."],
+            default => ['You were mentioned', "{$name} mentioned you in \"{$postTitle}\"."],
+        };
     }
 
     /** @param array<string, mixed> $data */

@@ -1,9 +1,12 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useCallback, useState } from "react";
 import Link from "next/link";
 import { MessageCircle, Send } from "lucide-react";
 import { CommunityMemberAvatar } from "./community-member-avatar";
+import { CommunityCommentMentionField } from "./community-comment-mention-field";
+import { CommunityLinkedMentionText } from "./community-linked-provider-text";
+import { MentionCandidate } from "./community-provider-mention";
 import { CommunityComment, csrfFetch } from "./community-client";
 import styles from "./community.module.css";
 
@@ -20,6 +23,10 @@ function formatCommentTime(value: string): string {
   return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
+function toMentionCandidate(mention: CommunityComment["mention"]): MentionCandidate | null {
+  return mention ? { ...mention, avatarUrl: null } : null;
+}
+
 type CommunityCommentComposerProps = {
   postId: string;
   reload: () => Promise<void>;
@@ -30,6 +37,7 @@ type CommunityCommentComposerProps = {
 
 export function CommunityCommentComposer({ postId, reload, placeholder, submitLabel, compact = false }: CommunityCommentComposerProps) {
   const [body, setBody] = useState("");
+  const [selectedMention, setSelectedMention] = useState<MentionCandidate | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   async function handleSubmit(event: FormEvent) {
@@ -39,24 +47,30 @@ export function CommunityCommentComposer({ postId, reload, placeholder, submitLa
     setSubmitting(true);
     const response = await csrfFetch(`/api/v1/community/${postId}/comments`, {
       method: "POST",
-      body: JSON.stringify({ body: trimmed }),
+      body: JSON.stringify({
+        body: trimmed,
+        mentionedUserId: selectedMention?.userId ?? null,
+        featuredProviderProfileId: selectedMention?.providerProfileId ?? null,
+      }),
     });
     setSubmitting(false);
     if (response.ok) {
       setBody("");
+      setSelectedMention(null);
       await reload();
     }
   }
 
   return (
     <form className={compact ? `${styles.commentComposer} ${styles.commentComposerCompact}` : styles.commentComposer} onSubmit={(event) => void handleSubmit(event)}>
-      <textarea
-        maxLength={800}
-        rows={1}
+      <CommunityCommentMentionField
         value={body}
-        onChange={(event) => setBody(event.target.value)}
+        onChange={setBody}
+        selectedMention={selectedMention}
+        onSelectedMentionChange={setSelectedMention}
         placeholder={placeholder}
-        aria-label={placeholder}
+        ariaLabel={placeholder}
+        compact={compact}
       />
       <button type="submit" className={styles.commentComposerSend} data-flat-button disabled={!body.trim() || submitting} aria-label={submitLabel}>
         <Send aria-hidden="true" />
@@ -75,10 +89,18 @@ type CommentItemProps = {
 function CommentItem({ comment, postId, reload, nested = false }: CommentItemProps) {
   const [replying, setReplying] = useState(false);
   const [replyBody, setReplyBody] = useState("");
+  const [replyMention, setReplyMention] = useState<MentionCandidate | null>(null);
   const [replySubmitting, setReplySubmitting] = useState(false);
   const [editing, setEditing] = useState(false);
   const [editBody, setEditBody] = useState(comment.body);
+  const [editMention, setEditMention] = useState<MentionCandidate | null>(toMentionCandidate(comment.mention));
   const [editSubmitting, setEditSubmitting] = useState(false);
+
+  const resetEdit = useCallback(() => {
+    setEditing(false);
+    setEditBody(comment.body);
+    setEditMention(toMentionCandidate(comment.mention));
+  }, [comment.body, comment.mention]);
 
   async function submitReply(event: FormEvent) {
     event.preventDefault();
@@ -87,11 +109,16 @@ function CommentItem({ comment, postId, reload, nested = false }: CommentItemPro
     setReplySubmitting(true);
     const response = await csrfFetch(`/api/v1/community/${postId}/comments/${comment.id}/replies`, {
       method: "POST",
-      body: JSON.stringify({ body: trimmed }),
+      body: JSON.stringify({
+        body: trimmed,
+        mentionedUserId: replyMention?.userId ?? null,
+        featuredProviderProfileId: replyMention?.providerProfileId ?? null,
+      }),
     });
     setReplySubmitting(false);
     if (response.ok) {
       setReplyBody("");
+      setReplyMention(null);
       setReplying(false);
       await reload();
     }
@@ -104,7 +131,11 @@ function CommentItem({ comment, postId, reload, nested = false }: CommentItemPro
     setEditSubmitting(true);
     const response = await csrfFetch(`/api/v1/community-comments/${comment.id}`, {
       method: "PATCH",
-      body: JSON.stringify({ body: trimmed }),
+      body: JSON.stringify({
+        body: trimmed,
+        mentionedUserId: editMention?.userId ?? null,
+        featuredProviderProfileId: editMention?.providerProfileId ?? null,
+      }),
     });
     setEditSubmitting(false);
     if (response.ok) {
@@ -135,9 +166,17 @@ function CommentItem({ comment, postId, reload, nested = false }: CommentItemPro
           </div>
           {editing ? (
             <form className={styles.commentEditForm} onSubmit={(event) => void saveEdit(event)}>
-              <textarea maxLength={800} rows={3} value={editBody} onChange={(event) => setEditBody(event.target.value)} aria-label="Edit comment" />
+              <CommunityCommentMentionField
+                value={editBody}
+                onChange={setEditBody}
+                selectedMention={editMention}
+                onSelectedMentionChange={setEditMention}
+                placeholder="Edit comment"
+                ariaLabel="Edit comment"
+                rows={3}
+              />
               <div className={styles.commentEditActions}>
-                <button type="button" className={styles.commentAction} data-flat-button onClick={() => { setEditing(false); setEditBody(comment.body); }}>
+                <button type="button" className={styles.commentAction} data-flat-button onClick={resetEdit}>
                   Cancel
                 </button>
                 <button type="submit" className={styles.commentEditSave} data-flat-button disabled={!editBody.trim() || editSubmitting}>
@@ -146,7 +185,9 @@ function CommentItem({ comment, postId, reload, nested = false }: CommentItemPro
               </div>
             </form>
           ) : (
-            <p className={styles.commentText}>{comment.body}</p>
+            <p className={styles.commentText}>
+              <CommunityLinkedMentionText text={comment.body} mention={comment.mention} />
+            </p>
           )}
           {showActions && !editing && (
             <div className={styles.commentActions}>
@@ -156,7 +197,7 @@ function CommentItem({ comment, postId, reload, nested = false }: CommentItemPro
                 </button>
               )}
               {comment.canEdit && (
-                <button type="button" className={styles.commentAction} data-flat-button onClick={() => { setEditBody(comment.body); setEditing(true); }}>
+                <button type="button" className={styles.commentAction} data-flat-button onClick={() => { setEditBody(comment.body); setEditMention(toMentionCandidate(comment.mention)); setEditing(true); }}>
                   Edit
                 </button>
               )}
@@ -177,7 +218,15 @@ function CommentItem({ comment, postId, reload, nested = false }: CommentItemPro
           )}
           {replying && (
             <form className={styles.replyComposer} onSubmit={(event) => void submitReply(event)}>
-              <textarea maxLength={800} rows={1} value={replyBody} onChange={(event) => setReplyBody(event.target.value)} placeholder="Write a reply" aria-label="Write a reply" />
+              <CommunityCommentMentionField
+                value={replyBody}
+                onChange={setReplyBody}
+                selectedMention={replyMention}
+                onSelectedMentionChange={setReplyMention}
+                placeholder="Write a reply"
+                ariaLabel="Write a reply"
+                compact
+              />
               <button type="submit" className={styles.commentComposerSend} data-flat-button disabled={!replyBody.trim() || replySubmitting} aria-label="Send reply">
                 <Send aria-hidden="true" />
               </button>

@@ -8,10 +8,12 @@ use App\Models\CommunityComment;
 use App\Models\CommunityPost;
 use App\Models\CommunityPostMedia;
 use App\Models\ProfileAsset;
+use App\Models\ProviderProfile;
 use App\Models\User;
 use App\Support\CommunityFeedContextService;
 use App\Support\CommunityHashtagParser;
 use App\Support\CommunityMediaObjectKey;
+use App\Support\CommunityMentionService;
 use App\Support\CommunityPostVisibility;
 use App\Support\CommunityRealtimePublisher;
 use App\Support\CommunityWelcomeProviderLookup;
@@ -31,6 +33,7 @@ class CommunityController
         private readonly CommunityPostVisibility $visibility,
         private readonly CommunityFeedContextService $feedContext,
         private readonly CommunityWelcomeProviderLookup $welcomeProviders,
+        private readonly CommunityMentionService $mentions,
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -70,6 +73,15 @@ class CommunityController
         return response()->json(['data' => $this->feedContext->forUser($user)]);
     }
 
+    public function mentionCandidates(Request $request): JsonResponse
+    {
+        $user = $this->user($request);
+        $this->enabled();
+        $data = $request->validate(['query' => 'nullable|string|max:100']);
+
+        return response()->json(['data' => $this->mentions->search($user, $data['query'] ?? '')]);
+    }
+
     public function show(Request $request, CommunityPost $communityPost): JsonResponse
     {
         $user = $this->user($request);
@@ -82,34 +94,45 @@ class CommunityController
     {
         $user = $this->user($request);
         $this->enabled();
-        $data = $request->validate(['kind' => 'required|in:work_story,local_tip,service_question,official_update', 'title' => 'required|string|max:120', 'body' => 'required|string|max:3000', 'areaId' => 'nullable|integer|exists:areas,id', 'official' => 'nullable|boolean']);
+        $data = $request->validate(['kind' => 'required|in:work_story,local_tip,service_question,official_update', 'title' => 'required|string|max:120', 'body' => 'required|string|max:3000', 'areaId' => 'nullable|integer|exists:areas,id', 'official' => 'nullable|boolean', 'featuredProviderProfileId' => 'nullable|integer|exists:provider_profiles,id', 'mentionedUserId' => 'nullable|integer|exists:users,id']);
         abort_if($data['kind'] === 'official_update' && ! $user->is_admin, 403);
+        $mentionStorage = $this->mentions->resolveStorage($data['mentionedUserId'] ?? null, $data['featuredProviderProfileId'] ?? null, $user);
         $area = isset($data['areaId']) ? Area::query()->whereKey((int) $data['areaId'])->first() : null;
-        $post = DB::transaction(function () use ($data, $user, $area): CommunityPost {
+        $post = DB::transaction(function () use ($data, $user, $area, $mentionStorage): CommunityPost {
             $parsed = $this->hashtags->apply(trim($data['body']));
-            $post = CommunityPost::query()->create(['id' => (string) Str::uuid(), 'author_user_id' => $user->id, 'author_display_mode' => ($data['official'] ?? false) && $user->is_admin ? 'official' : 'member', 'kind' => $data['kind'], 'title' => trim($data['title']), 'body' => $parsed['body'], 'hashtags' => $parsed['tags'], 'area_id' => $area?->id, 'area_label' => $area?->name, 'moderation_status' => 'published', 'published_at' => now()]);
+            $post = CommunityPost::query()->create(['id' => (string) Str::uuid(), 'author_user_id' => $user->id, 'author_display_mode' => ($data['official'] ?? false) && $user->is_admin ? 'official' : 'member', 'kind' => $data['kind'], 'title' => trim($data['title']), 'body' => $parsed['body'], 'hashtags' => $parsed['tags'], 'area_id' => $area?->id, 'area_label' => $area?->name, 'featured_provider_profile_id' => $mentionStorage['featured_provider_profile_id'], 'mentioned_user_id' => $mentionStorage['mentioned_user_id'], 'moderation_status' => 'published', 'published_at' => now()]);
             $this->realtime->publish('community.post.published', $post, $user, notifyEngaged: false);
 
             return $post;
         });
 
-        return response()->json(['data' => $this->present($post, $user)], 201);
+        if ($mentionStorage['mentioned_user_id']) {
+            $this->realtime->notifyMention($post, $user, $mentionStorage['mentioned_user_id'], 'post');
+        }
+
+        return response()->json(['data' => $this->present($post, $user, $this->welcomeProviders->forPost($post))], 201);
     }
 
     public function update(Request $request, CommunityPost $communityPost): JsonResponse
     {
         $user = $this->user($request);
         $this->owns($communityPost, $user);
-        $data = $request->validate(['kind' => 'required|in:work_story,local_tip,service_question,official_update', 'title' => 'required|string|max:120', 'body' => 'required|string|max:3000', 'areaId' => 'nullable|integer|exists:areas,id']);
+        $data = $request->validate(['kind' => 'required|in:work_story,local_tip,service_question,official_update', 'title' => 'required|string|max:120', 'body' => 'required|string|max:3000', 'areaId' => 'nullable|integer|exists:areas,id', 'featuredProviderProfileId' => 'nullable|integer|exists:provider_profiles,id', 'mentionedUserId' => 'nullable|integer|exists:users,id']);
         abort_if($data['kind'] === 'official_update' && ! $user->is_admin, 403);
+        $mentionStorage = $this->mentions->resolveStorage($data['mentionedUserId'] ?? null, $data['featuredProviderProfileId'] ?? null, $user);
         $area = isset($data['areaId']) ? Area::query()->whereKey((int) $data['areaId'])->first() : null;
-        DB::transaction(function () use ($communityPost, $data, $area, $user): void {
+        $previousMentionedUserId = $communityPost->mentioned_user_id ? (int) $communityPost->mentioned_user_id : null;
+        DB::transaction(function () use ($communityPost, $data, $area, $user, $mentionStorage): void {
             $parsed = $this->hashtags->apply(trim($data['body']));
-            $communityPost->update(['kind' => $data['kind'], 'title' => trim($data['title']), 'body' => $parsed['body'], 'hashtags' => $parsed['tags'], 'area_id' => $area?->id, 'area_label' => $area?->name, 'edited_at' => now()]);
+            $communityPost->update(['kind' => $data['kind'], 'title' => trim($data['title']), 'body' => $parsed['body'], 'hashtags' => $parsed['tags'], 'area_id' => $area?->id, 'area_label' => $area?->name, 'featured_provider_profile_id' => $mentionStorage['featured_provider_profile_id'], 'mentioned_user_id' => $mentionStorage['mentioned_user_id'], 'edited_at' => now()]);
             $this->realtime->publish('community.post.updated', $communityPost, $user);
         });
 
-        return response()->json(['data' => $this->present($communityPost->refresh(), $user)]);
+        if ($mentionStorage['mentioned_user_id'] && $mentionStorage['mentioned_user_id'] !== $previousMentionedUserId) {
+            $this->realtime->notifyMention($communityPost, $user, $mentionStorage['mentioned_user_id'], 'post');
+        }
+
+        return response()->json(['data' => $this->present($communityPost->refresh(), $user, $this->welcomeProviders->forPost($communityPost))]);
     }
 
     public function destroy(Request $request, CommunityPost $communityPost): JsonResponse
@@ -199,7 +222,7 @@ class CommunityController
     {
         $user = $this->user($request);
         $this->assertVisible($communityPost, $user);
-        $rows = $communityPost->comments()->whereNull('parent_comment_id')->where('moderation_status', 'published')->with(['author', 'replies' => fn ($query) => $query->where('moderation_status', 'published')->with('author')])->oldest()->cursorPaginate(20);
+        $rows = $communityPost->comments()->whereNull('parent_comment_id')->where('moderation_status', 'published')->with(['author', 'featuredProvider:id,display_name,status', 'replies' => fn ($query) => $query->where('moderation_status', 'published')->with(['author', 'featuredProvider:id,display_name,status'])])->oldest()->cursorPaginate(20);
 
         $items = $rows->items();
         $avatars = $this->avatarUrlsForUsers($this->commentAuthorIds($items));
@@ -216,16 +239,28 @@ class CommunityController
     {
         $user = $this->user($request);
         $this->assertVisible($communityPost, $user);
-        $body = $request->validate(['body' => 'required|string|max:800'])['body'];
-        $comment = DB::transaction(function () use ($communityPost, $user, $body): CommunityComment {
-            $comment = CommunityComment::query()->create(['id' => (string) Str::uuid(), 'community_post_id' => $communityPost->id, 'author_user_id' => $user->id, 'body' => trim($body), 'moderation_status' => 'published']);
+        $data = $request->validate(['body' => 'required|string|max:800', 'featuredProviderProfileId' => 'nullable|integer|exists:provider_profiles,id', 'mentionedUserId' => 'nullable|integer|exists:users,id']);
+        $mentionStorage = $this->mentions->resolveStorage($data['mentionedUserId'] ?? null, $data['featuredProviderProfileId'] ?? null, $user);
+        $comment = DB::transaction(function () use ($communityPost, $user, $data, $mentionStorage): CommunityComment {
+            $comment = CommunityComment::query()->create(['id' => (string) Str::uuid(), 'community_post_id' => $communityPost->id, 'author_user_id' => $user->id, 'body' => trim($data['body']), 'featured_provider_profile_id' => $mentionStorage['featured_provider_profile_id'], 'mentioned_user_id' => $mentionStorage['mentioned_user_id'], 'moderation_status' => 'published']);
             $communityPost->increment('comments_count');
             $this->realtime->publish('community.comment.created', $communityPost, $user, ['commentId' => $comment->id]);
 
             return $comment;
         });
 
-        $comment->load('author');
+        if ($mentionStorage['mentioned_user_id']) {
+            $this->realtime->notifyMention(
+                $communityPost,
+                $user,
+                $mentionStorage['mentioned_user_id'],
+                'comment',
+                $comment->id,
+                dedupeEngagedRecipients: true,
+            );
+        }
+
+        $comment->load(['author', 'featuredProvider:id,display_name,status']);
         $avatars = $this->avatarUrlsForUsers([$comment->author_user_id]);
 
         return response()->json(['data' => $this->presentComment($comment, $user, $avatars, $communityPost->author_user_id)], 201);
@@ -236,9 +271,10 @@ class CommunityController
         $user = $this->user($request);
         $this->assertVisible($communityPost, $user);
         abort_unless($communityComment->community_post_id === $communityPost->id && ! $communityComment->parent_comment_id, 404);
-        $body = $request->validate(['body' => 'required|string|max:800'])['body'];
-        $reply = DB::transaction(function () use ($communityPost, $communityComment, $user, $body): CommunityComment {
-            $reply = CommunityComment::query()->create(['id' => (string) Str::uuid(), 'community_post_id' => $communityPost->id, 'parent_comment_id' => $communityComment->id, 'author_user_id' => $user->id, 'body' => trim($body), 'moderation_status' => 'published']);
+        $data = $request->validate(['body' => 'required|string|max:800', 'featuredProviderProfileId' => 'nullable|integer|exists:provider_profiles,id', 'mentionedUserId' => 'nullable|integer|exists:users,id']);
+        $mentionStorage = $this->mentions->resolveStorage($data['mentionedUserId'] ?? null, $data['featuredProviderProfileId'] ?? null, $user);
+        $reply = DB::transaction(function () use ($communityPost, $communityComment, $user, $data, $mentionStorage): CommunityComment {
+            $reply = CommunityComment::query()->create(['id' => (string) Str::uuid(), 'community_post_id' => $communityPost->id, 'parent_comment_id' => $communityComment->id, 'author_user_id' => $user->id, 'body' => trim($data['body']), 'featured_provider_profile_id' => $mentionStorage['featured_provider_profile_id'], 'mentioned_user_id' => $mentionStorage['mentioned_user_id'], 'moderation_status' => 'published']);
             $communityPost->increment('comments_count');
             $this->realtime->publish('community.comment.created', $communityPost, $user, [
                 'commentId' => $reply->id,
@@ -248,7 +284,18 @@ class CommunityController
             return $reply;
         });
 
-        $reply->load('author');
+        if ($mentionStorage['mentioned_user_id']) {
+            $this->realtime->notifyMention(
+                $communityPost,
+                $user,
+                $mentionStorage['mentioned_user_id'],
+                'reply',
+                $reply->id,
+                dedupeEngagedRecipients: true,
+            );
+        }
+
+        $reply->load(['author', 'featuredProvider:id,display_name,status']);
         $avatars = $this->avatarUrlsForUsers([$reply->author_user_id]);
 
         return response()->json(['data' => $this->presentComment($reply, $user, $avatars, $communityPost->author_user_id)], 201);
@@ -259,14 +306,26 @@ class CommunityController
         $user = $this->user($request);
         abort_unless($communityComment->author_user_id === $user->id, 403);
         abort_unless($communityComment->moderation_status === 'published', 404);
-        $body = $request->validate(['body' => 'required|string|max:800'])['body'];
+        $data = $request->validate(['body' => 'required|string|max:800', 'featuredProviderProfileId' => 'nullable|integer|exists:provider_profiles,id', 'mentionedUserId' => 'nullable|integer|exists:users,id']);
+        $mentionStorage = $this->mentions->resolveStorage($data['mentionedUserId'] ?? null, $data['featuredProviderProfileId'] ?? null, $user);
         $post = CommunityPost::query()->findOrFail($communityComment->community_post_id);
         $this->assertVisible($post, $user);
-        DB::transaction(function () use ($communityComment, $post, $user, $body): void {
-            $communityComment->update(['body' => trim($body)]);
+        $previousMentionedUserId = $communityComment->mentioned_user_id ? (int) $communityComment->mentioned_user_id : null;
+        DB::transaction(function () use ($communityComment, $post, $user, $data, $mentionStorage): void {
+            $communityComment->update(['body' => trim($data['body']), 'featured_provider_profile_id' => $mentionStorage['featured_provider_profile_id'], 'mentioned_user_id' => $mentionStorage['mentioned_user_id']]);
             $this->realtime->publish('community.comment.updated', $post, $user, ['commentId' => $communityComment->id]);
         });
-        $communityComment->load('author');
+
+        if ($mentionStorage['mentioned_user_id'] && $mentionStorage['mentioned_user_id'] !== $previousMentionedUserId) {
+            $this->realtime->notifyMention(
+                $post,
+                $user,
+                $mentionStorage['mentioned_user_id'],
+                $communityComment->parent_comment_id ? 'reply' : 'comment',
+                $communityComment->id,
+            );
+        }
+        $communityComment->load(['author', 'featuredProvider:id,display_name,status']);
         $avatars = $this->avatarUrlsForUsers([$communityComment->author_user_id]);
 
         return response()->json(['data' => $this->presentComment($communityComment, $user, $avatars, $post->author_user_id)]);
@@ -304,13 +363,18 @@ class CommunityController
         return response()->json(['data' => ['blocked' => true, 'userId' => $communityPost->author_user_id]]);
     }
 
-    /** @param array{id: int, displayName: string}|null $featuredProvider
+    /** @param array{id: int, displayName: string}|null $welcomeFeatured
      * @return array<string, mixed> */
-    private function present(CommunityPost $post, User $user, ?array $featuredProvider = null): array
+    private function present(CommunityPost $post, User $user, ?array $welcomeFeatured = null): array
     {
         $post->loadMissing(['author', 'area', 'media' => fn ($query) => $query->where('scan_status', 'clean')]);
+        $mention = $this->mentions->fromPost($post);
+        if ($mention === null && $welcomeFeatured !== null) {
+            $mention = $this->mentions->forProviderProfileId($welcomeFeatured['id']);
+        }
+        $featuredProvider = $welcomeFeatured ?? $this->mentions->asFeaturedProvider($mention);
 
-        return ['id' => $post->id, 'kind' => $post->kind, 'title' => $post->title, 'body' => $post->body, 'hashtags' => array_values($post->hashtags ?? []), 'area' => $post->area?->only(['id', 'name']), 'areaLabel' => $post->area_label, 'author' => $post->author_display_mode === 'official' ? ['id' => $post->author_user_id, 'name' => 'KAILA', 'official' => true] : ['id' => $post->author_user_id, 'name' => $post->author->name, 'official' => false], 'featuredProvider' => $featuredProvider, 'helpful' => DB::table('community_reactions')->where(['community_post_id' => $post->id, 'user_id' => $user->id])->exists(), 'helpfulCount' => (int) $post->helpful_count, 'commentsCount' => (int) $post->comments_count, 'media' => $post->media->map(fn ($media) => $this->presentMedia($media))->values(), 'canManage' => $post->author_user_id === $user->id, 'publishedAt' => $post->published_at?->toIso8601String(), 'editedAt' => $post->edited_at?->toIso8601String()];
+        return ['id' => $post->id, 'kind' => $post->kind, 'title' => $post->title, 'body' => $post->body, 'hashtags' => array_values($post->hashtags ?? []), 'area' => $post->area?->only(['id', 'name']), 'areaLabel' => $post->area_label, 'author' => $post->author_display_mode === 'official' ? ['id' => $post->author_user_id, 'name' => 'KAILA', 'official' => true] : ['id' => $post->author_user_id, 'name' => $post->author->name, 'official' => false], 'mention' => $mention, 'featuredProvider' => $featuredProvider, 'helpful' => DB::table('community_reactions')->where(['community_post_id' => $post->id, 'user_id' => $user->id])->exists(), 'helpfulCount' => (int) $post->helpful_count, 'commentsCount' => (int) $post->comments_count, 'media' => $post->media->map(fn ($media) => $this->presentMedia($media))->values(), 'canManage' => $post->author_user_id === $user->id, 'publishedAt' => $post->published_at?->toIso8601String(), 'editedAt' => $post->edited_at?->toIso8601String()];
     }
 
     /** @return array<string, mixed> */
@@ -326,7 +390,9 @@ class CommunityController
         $isAuthor = $authorId === $user->id;
         $isPostOwner = $postAuthorUserId === $user->id;
 
-        return ['id' => $comment->id, 'body' => $comment->body, 'author' => ['id' => $authorId, 'name' => $comment->author->name, 'avatarUrl' => $avatars[$authorId] ?? null], 'canEdit' => $isAuthor, 'canDelete' => $isAuthor || $user->is_admin, 'canHide' => $isPostOwner && ! $isAuthor, 'createdAt' => $comment->created_at?->toIso8601String(), 'replies' => $comment->relationLoaded('replies') ? $comment->replies->map(fn ($reply) => $this->presentComment($reply, $user, $avatars, $postAuthorUserId))->values() : []];
+        $mention = $this->mentions->fromComment($comment);
+
+        return ['id' => $comment->id, 'body' => $comment->body, 'mention' => $mention, 'featuredProvider' => $this->mentions->asFeaturedProvider($mention), 'author' => ['id' => $authorId, 'name' => $comment->author->name, 'avatarUrl' => $avatars[$authorId] ?? null], 'canEdit' => $isAuthor, 'canDelete' => $isAuthor || $user->is_admin, 'canHide' => $isPostOwner && ! $isAuthor, 'createdAt' => $comment->created_at?->toIso8601String(), 'replies' => $comment->relationLoaded('replies') ? $comment->replies->map(fn ($reply) => $this->presentComment($reply, $user, $avatars, $postAuthorUserId))->values() : []];
     }
 
     /** @param iterable<CommunityComment> $comments

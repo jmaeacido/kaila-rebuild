@@ -38,6 +38,25 @@ class CommunityWelcomeProviderLookup
             }
         }
 
+        $remaining = array_values(array_diff($postIds, array_keys($map)));
+        if ($remaining === []) {
+            return $map;
+        }
+
+        foreach (CommunityPost::query()
+            ->whereIn('id', $remaining)
+            ->whereNotNull('featured_provider_profile_id')
+            ->with(['featuredProvider:id,display_name,status'])
+            ->get(['id', 'featured_provider_profile_id']) as $post) {
+            $profile = $post->featuredProvider;
+            if ($profile && $profile->status === 'active') {
+                $map[$post->id] = [
+                    'id' => (int) $profile->id,
+                    'displayName' => (string) $profile->display_name,
+                ];
+            }
+        }
+
         return $map;
     }
 }

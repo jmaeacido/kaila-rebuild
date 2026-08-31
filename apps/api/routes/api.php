@@ -177,6 +177,7 @@ Route::middleware('auth')->group(function (): void {
     Route::get('/providers/{providerProfile}', [MarketplaceProfileController::class, 'publicProfile']);
     Route::post('/providers/{providerProfile}/direct-requests', [DirectServiceRequestController::class, 'store']);
     Route::get('/community/feed-context', [CommunityController::class, 'feedContext']);
+    Route::get('/community/mention-candidates', [CommunityController::class, 'mentionCandidates']);
     Route::get('/community', [CommunityController::class, 'index']);
     Route::get('/community/{communityPost}', [CommunityController::class, 'show']);
     Route::get('/community-media/{communityPostMedia}', [CommunityController::class, 'showMedia']);

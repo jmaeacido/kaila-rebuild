@@ -8,6 +8,8 @@ use App\Models\Area;
 use App\Models\ClientProfile;
 use App\Models\CommunityPost;
 use App\Models\CommunityPostMedia;
+use App\Models\ProviderProfile;
+use App\Models\ServiceCategory;
 use App\Models\User;
 use App\Support\CommunityImageNormalizer;
 use App\Support\CommunityMediaObjectKey;
@@ -84,6 +86,178 @@ class PhaseNineModulesTest extends TestCase
 
         $this->actingAs($other)->getJson('/api/v1/community?tag=plumbing')->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $taggedId);
         $this->assertDatabaseHas('community_posts', ['id' => $taggedId, 'body' => 'Shut off the valve first.']);
+    }
+
+    public function test_community_posts_can_feature_an_active_provider(): void
+    {
+        $author = User::factory()->create();
+        $category = ServiceCategory::query()->create(['name' => 'Plumbing', 'slug' => 'plumbing', 'icon' => 'Wrench', 'is_active' => true]);
+        $area = Area::query()->create(['type' => 'city', 'name' => 'Davao City', 'code' => 'DVO', 'is_active' => true]);
+        $profile = ProviderProfile::query()->create([
+            'user_id' => User::factory()->create()->id,
+            'display_name' => 'Ana Repairs',
+            'bio' => 'Reliable local repairs with careful, friendly service.',
+            'status' => 'active',
+            'years_experience' => 5,
+        ]);
+        $profile->services()->attach($category);
+        $profile->serviceAreas()->attach($area);
+
+        $postId = $this->actingAs($author)->postJson('/api/v1/community', [
+            'kind' => 'work_story',
+            'title' => 'Great cabinet work',
+            'body' => 'Huge thanks to @Ana Repairs for a careful install.',
+            'featuredProviderProfileId' => $profile->id,
+        ])->assertCreated()
+            ->assertJsonPath('data.featuredProvider.id', $profile->id)
+            ->assertJsonPath('data.featuredProvider.displayName', 'Ana Repairs')
+            ->assertJsonPath('data.mention.userId', $profile->user_id)
+            ->json('data.id');
+
+        $this->assertDatabaseHas('community_posts', [
+            'id' => $postId,
+            'featured_provider_profile_id' => $profile->id,
+            'mentioned_user_id' => $profile->user_id,
+        ]);
+
+        $this->actingAs($author)->getJson("/api/v1/community/{$postId}")
+            ->assertOk()
+            ->assertJsonPath('data.featuredProvider.id', $profile->id);
+
+        $this->actingAs($author)->patchJson("/api/v1/community/{$postId}", [
+            'kind' => 'work_story',
+            'title' => 'Great cabinet work',
+            'body' => 'Updated without a featured provider.',
+            'featuredProviderProfileId' => null,
+        ])->assertOk()
+            ->assertJsonPath('data.featuredProvider', null);
+
+        $this->assertDatabaseHas('community_posts', [
+            'id' => $postId,
+            'featured_provider_profile_id' => null,
+            'mentioned_user_id' => null,
+        ]);
+    }
+
+    public function test_community_mention_candidates_include_clients_and_providers(): void
+    {
+        $viewer = User::factory()->create(['name' => 'Viewer']);
+        $client = User::factory()->create(['name' => 'Mara Client']);
+        ClientProfile::query()->create(['user_id' => $client->id, 'display_name' => 'Mara Client']);
+        $category = ServiceCategory::query()->create(['name' => 'Plumbing', 'slug' => 'plumbing', 'icon' => 'Wrench', 'is_active' => true]);
+        $area = Area::query()->create(['type' => 'city', 'name' => 'Davao City', 'code' => 'DVO', 'is_active' => true]);
+        $provider = ProviderProfile::query()->create([
+            'user_id' => User::factory()->create()->id,
+            'display_name' => 'Ana Repairs',
+            'bio' => 'Reliable local repairs with careful, friendly service.',
+            'status' => 'active',
+            'years_experience' => 5,
+        ]);
+        $provider->services()->attach($category);
+        $provider->serviceAreas()->attach($area);
+
+        $this->actingAs($viewer)->getJson('/api/v1/community/mention-candidates?query=Mara')
+            ->assertOk()
+            ->assertJsonPath('data.0.kind', 'client')
+            ->assertJsonPath('data.0.displayName', 'Mara Client');
+
+        $postId = $this->actingAs($viewer)->postJson('/api/v1/community', [
+            'kind' => 'local_tip',
+            'title' => 'Thanks',
+            'body' => 'Shoutout to @Mara Client for the tip.',
+            'mentionedUserId' => $client->id,
+        ])->assertCreated()
+            ->assertJsonPath('data.mention.userId', $client->id)
+            ->assertJsonPath('data.mention.kind', 'client')
+            ->assertJsonPath('data.featuredProvider', null)
+            ->json('data.id');
+
+        $this->assertDatabaseHas('community_posts', [
+            'id' => $postId,
+            'mentioned_user_id' => $client->id,
+            'featured_provider_profile_id' => null,
+        ]);
+    }
+
+    public function test_community_posts_reject_inactive_featured_providers(): void
+    {
+        $author = User::factory()->create();
+        $profile = ProviderProfile::query()->create([
+            'user_id' => User::factory()->create()->id,
+            'display_name' => 'Pending Provider',
+            'bio' => 'Reliable local repairs with careful, friendly service.',
+            'status' => 'pending_review',
+            'years_experience' => 2,
+        ]);
+
+        $this->actingAs($author)->postJson('/api/v1/community', [
+            'kind' => 'work_story',
+            'title' => 'Cabinet install',
+            'body' => 'Thanks @Pending Provider',
+            'featuredProviderProfileId' => $profile->id,
+        ])->assertStatus(422);
+    }
+
+    public function test_community_comments_and_replies_can_mention_active_providers(): void
+    {
+        $author = User::factory()->create();
+        $commenter = User::factory()->create();
+        $category = ServiceCategory::query()->create(['name' => 'Plumbing', 'slug' => 'plumbing', 'icon' => 'Wrench', 'is_active' => true]);
+        $area = Area::query()->create(['type' => 'city', 'name' => 'Davao City', 'code' => 'DVO', 'is_active' => true]);
+        $profile = ProviderProfile::query()->create([
+            'user_id' => User::factory()->create()->id,
+            'display_name' => 'Ana Repairs',
+            'bio' => 'Reliable local repairs with careful, friendly service.',
+            'status' => 'active',
+            'years_experience' => 5,
+        ]);
+        $profile->services()->attach($category);
+        $profile->serviceAreas()->attach($area);
+
+        $postId = $this->actingAs($author)->postJson('/api/v1/community', [
+            'kind' => 'local_tip',
+            'title' => 'Leak prep',
+            'body' => 'Shut off the valve first.',
+        ])->assertCreated()->json('data.id');
+
+        $commentId = $this->actingAs($commenter)->postJson("/api/v1/community/{$postId}/comments", [
+            'body' => 'Ask @Ana Repairs for a second opinion.',
+            'mentionedUserId' => $profile->user_id,
+        ])->assertCreated()
+            ->assertJsonPath('data.featuredProvider.id', $profile->id)
+            ->assertJsonPath('data.mention.kind', 'provider')
+            ->assertJsonPath('data.featuredProvider.displayName', 'Ana Repairs')
+            ->json('data.id');
+
+        $this->assertDatabaseHas('community_comments', [
+            'id' => $commentId,
+            'featured_provider_profile_id' => $profile->id,
+            'mentioned_user_id' => $profile->user_id,
+        ]);
+
+        $replyId = $this->actingAs($author)->postJson("/api/v1/community/{$postId}/comments/{$commentId}/replies", [
+            'body' => '@Ana Repairs is great for this.',
+            'mentionedUserId' => $profile->user_id,
+        ])->assertCreated()
+            ->assertJsonPath('data.featuredProvider.id', $profile->id)
+            ->json('data.id');
+
+        $this->assertDatabaseHas('community_comments', [
+            'id' => $replyId,
+            'featured_provider_profile_id' => $profile->id,
+        ]);
+
+        $this->actingAs($commenter)->getJson("/api/v1/community/{$postId}/comments")
+            ->assertOk()
+            ->assertJsonPath('data.0.featuredProvider.displayName', 'Ana Repairs')
+            ->assertJsonPath('data.0.replies.0.featuredProvider.displayName', 'Ana Repairs');
+
+        $this->actingAs($commenter)->patchJson("/api/v1/community-comments/{$commentId}", [
+            'body' => 'Updated without a mention.',
+            'mentionedUserId' => null,
+        ])->assertOk()
+            ->assertJsonPath('data.featuredProvider', null)
+            ->assertJsonPath('data.mention', null);
     }
 
     public function test_community_feed_context_returns_local_discovery_sidebar_data(): void
@@ -216,6 +390,61 @@ class PhaseNineModulesTest extends TestCase
         $this->assertDatabaseHas('outbox_events', [
             'resource_id' => $postId,
             'event_type' => 'community.comment.updated',
+        ]);
+    }
+
+    public function test_community_mentions_notify_mentioned_users(): void
+    {
+        $author = User::factory()->create(['name' => 'Story Author']);
+        ClientProfile::query()->create(['user_id' => $author->id, 'display_name' => 'Story Author']);
+        $mentionedClient = User::factory()->create(['name' => 'Mara Client']);
+        ClientProfile::query()->create(['user_id' => $mentionedClient->id, 'display_name' => 'Mara Client']);
+        $outsideMember = User::factory()->create(['name' => 'Outside Member']);
+        ClientProfile::query()->create(['user_id' => $outsideMember->id, 'display_name' => 'Outside Member']);
+
+        $postId = $this->actingAs($author)->postJson('/api/v1/community', [
+            'kind' => 'work_story',
+            'title' => 'Great teamwork',
+            'body' => 'Thanks @Mara Client for the help.',
+            'mentionedUserId' => $mentionedClient->id,
+        ])->assertCreated()->json('data.id');
+
+        $this->assertDatabaseHas('durable_notifications', [
+            'user_id' => $mentionedClient->id,
+            'type' => 'community.mention.created',
+            'resource_id' => $postId,
+        ]);
+
+        $this->actingAs($author)->postJson("/api/v1/community/$postId/comments", [
+            'body' => '@Outside Member what do you think?',
+            'mentionedUserId' => $outsideMember->id,
+        ])->assertCreated();
+
+        $this->assertDatabaseHas('durable_notifications', [
+            'user_id' => $outsideMember->id,
+            'type' => 'community.mention.created',
+            'resource_id' => $postId,
+        ]);
+        $this->assertDatabaseMissing('durable_notifications', [
+            'user_id' => $outsideMember->id,
+            'type' => 'community.comment.created',
+            'resource_id' => $postId,
+        ]);
+
+        $this->actingAs($outsideMember)->postJson("/api/v1/community/$postId/comments", [
+            'body' => '@Story Author I agree.',
+            'mentionedUserId' => $author->id,
+        ])->assertCreated();
+
+        $this->assertDatabaseHas('durable_notifications', [
+            'user_id' => $author->id,
+            'type' => 'community.comment.created',
+            'resource_id' => $postId,
+        ]);
+        $this->assertDatabaseMissing('durable_notifications', [
+            'user_id' => $author->id,
+            'type' => 'community.mention.created',
+            'resource_id' => $postId,
         ]);
     }
 

@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { SelectField } from "../../../components/select-field";
 import formStyles from "../../phase-nine.module.css";
 import { CommunityStoryComposer } from "../community-story-composer";
+import { MentionCandidate } from "../community-provider-mention";
 import { csrfFetch } from "../community-client";
 import styles from "../community.module.css";
 
@@ -17,6 +18,7 @@ export default function ShareCommunityPostPage() {
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [files, setFiles] = useState<File[]>([]);
+  const [selectedMention, setSelectedMention] = useState<MentionCandidate | null>(null);
   const [canPostOfficial, setCanPostOfficial] = useState(false);
   const [state, setState] = useState<"ready" | "loading" | "error">("ready");
 
@@ -39,6 +41,8 @@ export default function ShareCommunityPostPage() {
           body,
           areaId: null,
           official: kind === "official_update",
+          mentionedUserId: selectedMention?.userId ?? null,
+          featuredProviderProfileId: selectedMention?.providerProfileId ?? null,
         }),
       });
       if (!response.ok) throw new Error();
@@ -82,7 +86,14 @@ export default function ShareCommunityPostPage() {
             </label>
             <label>
               Story
-              <CommunityStoryComposer body={body} onBodyChange={setBody} files={files} onFilesChange={setFiles} />
+              <CommunityStoryComposer
+                body={body}
+                onBodyChange={setBody}
+                files={files}
+                onFilesChange={setFiles}
+                selectedMention={selectedMention}
+                onSelectedMentionChange={setSelectedMention}
+              />
             </label>
             <Button disabled={title.trim().length === 0 || body.trim().length === 0 || state === "loading"}>
               <HeartHandshake aria-hidden="true" />

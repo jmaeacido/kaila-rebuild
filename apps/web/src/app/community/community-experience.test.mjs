@@ -30,6 +30,10 @@ test("community detail includes the approved interaction and safety controls", (
   assert.match(comments, /canEdit/);
   assert.match(comments, /canHide/);
   assert.match(comments, /community-comments/);
+  assert.match(comments, /mentionedUserId/);
+  assert.match(comments, /CommunityCommentMentionField/);
+  assert.match(comments, /CommunityLinkedMentionText/);
+  assert.match(readFileSync(new URL("./community-provider-mention.tsx", import.meta.url), "utf8"), /\/api\/v1\/community\/mention-candidates/);
 });
 
 test("community media opens a fullscreen viewer with react and comment support", () => {
@@ -66,12 +70,18 @@ test("community media grid uses a hero plus two squares for three attachments", 
 });
 
 test("community composer limits images and publishes without area selection", () => {
+  const mention = readFileSync(new URL("./community-provider-mention.tsx", import.meta.url), "utf8");
   assert.match(storyComposer, /slice\(0, 4\)/);
   assert.match(storyComposer, /accept="image\/\*"/);
   assert.match(storyComposer, /file\.type\.startsWith\("image\/"\)/);
   assert.match(storyComposer, /ImagePlus/);
+  assert.match(storyComposer, /selectedMention/);
+  assert.match(storyComposer, /ProviderMentionMenu/);
+  assert.match(mention, /\/api\/v1\/community\/mention-candidates/);
+  assert.match(mention, /AtSign/);
   assert.doesNotMatch(storyComposer, /optimized to WebP/);
   assert.match(composer, /CommunityStoryComposer/);
+  assert.match(composer, /mentionedUserId/);
   assert.doesNotMatch(composer, /CommunityMediaPicker/);
   assert.match(composer, /areaId: null/);
   assert.doesNotMatch(composer, /AddressHierarchy/);
@@ -87,6 +97,7 @@ test("community welcome posts link the featured provider name to their public pr
   const welcome = readFileSync(new URL("./community-welcome-content.tsx", import.meta.url), "utf8");
   assert.match(welcome, /featuredProviderLink/);
   assert.match(welcome, /\/providers\/\$\{provider\.id\}/);
+  assert.match(welcome, /newprovider/);
   assert.match(feed, /CommunityWelcomeTitle/);
   assert.match(feed, /CommunityWelcomeBody/);
   assert.match(detail, /CommunityWelcomeTitle/);
