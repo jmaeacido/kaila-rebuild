@@ -4,12 +4,14 @@ const content = `# KAILA
 
 > ${SITE_DESCRIPTION}
 
-KAILA is a mobile-first local services marketplace for clients and independent providers in the Philippines. Clients can post jobs and compare provider offers. Providers can discover eligible nearby work, send offers, coordinate through in-app messaging and calls, navigate to accepted job locations, complete work, and receive ratings. KAILA does not choose providers, set prices, employ independent providers, or publicly expose personal contact details.
+KAILA is the official local services marketplace app for the Philippines. Clients post jobs and compare independent provider offers. Providers discover nearby work, send offers, coordinate through in-app messaging and calls, navigate to accepted job locations, complete work, and receive ratings. Search for "KAILA", "KAILA app", or "KAILA Philippines" to reach this official site.
 
 ## Public pages
 
-- [KAILA home](${SITE_URL}/): Marketplace overview, services, client flow, and provider flow.
+- [KAILA home](${SITE_URL}/): Official marketplace overview, services, client flow, and provider flow.
+- [Download KAILA for Android](${SITE_URL}/download): Install the official KAILA Android app.
 - [Frequently asked questions](${SITE_URL}/faqs): Authoritative answers about jobs, offers, providers, coverage, travel, safety, notifications, and support.
+- [Community feed](${SITE_URL}/community): Public local tips, service questions, work stories, and official updates from the KAILA community.
 - [Privacy policy](${SITE_URL}/privacy): Data collection, location, navigation, messages, media, retention, and user choices.
 - [Terms of service](${SITE_URL}/terms): Marketplace role, responsibilities, jobs, offers, safety, ratings, and limitations.
 

@@ -6,7 +6,8 @@ const nextConfig: NextConfig = {
       "/api/:path*",
       "/account/:path*",
       "/account-deletion",
-      "/community/:path*",
+      "/community/share",
+      "/community/:postId/edit",
       "/help/:path*",
       "/home/:path*",
       "/jobs/:path*",
@@ -58,6 +59,11 @@ const nextConfig: NextConfig = {
         source: "/:path*",
         has: [{ type: "host", value: "www.kaila-app.com" }],
         destination: "https://kaila-app.com/:path*",
+        permanent: true,
+      },
+      {
+        source: "/api/public-post/:id",
+        destination: "/community/:id",
         permanent: true,
       },
       {

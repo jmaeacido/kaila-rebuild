@@ -23,6 +23,13 @@ test("isPublicPath treats download as public", () => {
   assert.equal(isPublicPath("/home"), false);
 });
 
+test("isPublicPath treats community feed and post pages as public", () => {
+  assert.equal(isPublicPath("/community"), true);
+  assert.equal(isPublicPath("/community/share"), false);
+  assert.equal(isPublicPath("/community/550e8400-e29b-41d4-a716-446655440000"), true);
+  assert.equal(isPublicPath("/community/550e8400-e29b-41d4-a716-446655440000/edit"), false);
+});
+
 test("realtime skips ticket requests on shared public routes", () => {
   assert.match(realtimeProvider, /from "\.\/public-routes"/);
   assert.match(realtimeProvider, /isPublicPath\(normalizePublicPath\(pathname\)\)/);

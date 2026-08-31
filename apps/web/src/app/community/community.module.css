@@ -60,3 +60,7 @@
 .commentMentionTextarea{overflow:hidden;field-sizing:content;resize:none;scrollbar-width:none;-ms-overflow-style:none}
 .commentMentionTextarea::-webkit-scrollbar{display:none}
 .mentionMenuCompact{position:absolute;left:0;right:0;bottom:calc(100% + var(--spacing-8));z-index:2;margin:0;max-height:200px}
+.crawlLinks{border-top:1px solid var(--color-border);margin:0 auto;max-width:45rem;padding:var(--spacing-24) var(--spacing-16) calc(var(--spacing-32) + env(safe-area-inset-bottom))}
+.crawlLinksTitle{font-size:12px;letter-spacing:.08em;margin:0 0 var(--spacing-12);text-transform:uppercase;color:var(--color-text-secondary)}
+.crawlLinks ul{display:grid;gap:var(--spacing-8);list-style:none;margin:0;padding:0}
+.crawlLinks a{color:var(--color-primary);font-weight:600;text-decoration:none}

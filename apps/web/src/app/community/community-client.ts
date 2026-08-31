@@ -9,6 +9,33 @@ export type CommunityFeedContext = {
   newProviders: Array<{ id: string; title: string; areaLabel: string | null; publishedAt: string | null; mediaUrl: string | null; providerProfileId: number | null; providerDisplayName: string | null }>;
 };
 
+type PublicCommunityPostInput = Omit<CommunityPost, "author" | "helpful" | "canManage"> & {
+  author: { name: string; official: boolean };
+};
+
+export function mapPublicCommunityPost(post: PublicCommunityPostInput): CommunityPost {
+  return {
+    ...post,
+    author: { id: 0, name: post.author.name, official: post.author.official },
+    helpful: false,
+    canManage: false,
+  };
+}
+
+export function normalizeCommunityPost(post: CommunityPost | PublicCommunityPostInput): CommunityPost {
+  if ("canManage" in post) return post;
+  return mapPublicCommunityPost(post);
+}
+
+export async function fetchCommunityFeed(query: URLSearchParams): Promise<Response> {
+  const paths = [`/api/v1/community?${query}`, `/api/v1/public/community/feed?${query}`];
+  for (const path of paths) {
+    const response = await fetch(path, { cache: "no-store" });
+    if (response.ok) return response;
+  }
+  return fetch(paths[0], { cache: "no-store" });
+}
+
 export async function csrfFetch(path: string, init: RequestInit = {}) {
   await fetch("/api/v1/auth/csrf", { credentials: "include" });
   const token = document.cookie.split("; ").find((value) => value.startsWith("XSRF-TOKEN="))?.split("=")[1];

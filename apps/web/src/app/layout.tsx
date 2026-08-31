@@ -14,10 +14,17 @@ import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "./seo";
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "KAILA | Local Services Near You",
+    default: "KAILA — Local Services Marketplace Philippines",
     template: "%s | KAILA",
   },
   description: SITE_DESCRIPTION,
+  keywords: [
+    "KAILA",
+    "KAILA app",
+    "KAILA Philippines",
+    "local services marketplace",
+    "hire service providers Philippines",
+  ],
   applicationName: SITE_NAME,
   authors: [{ name: SITE_NAME, url: SITE_URL }],
   creator: SITE_NAME,
@@ -34,12 +41,12 @@ export const metadata: Metadata = {
     locale: "en_PH",
     url: SITE_URL,
     siteName: SITE_NAME,
-    title: "KAILA | Local Services Near You",
+    title: "KAILA — Local Services Marketplace Philippines",
     description: SITE_DESCRIPTION,
   },
   twitter: {
     card: "summary_large_image",
-    title: "KAILA | Local Services Near You",
+    title: "KAILA — Local Services Marketplace Philippines",
     description: SITE_DESCRIPTION,
   },
 };

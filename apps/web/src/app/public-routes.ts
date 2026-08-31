@@ -15,7 +15,11 @@ export const PUBLIC_PATHS = new Set([
   "/account-deletion",
   "/maintenance",
   "/faqs",
+  "/community",
 ]);
+
+const COMMUNITY_POST_PATH =
+  /^\/community\/[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export function normalizePublicPath(pathname: string | null | undefined): string {
   if (!pathname) return "/";
@@ -24,8 +28,13 @@ export function normalizePublicPath(pathname: string | null | undefined): string
   return base.replace(/\/+$/, "") || "/";
 }
 
+export function isPublicCommunityPostPath(pathname: string): boolean {
+  return COMMUNITY_POST_PATH.test(pathname);
+}
+
 export function isPublicPath(pathname: string | null | undefined): boolean {
   const normalized = normalizePublicPath(pathname);
   if (PUBLIC_PATHS.has(normalized)) return true;
+  if (isPublicCommunityPostPath(normalized)) return true;
   return PUBLIC_PATH_PREFIXES.some((prefix) => normalized.startsWith(prefix));
 }

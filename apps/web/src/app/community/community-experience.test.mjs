@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
-const feed = readFileSync(new URL("./page.tsx", import.meta.url), "utf8");
-const detail = readFileSync(new URL("./[postId]/page.tsx", import.meta.url), "utf8");
+const feed = readFileSync(new URL("./community-feed.tsx", import.meta.url), "utf8");
+const detail = readFileSync(new URL("./[postId]/community-post-detail.tsx", import.meta.url), "utf8");
 const composer = readFileSync(new URL("./share/page.tsx", import.meta.url), "utf8");
 const storyComposer = readFileSync(new URL("./community-story-composer.tsx", import.meta.url), "utf8");
 const home = readFileSync(new URL("../home/page.tsx", import.meta.url), "utf8");
@@ -107,6 +107,13 @@ test("community welcome posts link the featured provider name to their public pr
 test("community notifications deep-link to the welcome post", () => {
   const route = readFileSync(new URL("../notification-route.ts", import.meta.url), "utf8");
   assert.match(route, /resourceType === "community_post"/);
+});
+
+test("community post pages are server-rendered for SEO", () => {
+  const postPage = readFileSync(new URL("./[postId]/page.tsx", import.meta.url), "utf8");
+  assert.match(postPage, /generateMetadata/);
+  assert.match(postPage, /fetchPublicCommunityPost/);
+  assert.match(postPage, /CommunityPostDetail/);
 });
 
 test("community feed uses a desktop three-column layout with browse and discover rails", () => {

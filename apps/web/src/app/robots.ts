@@ -1,11 +1,11 @@
 import type { MetadataRoute } from "next";
 import { SITE_URL } from "./seo";
 
-const privatePaths = [
+/** Block authenticated and utility routes only. Public pages stay crawlable by default. */
+const disallowedPaths = [
   "/api/",
   "/account/",
-  "/account-deletion",
-  "/community/",
+  "/community/share",
   "/help/",
   "/home/",
   "/jobs/",
@@ -42,13 +42,11 @@ export default function robots(): MetadataRoute.Robots {
           "PerplexityBot",
           "Google-Extended",
         ],
-        allow: ["/", "/faqs", "/privacy", "/terms", "/llms.txt"],
-        disallow: privatePaths,
+        disallow: disallowedPaths,
       },
       {
         userAgent: "*",
-        allow: ["/", "/faqs", "/privacy", "/terms", "/llms.txt"],
-        disallow: privatePaths,
+        disallow: disallowedPaths,
       },
     ],
     sitemap: `${SITE_URL}/sitemap.xml`,
