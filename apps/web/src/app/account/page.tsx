@@ -9,12 +9,7 @@ import {
   Camera,
   Check,
   ChevronRight,
-  ClipboardList,
-  Home,
   MapPin,
-  MessageCircle,
-  Plus,
-  Search,
   Settings,
   ShieldCheck,
   Star,
@@ -23,6 +18,7 @@ import {
 import { Button, Feedback } from "@kaila/ui";
 import { ActionModal } from "../../components/action-modal";
 import { AttachmentSourceActions } from "../../components/attachment-picker";
+import { MarketplaceNavigation } from "../../components/marketplace-navigation";
 import { prepareCsrf } from "../auth-client";
 import { AddressHierarchy, type AreaReference } from "../address-hierarchy";
 import styles from "./account.module.css";
@@ -543,13 +539,7 @@ export default function AccountPage() {
       </aside>
       </div>
 
-      <nav className={styles.bottomNav} aria-label="Marketplace navigation">
-        <Link href="/home"><Home aria-hidden="true" />Home</Link>
-        {profile.activeMode === "provider" ? <Link href="/opportunities"><Search aria-hidden="true" />Find work</Link> : <Link href="/home#current-title"><ClipboardList aria-hidden="true" />Jobs</Link>}
-        {profile.activeMode === "provider" ? <Link href="/home#current-title"><BriefcaseBusiness aria-hidden="true" />Work</Link> : <Link href="/post-job"><Plus aria-hidden="true" />Post</Link>}
-        <Link href="/messages"><MessageCircle aria-hidden="true" />Messages</Link>
-        <Link aria-current="page" href="/account"><UserRound aria-hidden="true" />Profile</Link>
-      </nav>
+      <MarketplaceNavigation active="profile" />
     </main>
   );
 }

@@ -12,7 +12,9 @@ use App\Notifications\BrandedProviderProfileDecision;
 use App\Support\NotificationService;
 use App\Support\OpportunityMatchingService;
 use App\Support\OutboxRecorder;
+use App\Support\ProviderOnboardingRequirements;
 use App\Support\ProviderProfileReviewBaseline;
+use App\Support\ProviderWelcomeCommunityPostService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -27,6 +29,8 @@ class AdminMarketplaceController extends Controller
         private readonly OutboxRecorder $outbox,
         private readonly NotificationService $notifications,
         private readonly OpportunityMatchingService $matching,
+        private readonly ProviderOnboardingRequirements $providerRequirements,
+        private readonly ProviderWelcomeCommunityPostService $providerWelcomePosts,
     ) {}
 
     public function queue(): JsonResponse
@@ -156,6 +160,9 @@ class AdminMarketplaceController extends Controller
         /** @var User $admin */ $admin = $request->user();
         DB::transaction(function () use ($providerProfile, $data, $admin): void {
             $approved = $data['status'] === 'active';
+            if ($approved) {
+                $this->providerRequirements->assertAvatarApproved($providerProfile);
+            }
             $providerProfile->update([
                 'status' => $data['status'],
                 'reviewed_by' => $admin->id,
@@ -178,6 +185,7 @@ class AdminMarketplaceController extends Controller
         });
         if ($providerProfile->status === 'active') {
             $this->matching->reconcileProvider($providerProfile);
+            $this->providerWelcomePosts->publishForProvider($providerProfile);
         }
         User::query()->findOrFail($providerProfile->user_id)->notify(
             new BrandedProviderProfileDecision(
@@ -229,6 +237,17 @@ class AdminMarketplaceController extends Controller
                 ],
             );
         });
+
+        $profileAsset->refresh();
+        if ($profileAsset->purpose === 'avatar' && $profileAsset->scan_status === 'clean') {
+            $profile = ProviderProfile::query()
+                ->where('user_id', $profileAsset->user_id)
+                ->where('status', 'active')
+                ->first();
+            if ($profile) {
+                $this->providerWelcomePosts->publishForProvider($profile);
+            }
+        }
 
         return response()->json(['data' => $profileAsset->only(['id', 'scan_status'])]);
     }

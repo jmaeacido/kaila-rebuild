@@ -38,6 +38,7 @@ const targetLabels: Record<string, string> = {
   message: "Message",
   review: "Review",
   community_post: "Community post",
+  community_comment: "Community comment",
 };
 
 const statusLabels: Record<string, string> = {

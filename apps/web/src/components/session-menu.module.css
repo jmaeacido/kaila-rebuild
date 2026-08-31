@@ -5,8 +5,9 @@
 .trigger {
   align-items: center;
   background: var(--color-surface);
-  border: var(--control-border-width) solid var(--color-border);
+  border: var(--control-border-width) solid transparent;
   border-radius: var(--radius-button);
+  box-shadow: var(--shadow-neu-raised-sm);
   color: var(--color-ink);
   cursor: pointer;
   display: inline-flex;
@@ -36,9 +37,9 @@
 
 .menu {
   background: var(--color-surface);
-  border: var(--control-border-width) solid var(--color-border);
+  border: var(--control-border-width) solid transparent;
   border-radius: var(--radius-card);
-  box-shadow: var(--shadow-floating);
+  box-shadow: var(--shadow-neu-raised-lg);
   display: grid;
   gap: var(--spacing-4);
   min-width: 15rem;

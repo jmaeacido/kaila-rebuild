@@ -419,9 +419,9 @@
 .activityCard,
 .empty {
   background: var(--color-surface);
-  border: var(--control-border-width) solid var(--color-border);
+  border: var(--control-border-width) solid transparent;
   border-radius: var(--radius-card);
-  box-shadow: var(--shadow-card);
+  box-shadow: var(--shadow-neu-raised-md);
 }
 
 .activityCard {
@@ -737,6 +737,7 @@
 
 .personAvatar {
   background: var(--gradient-primary);
+  box-shadow: var(--shadow-neu-avatar);
   color: var(--color-on-primary);
   font-weight: var(--font-weight-semibold);
   overflow: hidden;

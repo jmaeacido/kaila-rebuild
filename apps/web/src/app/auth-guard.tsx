@@ -9,6 +9,7 @@ import { prepareCsrf } from "./auth-client";
 import { BrandedLoader } from "./branded-loader";
 import { InitialUiGate } from "./initial-ui-gate";
 import { FloatingKatabang } from "../components/floating-katabang";
+import { MarketplaceDesktopNav } from "../components/marketplace-navigation";
 import { SessionMenu } from "../components/session-menu";
 import { AreaMismatchBanner } from "../components/area-mismatch-banner";
 import { CallProvider } from "./calls/call-provider";
@@ -148,7 +149,8 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
             <Link href="/home" aria-label="KAILA home">
               <BrandMark className="sessionLogo" priority showBull />
             </Link>
-            <div>
+            <MarketplaceDesktopNav />
+            <div className="appSessionBarActions">
               <Link
                 className="sessionAvatar"
                 href="/account"

@@ -4,6 +4,7 @@
   align-items: center;
   border: var(--control-border-width) solid transparent;
   border-radius: var(--radius-button);
+  box-shadow: var(--shadow-control-raised);
   cursor: pointer;
   display: inline-flex;
   font: inherit;
@@ -15,10 +16,10 @@
   transition: box-shadow var(--duration-fast), opacity var(--duration-fast), transform var(--duration-fast);
 }
 
-.kaila-button--primary { background: var(--color-primary); color: var(--color-on-primary); }
-.kaila-button--secondary { background: var(--color-surface); border-color: var(--color-primary); color: var(--color-primary); }
-.kaila-button--tertiary { background: transparent; color: var(--color-primary); }
-.kaila-button--danger { background: var(--color-danger); color: var(--color-on-primary); }
+.kaila-button--primary { background: var(--gradient-primary); box-shadow: var(--shadow-neu-primary); color: var(--color-on-primary); }
+.kaila-button--secondary { background: var(--color-surface); border-color: color-mix(in srgb, var(--color-primary) 18%, transparent); box-shadow: var(--shadow-neu-raised-sm); color: var(--color-primary); }
+.kaila-button--tertiary { background: transparent; box-shadow: none; color: var(--color-primary); }
+.kaila-button--danger { background: var(--color-danger); box-shadow: 5px 5px 14px color-mix(in srgb, var(--color-danger) 34%, rgb(10 18 32 / 58%)), -4px -4px 12px color-mix(in srgb, var(--color-danger) 18%, white); color: var(--color-on-primary); }
 .kaila-button > span {
   align-items: center;
   color: inherit;
@@ -33,15 +34,16 @@ button.kaila-button.kaila-button--tertiary,
 button.kaila-button.kaila-button--tertiary > span { color: var(--color-primary); }
 button.kaila-button.kaila-button--danger,
 button.kaila-button.kaila-button--danger > span { color: var(--color-on-primary); }
-.kaila-button:disabled { cursor: not-allowed; opacity: var(--opacity-disabled); }
-.kaila-button:active:not(:disabled) { transform: scale(var(--scale-pressed)); }
+.kaila-button:disabled { box-shadow: var(--shadow-neu-inset-sm); cursor: not-allowed; opacity: var(--opacity-disabled); }
+.kaila-button:active:not(:disabled) { box-shadow: var(--shadow-control-pressed); transform: scale(var(--scale-pressed)); }
 
 .kaila-field { display: grid; gap: var(--spacing-8); }
 .kaila-field__label { color: var(--color-ink); font-weight: var(--font-weight-medium); }
 .kaila-field__input {
   background: var(--color-surface);
-  border: var(--control-border-width) solid var(--color-border);
+  border: var(--control-border-width) solid color-mix(in srgb, var(--color-border) 45%, transparent);
   border-radius: var(--radius-input);
+  box-shadow: var(--shadow-neu-inset-sm);
   color: var(--color-ink);
   font: inherit;
   min-height: var(--control-min-height);
@@ -53,14 +55,14 @@ button.kaila-button.kaila-button--danger > span { color: var(--color-on-primary)
 
 .kaila-card {
   background: var(--color-surface);
-  border: var(--control-border-width) solid var(--color-border);
+  border: var(--control-border-width) solid transparent;
   border-radius: var(--radius-card);
-  box-shadow: var(--shadow-card);
+  box-shadow: var(--shadow-neu-raised-md);
   padding: var(--spacing-24);
 }
 .kaila-card__title { color: var(--color-ink); font-size: var(--font-card-title-size); margin-block-end: var(--spacing-12); }
 
-.kaila-feedback { border-radius: var(--radius-card); padding: var(--spacing-16); }
+.kaila-feedback { border-radius: var(--radius-card); box-shadow: var(--shadow-neu-inset-sm); padding: var(--spacing-16); }
 .kaila-feedback--info { border: var(--control-border-width) solid var(--color-info); }
 .kaila-feedback--success { border: var(--control-border-width) solid var(--color-success); }
 .kaila-feedback--warning { border: var(--control-border-width) solid var(--color-warning); }

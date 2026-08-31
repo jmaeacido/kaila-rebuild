@@ -4,19 +4,15 @@ import test from "node:test";
 
 const page = await readFile(new URL("./page.tsx", import.meta.url), "utf8");
 const styles = await readFile(new URL("./account.module.css", import.meta.url), "utf8");
+const marketplaceNavigationStyles = await readFile(new URL("../../components/marketplace-navigation.module.css", import.meta.url), "utf8");
 const addressHierarchy = await readFile(new URL("../address-hierarchy.tsx", import.meta.url), "utf8");
 
 test("account keeps the five-destination mobile navigation with Profile active", () => {
-  assert.match(page, /aria-label="Marketplace navigation"/);
-  assert.match(page, /aria-current="page" href="\/account"/);
-  assert.match(styles, /grid-template-columns:repeat\(5,minmax\(0,1fr\)\)/);
+  assert.match(page, /<MarketplaceNavigation active="profile" \/>/);
+  assert.match(marketplaceNavigationStyles, /grid-template-columns: repeat\(5, minmax\(0, 1fr\)\)/);
   assert.match(
-    styles,
-    /\.bottomNav a\[aria-current="page"\] \{ color:var\(--color-primary\); font-weight:var\(--font-weight-bold\); \}/,
-  );
-  assert.doesNotMatch(
-    styles,
-    /\.bottomNav a\[aria-current="page"\][^{]*\{[^}]*background:/,
+    marketplaceNavigationStyles,
+    /\.bottomNav a\[aria-current="page"\][\s\S]*?box-shadow: var\(--shadow-neu-inset-sm\);/,
   );
 });
 

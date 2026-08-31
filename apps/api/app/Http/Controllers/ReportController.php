@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Jobs\ScanModerationReportEvidence;
+use App\Models\CommunityComment;
 use App\Models\CommunityPost;
 use App\Models\ConversationMessage;
 use App\Models\JobReview;
@@ -44,7 +45,7 @@ class ReportController extends Controller
     {
         $user = $this->user($request);
         $data = $request->validate([
-            'targetType' => 'nullable|required_with:targetId|in:user,job,message,review,community_post',
+            'targetType' => 'nullable|required_with:targetId|in:user,job,message,review,community_post,community_comment',
             'targetId' => 'nullable|required_with:targetType|string|max:64',
             'category' => 'required|in:harassment,scam,unsafe,spam,inappropriate,privacy,other',
             'details' => 'required|string|min:10|max:2000',
@@ -129,7 +130,12 @@ class ReportController extends Controller
 
             return;
         }
-        CommunityPost::query()->where('moderation_status', 'published')->findOrFail($id);
+        if ($type === 'community_post') {
+            CommunityPost::query()->where('moderation_status', 'published')->findOrFail($id);
+
+            return;
+        }
+        CommunityComment::query()->where('moderation_status', 'published')->findOrFail($id);
     }
 
     /** @return array<string, mixed> */

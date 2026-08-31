@@ -1,9 +1,9 @@
 /* eslint-disable @next/next/no-img-element */
 "use client";
 import { useCallback, useEffect, useState } from "react";
-import Link from "next/link";
-import { BriefcaseBusiness, CalendarClock, Home, MapPin, MessageCircle, RefreshCw, Search, Star, UserRound, WalletCards } from "lucide-react";
+import { BriefcaseBusiness, CalendarClock, MapPin, RefreshCw, Star, WalletCards } from "lucide-react";
 import { Button, Feedback } from "@kaila/ui";
+import { MarketplaceNavigation } from "../../components/marketplace-navigation";
 import styles from "./page.module.css";
 import { useRealtimeInvalidation } from "../use-realtime-invalidation";
 import { ServiceCategoryIcon } from "../../components/service-category-icon";
@@ -19,13 +19,7 @@ export default function OpportunitiesPage() {
     {status==="loading"&&<div className={styles.skeletons} aria-label="Loading opportunities"><span/><span/></div>}{status==="error"&&<Feedback kind="error" title="We couldn’t refresh opportunities">Check your connection, then try again.</Feedback>}
     {status==="ready"&&items.length===0&&<section className={styles.empty}><BriefcaseBusiness aria-hidden="true"/><h2>No nearby jobs right now</h2><p>We’ll show jobs that match your services, area, and availability.</p><Button onClick={()=>void load()}>Check again</Button></section>}
     <section className={styles.list}>{items.map(item=><article key={item.id}><div className={styles.client}><span className={styles.avatar}>{item.client.avatarUrl?<img src={item.client.avatarUrl} alt={`${item.client.displayName} profile`} />:item.client.displayName[0]}</span><div><small>Posted by</small><strong>{item.client.displayName}</strong><span className={styles.reputation}><Star aria-hidden="true"/>{reputation(item.client.rating,item.client.reviewCount)}</span></div></div><div className={styles.title}><span className={styles.category}><ServiceCategoryIcon icon={item.category.icon} aria-hidden="true"/>{item.category.name}</span>{item.offer&&<strong className={styles.offerBadge}>Offer sent · Revision {item.offer.latestRevisionNumber}</strong>}<h2>{item.title}</h2></div><p>{item.description}</p><JobRequestLocation opportunityId={item.id} address={item.approximateAddress} location={item.approximateLocation} /><dl><div><MapPin aria-hidden="true"/><dt>Area</dt><dd>{item.area.name}</dd></div><div><CalendarClock aria-hidden="true"/><dt>When</dt><dd>{item.scheduleType==="asap"?"As soon as possible":new Date(item.scheduledAt??"").toLocaleString()}</dd></div><div><WalletCards aria-hidden="true"/><dt>Budget</dt><dd>{money(item.budgetMinCentavos,item.budgetMaxCentavos)}</dd></div></dl><p className={styles.privacy}>This location is approximate. Exact coordinates stay private until hiring.</p><div className={styles.actions}>{!item.offer&&<Button variant="secondary" onClick={()=>void dismiss(item.id)}>Dismiss</Button>}<Button onClick={()=>location.assign(`/opportunities/${item.jobId}`)}>{item.offer?"View request & offer":"View Job"}</Button></div></article>)}</section>
-    <nav className={styles.bottomNav} aria-label="Marketplace navigation">
-      <Link href="/home"><Home aria-hidden="true" />Home</Link>
-      <Link aria-current="page" href="/opportunities"><Search aria-hidden="true" />Find work</Link>
-      <Link href="/home#current-title"><BriefcaseBusiness aria-hidden="true" />Work</Link>
-      <Link href="/messages"><MessageCircle aria-hidden="true" />Messages</Link>
-      <Link href="/account"><UserRound aria-hidden="true" />Profile</Link>
-    </nav>
+    <MarketplaceNavigation active="opportunities" />
   </main>;
 }
 function money(min:number|null,max:number|null){if(min===null&&max===null)return "Open to offers";const peso=(value:number|null)=>value===null?"—":`₱${(value/100).toLocaleString()}`;return `${peso(min)} – ${peso(max)}`;}

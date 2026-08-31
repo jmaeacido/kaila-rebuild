@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 /**
  * @property int $id
  * @property int $user_id
+ * @property string|null $welcome_community_post_id
  * @property string $display_name
  * @property string|null $rating
  * @property int $completed_jobs

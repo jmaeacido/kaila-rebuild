@@ -1,12 +1,15 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, BadgeCheck, CheckCircle2, LocateFixed, MapPin, Store, UserRound, Wrench } from "lucide-react";
+import { ArrowLeft, BadgeCheck, Camera, CheckCircle2, LocateFixed, MapPin, Store, UserRound, Wrench } from "lucide-react";
+import Image from "next/image";
 import { Button, Feedback, TextField } from "@kaila/ui";
 import Link from "next/link";
 import type { ServiceCategory } from "../../components/category-select";
 import { SelectField } from "../../components/select-field";
 import { ServiceCategoryMultiSelect } from "../../components/service-category-multi-select";
+import { AttachmentSourceActions } from "../../components/attachment-picker";
+import { prepareCsrf } from "../auth-client";
 import { useRealtimeInvalidation } from "../use-realtime-invalidation";
 import styles from "./profile.module.css";
 
@@ -138,6 +141,13 @@ export default function ProviderProfilePage() {
   const [shopName, setShopName] = useState("");
   const [shopAddress, setShopAddress] = useState("");
   const [shopLocation, setShopLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null);
+  const [avatarUploaded, setAvatarUploaded] = useState(false);
+  const [avatarScanStatus, setAvatarScanStatus] = useState<string | null>(null);
+  const [avatarNotice, setAvatarNotice] = useState("");
+  const [avatarUploadProgress, setAvatarUploadProgress] = useState(0);
+  const [avatarUploading, setAvatarUploading] = useState(false);
 
   const markFormDirty = useCallback(() => {
     formIsDirty.current = true;
@@ -187,8 +197,19 @@ export default function ProviderProfilePage() {
       setReferenceStatus("ready");
 
       if (profileResponse.ok) {
-        const provider = ((await profileResponse.json()) as { data: { provider: ProviderProfile | null } }).data
-          .provider;
+        const profileBody = (await profileResponse.json()) as {
+          data: {
+            provider: ProviderProfile | null;
+            providerAvatar?: { uploaded: boolean; scanStatus: string | null; url: string | null };
+          };
+        };
+        const provider = profileBody.data.provider;
+        const providerAvatar = profileBody.data.providerAvatar;
+        if (providerAvatar) {
+          setAvatarUploaded(providerAvatar.uploaded);
+          setAvatarScanStatus(providerAvatar.scanStatus);
+          setAvatarUrl(providerAvatar.url);
+        }
         if (provider && !formIsDirty.current && sequence === loadSequence.current) {
           setDisplayName(provider.display_name ?? "");
           setBio(provider.bio ?? "");
@@ -230,8 +251,53 @@ export default function ProviderProfilePage() {
     () => void loadReferenceData(),
     (event) =>
       (event.type === "profile.updated" && event.resourceType === "provider_profile")
+      || event.type === "profile.media.updated"
       || event.type.startsWith("notification."),
   );
+
+  async function uploadAvatarFile(file: File) {
+    setAvatarPreviewUrl(URL.createObjectURL(file));
+    setAvatarUploadProgress(0);
+    setAvatarUploading(true);
+    setAvatarNotice("");
+    try {
+      const token = await prepareCsrf();
+      const body = new FormData();
+      body.append("purpose", "avatar");
+      body.append("file", file);
+      const responseStatus = await new Promise<number>((resolve, reject) => {
+        const request = new XMLHttpRequest();
+        request.open("POST", "/api/v1/me/profile-assets");
+        request.setRequestHeader("Accept", "application/json");
+        if (token) request.setRequestHeader("X-XSRF-TOKEN", token);
+        request.upload.addEventListener("progress", (event) => {
+          if (event.lengthComputable) {
+            setAvatarUploadProgress(Math.round((event.loaded / event.total) * 100));
+          }
+        });
+        request.addEventListener("load", () => resolve(request.status));
+        request.addEventListener("error", () => reject(new Error("upload-failed")));
+        request.addEventListener("abort", () => reject(new Error("upload-failed")));
+        request.send(body);
+      });
+      if (responseStatus < 200 || responseStatus >= 300) {
+        throw new Error(responseStatus === 422 ? "invalid-file" : "upload-failed");
+      }
+      setAvatarUploaded(true);
+      setAvatarScanStatus("pending");
+      setAvatarUploadProgress(100);
+      setAvatarNotice("Uploaded. KAILA reviews profile pictures before they appear in the community welcome post.");
+    } catch (error) {
+      setMessage("error");
+      setAvatarNotice(
+        error instanceof Error && error.message === "invalid-file"
+          ? "That picture isn't supported. Use JPG, PNG, or WebP up to 10 MB."
+          : "We couldn't upload your picture right now. Try again.",
+      );
+    } finally {
+      setAvatarUploading(false);
+    }
+  }
 
   useEffect(() => {
     let active = true;
@@ -293,8 +359,11 @@ export default function ProviderProfilePage() {
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const selectedAreaIds = coverageMode === "city" ? [cityId] : barangayIds;
-    if (!cityId || selectedAreaIds.length === 0 || serviceIds.length === 0 || (offersAtShop && !shopLocation)) {
+    if (!avatarUploaded || !cityId || selectedAreaIds.length === 0 || serviceIds.length === 0 || (offersAtShop && !shopLocation)) {
       setMessage("error");
+      if (!avatarUploaded) {
+        setAvatarNotice("Add a profile picture before submitting your provider profile.");
+      }
       return;
     }
     setMessage("saving");
@@ -350,9 +419,10 @@ export default function ProviderProfilePage() {
           </div>
         </div>
         <ol className={styles.steps} aria-label="Profile sections">
-          <li><span>1</span>About you</li>
-          <li><span>2</span>Service area</li>
-          <li><span>3</span>Shop option</li>
+          <li><span>1</span>Profile photo</li>
+          <li><span>2</span>About you</li>
+          <li><span>3</span>Service area</li>
+          <li><span>4</span>Shop option</li>
         </ol>
         {profileStatus === "active" && (
           <Feedback kind="success" title="Profile approved">
@@ -381,7 +451,47 @@ export default function ProviderProfilePage() {
           className={styles.form}
         >
           <fieldset className={styles.formSection}>
-            <legend><span>1</span><UserRound aria-hidden="true" /> About you</legend>
+            <legend><span>1</span><Camera aria-hidden="true" /> Profile photo</legend>
+            <p>KAILA announces every approved provider in Community with your profile picture attached. Upload a clear photo of yourself before submitting.</p>
+            <div className={styles.avatarSection}>
+              <div className={styles.avatarPreview} aria-hidden={!avatarUrl && !avatarPreviewUrl}>
+                {avatarUrl || avatarPreviewUrl ? (
+                  <Image
+                    unoptimized
+                    src={avatarPreviewUrl ?? avatarUrl ?? ""}
+                    alt=""
+                    width={96}
+                    height={96}
+                  />
+                ) : (
+                  <UserRound aria-hidden="true" />
+                )}
+              </div>
+              <div className={styles.avatarActions}>
+                <AttachmentSourceActions
+                  kinds={["image"]}
+                  disabled={avatarUploading}
+                  onFiles={(files) => {
+                    const file = files[0];
+                    if (file) void uploadAvatarFile(file);
+                  }}
+                />
+                {avatarUploaded && (
+                  <p className={styles.avatarStatus}>
+                    {avatarScanStatus === "clean"
+                      ? "Profile picture approved."
+                      : avatarScanStatus === "rejected"
+                        ? "Profile picture needs a new upload."
+                        : "Profile picture uploaded and awaiting review."}
+                  </p>
+                )}
+                {avatarUploading && <p className={styles.avatarStatus}>Uploading… {avatarUploadProgress}%</p>}
+                {avatarNotice && <p className={styles.avatarNotice}>{avatarNotice}</p>}
+              </div>
+            </div>
+          </fieldset>
+          <fieldset className={styles.formSection}>
+            <legend><span>2</span><UserRound aria-hidden="true" /> About you</legend>
             <p>Use the name clients should recognize and describe the work you do best.</p>
             <TextField
               id="displayName"
@@ -431,7 +541,7 @@ export default function ProviderProfilePage() {
           </fieldset>
           <fieldset className={styles.serviceArea}>
             <legend>
-              <span>2</span><MapPin aria-hidden="true" /> Service area
+              <span>3</span><MapPin aria-hidden="true" /> Service area
             </legend>
             <p>Cover the whole city or municipality, or choose several barangays.</p>
             <div className={styles.addressFields}>
@@ -507,7 +617,7 @@ export default function ProviderProfilePage() {
             )}
           </fieldset>
           <fieldset className={styles.shopService}>
-            <legend><span>3</span><Store aria-hidden="true" /> Shop service</legend>
+            <legend><span>4</span><Store aria-hidden="true" /> Shop service</legend>
             <label className={styles.shopToggle}>
               <input
                 type="checkbox"

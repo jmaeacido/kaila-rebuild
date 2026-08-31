@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Support\AdminNotificationService;
 use App\Support\OpportunityMatchingService;
 use App\Support\OutboxRecorder;
+use App\Support\ProviderOnboardingRequirements;
 use App\Support\ProviderProfileReviewBaseline;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -23,6 +24,7 @@ class MarketplaceProfileController extends Controller
         private readonly OpportunityMatchingService $matching,
         private readonly OutboxRecorder $outbox,
         private readonly AdminNotificationService $adminNotifications,
+        private readonly ProviderOnboardingRequirements $providerRequirements,
     ) {}
 
     public function show(Request $request): JsonResponse
@@ -33,6 +35,7 @@ class MarketplaceProfileController extends Controller
             'activeMode' => $user->active_mode,
             'client' => ClientProfile::query()->where('user_id', $user->id)->first(),
             'provider' => $this->ownedProvider($user)?->load(['services:id,name,slug,icon', 'serviceAreas:id,name,type,code', 'availability', 'credentials']),
+            'providerAvatar' => $this->providerRequirements->avatarState($user),
         ]]);
     }
 
@@ -70,6 +73,7 @@ class MarketplaceProfileController extends Controller
             'shopLongitude' => ['nullable', 'required_if:offersAtShop,true', 'numeric', 'between:-180,180'],
         ]);
         /** @var User $user */ $user = $request->user();
+        $this->providerRequirements->assertAvatarUploaded($user);
         $profile = DB::transaction(function () use ($user, $data): ProviderProfile {
             $existing = ProviderProfile::query()
                 ->where('user_id', $user->id)

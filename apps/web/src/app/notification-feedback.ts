@@ -57,6 +57,10 @@ const notificationBackedEventTypes = new Set([
   "direct.message.created",
   "community.post.published",
   "community.post.updated",
+  "community.post.deleted",
+  "community.comment.created",
+  "community.comment.updated",
+  "community.comment.deleted",
   "profile.updated",
   "support.case.created",
   "support.message.created",
@@ -191,6 +195,9 @@ function realtimeNotificationRoute(notification: RealtimeNotification): string {
   }
   if (notification.resourceType === "direct_conversation" && /^[A-Za-z0-9-]+$/.test(notification.resourceId)) {
     return `/messages/${notification.resourceId}`;
+  }
+  if (notification.resourceType === "community_post" && /^[A-Za-z0-9-]+$/.test(notification.resourceId)) {
+    return `/community/${notification.resourceId}`;
   }
   if (notification.resourceType === "call_session") {
     const contextId = String(notification.data.contextId ?? "");

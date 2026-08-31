@@ -154,6 +154,7 @@ Route::middleware('mobile.auth')->group(function (): void {
     Route::post('/auth/mobile/calls/{callSession}/transition', [CallController::class, 'transition']);
     Route::post('/auth/mobile/community', [CommunityController::class, 'store']);
     Route::put('/auth/mobile/community/{communityPost}/helpful', [CommunityController::class, 'react']);
+    Route::delete('/auth/mobile/community/{communityPost}/helpful', [CommunityController::class, 'unreact']);
     Route::post('/auth/mobile/katabang', KatabangController::class);
     Route::get('/auth/mobile/support/cases', [SupportCaseController::class, 'index']);
     Route::post('/auth/mobile/support/cases', [SupportCaseController::class, 'store']);
@@ -171,7 +172,11 @@ Route::middleware('auth')->group(function (): void {
     Route::get('/providers', [MarketplaceProfileController::class, 'discover']);
     Route::get('/providers/{providerProfile}', [MarketplaceProfileController::class, 'publicProfile']);
     Route::post('/providers/{providerProfile}/direct-requests', [DirectServiceRequestController::class, 'store']);
+    Route::get('/community/feed-context', [CommunityController::class, 'feedContext']);
     Route::get('/community', [CommunityController::class, 'index']);
+    Route::get('/community/{communityPost}', [CommunityController::class, 'show']);
+    Route::get('/community-media/{communityPostMedia}', [CommunityController::class, 'showMedia']);
+    Route::get('/community/{communityPost}/comments', [CommunityController::class, 'comments']);
     Route::get('/profile-assets/{profileAsset}', [ProfileAssetController::class, 'show']);
     Route::post('/auth/logout', [AuthenticatedSessionController::class, 'destroy']);
     Route::post('/auth/logout-all', [AuthenticatedSessionController::class, 'destroyAll']);
@@ -259,7 +264,16 @@ Route::middleware('auth')->group(function (): void {
     Route::post('/calls/{callSession}/signal', [CallController::class, 'signal']);
     Route::post('/calls/{callSession}/transition', [CallController::class, 'transition']);
     Route::post('/community', [CommunityController::class, 'store']);
+    Route::patch('/community/{communityPost}', [CommunityController::class, 'update']);
+    Route::delete('/community/{communityPost}', [CommunityController::class, 'destroy']);
     Route::put('/community/{communityPost}/helpful', [CommunityController::class, 'react']);
+    Route::delete('/community/{communityPost}/helpful', [CommunityController::class, 'unreact']);
+    Route::post('/community/{communityPost}/media', [CommunityController::class, 'storeMedia']);
+    Route::post('/community/{communityPost}/comments', [CommunityController::class, 'comment']);
+    Route::post('/community/{communityPost}/comments/{communityComment}/replies', [CommunityController::class, 'reply']);
+    Route::patch('/community-comments/{communityComment}', [CommunityController::class, 'updateComment']);
+    Route::delete('/community-comments/{communityComment}', [CommunityController::class, 'destroyComment']);
+    Route::post('/community/{communityPost}/block-author', [CommunityController::class, 'blockAuthor']);
     Route::post('/katabang', KatabangController::class);
     Route::get('/support/cases', [SupportCaseController::class, 'index']);
     Route::post('/support/cases', [SupportCaseController::class, 'store']);

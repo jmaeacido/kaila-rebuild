@@ -1,0 +1,87 @@
+/* KAILA neumorphic surfaces — global classes and shared primitives */
+
+.kaila-button {
+  border-color: transparent;
+  box-shadow: var(--shadow-control-raised);
+}
+
+.kaila-button--primary {
+  background: var(--gradient-primary);
+  box-shadow: var(--shadow-neu-primary);
+}
+
+.kaila-button--secondary {
+  background: var(--color-surface);
+  border-color: color-mix(in srgb, var(--color-primary) 18%, transparent);
+  box-shadow: var(--shadow-neu-raised-sm);
+}
+
+.kaila-button--tertiary {
+  box-shadow: none;
+}
+
+.kaila-button--danger {
+  box-shadow: 5px 5px 14px color-mix(in srgb, var(--color-danger) 34%, rgb(10 18 32 / 58%)), -4px -4px 12px color-mix(in srgb, var(--color-danger) 18%, white), inset 0 1px 0 rgb(255 255 255 / 22%);
+}
+
+.kaila-button:active:not(:disabled) {
+  box-shadow: var(--shadow-control-pressed);
+}
+
+.kaila-card {
+  border-color: transparent;
+  box-shadow: var(--shadow-neu-raised-md);
+}
+
+.kaila-field__input {
+  border-color: color-mix(in srgb, var(--color-border) 45%, transparent);
+  box-shadow: var(--shadow-neu-inset-sm);
+}
+
+.kaila-feedback {
+  border-color: color-mix(in srgb, currentcolor 22%, transparent);
+  box-shadow: var(--shadow-neu-inset-sm);
+}
+
+.appSessionBar,
+.notificationDropdown,
+.appToast,
+.offlineNotice {
+  border-color: color-mix(in srgb, var(--color-border) 35%, transparent);
+}
+
+.notificationDropdown,
+.appToast {
+  border-color: transparent;
+  box-shadow: var(--shadow-neu-raised-lg);
+}
+
+.appToastIcon,
+.notificationItemIcon {
+  box-shadow: var(--shadow-neu-avatar);
+}
+
+input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([data-flat-input]),
+select,
+textarea:not([data-flat-input]) {
+  background: var(--color-surface);
+  border-color: color-mix(in srgb, var(--color-border) 45%, transparent);
+  box-shadow: var(--shadow-neu-inset-sm);
+}
+
+input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([data-flat-input]):focus-visible,
+select:focus-visible,
+textarea:not([data-flat-input]):focus-visible {
+  box-shadow: var(--shadow-neu-inset-md), 0 0 0 2px color-mix(in srgb, var(--color-primary) 18%, transparent);
+}
+
+body button:not([data-flat-button]):not(:disabled):hover {
+  box-shadow: var(--shadow-neu-raised-md);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kaila-button,
+  body button:not([data-flat-button]) {
+    transition: none;
+  }
+}

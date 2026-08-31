@@ -13,7 +13,9 @@ const brandedLoaderSource = readFileSync(new URL("../branded-loader.tsx", import
 const initialUiGateSource = readFileSync(new URL("../initial-ui-gate.tsx", import.meta.url), "utf8");
 const globalStylesSource = readFileSync(new URL("../globals.css", import.meta.url), "utf8");
 const brandStylesSource = readFileSync(new URL("../../components/brand-mark.module.css", import.meta.url), "utf8");
-const styles = readFileSync(new URL("./home.module.css", import.meta.url), "utf8");
+const sessionMenuSource = readFileSync(new URL("../../components/session-menu.tsx", import.meta.url), "utf8");
+const marketplaceNavigationSource = readFileSync(new URL("../../components/marketplace-navigation.tsx", import.meta.url), "utf8");
+const marketplaceNavigationStyles = readFileSync(new URL("../../components/marketplace-navigation.module.css", import.meta.url), "utf8");
 
 test("Home keeps every non-terminal job active and terminal jobs in history", () => {
   assert.match(source, /const activeClientJobs = jobs\.filter/);
@@ -28,19 +30,17 @@ test("Client Home presents one empty jobs state and role-aware primary navigatio
   assert.match(source, /jobHistory\.length > 0 && <section/);
   assert.doesNotMatch(source, /No hired jobs yet/);
   assert.match(source, /<EmptyJobsIllustration \/>/);
-  assert.match(source, />\s*Jobs\s*<\/Link>/);
-  assert.match(source, />\s*Find work\s*<\/Link>/);
+  assert.match(source, /<MarketplaceNavigation \/>/);
+  assert.match(marketplaceNavigationSource, /href="\/community"/);
+  assert.match(marketplaceNavigationSource, />\s*Jobs\s*<\/Link>/);
+  assert.match(marketplaceNavigationSource, /Find work/);
   assert.doesNotMatch(source, /user\.providerEligible \? "\/opportunities" : "\/provider-profile"/);
 });
 
-test("Home uses the same foreground-only active navigation state as Messages", () => {
+test("Home uses neumorphic active navigation with foreground emphasis", () => {
   assert.match(
-    styles,
-    /\.bottomNav a\[aria-current="page"\] \{\s*color: var\(--color-primary\);\s*font-weight: var\(--font-weight-bold\);\s*\}/,
-  );
-  assert.doesNotMatch(
-    styles,
-    /\.bottomNav a\[aria-current="page"\][^{]*\{[^}]*background:/,
+    marketplaceNavigationStyles,
+    /\.bottomNav a\[aria-current="page"\][\s\S]*?color: var\(--color-primary\);[\s\S]*?font-weight: var\(--font-weight-bold\);[\s\S]*?box-shadow: var\(--shadow-neu-inset-sm\);/,
   );
 });
 
@@ -91,12 +91,19 @@ test("Every job-card surface uses its service category icon", () => {
 });
 
 test("Find work keeps the standardized provider bottom navigation", () => {
-  assert.match(opportunitiesSource, /aria-label="Marketplace navigation"/);
-  assert.match(opportunitiesSource, /aria-current="page" href="\/opportunities"/);
-  assert.match(
-    opportunitiesSource,
-    /href="\/home"[\s\S]*?Home[\s\S]*?href="\/opportunities"[\s\S]*?Find work[\s\S]*?href="\/home#current-title"[\s\S]*?Work[\s\S]*?href="\/messages"[\s\S]*?Messages[\s\S]*?href="\/account"[\s\S]*?Profile/,
-  );
+  assert.match(opportunitiesSource, /<MarketplaceNavigation active="opportunities" \/>/);
+  assert.match(marketplaceNavigationSource, /aria-label="Marketplace navigation"/);
+  assert.match(marketplaceNavigationSource, /href="\/opportunities"/);
+  assert.match(marketplaceNavigationSource, /href="\/community"/);
+  assert.match(marketplaceNavigationSource, /href="\/messages"/);
+  assert.match(marketplaceNavigationSource, /href="\/account"/);
+  assert.match(marketplaceNavigationSource, /isProvider \?/);
+});
+
+test("Desktop session header exposes compact marketplace navigation", () => {
+  assert.match(authGuardSource, /<MarketplaceDesktopNav \/>/);
+  assert.match(sessionMenuSource, /href="\/community"/);
+  assert.match(marketplaceNavigationStyles, /@media \(min-width: 64rem\)[\s\S]*\.desktopNav/);
 });
 
 test("Find work stacks its header action on narrow phones", () => {

@@ -1,0 +1,109 @@
+.bottomNav {
+  background: color-mix(in srgb, var(--color-surface) 92%, var(--color-background));
+  border-top: 0;
+  bottom: 0;
+  box-shadow: var(--shadow-sheet);
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  left: 0;
+  padding: var(--spacing-4) max(var(--spacing-8), env(safe-area-inset-right)) max(var(--spacing-4), env(safe-area-inset-bottom)) max(var(--spacing-8), env(safe-area-inset-left));
+  position: fixed;
+  right: 0;
+  z-index: 10;
+}
+
+:global(html[data-keyboard-open]) .bottomNav {
+  display: none;
+}
+
+.bottomNav a {
+  align-items: center;
+  border-radius: var(--radius-button);
+  box-shadow: var(--shadow-neu-raised-sm);
+  color: var(--color-text-secondary);
+  display: flex;
+  flex-direction: column;
+  font-size: var(--font-caption-size);
+  font-weight: var(--font-weight-medium);
+  gap: var(--spacing-4);
+  justify-content: center;
+  min-height: var(--control-min-height);
+  padding: var(--spacing-8) var(--spacing-4);
+  text-decoration: none;
+}
+
+.bottomNav a[aria-current="page"] {
+  background: color-mix(in srgb, var(--color-primary) 10%, var(--color-surface));
+  box-shadow: var(--shadow-neu-inset-sm);
+  color: var(--color-primary);
+  font-weight: var(--font-weight-bold);
+}
+
+.bottomNav svg {
+  height: var(--spacing-24);
+  width: var(--spacing-24);
+}
+
+.desktopNav {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-4);
+  min-width: 0;
+}
+
+.desktopNav a {
+  align-items: center;
+  border-radius: var(--radius-button);
+  box-shadow: var(--shadow-neu-raised-sm);
+  color: var(--color-text-secondary);
+  display: inline-flex;
+  font-size: var(--font-small-size);
+  font-weight: var(--font-weight-medium);
+  gap: var(--spacing-8);
+  justify-content: center;
+  min-height: var(--control-min-height);
+  padding: 0 var(--spacing-12);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.desktopNav a:hover,
+.desktopNav a:focus-visible {
+  background: color-mix(in srgb, var(--color-primary) 8%, var(--color-surface));
+  color: var(--color-ink);
+}
+
+.desktopNav a[aria-current="page"] {
+  background: color-mix(in srgb, var(--color-primary) 12%, var(--color-surface));
+  box-shadow: var(--shadow-neu-inset-sm);
+  color: var(--color-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.desktopNav a:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.desktopNav svg {
+  height: var(--spacing-20);
+  width: var(--spacing-20);
+  flex: none;
+}
+
+@media (min-width: 64rem) {
+  .bottomNav {
+    display: none;
+  }
+
+  .desktopNav {
+    display: flex;
+  }
+}
+
+@media (max-width: 30rem) {
+  .bottomNav a {
+    padding-inline: 0;
+  }
+}

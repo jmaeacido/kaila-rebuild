@@ -1,4 +1,5 @@
 @import "@kaila/ui/styles.css";
+@import "./neumorphism.css";
 
 * {
   box-sizing: border-box;
@@ -281,14 +282,23 @@ body button:not([data-flat-button]):disabled {
 
 .appSessionBar {
   align-items: center;
-  background: var(--color-surface);
-  border-bottom: var(--control-border-width) solid var(--color-border);
-  display: flex;
-  gap: var(--spacing-16);
-  justify-content: space-between;
+  background: color-mix(in srgb, var(--color-surface) 94%, var(--color-background));
+  border-bottom: 0;
+  box-shadow: var(--shadow-neu-raised-sm);
+  display: grid;
+  gap: var(--spacing-8) var(--spacing-16);
+  grid-template-columns: auto minmax(0, 1fr) auto;
   min-height: calc(var(--spacing-64) + env(safe-area-inset-top));
   padding: calc(var(--spacing-8) + env(safe-area-inset-top)) var(--spacing-16) var(--spacing-8);
   width: 100%;
+}
+
+.appSessionBarActions {
+  align-items: center;
+  display: flex;
+  gap: var(--spacing-8);
+  justify-self: end;
+  min-width: 0;
 }
 
 .appSessionBar > a {
@@ -311,6 +321,10 @@ body button:not([data-flat-button]):disabled {
   display: flex;
   gap: var(--spacing-8);
   min-width: 0;
+}
+
+.appSessionBar > div.appSessionBarActions {
+  justify-self: end;
 }
 
 .appSessionBar .sessionName {
@@ -412,8 +426,9 @@ body button:not([data-flat-button]):disabled {
 .appSessionBar .sessionAvatar {
   align-items: center;
   background: var(--gradient-primary);
-  border: var(--control-border-width) solid var(--color-border);
+  border: var(--control-border-width) solid transparent;
   border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-neu-avatar);
   color: var(--color-on-primary);
   display: flex;
   font-weight: var(--font-weight-bold);

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\CommunityComment;
 use App\Models\CommunityPost;
 use App\Models\ConversationMessage;
 use App\Models\JobReview;
@@ -99,6 +100,8 @@ class AdminReportController extends Controller
                 JobReview::query()->whereKey($report->target_id)->update(['moderated_at' => now(), 'moderation_reason' => 'Removed following safety review.']);
             } elseif ($report->target_type === 'community_post') {
                 CommunityPost::query()->whereKey($report->target_id)->update(['moderation_status' => 'removed']);
+            } elseif ($report->target_type === 'community_comment') {
+                CommunityComment::query()->whereKey($report->target_id)->update(['moderation_status' => 'removed']);
             } elseif ($report->target_type === 'message') {
                 ConversationMessage::query()->whereKey($report->target_id)->update(['body_ciphertext' => null]);
             } else {
@@ -122,6 +125,7 @@ class AdminReportController extends Controller
             'review' => JobReview::query()->findOrFail($report->target_id)->author_user_id,
             'message' => ConversationMessage::query()->findOrFail($report->target_id)->sender_user_id,
             'community_post' => CommunityPost::query()->findOrFail($report->target_id)->author_user_id,
+            'community_comment' => CommunityComment::query()->findOrFail($report->target_id)->author_user_id,
             'job' => ServiceJob::query()->findOrFail($report->target_id)->client_user_id,
             default => null,
         };
@@ -150,6 +154,7 @@ class AdminReportController extends Controller
             'review' => JobReview::query()->findOrFail($report->target_id)->only(['id', 'rating', 'comment', 'author_user_id']),
             'message' => ConversationMessage::query()->findOrFail($report->target_id)->only(['id', 'sender_user_id', 'created_at']),
             'community_post' => CommunityPost::query()->findOrFail($report->target_id)->only(['id', 'title', 'body', 'moderation_status']),
+            'community_comment' => CommunityComment::query()->findOrFail($report->target_id)->only(['id', 'body', 'author_user_id', 'moderation_status']),
             default => [],
         };
     }

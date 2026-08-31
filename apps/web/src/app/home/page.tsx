@@ -7,17 +7,14 @@ import {
   ArrowRight,
   BriefcaseBusiness,
   ChevronRight,
-  ClipboardList,
-  Home,
   MapPin,
-  MessageCircle,
   Navigation,
   Plus,
   Search,
   Star,
-  UserRound,
 } from "lucide-react";
 import { Feedback } from "@kaila/ui";
+import { MarketplaceNavigation } from "../../components/marketplace-navigation";
 import { ServiceCategoryIcon } from "../../components/service-category-icon";
 import { OpportunityRouteMetrics } from "../../components/job-request-location";
 import styles from "./home.module.css";
@@ -375,42 +372,7 @@ export default function AuthenticatedHomePage() {
           </div>
         </section>}
 
-      <nav className={styles.bottomNav} aria-label="Marketplace navigation">
-        <Link aria-current="page" href="/home">
-          <Home aria-hidden="true" />
-          Home
-        </Link>
-        {isProvider ? (
-          <Link href="/opportunities">
-            <Search aria-hidden="true" />
-            Find work
-          </Link>
-        ) : (
-          <Link href="/home#current-title">
-            <ClipboardList aria-hidden="true" />
-            Jobs
-          </Link>
-        )}
-        {isProvider ? (
-          <Link href="/home#current-title">
-            <BriefcaseBusiness aria-hidden="true" />
-            Work
-          </Link>
-        ) : (
-          <Link href="/post-job">
-            <Plus aria-hidden="true" />
-            Post
-          </Link>
-        )}
-        <Link href="/messages">
-          <MessageCircle aria-hidden="true" />
-          Messages
-        </Link>
-        <Link href="/account">
-          <UserRound aria-hidden="true" />
-          Profile
-        </Link>
-      </nav>
+      <MarketplaceNavigation />
     </main>
   );
 }

@@ -1,0 +1,239 @@
+"use client";
+
+import { FormEvent, useState } from "react";
+import Link from "next/link";
+import { MessageCircle, Send } from "lucide-react";
+import { CommunityMemberAvatar } from "./community-member-avatar";
+import { CommunityComment, csrfFetch } from "./community-client";
+import styles from "./community.module.css";
+
+function formatCommentTime(value: string): string {
+  const date = new Date(value);
+  const diffMs = Date.now() - date.getTime();
+  const minutes = Math.floor(diffMs / 60000);
+  if (minutes < 1) return "Just now";
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d`;
+  return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
+type CommunityCommentComposerProps = {
+  postId: string;
+  reload: () => Promise<void>;
+  placeholder: string;
+  submitLabel: string;
+  compact?: boolean;
+};
+
+export function CommunityCommentComposer({ postId, reload, placeholder, submitLabel, compact = false }: CommunityCommentComposerProps) {
+  const [body, setBody] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  async function handleSubmit(event: FormEvent) {
+    event.preventDefault();
+    const trimmed = body.trim();
+    if (!trimmed || submitting) return;
+    setSubmitting(true);
+    const response = await csrfFetch(`/api/v1/community/${postId}/comments`, {
+      method: "POST",
+      body: JSON.stringify({ body: trimmed }),
+    });
+    setSubmitting(false);
+    if (response.ok) {
+      setBody("");
+      await reload();
+    }
+  }
+
+  return (
+    <form className={compact ? `${styles.commentComposer} ${styles.commentComposerCompact}` : styles.commentComposer} onSubmit={(event) => void handleSubmit(event)}>
+      <textarea
+        maxLength={800}
+        rows={1}
+        value={body}
+        onChange={(event) => setBody(event.target.value)}
+        placeholder={placeholder}
+        aria-label={placeholder}
+      />
+      <button type="submit" className={styles.commentComposerSend} data-flat-button disabled={!body.trim() || submitting} aria-label={submitLabel}>
+        <Send aria-hidden="true" />
+      </button>
+    </form>
+  );
+}
+
+type CommentItemProps = {
+  comment: CommunityComment;
+  postId: string;
+  reload: () => Promise<void>;
+  nested?: boolean;
+};
+
+function CommentItem({ comment, postId, reload, nested = false }: CommentItemProps) {
+  const [replying, setReplying] = useState(false);
+  const [replyBody, setReplyBody] = useState("");
+  const [replySubmitting, setReplySubmitting] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [editBody, setEditBody] = useState(comment.body);
+  const [editSubmitting, setEditSubmitting] = useState(false);
+
+  async function submitReply(event: FormEvent) {
+    event.preventDefault();
+    const trimmed = replyBody.trim();
+    if (!trimmed || replySubmitting) return;
+    setReplySubmitting(true);
+    const response = await csrfFetch(`/api/v1/community/${postId}/comments/${comment.id}/replies`, {
+      method: "POST",
+      body: JSON.stringify({ body: trimmed }),
+    });
+    setReplySubmitting(false);
+    if (response.ok) {
+      setReplyBody("");
+      setReplying(false);
+      await reload();
+    }
+  }
+
+  async function saveEdit(event: FormEvent) {
+    event.preventDefault();
+    const trimmed = editBody.trim();
+    if (!trimmed || editSubmitting) return;
+    setEditSubmitting(true);
+    const response = await csrfFetch(`/api/v1/community-comments/${comment.id}`, {
+      method: "PATCH",
+      body: JSON.stringify({ body: trimmed }),
+    });
+    setEditSubmitting(false);
+    if (response.ok) {
+      setEditing(false);
+      await reload();
+    }
+  }
+
+  async function remove(asHide: boolean) {
+    const message = asHide ? "Hide this comment from your post?" : "Delete this comment?";
+    if (!confirm(message)) return;
+    const response = await csrfFetch(`/api/v1/community-comments/${comment.id}`, { method: "DELETE" });
+    if (response.ok) await reload();
+  }
+
+  const showActions = comment.canEdit || comment.canDelete || comment.canHide || !nested;
+
+  return (
+    <article className={nested ? styles.commentReply : styles.commentThread}>
+      <div className={styles.commentRow}>
+        <CommunityMemberAvatar name={comment.author.name} avatarUrl={comment.author.avatarUrl} size={nested ? "sm" : "md"} />
+        <div className={styles.commentBody}>
+          <div className={styles.commentMeta}>
+            <strong>{comment.author.name}</strong>
+            <time className={styles.commentTime} dateTime={comment.createdAt}>
+              {formatCommentTime(comment.createdAt)}
+            </time>
+          </div>
+          {editing ? (
+            <form className={styles.commentEditForm} onSubmit={(event) => void saveEdit(event)}>
+              <textarea maxLength={800} rows={3} value={editBody} onChange={(event) => setEditBody(event.target.value)} aria-label="Edit comment" />
+              <div className={styles.commentEditActions}>
+                <button type="button" className={styles.commentAction} data-flat-button onClick={() => { setEditing(false); setEditBody(comment.body); }}>
+                  Cancel
+                </button>
+                <button type="submit" className={styles.commentEditSave} data-flat-button disabled={!editBody.trim() || editSubmitting}>
+                  Save
+                </button>
+              </div>
+            </form>
+          ) : (
+            <p className={styles.commentText}>{comment.body}</p>
+          )}
+          {showActions && !editing && (
+            <div className={styles.commentActions}>
+              {!nested && (
+                <button type="button" className={styles.commentAction} data-flat-button onClick={() => setReplying((open) => !open)}>
+                  Reply
+                </button>
+              )}
+              {comment.canEdit && (
+                <button type="button" className={styles.commentAction} data-flat-button onClick={() => { setEditBody(comment.body); setEditing(true); }}>
+                  Edit
+                </button>
+              )}
+              {comment.canDelete && (
+                <button type="button" className={`${styles.commentAction} ${styles.commentActionDanger}`} data-flat-button onClick={() => void remove(false)}>
+                  Delete
+                </button>
+              )}
+              {comment.canHide && (
+                <button type="button" className={`${styles.commentAction} ${styles.commentActionDanger}`} data-flat-button onClick={() => void remove(true)}>
+                  Hide
+                </button>
+              )}
+              <Link className={styles.commentAction} href={`/safety?targetType=community_comment&targetId=${comment.id}`}>
+                Report
+              </Link>
+            </div>
+          )}
+          {replying && (
+            <form className={styles.replyComposer} onSubmit={(event) => void submitReply(event)}>
+              <textarea maxLength={800} rows={1} value={replyBody} onChange={(event) => setReplyBody(event.target.value)} placeholder="Write a reply" aria-label="Write a reply" />
+              <button type="submit" className={styles.commentComposerSend} data-flat-button disabled={!replyBody.trim() || replySubmitting} aria-label="Send reply">
+                <Send aria-hidden="true" />
+              </button>
+            </form>
+          )}
+        </div>
+      </div>
+      {comment.replies.length > 0 && (
+        <div className={styles.replyList}>
+          {comment.replies.map((reply) => (
+            <CommentItem comment={reply} postId={postId} reload={reload} nested key={reply.id} />
+          ))}
+        </div>
+      )}
+    </article>
+  );
+}
+
+type CommunityCommentsListProps = {
+  postId: string;
+  comments: CommunityComment[];
+  reload: () => Promise<void>;
+  variant?: "default" | "viewer";
+};
+
+export function CommunityCommentsList({ postId, comments, reload, variant = "default" }: CommunityCommentsListProps) {
+  if (comments.length === 0) {
+    return (
+      <div className={variant === "viewer" ? styles.emptyViewer : styles.empty}>
+        <MessageCircle />
+        <h2>No comments yet</h2>
+        <p>Start a useful conversation.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className={variant === "viewer" ? styles.commentsViewer : styles.comments}>
+      {comments.map((comment) => (
+        <CommentItem comment={comment} postId={postId} reload={reload} key={comment.id} />
+      ))}
+    </div>
+  );
+}
+
+type CommunityCommentsProps = {
+  postId: string;
+  comments: CommunityComment[];
+  reload: () => Promise<void>;
+};
+
+export function CommunityComments({ postId, comments, reload }: CommunityCommentsProps) {
+  return (
+    <section className={styles.commentSection} aria-label="Comments">
+      <CommunityCommentComposer postId={postId} reload={reload} placeholder="Write a helpful comment" submitLabel="Send comment" />
+      <CommunityCommentsList postId={postId} comments={comments} reload={reload} />
+    </section>
+  );
+}

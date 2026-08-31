@@ -14,6 +14,7 @@ import {
   ShieldCheck,
   Sun,
   UserRound,
+  UsersRound,
 } from "lucide-react";
 import { useTheme } from "../app/theme-provider";
 import type { ThemePreference } from "../app/theme";
@@ -78,6 +79,10 @@ export function SessionMenu({ loggingOut = false, onSignOut }: SessionMenuProps)
           <Link className={styles.item} href="/home" role="menuitem" onClick={close}>
             <Home aria-hidden="true" />
             <span>Home</span>
+          </Link>
+          <Link className={styles.item} href="/community" role="menuitem" onClick={close}>
+            <UsersRound aria-hidden="true" />
+            <span>Community</span>
           </Link>
           <Link className={styles.item} href="/account" role="menuitem" onClick={close}>
             <UserRound aria-hidden="true" />

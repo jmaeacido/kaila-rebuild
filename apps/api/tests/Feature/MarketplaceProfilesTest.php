@@ -52,7 +52,7 @@ class MarketplaceProfilesTest extends TestCase
         $this->actingAs($user)->putJson('/api/v1/me/active-mode', ['activeMode' => 'provider'])
             ->assertOk()->assertJsonPath('data.activeMode', 'provider');
 
-        $this->putJson('/api/v1/me/provider-profile', $this->validProfile($category, $area))
+        $this->submitProviderProfile($user, $this->validProfile($category, $area))
             ->assertOk()->assertJsonPath('data.status', 'pending_review');
 
         $this->getJson('/api/v1/admin/marketplace/review-queue')->assertForbidden();
@@ -79,8 +79,7 @@ class MarketplaceProfilesTest extends TestCase
         $profile = $this->validProfile($category, $area);
         $profile['serviceIds'] = [$category->id, $computerServices->id];
 
-        $this->actingAs($user)
-            ->putJson('/api/v1/me/provider-profile', $profile)
+        $this->submitProviderProfile($user, $profile)
             ->assertOk()
             ->assertJsonCount(2, 'data.services')
             ->assertJsonFragment(['id' => $category->id, 'name' => 'Plumbing'])
@@ -120,8 +119,7 @@ class MarketplaceProfilesTest extends TestCase
         $user = User::factory()->create();
         User::factory()->create(['is_admin' => true]);
 
-        $this->actingAs($user)
-            ->putJson('/api/v1/me/provider-profile', $this->validProfile($category, $municipality))
+        $this->submitProviderProfile($user, $this->validProfile($category, $municipality))
             ->assertOk()
             ->assertJsonPath('data.status', 'pending_review')
             ->assertJsonPath('data.service_areas.0.id', $municipality->id)
@@ -179,8 +177,7 @@ class MarketplaceProfilesTest extends TestCase
         $payload['displayName'] = 'Updated Provider Name';
         $payload['bio'] = 'Updated bio with enough detail for marketplace review workflows.';
         $payload['yearsExperience'] = 8;
-        $this->actingAs($user)
-            ->putJson('/api/v1/me/provider-profile', $payload)
+        $this->submitProviderProfile($user, $payload)
             ->assertOk()
             ->assertJsonPath('data.status', 'pending_review');
 
@@ -199,8 +196,7 @@ class MarketplaceProfilesTest extends TestCase
         [$category, $area] = $this->referenceData();
         $user = User::factory()->create();
 
-        $this->actingAs($user)
-            ->putJson('/api/v1/me/provider-profile', $this->validProfile($category, $area))
+        $this->submitProviderProfile($user, $this->validProfile($category, $area))
             ->assertOk()
             ->assertJsonPath('data.status', 'pending_review');
 
@@ -210,6 +206,63 @@ class MarketplaceProfilesTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.providers.0.isUpdate', false)
             ->assertJsonPath('data.providers.0.changes', []);
+    }
+
+    public function test_provider_profile_submission_requires_a_profile_picture(): void
+    {
+        [$category, $area] = $this->referenceData();
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->putJson('/api/v1/me/provider-profile', $this->validProfile($category, $area))
+            ->assertStatus(422)
+            ->assertJsonPath('message', 'Upload a profile picture before submitting your provider profile.');
+    }
+
+    public function test_approving_a_provider_requires_an_approved_profile_picture(): void
+    {
+        [$category, $area] = $this->referenceData();
+        $user = User::factory()->create();
+        $admin = User::factory()->create(['is_admin' => true]);
+        $this->seedAvatar($user, 'pending');
+        $this->submitProviderProfile($user, $this->validProfile($category, $area))->assertOk();
+        $profile = ProviderProfile::query()->where('user_id', $user->id)->firstOrFail();
+
+        $this->actingAs($admin)
+            ->putJson("/api/v1/admin/marketplace/providers/{$profile->id}/status", ['status' => 'active'])
+            ->assertStatus(409)
+            ->assertJsonPath('message', 'Approve the provider profile picture before activating this profile.');
+    }
+
+    public function test_approving_a_provider_creates_an_official_welcome_community_post_with_avatar(): void
+    {
+        [$category, $area] = $this->referenceData();
+        $user = User::factory()->create(['name' => 'Ana Repairs']);
+        $admin = User::factory()->create(['is_admin' => true]);
+        $this->seedAvatar($user, 'clean');
+        $this->submitProviderProfile($user, $this->validProfile($category, $area))->assertOk();
+        $profile = ProviderProfile::query()->where('user_id', $user->id)->firstOrFail();
+
+        $this->actingAs($admin)
+            ->putJson("/api/v1/admin/marketplace/providers/{$profile->id}/status", ['status' => 'active'])
+            ->assertOk()
+            ->assertJsonPath('data.status', 'active');
+
+        $profile->refresh();
+        $this->assertNotNull($profile->welcome_community_post_id);
+        $this->assertDatabaseHas('community_posts', [
+            'id' => $profile->welcome_community_post_id,
+            'kind' => 'official_update',
+            'author_display_mode' => 'official',
+            'moderation_status' => 'published',
+        ]);
+        $this->assertDatabaseHas('community_post_media', [
+            'community_post_id' => $profile->welcome_community_post_id,
+        ]);
+        $this->assertDatabaseHas('outbox_events', [
+            'resource_id' => $profile->welcome_community_post_id,
+            'event_type' => 'community.post.published',
+        ]);
     }
 
     public function test_approving_a_provider_profile_notifies_the_provider(): void
@@ -648,7 +701,37 @@ class MarketplaceProfilesTest extends TestCase
         $profile = ProviderProfile::query()->create(['user_id' => User::factory()->create()->id, 'display_name' => $name, 'bio' => 'Experienced and dependable local service provider.', 'status' => $status, 'years_experience' => 4]);
         $profile->services()->attach($category);
         $profile->serviceAreas()->attach($area);
+        $this->seedAvatar(User::query()->findOrFail($profile->user_id), 'clean');
 
         return $profile;
+    }
+
+    /** @param array<string, mixed> $payload */
+    private function submitProviderProfile(User $user, array $payload): \Illuminate\Testing\TestResponse
+    {
+        if (! ProfileAsset::query()->where('user_id', $user->id)->where('purpose', 'avatar')->exists()) {
+            $this->seedAvatar($user);
+        }
+
+        return $this->actingAs($user)->putJson('/api/v1/me/provider-profile', $payload);
+    }
+
+    private function seedAvatar(User $user, string $scanStatus = 'pending'): ProfileAsset
+    {
+        Storage::fake('private-assets');
+        $upload = UploadedFile::fake()->image('avatar.jpg', 128, 128);
+        $key = "profiles/{$user->id}/avatar/".fake()->uuid().'.jpg';
+        Storage::disk('private-assets')->put($key, file_get_contents($upload->getRealPath()) ?: '');
+
+        return ProfileAsset::query()->create([
+            'user_id' => $user->id,
+            'purpose' => 'avatar',
+            'disk' => 'private-assets',
+            'object_key' => $key,
+            'original_name' => 'avatar.jpg',
+            'mime_type' => 'image/jpeg',
+            'size_bytes' => 18,
+            'scan_status' => $scanStatus,
+        ]);
     }
 }
