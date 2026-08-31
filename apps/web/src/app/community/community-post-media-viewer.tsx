@@ -8,6 +8,7 @@ import { BadgeCheck, ChevronLeft, ChevronRight, HeartHandshake, MapPin, MessageC
 import { CommunityAuthorAvatar } from "./community-author-avatar";
 import { CommunityCommentComposer, CommunityCommentsList } from "./community-comments";
 import { CommunityHashtags } from "./community-hashtags";
+import { CommunityWelcomeBody, CommunityWelcomeTitle } from "./community-welcome-content";
 import { CommunityComment, CommunityPost, csrfFetch, kindLabels } from "./community-client";
 import { useRealtimeInvalidation } from "../use-realtime-invalidation";
 import viewerStyles from "./community-media-viewer.module.css";
@@ -175,8 +176,8 @@ export function CommunityPostMediaViewer({
           </header>
 
           <div className={viewerStyles.sideScroll}>
-            <h2 className={viewerStyles.title}>{currentPost.title}</h2>
-            <p className={viewerStyles.preview}>{currentPost.body}</p>
+            <CommunityWelcomeTitle post={currentPost} postHref={`/community/${currentPost.id}`} className={viewerStyles.title} />
+            <CommunityWelcomeBody post={currentPost} className={viewerStyles.preview} />
             <CommunityHashtags tags={currentPost.hashtags} />
 
             <div className={`${styles.engagementRow} ${viewerStyles.viewerEngagement}`}>

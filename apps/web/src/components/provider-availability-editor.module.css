@@ -1,0 +1,104 @@
+.section {
+  display: grid;
+  gap: var(--spacing-12);
+}
+
+.intro {
+  color: var(--color-text-secondary);
+  font-size: var(--font-small-size);
+  line-height: var(--line-height-body);
+  margin: 0;
+}
+
+.list {
+  display: grid;
+  gap: var(--spacing-8);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.row {
+  align-items: center;
+  background: var(--color-surface);
+  border: var(--control-border-width) solid var(--color-border);
+  border-radius: var(--radius-input);
+  display: grid;
+  gap: var(--spacing-8);
+  grid-template-columns: auto minmax(0, 1fr);
+  min-height: var(--spacing-48);
+  padding: var(--spacing-12);
+}
+
+.rowEnabled {
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
+.toggle {
+  align-items: center;
+  cursor: pointer;
+  display: flex;
+  gap: var(--spacing-8);
+  min-height: var(--spacing-48);
+}
+
+.toggle input {
+  flex: 0 0 auto;
+  min-height: var(--spacing-24);
+  width: var(--spacing-24);
+}
+
+.toggle span {
+  color: var(--color-ink);
+  font-weight: var(--font-weight-semibold);
+}
+
+.times {
+  display: grid;
+  gap: var(--spacing-8);
+  grid-column: 1 / -1;
+}
+
+.times label {
+  color: var(--color-text-secondary);
+  display: grid;
+  font-size: var(--font-small-size);
+  font-weight: var(--font-weight-medium);
+  gap: var(--spacing-4);
+}
+
+.times input {
+  background: var(--color-surface);
+  border: var(--control-border-width) solid var(--color-border);
+  border-radius: var(--radius-input);
+  color: var(--color-ink);
+  font: inherit;
+  min-height: var(--control-min-height);
+  padding: var(--spacing-12);
+}
+
+.times input:focus {
+  border-color: var(--color-primary);
+  outline: var(--focus-ring-width) solid var(--color-focus);
+  outline-offset: var(--spacing-4);
+}
+
+.summary {
+  color: var(--color-text-secondary);
+  font-size: var(--font-small-size);
+}
+
+.summary strong {
+  color: var(--color-ink);
+}
+
+@media (min-width: 40rem) {
+  .rowEnabled {
+    grid-template-columns: minmax(9rem, 1fr) repeat(2, minmax(0, 1fr));
+  }
+
+  .times {
+    grid-column: auto;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

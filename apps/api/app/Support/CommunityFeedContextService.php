@@ -137,10 +137,17 @@ class CommunityFeedContextService
             ->limit(4)
             ->get();
 
+        $featuredByPostId = ProviderProfile::query()
+            ->whereIn('welcome_community_post_id', $posts->pluck('id'))
+            ->where('status', 'active')
+            ->get(['id', 'display_name', 'welcome_community_post_id'])
+            ->keyBy('welcome_community_post_id');
+
         $items = [];
         foreach ($posts as $post) {
             $post->loadMissing(['media' => fn ($query) => $query->where('scan_status', 'clean')]);
             $thumb = $post->media->first();
+            $profile = $featuredByPostId->get($post->id);
 
             $items[] = [
                 'id' => $post->id,
@@ -148,6 +155,8 @@ class CommunityFeedContextService
                 'areaLabel' => $post->area_label,
                 'publishedAt' => $post->published_at?->toIso8601String(),
                 'mediaUrl' => $thumb ? "/api/v1/community-media/{$thumb->id}" : null,
+                'providerProfileId' => $profile ? (int) $profile->id : null,
+                'providerDisplayName' => $profile?->display_name,
             ];
         }
 

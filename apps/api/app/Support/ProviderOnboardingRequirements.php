@@ -19,11 +19,18 @@ class ProviderOnboardingRequirements
 
     public function avatarApproved(User $user): bool
     {
+        return $this->approvedAvatar($user) !== null;
+    }
+
+    public function approvedAvatar(User $user): ?ProfileAsset
+    {
         return ProfileAsset::query()
             ->where('user_id', $user->id)
             ->where('purpose', 'avatar')
             ->where('scan_status', 'clean')
-            ->exists();
+            ->orderByRaw("CASE WHEN origin = 'upload' THEN 0 ELSE 1 END")
+            ->latest()
+            ->first();
     }
 
     public function assertAvatarUploaded(User $user): void
@@ -52,12 +59,7 @@ class ProviderOnboardingRequirements
             ->where('purpose', 'avatar')
             ->latest()
             ->first();
-        $clean = ProfileAsset::query()
-            ->where('user_id', $user->id)
-            ->where('purpose', 'avatar')
-            ->where('scan_status', 'clean')
-            ->latest()
-            ->first();
+        $clean = $this->approvedAvatar($user);
 
         return [
             'uploaded' => $latest !== null && in_array($latest->scan_status, ['pending', 'clean'], true),

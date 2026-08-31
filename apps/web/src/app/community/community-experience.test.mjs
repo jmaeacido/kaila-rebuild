@@ -83,6 +83,21 @@ test("community feed includes marketplace navigation with Community active", () 
   assert.match(feed, /<MarketplaceNavigation active="community" \/>/);
 });
 
+test("community welcome posts link the featured provider name to their public profile", () => {
+  const welcome = readFileSync(new URL("./community-welcome-content.tsx", import.meta.url), "utf8");
+  assert.match(welcome, /featuredProviderLink/);
+  assert.match(welcome, /\/providers\/\$\{provider\.id\}/);
+  assert.match(feed, /CommunityWelcomeTitle/);
+  assert.match(feed, /CommunityWelcomeBody/);
+  assert.match(detail, /CommunityWelcomeTitle/);
+  assert.match(detail, /CommunityWelcomeBody/);
+});
+
+test("community notifications deep-link to the welcome post", () => {
+  const route = readFileSync(new URL("../notification-route.ts", import.meta.url), "utf8");
+  assert.match(route, /resourceType === "community_post"/);
+});
+
 test("community feed uses a desktop three-column layout with browse and discover rails", () => {
   const css = readFileSync(new URL("./community.module.css", import.meta.url), "utf8");
   assert.match(feed, /CommunityBrowseRail/);

@@ -19,6 +19,7 @@ class ProviderWelcomeCommunityPostServiceTest extends TestCase
 
     public function test_welcome_post_prefers_city_over_region_and_includes_service_hashtag(): void
     {
+        config(['filesystems.private_assets_disk' => 'private-assets']);
         Storage::fake('private-assets');
         $user = User::factory()->create();
         User::factory()->create(['is_admin' => true]);
@@ -38,7 +39,7 @@ class ProviderWelcomeCommunityPostServiceTest extends TestCase
         $avatarKey = "profiles/{$user->id}/avatar/test.jpg";
         Storage::disk('private-assets')->put($avatarKey, file_get_contents($upload->getRealPath()) ?: '');
 
-        ProfileAsset::query()->create([
+        $avatar = ProfileAsset::query()->create([
             'user_id' => $user->id,
             'purpose' => 'avatar',
             'disk' => 'private-assets',
@@ -65,5 +66,73 @@ class ProviderWelcomeCommunityPostServiceTest extends TestCase
         $this->assertStringNotContainsString('Region I', $post->body);
         $this->assertContains('newprovider', $post->hashtags);
         $this->assertContains('plumbing', $post->hashtags);
+        $this->assertSame(1, $post->media()->count());
+        $this->assertSame("profile_asset:{$avatar->id}", $post->media()->first()?->scan_signature ?? '');
+        $this->assertDatabaseHas('durable_notifications', [
+            'user_id' => $user->id,
+            'type' => 'community.provider_welcome_published',
+            'resource_type' => 'community_post',
+            'resource_id' => $post->id,
+        ]);
+    }
+
+    public function test_welcome_post_replaces_media_when_approved_avatar_changes(): void
+    {
+        config(['filesystems.private_assets_disk' => 'private-assets']);
+        Storage::fake('private-assets');
+        $user = User::factory()->create();
+        User::factory()->create(['is_admin' => true]);
+        $profile = ProviderProfile::query()->create([
+            'user_id' => $user->id,
+            'display_name' => 'Logo Provider',
+            'bio' => 'Reliable local service with careful work and clear communication.',
+            'status' => 'active',
+            'years_experience' => 4,
+        ]);
+
+        $firstUpload = UploadedFile::fake()->image('old.jpg', 64, 64);
+        $firstKey = "profiles/{$user->id}/avatar/old.jpg";
+        Storage::disk('private-assets')->put($firstKey, file_get_contents($firstUpload->getRealPath()) ?: '');
+
+        $firstAvatar = ProfileAsset::query()->create([
+            'user_id' => $user->id,
+            'purpose' => 'avatar',
+            'origin' => 'upload',
+            'disk' => 'private-assets',
+            'object_key' => $firstKey,
+            'original_name' => 'old.jpg',
+            'mime_type' => 'image/jpeg',
+            'size_bytes' => Storage::disk('private-assets')->size($firstKey),
+            'scan_status' => 'clean',
+        ]);
+
+        $service = app(ProviderWelcomeCommunityPostService::class);
+        $post = $service->publishForProvider($profile->fresh());
+        $this->assertNotNull($post);
+        $this->assertSame("profile_asset:{$firstAvatar->id}", $post->media()->first()?->scan_signature);
+
+        $secondUpload = UploadedFile::fake()->image('logo.jpg', 96, 96);
+        $secondKey = "profiles/{$user->id}/avatar/logo.jpg";
+        Storage::disk('private-assets')->put($secondKey, file_get_contents($secondUpload->getRealPath()) ?: '');
+
+        $secondAvatar = ProfileAsset::query()->create([
+            'user_id' => $user->id,
+            'purpose' => 'avatar',
+            'origin' => 'upload',
+            'disk' => 'private-assets',
+            'object_key' => $secondKey,
+            'original_name' => 'logo.jpg',
+            'mime_type' => 'image/jpeg',
+            'size_bytes' => Storage::disk('private-assets')->size($secondKey),
+            'scan_status' => 'clean',
+        ]);
+        $firstAvatar->update(['scan_status' => 'rejected']);
+
+        $service->publishForProvider($profile->fresh());
+        $post->refresh();
+
+        $this->assertSame(1, $post->media()->count());
+        $this->assertSame("profile_asset:{$secondAvatar->id}", $post->media()->first()?->scan_signature);
+        $this->assertDatabaseCount('durable_notifications', 1);
     }
 }

@@ -263,6 +263,18 @@ class MarketplaceProfilesTest extends TestCase
             'resource_id' => $profile->welcome_community_post_id,
             'event_type' => 'community.post.published',
         ]);
+        $this->assertDatabaseHas('durable_notifications', [
+            'user_id' => $user->id,
+            'type' => 'community.provider_welcome_published',
+            'resource_type' => 'community_post',
+            'resource_id' => $profile->welcome_community_post_id,
+        ]);
+
+        $this->actingAs($user)
+            ->getJson("/api/v1/community/{$profile->welcome_community_post_id}")
+            ->assertOk()
+            ->assertJsonPath('data.featuredProvider.id', $profile->id)
+            ->assertJsonPath('data.featuredProvider.displayName', 'Ana Repairs');
     }
 
     public function test_approving_a_provider_profile_notifies_the_provider(): void

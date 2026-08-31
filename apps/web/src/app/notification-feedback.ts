@@ -132,7 +132,13 @@ export function feedbackForDomainEvent(event: DomainEvent): FeedbackMessage | nu
       body: matched ? record.title : record.body,
       href: realtimeNotificationRoute(record),
       persistent: true,
-      actionLabel: matched ? "View job" : record.type.startsWith("profile.provider_") ? "View profile" : "View update",
+      actionLabel: matched
+        ? "View job"
+        : record.type.startsWith("profile.provider_")
+          ? "View profile"
+          : record.type.startsWith("community.")
+            ? "View post"
+            : "View update",
       eyebrow: matched ? "NEW MATCH NEAR YOU" : undefined,
       matchJobId: matched && /^[A-Za-z0-9-]+$/.test(jobId) ? jobId : undefined,
       eventKey: providerStatusKey,

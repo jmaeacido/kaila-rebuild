@@ -22,12 +22,19 @@ test("Provider profile loads saved data from marketplace profile", () => {
 
 test("Provider profile does not overwrite edits during background refreshes", () => {
   assert.match(source, /const formIsDirty = useRef\(false\)/);
+  assert.match(source, /const \[hasUnsavedChanges, setHasUnsavedChanges\] = useState\(false\)/);
   assert.match(source, /const loadSequence = useRef\(0\)/);
   assert.match(source, /provider && !formIsDirty\.current && sequence === loadSequence\.current/);
   assert.match(source, /onInput=\{markFormDirty\}/);
   assert.match(source, /markFormDirty\(\);\s*setServiceIds\(values\)/);
   assert.match(source, /setMessage\("saving"\);\s*loadSequence\.current \+= 1/);
   assert.match(source, /formIsDirty\.current = false/);
+  assert.match(source, /setHasUnsavedChanges\(false\)/);
+});
+
+test("Submit for review stays disabled until the provider edits the form", () => {
+  assert.match(source, /setHasUnsavedChanges\(true\)/);
+  assert.match(source, /disabled=\{referenceStatus !== "ready" \|\| !hasUnsavedChanges\}/);
 });
 
 test("Provider profile loads and submits every offered service", () => {

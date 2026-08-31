@@ -21,7 +21,7 @@ export function CommunityPostMediaGrid({ media, limit = 4, onMediaClick }: Commu
   return (
     <div className={mediaLayoutClass(items.length)}>
       {items.map((item, index) => {
-        const image = <Image unoptimized width={720} height={480} src={item.url!} alt={item.originalName} />;
+        const image = <Image unoptimized width={720} height={480} src={item.url!} alt={item.originalName.endsWith(".webp") ? "Post photo" : item.originalName} />;
         if (!onMediaClick) {
           return <div className={styles.mediaTileStatic} key={item.id}>{image}</div>;
         }

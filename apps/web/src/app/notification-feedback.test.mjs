@@ -104,6 +104,20 @@ test("rejected profile reviews deep-link to the profile-picture sheet", () => {
   }), "/account?profilePicture=review&reviewStatus=rejected&notificationId=notification-profile-rejected");
 });
 
+test("community welcome notifications deep-link to the community post", () => {
+  assert.equal(notificationRoute({
+    id: "notification-community-welcome",
+    type: "community.provider_welcome_published",
+    title: "You were welcomed in Community",
+    body: "KAILA shared your welcome post with the community so clients can discover you.",
+    resourceType: "community_post",
+    resourceId: "1056a747-9d56-4abf-9230-06d9cb3c2aff",
+    data: { type: "community", providerProfileId: 2, postId: "1056a747-9d56-4abf-9230-06d9cb3c2aff" },
+    readAt: null,
+    createdAt: new Date().toISOString(),
+  }), "/community/1056a747-9d56-4abf-9230-06d9cb3c2aff");
+});
+
 test("turns durable notification events into visible feedback", () => {
   assert.deepEqual(feedbackForDomainEvent({
     eventId: "event-1", type: "notification.created", occurredAt: new Date().toISOString(),

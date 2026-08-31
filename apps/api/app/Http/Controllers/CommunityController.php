@@ -14,6 +14,7 @@ use App\Support\CommunityHashtagParser;
 use App\Support\CommunityMediaObjectKey;
 use App\Support\CommunityPostVisibility;
 use App\Support\CommunityRealtimePublisher;
+use App\Support\CommunityWelcomeProviderLookup;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -29,6 +30,7 @@ class CommunityController
         private readonly CommunityHashtagParser $hashtags,
         private readonly CommunityPostVisibility $visibility,
         private readonly CommunityFeedContextService $feedContext,
+        private readonly CommunityWelcomeProviderLookup $welcomeProviders,
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -47,9 +49,14 @@ class CommunityController
             ->latest('published_at')
             ->cursorPaginate(12);
 
+        $items = $page->items();
+        $featuredByPostId = $this->welcomeProviders->forPostIds(array_map(
+            static fn (CommunityPost $post): string => $post->id,
+            $items,
+        ));
         $posts = [];
-        foreach ($page->items() as $post) {
-            $posts[] = $this->present($post, $user);
+        foreach ($items as $post) {
+            $posts[] = $this->present($post, $user, $featuredByPostId[$post->id] ?? null);
         }
 
         return response()->json(['data' => $posts, 'meta' => ['nextCursor' => $page->nextCursor()?->encode()]]);
@@ -68,7 +75,7 @@ class CommunityController
         $user = $this->user($request);
         $this->assertVisible($communityPost, $user);
 
-        return response()->json(['data' => $this->present($communityPost, $user)]);
+        return response()->json(['data' => $this->present($communityPost, $user, $this->welcomeProviders->forPost($communityPost))]);
     }
 
     public function store(Request $request): JsonResponse
@@ -297,12 +304,13 @@ class CommunityController
         return response()->json(['data' => ['blocked' => true, 'userId' => $communityPost->author_user_id]]);
     }
 
-    /** @return array<string, mixed> */
-    private function present(CommunityPost $post, User $user): array
+    /** @param array{id: int, displayName: string}|null $featuredProvider
+     * @return array<string, mixed> */
+    private function present(CommunityPost $post, User $user, ?array $featuredProvider = null): array
     {
         $post->loadMissing(['author', 'area', 'media' => fn ($query) => $query->where('scan_status', 'clean')]);
 
-        return ['id' => $post->id, 'kind' => $post->kind, 'title' => $post->title, 'body' => $post->body, 'hashtags' => array_values($post->hashtags ?? []), 'area' => $post->area?->only(['id', 'name']), 'areaLabel' => $post->area_label, 'author' => $post->author_display_mode === 'official' ? ['id' => $post->author_user_id, 'name' => 'KAILA', 'official' => true] : ['id' => $post->author_user_id, 'name' => $post->author->name, 'official' => false], 'helpful' => DB::table('community_reactions')->where(['community_post_id' => $post->id, 'user_id' => $user->id])->exists(), 'helpfulCount' => (int) $post->helpful_count, 'commentsCount' => (int) $post->comments_count, 'media' => $post->media->map(fn ($media) => $this->presentMedia($media))->values(), 'canManage' => $post->author_user_id === $user->id, 'publishedAt' => $post->published_at?->toIso8601String(), 'editedAt' => $post->edited_at?->toIso8601String()];
+        return ['id' => $post->id, 'kind' => $post->kind, 'title' => $post->title, 'body' => $post->body, 'hashtags' => array_values($post->hashtags ?? []), 'area' => $post->area?->only(['id', 'name']), 'areaLabel' => $post->area_label, 'author' => $post->author_display_mode === 'official' ? ['id' => $post->author_user_id, 'name' => 'KAILA', 'official' => true] : ['id' => $post->author_user_id, 'name' => $post->author->name, 'official' => false], 'featuredProvider' => $featuredProvider, 'helpful' => DB::table('community_reactions')->where(['community_post_id' => $post->id, 'user_id' => $user->id])->exists(), 'helpfulCount' => (int) $post->helpful_count, 'commentsCount' => (int) $post->comments_count, 'media' => $post->media->map(fn ($media) => $this->presentMedia($media))->values(), 'canManage' => $post->author_user_id === $user->id, 'publishedAt' => $post->published_at?->toIso8601String(), 'editedAt' => $post->edited_at?->toIso8601String()];
     }
 
     /** @return array<string, mixed> */

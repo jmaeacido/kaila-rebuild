@@ -10,6 +10,7 @@ import { CommunityComments } from "../community-comments";
 import { CommunityHashtags } from "../community-hashtags";
 import { CommunityPostMediaGrid } from "../community-post-media-grid";
 import { CommunityPostMediaViewer } from "../community-post-media-viewer";
+import { CommunityWelcomeBody, CommunityWelcomeTitle } from "../community-welcome-content";
 import { CommunityComment, CommunityPost, csrfFetch, kindLabels } from "../community-client";
 import { useRealtimeInvalidation } from "../../use-realtime-invalidation";
 import styles from "../community.module.css";
@@ -123,8 +124,8 @@ export default function CommunityPostPage() {
                 </small>
               </span>
             </div>
-            <h1>{post.title}</h1>
-            <p className={styles.body}>{post.body}</p>
+            <CommunityWelcomeTitle post={post} postHref={`/community/${post.id}`} heading="h1" />
+            <CommunityWelcomeBody post={post} />
             <CommunityHashtags tags={post.hashtags} />
             <p className={styles.meta}>
               {new Date(post.publishedAt).toLocaleString()}

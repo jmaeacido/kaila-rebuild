@@ -31,6 +31,9 @@ export function notificationRoute(notification: NotificationRecord): string {
     return `/account?${params.toString()}`;
   }
   if (notification.resourceType === "direct_conversation") return "/messages";
+  if (notification.resourceType === "community_post" && /^[A-Za-z0-9-]+$/.test(notification.resourceId)) {
+    return `/community/${notification.resourceId}`;
+  }
   if (notification.resourceType === "support_case" && /^[A-Za-z0-9-]+$/.test(notification.resourceId)) return `/support/${notification.resourceId}`;
   if (notification.resourceType === "call_session" || notification.data.type === "call") {
     const contextId = String(notification.data.contextId ?? "");

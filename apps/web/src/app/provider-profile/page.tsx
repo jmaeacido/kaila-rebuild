@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, BadgeCheck, Camera, CheckCircle2, Images, LocateFixed, MapPin, Store, UserRound, Wrench } from "lucide-react";
+import { ArrowLeft, BadgeCheck, CalendarClock, Camera, CheckCircle2, Images, LocateFixed, MapPin, Store, UserRound, Wrench } from "lucide-react";
 import Image from "next/image";
 import { Button, Feedback, TextField } from "@kaila/ui";
 import Link from "next/link";
@@ -10,6 +10,12 @@ import { SelectField } from "../../components/select-field";
 import { ServiceCategoryMultiSelect } from "../../components/service-category-multi-select";
 import { AttachmentSourceActions } from "../../components/attachment-picker";
 import { ProviderPortfolioManager, type ManagedPortfolioAsset } from "../../components/provider-portfolio-manager";
+import {
+  ProviderAvailabilityEditor,
+  defaultAvailabilitySlots,
+  parseProviderAvailability,
+  type AvailabilitySlot,
+} from "../../components/provider-availability-editor";
 import { prepareCsrf } from "../auth-client";
 import { useRealtimeInvalidation } from "../use-realtime-invalidation";
 import styles from "./profile.module.css";
@@ -34,6 +40,7 @@ type ProviderProfile = {
   shop_longitude: string | number | null;
   services: Array<{ id: number; name: string }>;
   service_areas: Array<{ id: number; name: string; type?: string; parent_id?: number | null }>;
+  availability?: Array<{ day_of_week: number; starts_at: string; ends_at: string }>;
 };
 
 const independentCity = "independent-city";
@@ -120,6 +127,7 @@ async function applyServiceAreas(
 
 export default function ProviderProfilePage() {
   const formIsDirty = useRef(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const loadSequence = useRef(0);
   const [categories, setCategories] = useState<ServiceCategory[]>([]);
   const [areas, setAreas] = useState<Item[]>([]);
@@ -150,9 +158,11 @@ export default function ProviderProfilePage() {
   const [avatarUploadProgress, setAvatarUploadProgress] = useState(0);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [portfolioAssets, setPortfolioAssets] = useState<ManagedPortfolioAsset[]>([]);
+  const [availabilitySlots, setAvailabilitySlots] = useState<AvailabilitySlot[]>(defaultAvailabilitySlots);
 
   const markFormDirty = useCallback(() => {
     formIsDirty.current = true;
+    setHasUnsavedChanges(true);
     loadSequence.current += 1;
   }, []);
 
@@ -229,6 +239,7 @@ export default function ProviderProfilePage() {
           setOffersAtShop(Boolean(provider.offers_at_shop));
           setShopName(provider.shop_name ?? "");
           setShopAddress(provider.shop_address ?? "");
+          setAvailabilitySlots(parseProviderAvailability(provider.availability));
           if (provider.shop_latitude != null && provider.shop_longitude != null) {
             setShopLocation({
               latitude: Number(provider.shop_latitude),
@@ -293,6 +304,7 @@ export default function ProviderProfilePage() {
       setAvatarUploaded(true);
       setAvatarScanStatus("pending");
       setAvatarUploadProgress(100);
+      markFormDirty();
       setAvatarNotice("Uploaded. KAILA reviews profile pictures before they appear in the community welcome post.");
     } catch (error) {
       setMessage("error");
@@ -366,7 +378,7 @@ export default function ProviderProfilePage() {
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const selectedAreaIds = coverageMode === "city" ? [cityId] : barangayIds;
-    if (!avatarUploaded || !cityId || selectedAreaIds.length === 0 || serviceIds.length === 0 || (offersAtShop && !shopLocation)) {
+    if (!avatarUploaded || !cityId || selectedAreaIds.length === 0 || serviceIds.length === 0 || availabilitySlots.length === 0 || (offersAtShop && !shopLocation)) {
       setMessage("error");
       if (!avatarUploaded) {
         setAvatarNotice("Add a profile picture before submitting your provider profile.");
@@ -394,7 +406,7 @@ export default function ProviderProfilePage() {
         yearsExperience: Number(yearsExperience),
         serviceIds: serviceIds.map(Number),
         areaIds: selectedAreaIds.map(Number),
-        availability: [{ dayOfWeek: 1, startsAt: "08:00", endsAt: "17:00" }],
+        availability: availabilitySlots,
         offersAtShop,
         shopName: offersAtShop ? shopName : null,
         shopAddress: offersAtShop ? shopAddress : null,
@@ -407,6 +419,7 @@ export default function ProviderProfilePage() {
       setProfileStatus(saved.status ?? "pending_review");
       setReviewNote(saved.review_note ?? null);
       formIsDirty.current = false;
+      setHasUnsavedChanges(false);
     }
     setMessage(response.ok ? "saved" : "error");
   }
@@ -430,7 +443,8 @@ export default function ProviderProfilePage() {
           <li><span>2</span>Work photos</li>
           <li><span>3</span>About you</li>
           <li><span>4</span>Service area</li>
-          <li><span>5</span>Shop option</li>
+          <li><span>5</span>Availability</li>
+          <li><span>6</span>Shop option</li>
         </ol>
         {profileStatus === "active" && (
           <Feedback kind="success" title="Profile approved">
@@ -631,13 +645,27 @@ export default function ProviderProfilePage() {
               </div>
             )}
           </fieldset>
+          <fieldset className={styles.formSection}>
+            <legend><span>5</span><CalendarClock aria-hidden="true" /> Availability</legend>
+            <ProviderAvailabilityEditor
+              value={availabilitySlots}
+              disabled={referenceStatus !== "ready"}
+              onChange={(slots) => {
+                markFormDirty();
+                setAvailabilitySlots(slots);
+              }}
+            />
+          </fieldset>
           <fieldset className={styles.shopService}>
-            <legend><span>5</span><Store aria-hidden="true" /> Shop service</legend>
+            <legend><span>6</span><Store aria-hidden="true" /> Shop service</legend>
             <label className={styles.shopToggle}>
               <input
                 type="checkbox"
                 checked={offersAtShop}
-                onChange={(event) => setOffersAtShop(event.target.checked)}
+                onChange={(event) => {
+                  markFormDirty();
+                  setOffersAtShop(event.target.checked);
+                }}
               />
               <span><strong>Clients can also come to my shop</strong><small>Keep this enabled alongside your home-service coverage if you offer both.</small></span>
             </label>
@@ -669,7 +697,7 @@ export default function ProviderProfilePage() {
           </fieldset>
           <div className={styles.submitBar}>
             <span><Wrench aria-hidden="true" /> You can update your profile after review.</span>
-            <Button type="submit" isLoading={message === "saving"} disabled={referenceStatus !== "ready"}>
+            <Button type="submit" isLoading={message === "saving"} disabled={referenceStatus !== "ready" || !hasUnsavedChanges}>
               Submit for review
             </Button>
           </div>

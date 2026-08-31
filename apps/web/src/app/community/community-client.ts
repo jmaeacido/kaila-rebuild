@@ -1,10 +1,11 @@
 export type CommunityMedia = { id: string; originalName: string; mimeType: string; scanStatus: string; url: string | null };
-export type CommunityPost = { id: string; kind: string; title: string; body: string; hashtags: string[]; area: { id: number; name: string } | null; areaLabel: string | null; author: { id: number; name: string; official: boolean }; helpful: boolean; helpfulCount: number; commentsCount: number; media: CommunityMedia[]; canManage: boolean; publishedAt: string; editedAt: string | null };
+export type CommunityFeaturedProvider = { id: number; displayName: string };
+export type CommunityPost = { id: string; kind: string; title: string; body: string; hashtags: string[]; area: { id: number; name: string } | null; areaLabel: string | null; author: { id: number; name: string; official: boolean }; featuredProvider: CommunityFeaturedProvider | null; helpful: boolean; helpfulCount: number; commentsCount: number; media: CommunityMedia[]; canManage: boolean; publishedAt: string; editedAt: string | null };
 export type CommunityComment = { id: string; body: string; author: { id: number; name: string; avatarUrl: string | null }; canEdit: boolean; canDelete: boolean; canHide: boolean; createdAt: string; replies: CommunityComment[] };
 export type CommunityFeedContext = {
   homeArea: { id: number; name: string } | null;
   trendingTags: Array<{ tag: string; count: number }>;
-  newProviders: Array<{ id: string; title: string; areaLabel: string | null; publishedAt: string | null; mediaUrl: string | null }>;
+  newProviders: Array<{ id: string; title: string; areaLabel: string | null; publishedAt: string | null; mediaUrl: string | null; providerProfileId: number | null; providerDisplayName: string | null }>;
 };
 
 export async function csrfFetch(path: string, init: RequestInit = {}) {

@@ -14,6 +14,7 @@ import { communityFilters } from "./community-constants";
 import { CommunityHashtags } from "./community-hashtags";
 import { CommunityPostMediaGrid } from "./community-post-media-grid";
 import { CommunityPostMediaViewer } from "./community-post-media-viewer";
+import { CommunityWelcomeBody, CommunityWelcomeTitle } from "./community-welcome-content";
 import { CommunityFeedContext, CommunityPost, csrfFetch, kindLabels } from "./community-client";
 import { useRealtimeInvalidation } from "../use-realtime-invalidation";
 import styles from "./community.module.css";
@@ -168,8 +169,8 @@ export default function CommunityPage() {
                         </small>
                       </span>
                     </div>
-                    <Link href={`/community/${post.id}`}><h2>{post.title}</h2></Link>
-                    <p className={styles.body}>{post.body.length > 360 ? `${post.body.slice(0, 360)}…` : post.body}</p>
+                    <CommunityWelcomeTitle post={post} postHref={`/community/${post.id}`} />
+                    <CommunityWelcomeBody post={post} maxLength={360} />
                     <CommunityHashtags tags={post.hashtags} compact />
                   </div>
                   {post.media.length > 0 && (

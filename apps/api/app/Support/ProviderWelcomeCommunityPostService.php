@@ -21,6 +21,8 @@ class ProviderWelcomeCommunityPostService
         private readonly CommunityRealtimePublisher $realtime,
         private readonly CommunityHashtagParser $hashtags,
         private readonly CommunityImageNormalizer $normalizer,
+        private readonly ProviderOnboardingRequirements $requirements,
+        private readonly NotificationService $notifications,
     ) {}
 
     public function publishForProvider(ProviderProfile $profile): ?CommunityPost
@@ -30,21 +32,11 @@ class ProviderWelcomeCommunityPostService
         }
 
         $profile->refresh();
-        if ($profile->welcome_community_post_id) {
-            return CommunityPost::query()->find($profile->welcome_community_post_id);
-        }
-
         if ($profile->status !== 'active') {
             return null;
         }
 
-        $avatar = ProfileAsset::query()
-            ->where('user_id', $profile->user_id)
-            ->where('purpose', 'avatar')
-            ->where('scan_status', 'clean')
-            ->orderByDesc('created_at')
-            ->first();
-
+        $avatar = $this->requirements->approvedAvatar(User::query()->findOrFail($profile->user_id));
         if (! $avatar) {
             return null;
         }
@@ -54,10 +46,22 @@ class ProviderWelcomeCommunityPostService
             return null;
         }
 
+        if ($profile->welcome_community_post_id) {
+            $post = CommunityPost::query()->find($profile->welcome_community_post_id);
+            if ($post) {
+                $this->syncAvatar($post, $avatar, $admin);
+
+                return $post;
+            }
+        }
+
         return DB::transaction(function () use ($profile, $avatar, $admin): CommunityPost {
             $locked = ProviderProfile::query()->lockForUpdate()->findOrFail($profile->id);
             if ($locked->welcome_community_post_id) {
-                return CommunityPost::query()->findOrFail($locked->welcome_community_post_id);
+                $post = CommunityPost::query()->findOrFail($locked->welcome_community_post_id);
+                $this->syncAvatar($post, $avatar, $admin);
+
+                return $post;
             }
 
             $locked->load(['services:id,name,slug', 'serviceAreas:id,name,type,parent_id']);
@@ -93,6 +97,15 @@ class ProviderWelcomeCommunityPostService
             $this->attachAvatar($post, $avatar, $admin);
             $locked->update(['welcome_community_post_id' => $post->id]);
             $this->realtime->publish('community.post.published', $post, $admin, notifyEngaged: false);
+            $this->notifications->send(
+                (int) $locked->user_id,
+                'community.provider_welcome_published',
+                'You were welcomed in Community',
+                'KAILA shared your welcome post with the community so clients can discover you.',
+                'community_post',
+                $post->id,
+                ['providerProfileId' => (int) $locked->id, 'postId' => $post->id],
+            );
 
             return $post;
         });
@@ -147,6 +160,34 @@ class ProviderWelcomeCommunityPostService
         return $tag !== '' ? "#{$tag}" : '';
     }
 
+    private function syncAvatar(CommunityPost $post, ProfileAsset $avatar, User $admin): void
+    {
+        $current = $post->media()->orderBy('created_at')->first();
+        if ($current && $this->mediaMatchesAvatar($current, $avatar)) {
+            return;
+        }
+
+        DB::transaction(function () use ($post, $avatar, $admin): void {
+            $post->media()->each(function (CommunityPostMedia $media): void {
+                Storage::disk($media->disk)->delete($media->object_key);
+                $media->delete();
+            });
+
+            $this->attachAvatar($post, $avatar, $admin);
+            $this->realtime->publish('community.post.updated', $post->fresh(['media']), $admin, notifyEngaged: false);
+        });
+    }
+
+    private function mediaMatchesAvatar(CommunityPostMedia $media, ProfileAsset $avatar): bool
+    {
+        return $media->scan_signature === $this->avatarSourceSignature($avatar);
+    }
+
+    private function avatarSourceSignature(ProfileAsset $avatar): string
+    {
+        return "profile_asset:{$avatar->id}";
+    }
+
     private function attachAvatar(CommunityPost $post, ProfileAsset $avatar, User $admin): void
     {
         abort_unless($avatar->scan_status === 'clean', 422, 'The provider profile picture must be approved before publishing the welcome post.');
@@ -160,7 +201,10 @@ class ProviderWelcomeCommunityPostService
         $assetId = (string) Str::uuid();
         $disk = (string) config('filesystems.private_assets_disk');
         $publishedKey = CommunityMediaObjectKey::published($post->id, $assetId);
-        Storage::disk($disk)->put($publishedKey, $normalized['contents']);
+        $stored = Storage::disk($disk)->put($publishedKey, $normalized['contents']);
+        if ($stored !== true) {
+            throw new RuntimeException('The provider profile picture could not be published to the community feed.');
+        }
 
         CommunityPostMedia::query()->create([
             'id' => $assetId,
@@ -172,6 +216,7 @@ class ProviderWelcomeCommunityPostService
             'mime_type' => $normalized['mimeType'],
             'size_bytes' => strlen($normalized['contents']),
             'scan_status' => 'clean',
+            'scan_signature' => $this->avatarSourceSignature($avatar),
             'scanned_at' => now(),
         ]);
     }

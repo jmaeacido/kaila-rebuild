@@ -55,19 +55,31 @@ export function CommunityDiscoverRail({ context, isProvider, ready }: CommunityD
           <ul className={styles.providerList}>
             {newProviders.map((item) => (
               <li key={item.id}>
-                <Link className={styles.providerCard} href={`/community/${item.id}`}>
-                  <span className={styles.providerThumb} aria-hidden="true">
+                <div className={styles.providerCard}>
+                  <Link className={styles.providerThumb} href={`/community/${item.id}`} aria-label={`View welcome post${item.providerDisplayName ? ` for ${item.providerDisplayName}` : ""}`}>
                     {item.mediaUrl ? (
                       <Image src={item.mediaUrl} alt="" width={44} height={44} unoptimized />
                     ) : (
                       <UserRound aria-hidden="true" />
                     )}
-                  </span>
+                  </Link>
                   <span className={styles.providerCopy}>
-                    <strong>{item.title}</strong>
+                    {item.providerProfileId && item.providerDisplayName ? (
+                      <strong>
+                        Welcome{" "}
+                        <Link className={styles.featuredProviderLink} href={`/providers/${item.providerProfileId}`}>
+                          {item.providerDisplayName}
+                        </Link>
+                        {" "}to KAILA
+                      </strong>
+                    ) : (
+                      <Link href={`/community/${item.id}`}>
+                        <strong>{item.title}</strong>
+                      </Link>
+                    )}
                     {item.areaLabel ? <small>{item.areaLabel}</small> : null}
                   </span>
-                </Link>
+                </div>
               </li>
             ))}
           </ul>
