@@ -208,8 +208,8 @@ export function CommunityCommentsList({ postId, comments, reload, variant = "def
     return (
       <div className={variant === "viewer" ? styles.emptyViewer : styles.empty}>
         <MessageCircle />
-        <h2>No comments yet</h2>
-        <p>Start a useful conversation.</p>
+        <h2>No comments yet.</h2>
+        <p>Be the first to comment.</p>
       </div>
     );
   }
