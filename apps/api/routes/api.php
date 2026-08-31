@@ -87,6 +87,10 @@ Route::middleware('mobile.auth')->group(function (): void {
     Route::put('/auth/mobile/client-profile', [MarketplaceProfileController::class, 'client']);
     Route::put('/auth/mobile/provider-profile', [MarketplaceProfileController::class, 'provider']);
     Route::post('/auth/mobile/profile-assets', [ProfileAssetController::class, 'store']);
+    Route::patch('/auth/mobile/profile-assets/{profileAsset}', [ProfileAssetController::class, 'update']);
+    Route::delete('/auth/mobile/profile-assets/{profileAsset}', [ProfileAssetController::class, 'destroy']);
+    Route::put('/auth/mobile/profile-assets/{profileAsset}/like', [ProfileAssetController::class, 'like']);
+    Route::delete('/auth/mobile/profile-assets/{profileAsset}/like', [ProfileAssetController::class, 'unlike']);
     Route::post('/auth/mobile/provider-credentials', [ProviderCredentialController::class, 'store']);
     Route::get('/auth/mobile/jobs', [ServiceJobController::class, 'index']);
     Route::post('/auth/mobile/jobs', [ServiceJobController::class, 'store']);
@@ -193,6 +197,10 @@ Route::middleware('auth')->group(function (): void {
     Route::put('/me/client-profile', [MarketplaceProfileController::class, 'client']);
     Route::put('/me/provider-profile', [MarketplaceProfileController::class, 'provider']);
     Route::post('/me/profile-assets', [ProfileAssetController::class, 'store']);
+    Route::patch('/me/profile-assets/{profileAsset}', [ProfileAssetController::class, 'update']);
+    Route::delete('/me/profile-assets/{profileAsset}', [ProfileAssetController::class, 'destroy']);
+    Route::put('/profile-assets/{profileAsset}/like', [ProfileAssetController::class, 'like']);
+    Route::delete('/profile-assets/{profileAsset}/like', [ProfileAssetController::class, 'unlike']);
     Route::post('/me/provider-credentials', [ProviderCredentialController::class, 'store']);
     Route::get('/jobs', [ServiceJobController::class, 'index']);
     Route::get('/jobs/resolve-area', JobAreaController::class);

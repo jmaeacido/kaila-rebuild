@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, BadgeCheck, Camera, CheckCircle2, LocateFixed, MapPin, Store, UserRound, Wrench } from "lucide-react";
+import { ArrowLeft, BadgeCheck, Camera, CheckCircle2, Images, LocateFixed, MapPin, Store, UserRound, Wrench } from "lucide-react";
 import Image from "next/image";
 import { Button, Feedback, TextField } from "@kaila/ui";
 import Link from "next/link";
@@ -9,6 +9,7 @@ import type { ServiceCategory } from "../../components/category-select";
 import { SelectField } from "../../components/select-field";
 import { ServiceCategoryMultiSelect } from "../../components/service-category-multi-select";
 import { AttachmentSourceActions } from "../../components/attachment-picker";
+import { ProviderPortfolioManager, type ManagedPortfolioAsset } from "../../components/provider-portfolio-manager";
 import { prepareCsrf } from "../auth-client";
 import { useRealtimeInvalidation } from "../use-realtime-invalidation";
 import styles from "./profile.module.css";
@@ -148,6 +149,7 @@ export default function ProviderProfilePage() {
   const [avatarNotice, setAvatarNotice] = useState("");
   const [avatarUploadProgress, setAvatarUploadProgress] = useState(0);
   const [avatarUploading, setAvatarUploading] = useState(false);
+  const [portfolioAssets, setPortfolioAssets] = useState<ManagedPortfolioAsset[]>([]);
 
   const markFormDirty = useCallback(() => {
     formIsDirty.current = true;
@@ -201,14 +203,19 @@ export default function ProviderProfilePage() {
           data: {
             provider: ProviderProfile | null;
             providerAvatar?: { uploaded: boolean; scanStatus: string | null; url: string | null };
+            providerPortfolio?: ManagedPortfolioAsset[];
           };
         };
         const provider = profileBody.data.provider;
         const providerAvatar = profileBody.data.providerAvatar;
+        const providerPortfolio = profileBody.data.providerPortfolio;
         if (providerAvatar) {
           setAvatarUploaded(providerAvatar.uploaded);
           setAvatarScanStatus(providerAvatar.scanStatus);
           setAvatarUrl(providerAvatar.url);
+        }
+        if (providerPortfolio && sequence === loadSequence.current) {
+          setPortfolioAssets(providerPortfolio);
         }
         if (provider && !formIsDirty.current && sequence === loadSequence.current) {
           setDisplayName(provider.display_name ?? "");
@@ -420,9 +427,10 @@ export default function ProviderProfilePage() {
         </div>
         <ol className={styles.steps} aria-label="Profile sections">
           <li><span>1</span>Profile photo</li>
-          <li><span>2</span>About you</li>
-          <li><span>3</span>Service area</li>
-          <li><span>4</span>Shop option</li>
+          <li><span>2</span>Work photos</li>
+          <li><span>3</span>About you</li>
+          <li><span>4</span>Service area</li>
+          <li><span>5</span>Shop option</li>
         </ol>
         {profileStatus === "active" && (
           <Feedback kind="success" title="Profile approved">
@@ -491,7 +499,14 @@ export default function ProviderProfilePage() {
             </div>
           </fieldset>
           <fieldset className={styles.formSection}>
-            <legend><span>2</span><UserRound aria-hidden="true" /> About you</legend>
+            <legend><span>2</span><Images aria-hidden="true" /> Work photos</legend>
+            <ProviderPortfolioManager
+              assets={portfolioAssets}
+              onAssetsChange={() => void loadReferenceData()}
+            />
+          </fieldset>
+          <fieldset className={styles.formSection}>
+            <legend><span>3</span><UserRound aria-hidden="true" /> About you</legend>
             <p>Use the name clients should recognize and describe the work you do best.</p>
             <TextField
               id="displayName"
@@ -541,7 +556,7 @@ export default function ProviderProfilePage() {
           </fieldset>
           <fieldset className={styles.serviceArea}>
             <legend>
-              <span>3</span><MapPin aria-hidden="true" /> Service area
+              <span>4</span><MapPin aria-hidden="true" /> Service area
             </legend>
             <p>Cover the whole city or municipality, or choose several barangays.</p>
             <div className={styles.addressFields}>
@@ -617,7 +632,7 @@ export default function ProviderProfilePage() {
             )}
           </fieldset>
           <fieldset className={styles.shopService}>
-            <legend><span>4</span><Store aria-hidden="true" /> Shop service</legend>
+            <legend><span>5</span><Store aria-hidden="true" /> Shop service</legend>
             <label className={styles.shopToggle}>
               <input
                 type="checkbox"

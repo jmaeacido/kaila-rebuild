@@ -1,0 +1,174 @@
+.viewer {
+  align-items: flex-end;
+  background: color-mix(in srgb, var(--color-ink) 72%, transparent);
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  padding: 0;
+  position: fixed;
+  z-index: var(--z-toast);
+}
+
+.panel {
+  background: var(--color-surface);
+  border-radius: var(--radius-dialog) var(--radius-dialog) 0 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  max-height: 92dvh;
+  overflow: hidden;
+  width: min(100%, 32rem);
+}
+
+.toolbar {
+  align-items: center;
+  border-bottom: 1px solid var(--color-border);
+  display: grid;
+  gap: var(--spacing-8);
+  grid-template-columns: auto 1fr auto;
+  min-height: var(--spacing-48);
+  padding: max(var(--spacing-8), env(safe-area-inset-top)) var(--spacing-12) var(--spacing-8);
+}
+
+.counter {
+  color: var(--color-text-secondary);
+  font-size: var(--font-small-size);
+  font-weight: var(--font-weight-semibold);
+  margin: 0;
+  text-align: center;
+}
+
+.iconButton,
+.navButton,
+.likeButton {
+  align-items: center;
+  background: var(--color-background);
+  border: 0;
+  border-radius: var(--radius-pill);
+  color: var(--color-ink);
+  cursor: pointer;
+  display: inline-flex;
+  justify-content: center;
+  min-height: var(--spacing-44);
+  min-width: var(--spacing-44);
+}
+
+.iconButton svg,
+.navButton svg {
+  height: 1.25rem;
+  width: 1.25rem;
+}
+
+.stage {
+  align-items: center;
+  background: color-mix(in srgb, var(--color-ink) 88%, var(--color-background));
+  display: flex;
+  justify-content: center;
+  min-height: 14rem;
+  padding: var(--spacing-12);
+  position: relative;
+}
+
+.stageImage {
+  display: block;
+  height: auto;
+  max-height: min(52dvh, 28rem);
+  max-width: 100%;
+  object-fit: contain;
+  width: auto;
+}
+
+.navButton {
+  background: color-mix(in srgb, var(--color-surface) 18%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-surface) 28%, transparent);
+  color: var(--color-on-primary, #fff);
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 1;
+}
+
+.navPrevious {
+  left: var(--spacing-8);
+}
+
+.navNext {
+  right: var(--spacing-8);
+}
+
+.footer {
+  align-items: flex-end;
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  gap: var(--spacing-12);
+  justify-content: space-between;
+  padding: var(--spacing-12) var(--spacing-16) max(var(--spacing-16), env(safe-area-inset-bottom));
+}
+
+.footerCopy {
+  display: grid;
+  flex: 1 1 auto;
+  gap: var(--spacing-8);
+  min-width: 0;
+}
+
+.caption {
+  color: var(--color-ink);
+  font-size: var(--font-body-size);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-body);
+  margin: 0;
+}
+
+.dots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-4);
+}
+
+.dot,
+.dotActive {
+  border-radius: var(--radius-pill);
+  height: 0.35rem;
+  width: 0.35rem;
+}
+
+.dot {
+  background: color-mix(in srgb, var(--color-text-secondary) 50%, transparent);
+}
+
+.dotActive {
+  background: var(--color-primary);
+  width: 0.9rem;
+}
+
+.likeButton {
+  flex: 0 0 auto;
+  font-size: var(--font-small-size);
+  font-weight: var(--font-weight-semibold);
+  gap: var(--spacing-4);
+  padding-inline: var(--spacing-12);
+}
+
+.likeButton svg {
+  height: 1rem;
+  width: 1rem;
+}
+
+.likeButtonActive {
+  background: color-mix(in srgb, var(--color-danger) 12%, var(--color-surface));
+  color: var(--color-danger);
+}
+
+@media (min-width: 40rem) {
+  .viewer {
+    align-items: center;
+    padding: var(--spacing-16);
+  }
+
+  .panel {
+    border-radius: var(--radius-dialog);
+    box-shadow: var(--shadow-floating);
+    max-height: min(88dvh, 40rem);
+    width: min(100%, 36rem);
+  }
+}

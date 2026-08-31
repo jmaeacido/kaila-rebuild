@@ -4,6 +4,10 @@ import test from "node:test";
 
 const source = readFileSync(new URL("./page.tsx", import.meta.url), "utf8");
 const bannerSource = readFileSync(new URL("../../components/area-mismatch-banner.tsx", import.meta.url), "utf8");
+const publicProfileSource = readFileSync(new URL("../providers/[providerId]/page.tsx", import.meta.url), "utf8");
+const managerSource = readFileSync(new URL("../../components/provider-portfolio-manager.tsx", import.meta.url), "utf8");
+const gallerySource = readFileSync(new URL("../../components/provider-portfolio-gallery.tsx", import.meta.url), "utf8");
+const viewerSource = readFileSync(new URL("../../components/provider-portfolio-viewer.tsx", import.meta.url), "utf8");
 
 test("Provider profile loads saved data from marketplace profile", () => {
   assert.match(source, /\/api\/v1\/me\/marketplace-profile/);
@@ -36,4 +40,30 @@ test("Provider profile loads and submits every offered service", () => {
 test("Area mismatch banner reads provider service areas from API shape", () => {
   assert.match(bannerSource, /service_areas/);
   assert.doesNotMatch(bannerSource, /serviceAreas/);
+});
+
+test("Provider profile edit page loads and manages work photos", () => {
+  assert.match(source, /providerPortfolio/);
+  assert.match(source, /ProviderPortfolioManager/);
+  assert.match(source, /Work photos/);
+});
+
+test("Provider portfolio manager uploads and deletes through profile assets API", () => {
+  assert.match(managerSource, /purpose", "portfolio"/);
+  assert.match(managerSource, /\/api\/v1\/me\/profile-assets/);
+  assert.match(managerSource, /method: "DELETE"/);
+});
+
+test("Public provider profile renders portfolio gallery and conversion CTA", () => {
+  assert.match(publicProfileSource, /provider\.portfolio/);
+  assert.match(publicProfileSource, /ProviderPortfolioGallery/);
+  assert.match(publicProfileSource, /togglePortfolioLike/);
+  assert.match(gallerySource, /ProviderPortfolioViewer/);
+  assert.match(viewerSource, /Heart/);
+  assert.match(publicProfileSource, /withDemoPortfolio/);
+  assert.match(publicProfileSource, /ProviderServicesShowcase/);
+  assert.match(publicProfileSource, /variant="embedded"/);
+  assert.match(publicProfileSource, /Request Service/);
+  assert.match(publicProfileSource, /mobileCtaBar/);
+  assert.match(gallerySource, /Work photos/);
 });

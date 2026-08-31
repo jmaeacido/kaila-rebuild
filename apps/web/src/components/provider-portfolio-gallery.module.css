@@ -1,0 +1,127 @@
+.section,
+.compact {
+  display: grid;
+  gap: var(--spacing-16);
+}
+
+.heading {
+  align-items: flex-start;
+  display: flex;
+  gap: var(--spacing-12);
+}
+
+.heading svg {
+  color: var(--color-primary);
+  flex: 0 0 auto;
+  height: var(--spacing-24);
+  margin-top: var(--spacing-4);
+  width: var(--spacing-24);
+}
+
+.heading h2 {
+  color: var(--color-ink);
+  font-size: var(--font-title-size);
+}
+
+.heading p {
+  color: var(--color-text-secondary);
+  font-size: var(--font-small-size);
+  margin-top: var(--spacing-4);
+}
+
+.grid {
+  display: grid;
+  gap: var(--spacing-12);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.tileButton {
+  background: none;
+  border: 0;
+  cursor: pointer;
+  display: block;
+  padding: 0;
+  text-align: left;
+  width: 100%;
+}
+
+.tileButton:focus-visible .tile {
+  outline: var(--focus-ring-width) solid var(--color-focus);
+  outline-offset: var(--spacing-4);
+}
+
+.tile {
+  background: var(--color-background);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 12%, transparent);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-neu-raised-sm);
+  display: grid;
+  gap: 0;
+  margin: 0;
+  overflow: hidden;
+  transition: box-shadow 160ms ease, transform 160ms ease;
+}
+
+.tile:hover {
+  box-shadow: var(--shadow-neu-raised);
+  transform: translateY(-1px);
+}
+
+.image {
+  aspect-ratio: 4 / 3;
+  display: block;
+  height: auto;
+  object-fit: cover;
+  width: 100%;
+}
+
+.tile figcaption {
+  align-items: center;
+  color: var(--color-ink);
+  display: flex;
+  font-size: var(--font-small-size);
+  font-weight: var(--font-weight-medium);
+  gap: var(--spacing-8);
+  justify-content: space-between;
+  line-height: var(--line-height-body);
+  padding: var(--spacing-12);
+}
+
+.tileLikes {
+  align-items: center;
+  color: var(--color-text-secondary);
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-size: var(--font-caption-size);
+  gap: var(--spacing-4);
+}
+
+.tileLikes svg {
+  height: 0.85rem;
+  width: 0.85rem;
+}
+
+.compact .grid {
+  gap: var(--spacing-8);
+}
+
+.empty {
+  background: var(--color-background);
+  border: 1px dashed color-mix(in srgb, var(--color-border) 80%, var(--color-primary));
+  border-radius: var(--radius-card);
+  color: var(--color-text-secondary);
+  font-size: var(--font-small-size);
+  line-height: var(--line-height-body);
+  margin: 0;
+  padding: var(--spacing-20) var(--spacing-16);
+  text-align: center;
+}
+
+@media (min-width: 48rem) {
+  .grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}

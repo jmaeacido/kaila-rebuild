@@ -36,6 +36,7 @@ class MarketplaceProfileController extends Controller
             'client' => ClientProfile::query()->where('user_id', $user->id)->first(),
             'provider' => $this->ownedProvider($user)?->load(['services:id,name,slug,icon', 'serviceAreas:id,name,type,code', 'availability', 'credentials']),
             'providerAvatar' => $this->providerRequirements->avatarState($user),
+            'providerPortfolio' => $this->providerRequirements->portfolioAssets($user),
         ]]);
     }
 
@@ -127,14 +128,17 @@ class MarketplaceProfileController extends Controller
             ->with(['services:id,name,slug,icon', 'serviceAreas:id,name,type,code', 'availability', 'portfolio:id,user_id,caption,sort_order', 'credentials' => fn ($q) => $q->where('review_status', 'approved')])
             ->orderByDesc('rating')->orderBy('id')->paginate(20);
 
-        return response()->json(['data' => $profiles->getCollection()->map(fn (ProviderProfile $profile) => $this->publicProvider($profile)), 'meta' => ['currentPage' => $profiles->currentPage(), 'lastPage' => $profiles->lastPage()]]);
+        return response()->json(['data' => $profiles->getCollection()->map(fn (ProviderProfile $profile) => $this->publicProvider($profile, $request->user())), 'meta' => ['currentPage' => $profiles->currentPage(), 'lastPage' => $profiles->lastPage()]]);
     }
 
-    public function publicProfile(ProviderProfile $providerProfile): JsonResponse
+    public function publicProfile(Request $request, ProviderProfile $providerProfile): JsonResponse
     {
         abort_unless($providerProfile->status === 'active', 404);
 
-        return response()->json(['data' => $this->publicProvider($providerProfile->load(['services:id,name,slug,icon', 'serviceAreas:id,name,type,code', 'availability', 'portfolio:id,user_id,caption,sort_order', 'credentials' => fn ($q) => $q->where('review_status', 'approved')]))]);
+        return response()->json(['data' => $this->publicProvider(
+            $providerProfile->load(['services:id,name,slug,icon', 'serviceAreas:id,name,type,code', 'availability', 'portfolio:id,user_id,caption,sort_order,like_count', 'credentials' => fn ($q) => $q->where('review_status', 'approved')]),
+            $request->user(),
+        )]);
     }
 
     private function ownedProvider(User $user): ?ProviderProfile
@@ -143,7 +147,7 @@ class MarketplaceProfileController extends Controller
     }
 
     /** @return array<string, mixed> */
-    private function publicProvider(ProviderProfile $profile): array
+    private function publicProvider(ProviderProfile $profile, ?User $viewer = null): array
     {
         $reputation = DB::table('reputation_projections')
             ->where('user_id', $profile->user_id)
@@ -159,6 +163,13 @@ class MarketplaceProfileController extends Controller
             ->where('accepted_offer_snapshots.provider_profile_id', $profile->id)
             ->whereNotNull('service_jobs.completed_at')
             ->count();
+        $likedAssetIds = $viewer
+            ? DB::table('profile_asset_reactions')
+                ->where('user_id', $viewer->id)
+                ->whereIn('profile_asset_id', $profile->portfolio->pluck('id'))
+                ->pluck('profile_asset_id')
+                ->all()
+            : [];
 
         return ['id' => $profile->id, 'displayName' => $profile->display_name, 'avatarUrl' => $avatar ? "/api/v1/profile-assets/{$avatar->id}" : null, 'bio' => $profile->bio, 'yearsExperience' => $profile->years_experience,
             'rating' => $reputation?->average_rating !== null
@@ -173,6 +184,12 @@ class MarketplaceProfileController extends Controller
             'shopAddress' => $profile->offers_at_shop ? $profile->shop_address : null,
             'shopLocation' => $profile->offers_at_shop && $profile->shop_latitude !== null ? ['latitude' => (float) $profile->shop_latitude, 'longitude' => (float) $profile->shop_longitude] : null,
             'reviews' => JobReview::query()->where('subject_user_id', $profile->user_id)->whereNotNull('published_at')->latest('published_at')->limit(10)->get()->map(fn (JobReview $review) => ['id' => $review->id, 'rating' => $review->rating, 'comment' => $review->comment, 'publishedAt' => $review->published_at?->toDateString()]),
-            'portfolio' => $profile->portfolio->map(fn (ProfileAsset $asset) => ['id' => $asset->id, 'caption' => $asset->caption, 'downloadPath' => "/api/v1/profile-assets/{$asset->id}"])];
+            'portfolio' => $profile->portfolio->map(fn (ProfileAsset $asset) => [
+                'id' => $asset->id,
+                'caption' => $asset->caption,
+                'downloadPath' => "/api/v1/profile-assets/{$asset->id}",
+                'likeCount' => (int) $asset->like_count,
+                'liked' => in_array($asset->id, $likedAssetIds, true),
+            ])];
     }
 }

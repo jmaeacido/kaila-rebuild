@@ -65,4 +65,23 @@ class ProviderOnboardingRequirements
             'url' => $clean ? "/api/v1/profile-assets/{$clean->id}" : null,
         ];
     }
+
+    /** @return list<array{id: string, caption: string|null, scanStatus: string, downloadPath: string, sortOrder: int}> */
+    public function portfolioAssets(User $user): array
+    {
+        return ProfileAsset::query()
+            ->where('user_id', $user->id)
+            ->where('purpose', 'portfolio')
+            ->orderBy('sort_order')
+            ->orderBy('created_at')
+            ->get()
+            ->map(fn (ProfileAsset $asset): array => [
+                'id' => $asset->id,
+                'caption' => $asset->caption,
+                'scanStatus' => $asset->scan_status,
+                'downloadPath' => "/api/v1/profile-assets/{$asset->id}",
+                'sortOrder' => (int) $asset->sort_order,
+            ])
+            ->all();
+    }
 }

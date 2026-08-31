@@ -527,7 +527,13 @@ class MarketplaceProfilesTest extends TestCase
             'resource_id' => $asset->id,
         ]);
         Storage::disk($disk)->assertExists($asset->object_key);
-        $this->getJson("/api/v1/profile-assets/{$asset->id}")->assertStatus(409);
+        $this->actingAs(User::factory()->create())
+            ->getJson("/api/v1/profile-assets/{$asset->id}")
+            ->assertForbidden();
+        $this->actingAs($user)
+            ->get("/api/v1/profile-assets/{$asset->id}")
+            ->assertOk()
+            ->assertHeader('Content-Type', 'image/jpeg');
         $asset->update(['scan_status' => 'clean']);
         $this->get("/api/v1/profile-assets/{$asset->id}")
             ->assertOk()
@@ -680,6 +686,122 @@ class MarketplaceProfilesTest extends TestCase
         $this->actingAs(User::factory()->create())
             ->getJson("/api/v1/providers/{$profile->id}")->assertOk()->assertJsonCount(1, 'data.portfolio')
             ->assertJsonPath('data.portfolio.0.caption', 'Finished repair')->assertJsonMissingPath('data.portfolio.0.object_key');
+    }
+
+    public function test_marketplace_profile_lists_owned_portfolio_assets(): void
+    {
+        $user = User::factory()->create();
+        ProfileAsset::query()->create([
+            'user_id' => $user->id,
+            'purpose' => 'portfolio',
+            'disk' => 'private-local',
+            'object_key' => 'profiles/pending.jpg',
+            'original_name' => 'pending.jpg',
+            'mime_type' => 'image/jpeg',
+            'size_bytes' => 100,
+            'scan_status' => 'pending',
+            'caption' => 'Kitchen repaint',
+            'sort_order' => 1,
+        ]);
+
+        $this->actingAs($user)
+            ->getJson('/api/v1/me/marketplace-profile')
+            ->assertOk()
+            ->assertJsonPath('data.providerPortfolio.0.caption', 'Kitchen repaint')
+            ->assertJsonPath('data.providerPortfolio.0.scanStatus', 'pending')
+            ->assertJsonStructure(['data' => ['providerPortfolio' => [['downloadPath']]]]);
+    }
+
+    public function test_clients_can_like_and_unlike_portfolio_photos(): void
+    {
+        [$category, $area] = $this->referenceData();
+        $profile = $this->provider('Portfolio Likes Provider', 'active', $category, $area);
+        $client = User::factory()->create();
+        $asset = ProfileAsset::query()->create([
+            'user_id' => $profile->user_id,
+            'purpose' => 'portfolio',
+            'disk' => 'private-local',
+            'object_key' => 'profiles/clean.jpg',
+            'original_name' => 'clean.jpg',
+            'mime_type' => 'image/jpeg',
+            'size_bytes' => 100,
+            'scan_status' => 'clean',
+            'caption' => 'Finished repair',
+        ]);
+
+        $this->actingAs($client)
+            ->putJson("/api/v1/profile-assets/{$asset->id}/like")
+            ->assertOk()
+            ->assertJsonPath('data.liked', true)
+            ->assertJsonPath('data.likeCount', 1);
+
+        $this->actingAs($client)
+            ->getJson("/api/v1/providers/{$profile->id}")
+            ->assertOk()
+            ->assertJsonPath('data.portfolio.0.liked', true)
+            ->assertJsonPath('data.portfolio.0.likeCount', 1);
+
+        $this->deleteJson("/api/v1/profile-assets/{$asset->id}/like")
+            ->assertOk()
+            ->assertJsonPath('data.liked', false)
+            ->assertJsonPath('data.likeCount', 0);
+
+        $this->actingAs(User::query()->findOrFail($profile->user_id))
+            ->putJson("/api/v1/profile-assets/{$asset->id}/like")
+            ->assertStatus(422);
+    }
+
+    public function test_provider_can_delete_portfolio_asset(): void
+    {
+        $disk = (string) config('filesystems.private_assets_disk');
+        Storage::fake($disk);
+        $user = User::factory()->create();
+        $asset = ProfileAsset::query()->create([
+            'user_id' => $user->id,
+            'purpose' => 'portfolio',
+            'disk' => $disk,
+            'object_key' => 'profiles/delete-me.jpg',
+            'original_name' => 'delete-me.jpg',
+            'mime_type' => 'image/jpeg',
+            'size_bytes' => 100,
+            'scan_status' => 'clean',
+        ]);
+        Storage::disk($disk)->put($asset->object_key, 'jpeg');
+
+        $this->actingAs($user)
+            ->deleteJson("/api/v1/me/profile-assets/{$asset->id}")
+            ->assertOk()
+            ->assertJsonPath('data.deleted', true);
+
+        $this->assertDatabaseMissing('profile_assets', ['id' => $asset->id]);
+        Storage::disk($disk)->assertMissing($asset->object_key);
+    }
+
+    public function test_portfolio_upload_is_limited_to_twelve_images(): void
+    {
+        $disk = (string) config('filesystems.private_assets_disk');
+        Storage::fake($disk);
+        $user = User::factory()->create();
+        for ($index = 0; $index < 12; $index++) {
+            ProfileAsset::query()->create([
+                'user_id' => $user->id,
+                'purpose' => 'portfolio',
+                'disk' => $disk,
+                'object_key' => "profiles/{$index}.jpg",
+                'original_name' => "{$index}.jpg",
+                'mime_type' => 'image/jpeg',
+                'size_bytes' => 100,
+                'scan_status' => 'clean',
+                'sort_order' => $index,
+            ]);
+        }
+
+        $this->actingAs($user)
+            ->postJson('/api/v1/me/profile-assets', [
+                'purpose' => 'portfolio',
+                'file' => UploadedFile::fake()->image('extra.jpg'),
+            ])
+            ->assertStatus(422);
     }
 
     /** @return array{ServiceCategory, Area} */
