@@ -12,7 +12,7 @@ test("account keeps the five-destination mobile navigation with Profile active",
   assert.match(marketplaceNavigationStyles, /grid-template-columns: repeat\(5, minmax\(0, 1fr\)\)/);
   assert.match(
     marketplaceNavigationStyles,
-    /\.bottomNav a\[aria-current="page"\][\s\S]*?box-shadow: var\(--shadow-neu-inset-sm\);/,
+    /\.bottomNav a\[aria-current="page"\][\s\S]*?color: var\(--color-primary\);[\s\S]*?font-weight: var\(--font-weight-semibold\);/,
   );
 });
 

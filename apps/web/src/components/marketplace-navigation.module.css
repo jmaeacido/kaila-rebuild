@@ -1,12 +1,14 @@
 .bottomNav {
-  background: color-mix(in srgb, var(--color-surface) 92%, var(--color-background));
-  border-top: 0;
+  backdrop-filter: blur(14px);
+  background: color-mix(in srgb, var(--color-surface) 94%, transparent);
+  border-top: 1px solid color-mix(in srgb, var(--color-border) 72%, transparent);
   bottom: 0;
-  box-shadow: var(--shadow-sheet);
+  box-shadow: 0 -1px 0 color-mix(in srgb, var(--color-ink) 4%, transparent);
   display: grid;
+  gap: var(--spacing-4);
   grid-template-columns: repeat(5, minmax(0, 1fr));
   left: 0;
-  padding: var(--spacing-4) max(var(--spacing-8), env(safe-area-inset-right)) max(var(--spacing-4), env(safe-area-inset-bottom)) max(var(--spacing-8), env(safe-area-inset-left));
+  padding: var(--spacing-6, 0.375rem) max(var(--spacing-8), env(safe-area-inset-right)) max(var(--spacing-6, 0.375rem), env(safe-area-inset-bottom)) max(var(--spacing-8), env(safe-area-inset-left));
   position: fixed;
   right: 0;
   z-index: 10;
@@ -18,8 +20,10 @@
 
 .bottomNav a {
   align-items: center;
+  background: transparent;
+  border: 1px solid transparent;
   border-radius: var(--radius-button);
-  box-shadow: var(--shadow-neu-raised-sm);
+  box-shadow: none;
   color: var(--color-text-secondary);
   display: flex;
   flex-direction: column;
@@ -28,15 +32,24 @@
   gap: var(--spacing-4);
   justify-content: center;
   min-height: var(--control-min-height);
-  padding: var(--spacing-8) var(--spacing-4);
+  padding: var(--spacing-6, 0.375rem) var(--spacing-4);
   text-decoration: none;
+  transition:
+    background-color var(--duration-fast) ease,
+    color var(--duration-fast) ease,
+    border-color var(--duration-fast) ease;
+}
+
+.bottomNav a:active {
+  transform: scale(var(--scale-pressed));
 }
 
 .bottomNav a[aria-current="page"] {
-  background: color-mix(in srgb, var(--color-primary) 10%, var(--color-surface));
-  box-shadow: var(--shadow-neu-inset-sm);
+  background: color-mix(in srgb, var(--color-primary) 14%, var(--color-surface));
+  border-color: color-mix(in srgb, var(--color-primary) 22%, transparent);
+  box-shadow: none;
   color: var(--color-primary);
-  font-weight: var(--font-weight-bold);
+  font-weight: var(--font-weight-semibold);
 }
 
 .bottomNav svg {
@@ -54,8 +67,10 @@
 
 .desktopNav a {
   align-items: center;
+  background: transparent;
+  border: 1px solid transparent;
   border-radius: var(--radius-button);
-  box-shadow: var(--shadow-neu-raised-sm);
+  box-shadow: none;
   color: var(--color-text-secondary);
   display: inline-flex;
   font-size: var(--font-small-size);
@@ -65,6 +80,10 @@
   min-height: var(--control-min-height);
   padding: 0 var(--spacing-12);
   text-decoration: none;
+  transition:
+    background-color var(--duration-fast) ease,
+    color var(--duration-fast) ease,
+    border-color var(--duration-fast) ease;
   white-space: nowrap;
 }
 
@@ -76,7 +95,8 @@
 
 .desktopNav a[aria-current="page"] {
   background: color-mix(in srgb, var(--color-primary) 12%, var(--color-surface));
-  box-shadow: var(--shadow-neu-inset-sm);
+  border-color: color-mix(in srgb, var(--color-primary) 20%, transparent);
+  box-shadow: none;
   color: var(--color-primary);
   font-weight: var(--font-weight-semibold);
 }
@@ -105,5 +125,16 @@
 @media (max-width: 30rem) {
   .bottomNav a {
     padding-inline: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bottomNav a,
+  .desktopNav a {
+    transition: none;
+  }
+
+  .bottomNav a:active {
+    transform: none;
   }
 }

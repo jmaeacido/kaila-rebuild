@@ -37,11 +37,12 @@ test("Client Home presents one empty jobs state and role-aware primary navigatio
   assert.doesNotMatch(source, /user\.providerEligible \? "\/opportunities" : "\/provider-profile"/);
 });
 
-test("Home uses neumorphic active navigation with foreground emphasis", () => {
+test("Home uses clear active navigation with foreground emphasis", () => {
   assert.match(
     marketplaceNavigationStyles,
-    /\.bottomNav a\[aria-current="page"\][\s\S]*?color: var\(--color-primary\);[\s\S]*?font-weight: var\(--font-weight-bold\);[\s\S]*?box-shadow: var\(--shadow-neu-inset-sm\);/,
+    /\.bottomNav a\[aria-current="page"\][\s\S]*?color: var\(--color-primary\);[\s\S]*?font-weight: var\(--font-weight-semibold\);/,
   );
+  assert.doesNotMatch(marketplaceNavigationStyles, /\.bottomNav a \{[\s\S]*?box-shadow: var\(--shadow-neu/);
 });
 
 test("Home keeps the hero action primary and removes duplicate discovery actions", () => {
