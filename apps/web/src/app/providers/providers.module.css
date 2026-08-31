@@ -178,6 +178,7 @@
   min-height: var(--spacing-48);
   padding: var(--spacing-12) var(--spacing-16);
   text-decoration: none;
+  width: 100%;
 }
 
 .results,
@@ -186,7 +187,131 @@
   gap: var(--spacing-16);
 }
 
-.results > p {
+.resultsCount {
+  color: var(--color-text-secondary);
+  font-size: var(--font-small-size);
+  font-weight: var(--font-weight-semibold);
+  margin: 0;
+}
+
+.skeleton {
+  animation: shimmer 1.2s infinite;
+  background: linear-gradient(90deg, var(--color-border), var(--color-surface), var(--color-border));
+  background-size: 200% 100%;
+  border-radius: var(--radius-card);
+  height: 12.5rem;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.cardTop {
+  align-items: flex-start;
+  display: grid;
+  gap: var(--spacing-12);
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
+.cardAvatar {
+  align-items: center;
+  background: var(--color-primary-soft);
+  border-radius: 50%;
+  box-shadow: var(--shadow-neu-raised-sm);
+  color: var(--color-primary);
+  display: flex;
+  flex: 0 0 auto;
+  font-size: 1.25rem;
+  font-weight: var(--font-weight-bold);
+  height: 3.5rem;
+  justify-content: center;
+  overflow: hidden;
+  width: 3.5rem;
+}
+
+.cardAvatar img {
+  height: 100%;
+  object-fit: cover;
+  width: 100%;
+}
+
+.cardIdentity {
+  display: grid;
+  gap: var(--spacing-4);
+  min-width: 0;
+}
+
+.cardTitleRow {
+  align-items: flex-start;
+  display: flex;
+  gap: var(--spacing-8);
+  justify-content: space-between;
+}
+
+.cardTitleRow h2 {
+  align-items: center;
+  color: var(--color-ink);
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  font-size: var(--font-card-title-size);
+  gap: var(--spacing-4);
+  line-height: var(--line-height-tight);
+  margin: 0;
+  min-width: 0;
+}
+
+.cardTitleRow h2 svg {
+  color: var(--color-primary);
+  flex: 0 0 auto;
+  height: 1.125rem;
+  width: 1.125rem;
+}
+
+.cardLocation {
+  align-items: center;
+  color: var(--color-text-secondary);
+  display: flex;
+  font-size: var(--font-small-size);
+  gap: var(--spacing-4);
+  margin: 0;
+}
+
+.cardLocation svg {
+  flex: 0 0 auto;
+  height: 1rem;
+  width: 1rem;
+}
+
+.metrics {
+  color: var(--color-text-secondary);
+  display: flex;
+  flex-wrap: wrap;
+  font-size: var(--font-small-size);
+  gap: var(--spacing-12);
+}
+
+.metrics span {
+  align-items: center;
+  display: inline-flex;
+  gap: var(--spacing-4);
+}
+
+.metrics svg {
+  color: var(--color-primary);
+  flex: 0 0 auto;
+  height: 1rem;
+  width: 1rem;
+}
+
+.servicesMore {
+  background: color-mix(in srgb, var(--color-text-secondary) 12%, var(--color-surface));
   color: var(--color-text-secondary);
 }
 
@@ -348,7 +473,9 @@
   border-radius: var(--radius-pill);
   color: var(--color-primary);
   font-size: var(--font-small-size);
-  padding: var(--spacing-4) var(--spacing-8);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-tight);
+  padding: var(--spacing-4) var(--spacing-12);
 }
 
 .reviews summary {
