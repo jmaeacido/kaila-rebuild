@@ -1,6 +1,8 @@
 # Consumer Android APK
 
-Place the signed consumer APK here as `kaila-android.apk` before deploying the website.
+Place the signed consumer APK here as `kaila-android.apk` before deploying the
+website. This artifact is intentionally committed so the deployment cannot
+publish download metadata without the corresponding file.
 
 After a successful `pnpm --filter @kaila/mobile android:debug` build, the
 consumer APK and `/download` version metadata are copied automatically to:
