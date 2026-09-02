@@ -10,6 +10,7 @@
     "build": "pnpm --recursive --if-present build",
     "dev": "pnpm --parallel --filter @kaila/web --filter @kaila/admin --filter @kaila/realtime dev",
     "format:check": "pnpm --recursive --if-present format:check",
+    "indexnow:submit": "node scripts/submit-indexnow.mjs",
     "lint": "pnpm --recursive --if-present lint",
     "mobile:audit": "node scripts/audit-mobile-layout.mjs",
     "psgc:philippines": "node scripts/generate-philippines-psgc.mjs",
