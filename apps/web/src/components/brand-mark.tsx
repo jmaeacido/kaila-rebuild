@@ -62,7 +62,7 @@ export function BrandMark({
       <Image
         className={styles.bull}
         src="/brand/kaila-bull-app-icon-v2.png"
-        alt=""
+        alt="KAILA bull mascot"
         width={1254}
         height={1254}
         priority={priority}

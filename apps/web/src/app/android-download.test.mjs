@@ -51,3 +51,24 @@ test("download section keeps hero, actions, and visuals on separate desktop rows
   assert.match(styles, /"hero hero"/);
   assert.match(styles, /"download visual"/);
 });
+
+test("landing download images expose descriptive alternative text", () => {
+  const brandMark = readFileSync(
+    new URL("../components/brand-mark.tsx", import.meta.url),
+    "utf8",
+  );
+  const section = readFileSync(
+    new URL("../components/android-download-section.tsx", import.meta.url),
+    "utf8",
+  );
+  const qr = readFileSync(
+    new URL("../components/android-download-qr.tsx", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(brandMark, /alt="KAILA bull mascot"/);
+  assert.match(section, /alt="KAILA app icon"/);
+  assert.match(qr, /<img alt=\{label\}/);
+  assert.match(qr, /alt="KAILA app icon in the QR code"/);
+  assert.doesNotMatch(`${brandMark}\n${section}\n${qr}`, /alt=""/);
+});

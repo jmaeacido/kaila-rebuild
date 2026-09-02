@@ -94,7 +94,7 @@ export function AndroidDownloadSection({
               <Image
                 className={styles.appIcon}
                 src="/brand/kaila-bull-app-icon-v2.png"
-                alt=""
+                alt="KAILA app icon"
                 width={1254}
                 height={1254}
                 priority={false}

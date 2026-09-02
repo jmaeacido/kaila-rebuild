@@ -61,14 +61,14 @@ export function AndroidDownloadQr({ label }: AndroidDownloadQrProps) {
       <div className={styles.qrFrame}>
         {src ? (
           // eslint-disable-next-line @next/next/no-img-element -- data URL from qrcode
-          <img alt="" className={styles.qrImage} height={240} src={src} width={240} />
+          <img alt={label} className={styles.qrImage} height={240} src={src} width={240} />
         ) : (
           <span className={styles.qrPlaceholder} aria-hidden="true" />
         )}
         <span className={styles.qrLogo} aria-hidden="true">
           <Image
             src="/brand/kaila-bull-app-icon-v2.png"
-            alt=""
+            alt="KAILA app icon in the QR code"
             width={1254}
             height={1254}
           />
