@@ -262,7 +262,10 @@ export default function ProviderProfilePage() {
   }, []);
 
   useEffect(() => {
-    void loadReferenceData();
+    const timer = window.setTimeout(() => {
+      void loadReferenceData();
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [loadReferenceData]);
 
   useRealtimeInvalidation(

@@ -35,11 +35,14 @@ export function useMarketplaceMode(): MarketplaceMode {
   }, []);
 
   useEffect(() => {
-    void load();
+    const timer = window.setTimeout(() => {
+      void load();
+    }, 0);
     const reconcile = () => void load();
     window.addEventListener("online", reconcile);
     window.addEventListener("kaila:domain-event", reconcile);
     return () => {
+      window.clearTimeout(timer);
       window.removeEventListener("online", reconcile);
       window.removeEventListener("kaila:domain-event", reconcile);
     };

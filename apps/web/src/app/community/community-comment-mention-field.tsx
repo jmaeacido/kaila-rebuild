@@ -36,41 +36,52 @@ export function CommunityCommentMentionField({
     }
   }, [onChange, onSelectedMentionChange, selectedMention]);
 
-  const mention = useProviderMention(value, handleChange, selectedMention);
+  const {
+    textareaRef,
+    mention: activeMention,
+    mentionOpen,
+    mentionResults,
+    mentionStatus,
+    mentionHighlightIndex,
+    insertMention,
+    syncMentionFromCursor,
+    handleTextareaKeyDown,
+    closeMention,
+  } = useProviderMention(value, handleChange, selectedMention);
 
   function selectMention(candidate: MentionCandidate) {
-    mention.insertMention(candidate, mention.mention);
+    insertMention(candidate, activeMention);
     onSelectedMentionChange(candidate);
-    mention.closeMention();
+    closeMention();
   }
 
-  const showMentionMenu = mention.mentionOpen && !selectedMention;
+  const showMentionMenu = mentionOpen && !selectedMention;
 
   return (
     <div className={styles.commentMentionWrap}>
       <ProviderMentionMenu
         open={showMentionMenu}
-        status={mention.mentionStatus}
-        results={mention.mentionResults}
-        highlightIndex={mention.mentionHighlightIndex}
+        status={mentionStatus}
+        results={mentionResults}
+        highlightIndex={mentionHighlightIndex}
         onSelect={selectMention}
         compact
         label="Mention a member"
       />
       <textarea
-        ref={mention.textareaRef}
+        ref={textareaRef}
         className={compact ? styles.commentMentionTextarea : className}
         maxLength={maxLength}
         rows={compact ? undefined : rows}
         value={value}
         onChange={(event) => {
           handleChange(event.target.value);
-          mention.syncMentionFromCursor();
+          syncMentionFromCursor();
         }}
-        onKeyDown={(event) => mention.handleTextareaKeyDown(event, selectMention)}
-        onClick={mention.syncMentionFromCursor}
-        onKeyUp={mention.syncMentionFromCursor}
-        onSelect={mention.syncMentionFromCursor}
+        onKeyDown={(event) => handleTextareaKeyDown(event, selectMention)}
+        onClick={syncMentionFromCursor}
+        onKeyUp={syncMentionFromCursor}
+        onSelect={syncMentionFromCursor}
         placeholder={placeholder}
         aria-label={ariaLabel}
         data-compact={compact ? "true" : undefined}

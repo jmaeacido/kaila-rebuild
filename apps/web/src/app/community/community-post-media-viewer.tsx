@@ -57,16 +57,22 @@ export function CommunityPostMediaViewer({
   }, [loadComments, reloadPost]);
 
   useEffect(() => {
-    setCurrentPost(post);
+    const timer = window.setTimeout(() => setCurrentPost(post), 0);
+    return () => window.clearTimeout(timer);
   }, [post]);
 
   useEffect(() => {
     if (initialComments) {
-      setComments(initialComments);
-      setCommentsReady(true);
-      return;
+      const timer = window.setTimeout(() => {
+        setComments(initialComments);
+        setCommentsReady(true);
+      }, 0);
+      return () => window.clearTimeout(timer);
     }
-    void loadComments();
+    const timer = window.setTimeout(() => {
+      void loadComments();
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [initialComments, loadComments]);
 
   useEffect(() => {

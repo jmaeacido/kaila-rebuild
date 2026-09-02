@@ -6,7 +6,6 @@ const feed = readFileSync(new URL("./community-feed.tsx", import.meta.url), "utf
 const detail = readFileSync(new URL("./[postId]/community-post-detail.tsx", import.meta.url), "utf8");
 const composer = readFileSync(new URL("./share/page.tsx", import.meta.url), "utf8");
 const storyComposer = readFileSync(new URL("./community-story-composer.tsx", import.meta.url), "utf8");
-const home = readFileSync(new URL("../home/page.tsx", import.meta.url), "utf8");
 
 test("community feed exposes filters, pagination, and realtime reconciliation", () => {
   const constants = readFileSync(new URL("./community-constants.ts", import.meta.url), "utf8");

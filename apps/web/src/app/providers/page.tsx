@@ -66,7 +66,10 @@ export default function FindProvidersPage() {
 
   useEffect(() => {
     if (status !== "ready" || providers !== null) return;
-    void search();
+    const timer = window.setTimeout(() => {
+      void search();
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [providers, search, status]);
 
   const areaOptions = references.areas

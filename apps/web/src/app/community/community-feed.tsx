@@ -63,7 +63,10 @@ export function CommunityFeed({ initialPosts }: { initialPosts: PublicCommunityP
   }, [cursor, filter, tag]);
 
   useEffect(() => {
-    void loadContext();
+    const timer = window.setTimeout(() => {
+      void loadContext();
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [loadContext]);
 
   useEffect(() => {

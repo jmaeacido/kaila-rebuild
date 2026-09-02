@@ -19,7 +19,7 @@ return new class extends Migration
             $table->unsignedBigInteger('size_bytes');
             $table->string('scan_status', 16)->default('pending');
             $table->timestamps();
-            $table->index(['moderation_report_id', 'scan_status']);
+            $table->index(['moderation_report_id', 'scan_status'], 'idx_mod_report_scan_status');
         });
     }
 

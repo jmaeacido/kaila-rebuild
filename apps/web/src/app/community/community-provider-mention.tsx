@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { AtSign, X } from "lucide-react";
-import type { CommunityFeaturedProvider, CommunityMention } from "./community-client";
+import type { CommunityMention } from "./community-client";
 import styles from "./community.module.css";
 
 export type MentionCandidate = CommunityMention & {

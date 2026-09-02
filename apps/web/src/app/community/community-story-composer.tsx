@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, useEffect, useId, useRef, useState } from "react";
+import { ChangeEvent, useEffect, useId, useMemo, useRef } from "react";
 import Image from "next/image";
 import { ImagePlus, X } from "lucide-react";
 import {
@@ -42,10 +42,21 @@ export function CommunityStoryComposer({
 }: CommunityStoryComposerProps) {
   const inputId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
-  const [previews, setPreviews] = useState<MediaPreview[]>([]);
   const canAddMore = files.length < 4;
 
-  const mention = useProviderMention(body, onBodyChange, selectedMention);
+  const {
+    textareaRef,
+    mention: activeMention,
+    mentionOpen,
+    mentionResults,
+    mentionStatus,
+    mentionHighlightIndex,
+    insertMention,
+    openMentionAtCursor,
+    syncMentionFromCursor,
+    handleTextareaKeyDown,
+    closeMention,
+  } = useProviderMention(body, onBodyChange, selectedMention);
 
   function handleBodyChange(value: string) {
     onBodyChange(value);
@@ -55,9 +66,9 @@ export function CommunityStoryComposer({
   }
 
   function selectMention(candidate: MentionCandidate) {
-    mention.insertMention(candidate, mention.mention);
+    insertMention(candidate, activeMention);
     onSelectedMentionChange(candidate);
-    mention.closeMention();
+    closeMention();
   }
 
   function clearMention() {
@@ -65,17 +76,19 @@ export function CommunityStoryComposer({
       onBodyChange(clearMentionToken(body, selectedMention));
     }
     onSelectedMentionChange(null);
-    mention.closeMention();
+    closeMention();
   }
 
-  useEffect(() => {
-    const next = files.map((file) => ({ file, url: URL.createObjectURL(file) }));
-    setPreviews(next);
+  const previews = useMemo<MediaPreview[]>(
+    () => files.map((file) => ({ file, url: URL.createObjectURL(file) })),
+    [files],
+  );
 
+  useEffect(() => {
     return () => {
-      next.forEach((preview) => URL.revokeObjectURL(preview.url));
+      previews.forEach((preview) => URL.revokeObjectURL(preview.url));
     };
-  }, [files]);
+  }, [previews]);
 
   function pick(event: ChangeEvent<HTMLInputElement>) {
     const selected = Array.from(event.target.files ?? []).filter((file) => file.type.startsWith("image/"));
@@ -90,25 +103,25 @@ export function CommunityStoryComposer({
   return (
     <div className={styles.storyComposer}>
       <textarea
-        ref={mention.textareaRef}
+        ref={textareaRef}
         maxLength={maxLength}
         value={body}
         onChange={(event) => {
           handleBodyChange(event.target.value);
-          mention.syncMentionFromCursor();
+          syncMentionFromCursor();
         }}
-        onKeyDown={(event) => mention.handleTextareaKeyDown(event, selectMention)}
-        onClick={mention.syncMentionFromCursor}
-        onKeyUp={mention.syncMentionFromCursor}
-        onSelect={mention.syncMentionFromCursor}
+        onKeyDown={(event) => handleTextareaKeyDown(event, selectMention)}
+        onClick={syncMentionFromCursor}
+        onKeyUp={syncMentionFromCursor}
+        onSelect={syncMentionFromCursor}
         placeholder={placeholder}
         aria-label="Story"
       />
       <ProviderMentionMenu
-        open={mention.mentionOpen && !selectedMention}
-        status={mention.mentionStatus}
-        results={mention.mentionResults}
-        highlightIndex={mention.mentionHighlightIndex}
+        open={mentionOpen && !selectedMention}
+        status={mentionStatus}
+        results={mentionResults}
+        highlightIndex={mentionHighlightIndex}
         onSelect={selectMention}
       />
       {selectedMention ? <MentionChip mention={selectedMention} onClear={clearMention} /> : null}
@@ -126,7 +139,7 @@ export function CommunityStoryComposer({
       )}
       <div className={styles.storyComposerToolbar}>
         <input ref={inputRef} className={styles.hiddenFileInput} id={inputId} type="file" accept="image/*" multiple onChange={pick} />
-        <FeatureProviderButton onClick={mention.openMentionAtCursor} />
+        <FeatureProviderButton onClick={openMentionAtCursor} />
         <button
           type="button"
           data-flat-button

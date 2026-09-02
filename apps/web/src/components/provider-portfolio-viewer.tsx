@@ -38,7 +38,8 @@ export function ProviderPortfolioViewer({
   }, [items.length]);
 
   useEffect(() => {
-    setIndex(initialIndex);
+    const timer = window.setTimeout(() => setIndex(initialIndex), 0);
+    return () => window.clearTimeout(timer);
   }, [initialIndex]);
 
   useEffect(() => {
