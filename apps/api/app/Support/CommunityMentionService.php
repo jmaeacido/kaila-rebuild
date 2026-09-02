@@ -220,8 +220,8 @@ class CommunityMentionService
         ];
     }
 
-  /** @param array{userId: int, displayName: string, providerProfileId: int|null, kind: string}|null $mention
-   * @return array{id: int, displayName: string}|null */
+    /** @param array{userId: int, displayName: string, providerProfileId: int|null, kind: string}|null $mention
+     * @return array{id: int, displayName: string}|null */
     public function asFeaturedProvider(?array $mention): ?array
     {
         if (! $mention || ! $mention['providerProfileId']) {

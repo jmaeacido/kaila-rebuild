@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\CommunityController;
 use App\Models\CommunityPost;
 use App\Models\User;
 use Illuminate\Contracts\Console\Kernel;
@@ -26,8 +27,8 @@ $viewer = User::query()->whereKeyNot($post->author_user_id)->orderBy('id')->firs
     ?? User::factory()->create(['name' => 'Community Demo Client']);
 
 Auth::login($viewer);
-/** @var \App\Http\Controllers\CommunityController $controller */
-$controller = app(\App\Http\Controllers\CommunityController::class);
+/** @var CommunityController $controller */
+$controller = app(CommunityController::class);
 
 $helpfulRequest = Request::create("/api/v1/community/{$postId}/helpful", 'PUT');
 $helpfulRequest->setUserResolver(static fn () => $viewer);

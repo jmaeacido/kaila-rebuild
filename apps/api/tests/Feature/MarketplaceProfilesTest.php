@@ -4,8 +4,8 @@ namespace Tests\Feature;
 
 use App\Models\Area;
 use App\Models\JobOpportunity;
-use App\Models\OutboxEvent;
 use App\Models\OfferThread;
+use App\Models\OutboxEvent;
 use App\Models\ProfileAsset;
 use App\Models\ProviderCredential;
 use App\Models\ProviderProfile;
@@ -18,6 +18,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
 
 class MarketplaceProfilesTest extends TestCase
@@ -841,7 +842,7 @@ class MarketplaceProfilesTest extends TestCase
     }
 
     /** @param array<string, mixed> $payload */
-    private function submitProviderProfile(User $user, array $payload): \Illuminate\Testing\TestResponse
+    private function submitProviderProfile(User $user, array $payload): TestResponse
     {
         if (! ProfileAsset::query()->where('user_id', $user->id)->where('purpose', 'avatar')->exists()) {
             $this->seedAvatar($user);

@@ -3,6 +3,7 @@
 namespace Tests\Unit;
 
 use App\Models\Area;
+use App\Models\User;
 use App\Support\JobAreaResolver;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
@@ -50,7 +51,7 @@ class JobAreaResolverTest extends TestCase
 
     public function test_resolve_area_endpoint_includes_city_identifiers(): void
     {
-        $user = \App\Models\User::factory()->create();
+        $user = User::factory()->create();
         $city = Area::query()->create([
             'type' => 'city',
             'name' => 'City of Butuan',

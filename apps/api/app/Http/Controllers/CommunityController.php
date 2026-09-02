@@ -8,7 +8,6 @@ use App\Models\CommunityComment;
 use App\Models\CommunityPost;
 use App\Models\CommunityPostMedia;
 use App\Models\ProfileAsset;
-use App\Models\ProviderProfile;
 use App\Models\User;
 use App\Support\CommunityFeedContextService;
 use App\Support\CommunityHashtagParser;

@@ -16,7 +16,7 @@ class CommunityWelcomeProviderLookup
     }
 
     /**
-     * @param list<string> $postIds
+     * @param  list<string>  $postIds
      * @return array<string, array{id: int, displayName: string}>
      */
     public function forPostIds(array $postIds): array

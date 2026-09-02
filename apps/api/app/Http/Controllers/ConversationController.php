@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\CallSession;
 use App\Models\AcceptedOfferSnapshot;
+use App\Models\CallSession;
 use App\Models\ConversationMessage;
 use App\Models\JobConversation;
 use App\Models\ProfileAsset;
@@ -48,7 +48,9 @@ class ConversationController extends Controller
         $selectedProfileIds = $jobs->map(fn (ServiceJob $job) => $snapshots->get($job->id)?->provider_profile_id ?? $job->direct_provider_profile_id)->filter()->unique();
         $profiles = ProviderProfile::query()->whereIn('id', $selectedProfileIds)->get()->keyBy('id');
         $counterpartUserIds = $jobs->map(function (ServiceJob $job) use ($actor, $snapshots, $profiles): ?int {
-            if ($job->client_user_id !== $actor->id) return $job->client_user_id;
+            if ($job->client_user_id !== $actor->id) {
+                return $job->client_user_id;
+            }
             $profileId = $snapshots->get($job->id)?->provider_profile_id ?? $job->direct_provider_profile_id;
 
             return $profiles->get($profileId)?->user_id;

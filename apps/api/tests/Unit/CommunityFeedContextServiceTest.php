@@ -50,7 +50,7 @@ class CommunityFeedContextServiceTest extends TestCase
             'published_at' => now(),
         ]);
 
-        $service = new CommunityFeedContextService(new CommunityPostVisibility());
+        $service = new CommunityFeedContextService(new CommunityPostVisibility);
         $context = $service->forUser($user);
 
         $this->assertSame('Adams', $context['homeArea']['name']);
