@@ -57,7 +57,7 @@ class DirectServiceRequestTest extends TestCase
 
         $this->assertDatabaseCount('job_opportunities', 1);
         $this->assertDatabaseMissing('job_opportunities', ['service_job_id' => $jobId, 'provider_profile_id' => $otherProfile->id]);
-        $this->assertDatabaseMissing('durable_notifications', ['user_id' => $otherUser->id, 'subject_id' => $jobId]);
+        $this->assertDatabaseMissing('durable_notifications', ['user_id' => $otherUser->id, 'resource_id' => $jobId]);
         $this->actingAs($providerUser)->getJson('/api/v1/opportunities')
             ->assertOk()
             ->assertJsonCount(1, 'data')

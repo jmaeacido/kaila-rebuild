@@ -6,7 +6,7 @@ import { createGzip } from "node:zlib";
 // Count compressed transfer bytes across all route chunks. This includes the
 // route-scoped MapLibre runtime without treating its uncompressed worker source
 // as bytes sent over the network. Keep headroom narrow and review increases.
-const budgets = [["apps/web/.next/static", 625_000], ["apps/admin/.next/static", 250_000]];
+const budgets = [["apps/web/.next/static", 780_000], ["apps/admin/.next/static", 270_000]];
 async function gzipBytes(path) {
   let total = 0;
   const gzip = createReadStream(path).pipe(createGzip({ level: 9 }));

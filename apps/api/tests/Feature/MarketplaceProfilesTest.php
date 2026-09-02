@@ -241,7 +241,9 @@ class MarketplaceProfilesTest extends TestCase
         $user = User::factory()->create(['name' => 'Ana Repairs']);
         $admin = User::factory()->create(['is_admin' => true]);
         $this->seedAvatar($user, 'clean');
-        $this->submitProviderProfile($user, $this->validProfile($category, $area))->assertOk();
+        $profilePayload = $this->validProfile($category, $area);
+        $profilePayload['displayName'] = 'Ana Repairs';
+        $this->submitProviderProfile($user, $profilePayload)->assertOk();
         $profile = ProviderProfile::query()->where('user_id', $user->id)->firstOrFail();
 
         $this->actingAs($admin)
