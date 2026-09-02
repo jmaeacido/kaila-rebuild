@@ -12,6 +12,8 @@ const excluded = new Set([
   "pnpm-lock.yaml",
   "apps/api/composer.lock",
   "scripts/check-secrets.mjs",
+  "apps/admin-mobile/android/app/google-services.json",
+  "apps/mobile/android/app/google-services.json",
 ]);
 const files = execFileSync(
   "git",
