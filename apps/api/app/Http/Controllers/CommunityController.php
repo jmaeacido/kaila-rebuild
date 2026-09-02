@@ -52,10 +52,11 @@ class CommunityController
             ->cursorPaginate(12);
 
         $items = $page->items();
-        $featuredByPostId = $this->welcomeProviders->forPostIds(array_map(
-            static fn (CommunityPost $post): string => $post->id,
-            $items,
-        ));
+        $postIds = [];
+        foreach ($items as $post) {
+            $postIds[] = $post->id;
+        }
+        $featuredByPostId = $this->welcomeProviders->forPostIds($postIds);
         $posts = [];
         foreach ($items as $post) {
             $posts[] = $this->present($post, $user, $featuredByPostId[$post->id] ?? null);
@@ -373,7 +374,7 @@ class CommunityController
         }
         $featuredProvider = $welcomeFeatured ?? $this->mentions->asFeaturedProvider($mention);
 
-        return ['id' => $post->id, 'kind' => $post->kind, 'title' => $post->title, 'body' => $post->body, 'hashtags' => array_values($post->hashtags ?? []), 'area' => $post->area?->only(['id', 'name']), 'areaLabel' => $post->area_label, 'author' => $post->author_display_mode === 'official' ? ['id' => $post->author_user_id, 'name' => 'KAILA', 'official' => true] : ['id' => $post->author_user_id, 'name' => $post->author->name, 'official' => false], 'mention' => $mention, 'featuredProvider' => $featuredProvider, 'helpful' => DB::table('community_reactions')->where(['community_post_id' => $post->id, 'user_id' => $user->id])->exists(), 'helpfulCount' => (int) $post->helpful_count, 'commentsCount' => (int) $post->comments_count, 'media' => $post->media->map(fn ($media) => $this->presentMedia($media))->values(), 'canManage' => $post->author_user_id === $user->id, 'publishedAt' => $post->published_at?->toIso8601String(), 'editedAt' => $post->edited_at?->toIso8601String()];
+        return ['id' => $post->id, 'kind' => $post->kind, 'title' => $post->title, 'body' => $post->body, 'hashtags' => $post->hashtags ?? [], 'area' => $post->area?->only(['id', 'name']), 'areaLabel' => $post->area_label, 'author' => $post->author_display_mode === 'official' ? ['id' => $post->author_user_id, 'name' => 'KAILA', 'official' => true] : ['id' => $post->author_user_id, 'name' => $post->author->name, 'official' => false], 'mention' => $mention, 'featuredProvider' => $featuredProvider, 'helpful' => DB::table('community_reactions')->where(['community_post_id' => $post->id, 'user_id' => $user->id])->exists(), 'helpfulCount' => (int) $post->helpful_count, 'commentsCount' => (int) $post->comments_count, 'media' => $post->media->map(fn ($media) => $this->presentMedia($media))->values(), 'canManage' => $post->author_user_id === $user->id, 'publishedAt' => $post->published_at?->toIso8601String(), 'editedAt' => $post->edited_at?->toIso8601String()];
     }
 
     /** @return array<string, mixed> */
@@ -382,7 +383,8 @@ class CommunityController
         return ['id' => $media->id, 'originalName' => $media->original_name, 'mimeType' => $media->mime_type, 'sizeBytes' => $media->size_bytes, 'scanStatus' => $media->scan_status, 'url' => $media->scan_status === 'clean' ? "/api/v1/community-media/{$media->id}" : null];
     }
 
-    /** @param array<int, string> $avatars */
+    /** @param array<int, string> $avatars
+     * @return array<string, mixed> */
     private function presentComment(CommunityComment $comment, User $user, array $avatars = [], int $postAuthorUserId = 0): array
     {
         $authorId = $comment->author_user_id;

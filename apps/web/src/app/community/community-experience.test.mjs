@@ -115,6 +115,12 @@ test("community post pages are server-rendered for SEO", () => {
   assert.match(postPage, /CommunityPostDetail/);
 });
 
+test("public community fetches degrade when the API is unreachable at build time", () => {
+  const helper = readFileSync(new URL("../../lib/community-public.ts", import.meta.url), "utf8");
+  assert.match(helper, /CI and local production builds prerender without a live Laravel API/);
+  assert.match(helper, /catch \{/);
+});
+
 test("community feed uses a desktop three-column layout with browse and discover rails", () => {
   const css = readFileSync(new URL("./community.module.css", import.meta.url), "utf8");
   assert.match(feed, /CommunityBrowseRail/);

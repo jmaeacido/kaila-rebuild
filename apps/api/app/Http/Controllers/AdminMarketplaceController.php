@@ -63,7 +63,7 @@ class AdminMarketplaceController extends Controller
                     'previewUrl' => "/api/v1/admin/marketplace/assets/{$asset->id}/preview",
                     'uploadedBy' => [
                         'id' => $asset->user_id,
-                        'name' => $asset->user?->name ?? 'Unknown user',
+                        'name' => $asset->user->name ?? 'Unknown user',
                         'email' => $asset->user?->email,
                     ],
                 ]),
@@ -73,28 +73,7 @@ class AdminMarketplaceController extends Controller
                 ->latest('reviewed_at')
                 ->limit(50)
                 ->get(['id', 'user_id', 'purpose', 'original_name', 'mime_type', 'size_bytes', 'scan_status', 'reviewed_by', 'review_note', 'reviewed_at', 'created_at'])
-                ->map(fn (ProfileAsset $asset): array => [
-                    'id' => $asset->id,
-                    'originalName' => $asset->original_name,
-                    'mimeType' => $asset->mime_type,
-                    'sizeBytes' => $asset->size_bytes,
-                    'purpose' => $asset->purpose,
-                    'createdAt' => $asset->created_at?->toIso8601String(),
-                    'previewUrl' => "/api/v1/admin/marketplace/assets/{$asset->id}/preview",
-                    'decision' => $asset->scan_status === 'clean' ? 'approved' : 'rejected',
-                    'reviewReason' => $asset->review_note,
-                    'reviewedAt' => $asset->reviewed_at?->toIso8601String(),
-                    'uploadedBy' => [
-                        'id' => $asset->user_id,
-                        'name' => $asset->user?->name ?? 'Unknown user',
-                        'email' => $asset->user?->email,
-                    ],
-                    'reviewedBy' => [
-                        'id' => $asset->reviewed_by,
-                        'name' => $asset->reviewer?->name ?? 'Unknown reviewer',
-                        'email' => $asset->reviewer?->email,
-                    ],
-                ]),
+                ->map(fn (ProfileAsset $asset): array => $this->presentReviewedAsset($asset)),
             'providerReviews' => ProviderProfile::query()
                 ->whereNotNull('reviewed_at')
                 ->with(['user:id,name,email', 'reviewer:id,name,email', 'services:id,name', 'serviceAreas:id,name,type'])
@@ -285,7 +264,7 @@ class AdminMarketplaceController extends Controller
     /** @return array<string, mixed> */
     private function presentProvider(ProviderProfile $profile, bool $reviewed = false): array
     {
-        $baseline = is_array($profile->review_baseline) ? $profile->review_baseline : null;
+        $baseline = $profile->review_baseline;
 
         return [
             'id' => $profile->id,
@@ -297,7 +276,7 @@ class AdminMarketplaceController extends Controller
             'shopAddress' => $profile->shop_address,
             'submittedAt' => $profile->updated_at?->toIso8601String(),
             'isUpdate' => $baseline !== null,
-            'changes' => $baseline ? ProviderProfileReviewBaseline::changes($baseline, $profile) : [],
+            'changes' => $baseline !== null ? ProviderProfileReviewBaseline::changes($baseline, $profile) : [],
             'user' => ['id' => $profile->user_id, 'name' => $profile->user?->name, 'email' => $profile->user?->email],
             'services' => $profile->services->map->only(['id', 'name'])->values(),
             'serviceAreas' => $profile->serviceAreas->map->only(['id', 'name', 'type'])->values(),
@@ -306,16 +285,43 @@ class AdminMarketplaceController extends Controller
                 'decision' => $profile->status === 'active' ? 'approved' : 'rejected',
                 'reviewReason' => $profile->review_note,
                 'reviewedAt' => $profile->reviewed_at?->toIso8601String(),
-                'reviewedBy' => ['id' => $profile->reviewed_by, 'name' => $profile->reviewer?->name ?? 'Unknown reviewer', 'email' => $profile->reviewer?->email],
+                'reviewedBy' => ['id' => $profile->reviewed_by, 'name' => $profile->reviewer->name ?? 'Unknown reviewer', 'email' => $profile->reviewer?->email],
             ] : []),
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function presentReviewedAsset(ProfileAsset $asset): array
+    {
+        return [
+            'id' => $asset->id,
+            'originalName' => $asset->original_name,
+            'mimeType' => $asset->mime_type,
+            'sizeBytes' => $asset->size_bytes,
+            'purpose' => $asset->purpose,
+            'createdAt' => $asset->created_at?->toIso8601String(),
+            'previewUrl' => "/api/v1/admin/marketplace/assets/{$asset->id}/preview",
+            'decision' => $asset->scan_status === 'clean' ? 'approved' : 'rejected',
+            'reviewReason' => $asset->review_note,
+            'reviewedAt' => $asset->reviewed_at?->toIso8601String(),
+            'uploadedBy' => [
+                'id' => $asset->user_id,
+                'name' => $asset->user->name ?? 'Unknown user',
+                'email' => $asset->user?->email,
+            ],
+            'reviewedBy' => [
+                'id' => $asset->reviewed_by,
+                'name' => $asset->reviewer->name ?? 'Unknown reviewer',
+                'email' => $asset->reviewer?->email,
+            ],
         ];
     }
 
     /** @return array<string, mixed> */
     private function presentCredential(ProviderCredential $credential, bool $reviewed = false): array
     {
-        $asset = $credential->asset;
-        $profile = $credential->providerProfile;
+        $asset = $credential->asset ?? abort(500, 'Credential file is missing.');
+        $profile = $credential->providerProfile ?? abort(500, 'Credential provider profile is missing.');
 
         return [
             'id' => $credential->id,
@@ -328,7 +334,7 @@ class AdminMarketplaceController extends Controller
                 'decision' => $credential->review_status,
                 'reviewReason' => $credential->review_note,
                 'reviewedAt' => $credential->reviewed_at?->toIso8601String(),
-                'reviewedBy' => ['id' => $credential->reviewed_by, 'name' => $credential->reviewer?->name ?? 'Unknown reviewer', 'email' => $credential->reviewer?->email],
+                'reviewedBy' => ['id' => $credential->reviewed_by, 'name' => $credential->reviewer->name ?? 'Unknown reviewer', 'email' => $credential->reviewer?->email],
             ] : []),
         ];
     }
@@ -336,13 +342,12 @@ class AdminMarketplaceController extends Controller
     /** @return list<string> */
     private function reviewAudience(int $subjectUserId): array
     {
-        return User::query()
-            ->where('is_admin', true)
-            ->pluck('id')
-            ->push($subjectUserId)
-            ->unique()
-            ->map(static fn (int $id): string => (string) $id)
-            ->values()
-            ->all();
+        $audience = [];
+        foreach (User::query()->where('is_admin', true)->pluck('id') as $adminId) {
+            $audience[] = (string) $adminId;
+        }
+        $audience[] = (string) $subjectUserId;
+
+        return array_values(array_unique($audience));
     }
 }

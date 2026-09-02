@@ -200,7 +200,8 @@ class ServiceJobController extends Controller
         }
 
         if ($job->client_user_id === $user->id) {
-            $profile = ProviderProfile::query()->findOrFail($snapshot?->provider_profile_id ?? $job->direct_provider_profile_id);
+            $profileId = $snapshot !== null ? $snapshot->provider_profile_id : $job->direct_provider_profile_id;
+            $profile = ProviderProfile::query()->findOrFail($profileId);
             $counterpartUserId = $profile->user_id;
             $role = 'provider';
             $displayName = $profile->display_name;

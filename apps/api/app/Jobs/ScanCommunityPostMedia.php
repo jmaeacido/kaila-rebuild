@@ -51,7 +51,7 @@ class ScanCommunityPostMedia implements ShouldBeUnique, ShouldQueue
         }
 
         $contents = Storage::disk($asset->disk)->get($asset->object_key);
-        if ($contents === '') {
+        if (! is_string($contents) || $contents === '') {
             throw new RuntimeException('The quarantined community image could not be opened.');
         }
 

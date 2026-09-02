@@ -45,13 +45,18 @@ class ConversationController extends Controller
             ->get();
 
         $snapshots = AcceptedOfferSnapshot::query()->whereIn('service_job_id', $jobs->pluck('id'))->get()->keyBy('service_job_id');
-        $selectedProfileIds = $jobs->map(fn (ServiceJob $job) => $snapshots->get($job->id)?->provider_profile_id ?? $job->direct_provider_profile_id)->filter()->unique();
+        $selectedProfileIds = $jobs->map(function (ServiceJob $job) use ($snapshots): ?int {
+            $snapshot = $snapshots->get($job->id);
+
+            return $snapshot !== null ? $snapshot->provider_profile_id : $job->direct_provider_profile_id;
+        })->filter()->unique();
         $profiles = ProviderProfile::query()->whereIn('id', $selectedProfileIds)->get()->keyBy('id');
         $counterpartUserIds = $jobs->map(function (ServiceJob $job) use ($actor, $snapshots, $profiles): ?int {
             if ($job->client_user_id !== $actor->id) {
                 return $job->client_user_id;
             }
-            $profileId = $snapshots->get($job->id)?->provider_profile_id ?? $job->direct_provider_profile_id;
+            $snapshot = $snapshots->get($job->id);
+            $profileId = $snapshot !== null ? $snapshot->provider_profile_id : $job->direct_provider_profile_id;
 
             return $profiles->get($profileId)?->user_id;
         })->filter()->unique();
@@ -68,7 +73,8 @@ class ConversationController extends Controller
             ->orderByDesc('sequence')->get()->unique('conversation_id')->keyBy('conversation_id');
 
         $data = $jobs->map(function (ServiceJob $job) use ($actor, $snapshots, $profiles, $users, $avatars, $conversations, $lastMessages): array {
-            $profileId = $snapshots->get($job->id)?->provider_profile_id ?? $job->direct_provider_profile_id;
+            $snapshot = $snapshots->get($job->id);
+            $profileId = $snapshot !== null ? $snapshot->provider_profile_id : $job->direct_provider_profile_id;
             $counterpartId = $job->client_user_id === $actor->id ? $profiles->get($profileId)?->user_id : $job->client_user_id;
             $counterpart = $users->get($counterpartId);
             abort_unless($counterpart instanceof User, 404);
@@ -90,7 +96,7 @@ class ConversationController extends Controller
                     'sentByMe' => $lastMessage->sender_user_id === $actor->id,
                     'createdAt' => $lastMessage->created_at?->toIso8601String(),
                 ] : null,
-                'updatedAt' => ($conversation?->updated_at ?? $job->updated_at)?->toIso8601String(),
+                'updatedAt' => ($conversation !== null ? $conversation->updated_at : $job->updated_at)?->toIso8601String(),
             ];
         });
 

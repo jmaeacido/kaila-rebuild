@@ -17,6 +17,10 @@ use Illuminate\Support\Carbon;
  * @property string|null $estimated_duration_text
  * @property string|null $scope
  * @property string|null $message
+ * @property string|null $service_location_mode
+ * @property string|null $destination_label
+ * @property float|string|null $destination_latitude
+ * @property float|string|null $destination_longitude
  * @property Carbon $accepted_at
  */
 class AcceptedOfferSnapshot extends Model

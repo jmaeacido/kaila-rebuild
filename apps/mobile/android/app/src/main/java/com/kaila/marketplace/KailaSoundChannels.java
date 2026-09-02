@@ -66,6 +66,7 @@ final class KailaSoundChannels {
         Uri sound,
         AudioAttributes attributes
     ) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return;
         NotificationChannel channel = new NotificationChannel(id, name, NotificationManager.IMPORTANCE_HIGH);
         channel.setDescription(description);
         channel.setSound(sound, attributes);

@@ -28,7 +28,7 @@ class CommunityPublicPresenter
             'kind' => $post->kind,
             'title' => $post->title,
             'body' => $post->body,
-            'hashtags' => array_values($post->hashtags ?? []),
+            'hashtags' => $post->hashtags ?? [],
             'area' => $post->area?->only(['id', 'name']),
             'areaLabel' => $post->area_label,
             'author' => $post->author_display_mode === 'official'

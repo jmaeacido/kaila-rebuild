@@ -15,7 +15,7 @@ class CommunityMentionService
     /** @return list<int> */
     public function blockedUserIds(int $viewerUserId): array
     {
-        return DB::table('user_blocks')
+        $blocked = DB::table('user_blocks')
             ->select('blocked_user_id')
             ->where('blocker_user_id', $viewerUserId)
             ->union(
@@ -26,6 +26,8 @@ class CommunityMentionService
             ->pluck('blocked_user_id')
             ->map(fn ($id): int => (int) $id)
             ->all();
+
+        return array_values($blocked);
     }
 
     /** @return list<array{userId: int, displayName: string, providerProfileId: int|null, kind: string, avatarUrl: string|null}> */
@@ -61,7 +63,7 @@ class CommunityMentionService
         }
 
         $clients = User::query()
-            ->select(['users.id', 'users.name', 'client_profiles.display_name'])
+            ->select(['users.id', 'users.name', 'client_profiles.display_name as client_display_name'])
             ->leftJoin('client_profiles', 'client_profiles.user_id', '=', 'users.id')
             ->when($blocked !== [], fn ($builder) => $builder->whereNotIn('users.id', $blocked))
             ->when($providerUserIds !== [], fn ($builder) => $builder->whereNotIn('users.id', $providerUserIds))
@@ -76,7 +78,7 @@ class CommunityMentionService
             ->get();
 
         foreach ($clients as $client) {
-            $displayName = trim((string) ($client->display_name ?: $client->name));
+            $displayName = trim((string) ($client->getAttribute('client_display_name') ?: $client->name));
             if ($displayName === '') {
                 continue;
             }
@@ -101,7 +103,7 @@ class CommunityMentionService
                 ->whereKey($featuredProviderProfileId)
                 ->where('status', 'active')
                 ->first(['id', 'user_id']);
-            abort_unless($profile, 422, 'Only active provider profiles can be mentioned.');
+            abort_if($profile === null, 422, 'Only active provider profiles can be mentioned.');
             $this->assertMentionable((int) $profile->user_id, $actor);
 
             return [

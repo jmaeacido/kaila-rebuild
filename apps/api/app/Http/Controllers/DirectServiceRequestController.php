@@ -40,7 +40,7 @@ class DirectServiceRequestController extends Controller
             'latitude' => ['required', 'numeric', 'between:-90,90'], 'longitude' => ['required', 'numeric', 'between:-180,180'],
             'addressLabel' => ['nullable', 'string', 'max:180'],
         ]);
-        $requestArea = Area::query()->findOrFail($data['areaId']);
+        $requestArea = Area::query()->whereKey((int) $data['areaId'])->firstOrFail();
         $coveredAreaIds = array_values(array_filter([$requestArea->id, $requestArea->parent_id]));
         abort_unless($providerProfile->serviceAreas()->whereKey($coveredAreaIds)->exists(), 422, 'This provider does not currently cover the selected area.');
 

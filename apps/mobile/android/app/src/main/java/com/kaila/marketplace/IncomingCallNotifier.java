@@ -67,11 +67,19 @@ public final class IncomingCallNotifier {
             .setStyle(NotificationCompat.CallStyle.forIncomingCall(caller, decline, answer))
             .setTimeoutAfter(60_000L);
 
-        NotificationManagerCompat.from(context).notify(NOTIFICATION_ID, builder.build());
+        try {
+            NotificationManagerCompat.from(context).notify(NOTIFICATION_ID, builder.build());
+        } catch (SecurityException ignored) {
+            // Android notification permission is controlled by the user.
+        }
     }
 
     public static void cancel(Context context) {
-        NotificationManagerCompat.from(context).cancel(NOTIFICATION_ID);
+        try {
+            NotificationManagerCompat.from(context).cancel(NOTIFICATION_ID);
+        } catch (SecurityException ignored) {
+            // Android notification permission is controlled by the user.
+        }
     }
 
     private static PendingIntent activityPending(Context context, String action, Bundle extras, int requestCode) {

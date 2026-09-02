@@ -38,7 +38,7 @@ class CommunityWelcomeProviderLookup
             }
         }
 
-        $remaining = array_values(array_diff($postIds, array_keys($map)));
+        $remaining = array_diff($postIds, array_keys($map));
         if ($remaining === []) {
             return $map;
         }

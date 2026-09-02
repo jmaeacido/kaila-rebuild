@@ -175,7 +175,7 @@ class MarketplaceProfileController extends Controller
             'rating' => $reputation?->average_rating !== null
                 ? (float) $reputation->average_rating
                 : ($profile->rating !== null ? (float) $profile->rating : null),
-            'reviewCount' => (int) ($reputation?->published_review_count ?? 0),
+            'reviewCount' => $reputation !== null ? (int) $reputation->published_review_count : 0,
             'completedJobs' => $completedJobs, 'responseMinutes' => $profile->response_minutes,
             'memberSince' => $profile->created_at?->toDateString(), 'verified' => $profile->credentials->isNotEmpty(),
             'services' => $profile->services, 'serviceAreas' => $profile->serviceAreas, 'availability' => $profile->relationLoaded('availability') ? $profile->availability : [],

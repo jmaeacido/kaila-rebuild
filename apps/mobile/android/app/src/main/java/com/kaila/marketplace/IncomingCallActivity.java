@@ -18,8 +18,6 @@ public class IncomingCallActivity extends Activity {
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setShowWhenLocked(true);
-        setTurnScreenOn(true);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
             setShowWhenLocked(true);
             setTurnScreenOn(true);

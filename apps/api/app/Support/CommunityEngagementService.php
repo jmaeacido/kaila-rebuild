@@ -11,7 +11,7 @@ class CommunityEngagementService
     /** @return list<int> */
     public function engagedUserIds(CommunityPost $post): array
     {
-        return collect([$post->author_user_id])
+        $ids = collect([$post->author_user_id])
             ->merge(
                 DB::table('community_reactions')
                     ->where('community_post_id', $post->id)
@@ -27,15 +27,17 @@ class CommunityEngagementService
             ->unique()
             ->values()
             ->all();
+
+        return array_values($ids);
     }
 
     /** @return list<int> */
     public function notificationRecipients(CommunityPost $post, int $excludeUserId): array
     {
-        $candidates = collect($this->engagedUserIds($post))
+        $candidates = array_values(collect($this->engagedUserIds($post))
             ->reject(static fn (int $id): bool => $id === $excludeUserId)
             ->values()
-            ->all();
+            ->all());
 
         return $this->filterBlockedAgainstAuthor($post->author_user_id, $candidates);
     }
@@ -49,7 +51,7 @@ class CommunityEngagementService
             return [];
         }
 
-        $blockedUserIds = DB::table('user_blocks')
+        $blockedUserIds = array_values(DB::table('user_blocks')
             ->where(static function ($query) use ($authorUserId, $userIds): void {
                 $query->where('blocked_user_id', $authorUserId)
                     ->whereIn('blocker_user_id', $userIds)
@@ -66,11 +68,11 @@ class CommunityEngagementService
             ->unique()
             ->reject(static fn (int $id): bool => $id === $authorUserId)
             ->values()
-            ->all();
+            ->all());
 
-        return collect($userIds)
+        return array_values(collect($userIds)
             ->reject(static fn (int $id): bool => in_array($id, $blockedUserIds, true))
             ->values()
-            ->all();
+            ->all());
     }
 }

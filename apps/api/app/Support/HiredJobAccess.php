@@ -13,14 +13,22 @@ class HiredJobAccess
     public function participants(ServiceJob $job): array
     {
         $snapshot = AcceptedOfferSnapshot::query()->where('service_job_id', $job->id)->first();
-        $providerProfileId = $snapshot?->provider_profile_id ?? $job->direct_provider_profile_id;
+        $providerProfileId = $snapshot !== null ? $snapshot->provider_profile_id : $job->direct_provider_profile_id;
         abort_if($providerProfileId === null, 404);
         $provider = ProviderProfile::query()->findOrFail($providerProfileId);
 
-        $mode = $snapshot?->service_location_mode ?? $job->service_location_mode ?? 'at_client';
-        $destinationLabel = $snapshot?->destination_label ?? ($mode === 'at_client' ? $job->address_label : $provider->shop_address);
-        $destinationLatitude = $snapshot?->destination_latitude ?? ($mode === 'at_client' ? $job->latitude : $provider->shop_latitude);
-        $destinationLongitude = $snapshot?->destination_longitude ?? ($mode === 'at_client' ? $job->longitude : $provider->shop_longitude);
+        $mode = $snapshot !== null && $snapshot->service_location_mode !== null
+            ? $snapshot->service_location_mode
+            : ($job->service_location_mode ?? 'at_client');
+        $destinationLabel = $snapshot !== null && $snapshot->destination_label !== null
+            ? $snapshot->destination_label
+            : ($mode === 'at_client' ? $job->address_label : $provider->shop_address);
+        $destinationLatitude = $snapshot !== null && $snapshot->destination_latitude !== null
+            ? $snapshot->destination_latitude
+            : ($mode === 'at_client' ? $job->latitude : $provider->shop_latitude);
+        $destinationLongitude = $snapshot !== null && $snapshot->destination_longitude !== null
+            ? $snapshot->destination_longitude
+            : ($mode === 'at_client' ? $job->longitude : $provider->shop_longitude);
 
         return [
             'clientId' => $job->client_user_id,

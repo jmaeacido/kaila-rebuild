@@ -24,7 +24,10 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.time.Instant;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
+import java.util.TimeZone;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
@@ -123,7 +126,7 @@ public class NavigationLocationService extends Service implements LocationListen
                 .put("latitude", location.getLatitude())
                 .put("longitude", location.getLongitude())
                 .put("accuracyMeters", Math.max(1, Math.min(200, Math.round(location.getAccuracy()))))
-                .put("capturedAt", Instant.ofEpochMilli(capturedAt).toString())
+                .put("capturedAt", iso8601Utc(capturedAt))
                 .put("foreground", true);
             if (location.hasBearing()) {
                 float bearing = location.getBearing();
@@ -212,6 +215,12 @@ public class NavigationLocationService extends Service implements LocationListen
         if (locationManager != null) locationManager.removeUpdates(this);
         stopForeground(STOP_FOREGROUND_REMOVE);
         stopSelf();
+    }
+
+    private static String iso8601Utc(long epochMillis) {
+        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US);
+        format.setTimeZone(TimeZone.getTimeZone("UTC"));
+        return format.format(new Date(epochMillis));
     }
 
     private void createChannel() {

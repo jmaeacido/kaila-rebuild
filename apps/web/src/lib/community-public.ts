@@ -42,32 +42,33 @@ type FeedResponse = {
   meta: { nextCursor: string | null };
 };
 
-async function readJson<T>(response: Response): Promise<T | null> {
-  if (!response.ok) return null;
-  return (await response.json()) as T;
+async function fetchPublicJson<T>(path: string): Promise<T | null> {
+  try {
+    const response = await fetch(`${apiOrigin()}${path}`, {
+      next: { revalidate: 300 },
+    });
+    if (!response.ok) return null;
+    return (await response.json()) as T;
+  } catch {
+    // CI and local production builds prerender without a live Laravel API.
+    return null;
+  }
 }
 
 export async function fetchPublicCommunityPost(postId: string): Promise<PublicCommunityPost | null> {
-  const response = await fetch(`${apiOrigin()}/api/v1/public/community/${encodeURIComponent(postId)}`, {
-    next: { revalidate: 300 },
-  });
-  const body = await readJson<{ data: PublicCommunityPost }>(response);
+  const body = await fetchPublicJson<{ data: PublicCommunityPost }>(
+    `/api/v1/public/community/${encodeURIComponent(postId)}`,
+  );
   return body?.data ?? null;
 }
 
 export async function fetchPublicCommunityFeed(limit = 12): Promise<PublicCommunityPost[]> {
-  const response = await fetch(`${apiOrigin()}/api/v1/public/community/feed`, {
-    next: { revalidate: 300 },
-  });
-  const body = await readJson<FeedResponse>(response);
+  const body = await fetchPublicJson<FeedResponse>("/api/v1/public/community/feed");
   return body?.data.slice(0, limit) ?? [];
 }
 
 export async function fetchPublicCommunitySitemapEntries(): Promise<PublicCommunitySitemapEntry[]> {
-  const response = await fetch(`${apiOrigin()}/api/v1/public/community`, {
-    next: { revalidate: 300 },
-  });
-  const body = await readJson<{ data: PublicCommunitySitemapEntry[] }>(response);
+  const body = await fetchPublicJson<{ data: PublicCommunitySitemapEntry[] }>("/api/v1/public/community");
   return body?.data ?? [];
 }
 

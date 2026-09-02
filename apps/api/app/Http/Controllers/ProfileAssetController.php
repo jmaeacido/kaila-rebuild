@@ -82,7 +82,6 @@ class ProfileAssetController extends Controller
             || (in_array($profileAsset->purpose, ['avatar', 'portfolio'], true) && $profileAsset->scan_status === 'clean'),
             403
         );
-        abort_unless($isOwner || $profileAsset->scan_status === 'clean', 409, 'The file is not available until its safety scan passes.');
 
         return Storage::disk($profileAsset->disk)->response(
             $profileAsset->object_key,

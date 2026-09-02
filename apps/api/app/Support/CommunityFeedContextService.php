@@ -33,8 +33,11 @@ class CommunityFeedContextService
     private function resolveHomeArea(User $user): ?Area
     {
         $clientAreaId = ClientProfile::query()->where('user_id', $user->id)->value('area_id');
-        if ($clientAreaId) {
-            return Area::query()->find($clientAreaId);
+        if (is_int($clientAreaId) || (is_string($clientAreaId) && $clientAreaId !== '')) {
+            $homeArea = Area::query()->find((int) $clientAreaId);
+            if ($homeArea instanceof Area) {
+                return $homeArea;
+            }
         }
 
         $provider = ProviderProfile::query()
@@ -46,6 +49,7 @@ class CommunityFeedContextService
             return null;
         }
 
+        /** @var Collection<int, Area> $areas */
         $areas = $provider->serviceAreas()->get(['areas.id', 'areas.name', 'areas.type', 'areas.parent_id']);
         $locality = $areas->first(fn (Area $area): bool => in_array($area->type, ['city', 'municipality'], true));
         if ($locality) {
@@ -97,7 +101,8 @@ class CommunityFeedContextService
         });
     }
 
-    /** @return list<array{tag: string, count: int}> */
+    /** @param Builder<CommunityPost> $scoped
+     * @return list<array{tag: string, count: int}> */
     private function trendingTags(Builder $scoped): array
     {
         /** @var Collection<int, CommunityPost> $posts */
@@ -127,9 +132,11 @@ class CommunityFeedContextService
         return $trending;
     }
 
-    /** @return list<array<string, mixed>> */
+    /** @param Builder<CommunityPost> $scoped
+     * @return list<array<string, mixed>> */
     private function newProviders(Builder $scoped): array
     {
+        /** @var Collection<int, CommunityPost> $posts */
         $posts = (clone $scoped)
             ->where('kind', 'official_update')
             ->whereJsonContains('hashtags', 'newprovider')

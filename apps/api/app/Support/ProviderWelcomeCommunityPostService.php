@@ -174,7 +174,10 @@ class ProviderWelcomeCommunityPostService
             });
 
             $this->attachAvatar($post, $avatar, $admin);
-            $this->realtime->publish('community.post.updated', $post->fresh(['media']), $admin, notifyEngaged: false);
+            $refreshed = $post->fresh(['media']);
+            if ($refreshed !== null) {
+                $this->realtime->publish('community.post.updated', $refreshed, $admin, notifyEngaged: false);
+            }
         });
     }
 
@@ -193,7 +196,7 @@ class ProviderWelcomeCommunityPostService
         abort_unless($avatar->scan_status === 'clean', 422, 'The provider profile picture must be approved before publishing the welcome post.');
 
         $contents = Storage::disk($avatar->disk)->get($avatar->object_key);
-        if ($contents === '') {
+        if (! is_string($contents) || $contents === '') {
             throw new RuntimeException('The provider profile picture could not be read.');
         }
 

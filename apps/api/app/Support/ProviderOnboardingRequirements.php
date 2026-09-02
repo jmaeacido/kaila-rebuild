@@ -71,7 +71,7 @@ class ProviderOnboardingRequirements
     /** @return list<array{id: string, caption: string|null, scanStatus: string, downloadPath: string, sortOrder: int}> */
     public function portfolioAssets(User $user): array
     {
-        return ProfileAsset::query()
+        return array_values(ProfileAsset::query()
             ->where('user_id', $user->id)
             ->where('purpose', 'portfolio')
             ->orderBy('sort_order')
@@ -84,6 +84,6 @@ class ProviderOnboardingRequirements
                 'downloadPath' => "/api/v1/profile-assets/{$asset->id}",
                 'sortOrder' => (int) $asset->sort_order,
             ])
-            ->all();
+            ->all());
     }
 }

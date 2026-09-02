@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
@@ -16,7 +17,16 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string|null $rating
  * @property int $completed_jobs
  * @property int|null $response_minutes
+ * @property string $status
+ * @property string|null $review_note
+ * @property int|null $reviewed_by
+ * @property array<string, mixed>|null $review_baseline
+ * @property Carbon|null $reviewed_at
+ * @property Carbon|null $updated_at
+ * @property Carbon|null $created_at
  * @property Collection<int, ProviderCredential> $credentials
+ * @property-read User|null $user
+ * @property-read User|null $reviewer
  */
 class ProviderProfile extends Model
 {

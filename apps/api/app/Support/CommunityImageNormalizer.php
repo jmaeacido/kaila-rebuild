@@ -24,10 +24,6 @@ final class CommunityImageNormalizer
 
         $width = imagesx($image);
         $height = imagesy($image);
-        if ($width < 1 || $height < 1) {
-            imagedestroy($image);
-            throw new RuntimeException('The uploaded community image dimensions were invalid.');
-        }
 
         if ($width > self::MAX_EDGE || $height > self::MAX_EDGE) {
             $scale = min(self::MAX_EDGE / $width, self::MAX_EDGE / $height);
@@ -56,7 +52,7 @@ final class CommunityImageNormalizer
         $normalized = ob_get_clean();
         imagedestroy($image);
 
-        if (! $encoded || ! is_string($normalized) || $normalized === '') {
+        if (! $encoded || $normalized === '') {
             throw new RuntimeException('The uploaded community image could not be optimized.');
         }
 
