@@ -15,6 +15,9 @@ const required = [
   [manifest, 'android:usesCleartextTraffic="false"'],
   [manifest, "android.permission.POST_NOTIFICATIONS"],
   [manifest, 'android:host="app.kaila-app.com"'],
+  [manifest, 'android:host="kaila-app.com"'],
+  [manifest, 'android:path="/post-job"'],
+  [manifest, 'android:path="/download"'],
   // Decision 0034 / ADR-0022: call-only full-screen wake requires the permission.
   [manifest, "android.permission.USE_FULL_SCREEN_INTENT"],
   [gradle, "minifyEnabled true"],

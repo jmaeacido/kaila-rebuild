@@ -3,7 +3,8 @@ import { Capacitor } from "@capacitor/core";
 import { Network } from "@capacitor/network";
 import { PushNotifications } from "@capacitor/push-notifications";
 import { IncomingCall } from "./incoming-call-plugin";
-import { deepLinkRoute, incomingCallRoute, notificationRoute } from "./routes";
+import { incomingCallRoute, notificationRoute } from "./routes";
+import { initializeAppLinks } from "./app-links";
 import { closeMobileSocialBrowser } from "./oauth";
 import { loadSession } from "./session";
 import { callStatusEndsMedia, callUpdateDismissesRinging, nativeCallUpdateEndsMedia } from "./call-status";
@@ -73,11 +74,10 @@ export async function initializeMobileRuntime(options: {
   window.addEventListener("kaila:realtime-status", authenticatedRealtime);
 
   const handles = [
-    await App.addListener("appUrlOpen", ({ url }) => {
-      const path = deepLinkRoute(url, options.appHost);
-      if (!path) return;
-      void closeMobileSocialBrowser().catch(() => undefined);
-      options.navigate(path);
+    await initializeAppLinks({
+      appHost: options.appHost,
+      navigate: options.navigate,
+      beforeNavigate: () => { void closeMobileSocialBrowser().catch(() => undefined); },
     }),
     await App.addListener("appStateChange", ({ isActive }) => {
       if (!isActive) return;
