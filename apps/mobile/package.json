@@ -5,6 +5,7 @@
   "type": "module",
   "exports": {
     "./oauth": "./src/oauth.ts",
+    "./apk-update": "./src/apk-update-plugin.ts",
     "./background-navigation": "./src/background-navigation-plugin.ts",
     "./incoming-call": "./src/incoming-call-plugin.ts",
     "./media-capture": "./src/media-capture-plugin.ts",

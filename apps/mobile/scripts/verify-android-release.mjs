@@ -20,6 +20,8 @@ const required = [
   [manifest, 'android:path="/download"'],
   // Decision 0034 / ADR-0022: call-only full-screen wake requires the permission.
   [manifest, "android.permission.USE_FULL_SCREEN_INTENT"],
+  [manifest, "android.permission.REQUEST_INSTALL_PACKAGES"],
+  [manifest, "application/vnd.android.package-archive"],
   [gradle, "minifyEnabled true"],
   [gradle, "shrinkResources true"],
   [gradle, "KAILA_ANDROID_KEYSTORE"],

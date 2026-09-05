@@ -3,6 +3,7 @@
 import { initializeMobileRuntime } from "@kaila/mobile/runtime";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { AndroidUpdatePrompt } from "./android-update-prompt";
 
 const apiOrigin = process.env.NEXT_PUBLIC_KAILA_API_ORIGIN ?? windowOrigin();
 const appHost = process.env.NEXT_PUBLIC_KAILA_APP_HOST ?? "app.kaila-app.com";
@@ -75,5 +76,6 @@ export function NativeRuntime() {
     }).then((dispose) => { cleanup = dispose; });
     return () => { void cleanup?.(); };
   }, [router]);
-  return null;
+
+  return <AndroidUpdatePrompt />;
 }

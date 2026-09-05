@@ -26,6 +26,7 @@ import settingsStyles from "./settings.module.css";
 import { useTheme } from "../theme-provider";
 import type { ThemePreference } from "../theme";
 import { SelectField } from "../../components/select-field";
+import { AndroidUpdateSettings } from "../../components/android-update-settings";
 
 type Preferences = {
   muteMessages: boolean;
@@ -251,6 +252,8 @@ export default function SettingsPage() {
           </p>
         )}
       </section>
+
+      <AndroidUpdateSettings />
 
       <section className={`${styles.card} ${settingsStyles.preferences}`}>
         <div className={settingsStyles.sectionTitle}>

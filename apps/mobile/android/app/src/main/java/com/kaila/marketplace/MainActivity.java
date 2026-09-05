@@ -13,6 +13,7 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(BackgroundNavigationPlugin.class);
         registerPlugin(IncomingCallPlugin.class);
         registerPlugin(MediaCapturePlugin.class);
+        registerPlugin(ApkUpdatePlugin.class);
         super.onCreate(savedInstanceState);
         KailaSoundChannels.ensureAll(this);
         // Keep legacy channels registered so older installs do not crash; new pushes use v1/v3 IDs.
