@@ -71,9 +71,14 @@ export function notificationRoute(data: Record<string, string | undefined>): str
 export function deepLinkRoute(url: string, expectedHost: string): string | null {
   try {
     const parsed = new URL(url);
-    const validWeb = parsed.protocol === "https:" && parsed.hostname === expectedHost;
+    const publicQrPath = ["/post-job", "/post-job/", "/download", "/download/"].includes(parsed.pathname);
+    const validWeb = parsed.protocol === "https:"
+      && (parsed.hostname === expectedHost || (parsed.hostname === "kaila-app.com" && publicQrPath))
+      && !parsed.port;
     const validCustom = parsed.protocol === "kaila:" && parsed.hostname === "app";
-    if (!validWeb && !validCustom) return null;
+    if ((!validWeb && !validCustom) || parsed.username || parsed.password) return null;
+    // Installed users scanning the download QR already have the app.
+    if (parsed.pathname === "/download" || parsed.pathname === "/download/") return "/home";
     const path = `${parsed.pathname}${parsed.search}${parsed.hash}`;
     return path.startsWith("/") && !path.startsWith("//") ? path : null;
   } catch {

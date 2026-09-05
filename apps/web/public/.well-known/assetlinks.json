@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.kaila.marketplace",
+      "sha256_cert_fingerprints": [
+        "9E:C6:4B:C7:72:35:07:B5:74:9D:2D:FE:42:23:8E:DC:10:A9:8A:AA:4F:32:97:A2:2B:21:D5:64:78:C9:10:60"
+      ]
+    }
+  }
+]

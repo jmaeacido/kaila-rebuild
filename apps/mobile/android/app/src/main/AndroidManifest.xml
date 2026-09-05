@@ -43,6 +43,18 @@
                 <data android:scheme="kaila" android:host="app" />
             </intent-filter>
 
+            <!-- Public campaign QR URLs; keep APK downloads and other web pages in the browser. -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="kaila-app.com" />
+                <data android:path="/post-job" />
+                <data android:path="/post-job/" />
+                <data android:path="/download" />
+                <data android:path="/download/" />
+            </intent-filter>
+
         </activity>
 
         <activity
