@@ -6,9 +6,10 @@ import Image from "next/image";
 import { ArrowLeft, BadgeCheck, BriefcaseBusiness, MapPin, Search, Star } from "lucide-react";
 import { Button, Feedback } from "@kaila/ui";
 import { SelectField } from "../../components/select-field";
+import { ServiceCategoryBadge } from "../../components/service-category-icon";
 import styles from "./providers.module.css";
 
-type Reference = { id: number; name: string; parent_id?: number | null; type?: string };
+type Reference = { id: number; name: string; icon?: string; parent_id?: number | null; type?: string };
 type Provider = {
   id: number;
   displayName: string;
@@ -96,7 +97,8 @@ export default function FindProvidersPage() {
             value={filters.categoryId}
             onChange={(categoryId) => setFilters((current) => ({ ...current, categoryId }))}
             placeholder="All services"
-            options={references.categories.map((item) => ({ value: String(item.id), label: item.name }))}
+            placeholderServiceIcon="Ellipsis"
+            options={references.categories.map((item) => ({ value: String(item.id), label: item.name, serviceIcon: item.icon }))}
           />
         </label>
         <label>
@@ -196,7 +198,7 @@ export default function FindProvidersPage() {
                 {provider.services.length > 0 && (
                   <div className={styles.services}>
                     {visibleServices.map((service) => (
-                      <span key={service.id}>{service.name}</span>
+                      <span key={service.id}><ServiceCategoryBadge icon={service.icon || "Wrench"} className={styles.serviceChipIcon} />{service.name}</span>
                     ))}
                     {hiddenServiceCount > 0 && <span className={styles.servicesMore}>+{hiddenServiceCount} more</span>}
                   </div>

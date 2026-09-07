@@ -14,15 +14,18 @@ import {
   MonitorCog,
   Smartphone,
   Snowflake,
+  SprayCan,
   Sparkles,
   Wrench,
   Zap,
 } from "lucide-react";
 import type { LucideIcon, LucideProps } from "lucide-react";
+import styles from "./service-category-icon.module.css";
 
 const serviceCategoryIcons: Record<string, LucideIcon> = {
   Bike,
   BookOpen,
+  Cleaning: SprayCan,
   Camera,
   Car,
   Cog,
@@ -55,4 +58,18 @@ export function ServiceCategoryIcon({
   const normalizedIcon = icon.replaceAll(/[^a-z0-9]/gi, "").toLowerCase();
   const Icon = serviceCategoryIcons[icon] ?? normalizedServiceCategoryIcons[normalizedIcon] ?? Ellipsis;
   return <Icon {...props} />;
+}
+
+export function ServiceCategoryBadge({ icon, className }: { icon: string; className?: string }) {
+  const normalizedIcon = icon.replaceAll(/[^a-z0-9]/gi, "").toLowerCase();
+  const tone = Array.from(normalizedIcon).reduce(
+    (total, character) => total + character.charCodeAt(0),
+    0,
+  ) % 6;
+
+  return (
+    <span className={`${styles.badge} ${styles[`tone${tone}`]}${className ? ` ${className}` : ""}`}>
+      <ServiceCategoryIcon icon={icon} aria-hidden="true" />
+    </span>
+  );
 }

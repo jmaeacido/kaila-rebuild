@@ -29,8 +29,8 @@
   min-width: 0;
 }
 
-.trigger svg,
-.options svg {
+.trigger > svg,
+.options button > svg:last-child {
   color: var(--color-primary);
   flex: none;
   height: var(--spacing-20);
@@ -78,7 +78,7 @@
   display: grid;
   font: inherit;
   gap: var(--spacing-12);
-  grid-template-columns: var(--spacing-24) 1fr var(--spacing-24);
+  grid-template-columns: var(--spacing-40, 2.5rem) 1fr var(--spacing-24);
   min-height: var(--control-min-height);
   padding: var(--spacing-12);
   text-align: left;
@@ -89,6 +89,6 @@
   background: color-mix(in srgb, var(--color-primary) 10%, transparent);
 }
 
-.options button svg:last-child {
+.options button > svg:last-child {
   color: var(--color-success);
 }

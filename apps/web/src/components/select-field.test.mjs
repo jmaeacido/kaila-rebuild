@@ -21,3 +21,9 @@ test("SelectField supports forms and keyboard interaction", () => {
   assert.match(source, /role="listbox"/);
   assert.match(source, /aria-selected/);
 });
+
+test("SelectField optionally renders colorful service icons without changing generic selects", () => {
+  assert.match(source, /serviceIcon\?: string/);
+  assert.match(source, /placeholderServiceIcon\?: string/);
+  assert.match(source, /<ServiceCategoryBadge icon=\{option\.serviceIcon\}/);
+});

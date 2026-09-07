@@ -14,3 +14,9 @@ test("CategorySelect keeps options scrollable within the viewport", () => {
   assert.match(source, /document\.getElementById\(bottomBoundaryId\)/);
   assert.match(source, /const usableBottom = Math\.min/);
 });
+
+test("CategorySelect gives every service a contextual icon badge", () => {
+  assert.match(source, /ServiceCategoryBadge/);
+  assert.match(source, /<ServiceCategoryBadge icon=\{selected\.icon\}/);
+  assert.match(source, /<ServiceCategoryBadge icon=\{category\.icon\}/);
+});

@@ -1,4 +1,4 @@
-.launcher {
+.launcher.launcher {
   align-items: center;
   background: var(--gradient-primary);
   border: 0;
@@ -186,6 +186,13 @@
   width: 4rem;
 }
 
+.launcherMascot {
+  border-radius: var(--radius-pill);
+  height: var(--spacing-32);
+  object-fit: cover;
+  width: var(--spacing-32);
+}
+
 .thinking > span:not(.srOnly) {
   animation: thinking-pulse var(--duration-slow) ease-in-out infinite alternate;
   background: var(--color-text-secondary);
@@ -253,7 +260,7 @@
 }
 
 @media (min-width: 64rem) {
-  .launcher,
+  .launcher.launcher,
   .panel {
     bottom: var(--spacing-24);
     right: var(--spacing-24);
@@ -261,15 +268,22 @@
 }
 
 @media (max-width: 63.999rem) {
-  .launcher {
-    position: static;
-    height: var(--spacing-48);
+  .launcher.launcher {
+    bottom: calc(var(--spacing-64) + var(--spacing-24) + max(var(--spacing-8), env(safe-area-inset-bottom)));
+    height: calc(var(--spacing-48) + var(--spacing-8));
     padding: 0;
-    width: var(--spacing-48);
+    position: fixed;
+    right: var(--spacing-16);
+    width: calc(var(--spacing-48) + var(--spacing-8));
   }
 
-  .launcher span {
+  .launcher.launcher span {
     display: none;
+  }
+
+  .launcherMascot {
+    height: 100%;
+    width: 100%;
   }
 }
 

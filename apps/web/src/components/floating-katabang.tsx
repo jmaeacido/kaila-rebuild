@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Send, Sparkles, X } from "lucide-react";
 import { prepareCsrf } from "../app/auth-client";
 import styles from "./floating-katabang.module.css";
@@ -89,7 +90,13 @@ export function FloatingKatabang() {
         onClick={() => setOpen(true)}
         aria-label="Open Katabang assistant"
       >
-        <Sparkles aria-hidden="true" />
+        <Image
+          className={styles.launcherMascot}
+          src="/brand/kaila-bull-app-icon-v2.png"
+          alt=""
+          width={64}
+          height={64}
+        />
         <span>Ask Katabang</span>
       </button>
     );

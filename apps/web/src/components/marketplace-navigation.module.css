@@ -123,8 +123,15 @@
 }
 
 @media (max-width: 30rem) {
+  .bottomNav {
+    gap: 0;
+  }
+
   .bottomNav a {
+    font-size: calc(var(--font-caption-size) - 0.0625rem);
+    overflow-wrap: normal;
     padding-inline: 0;
+    white-space: nowrap;
   }
 }
 

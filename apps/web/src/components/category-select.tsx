@@ -2,7 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Check, ChevronDown } from "lucide-react";
-import { ServiceCategoryIcon } from "./service-category-icon";
+import { ServiceCategoryBadge } from "./service-category-icon";
 import styles from "./category-select.module.css";
 
 export type ServiceCategory = {
@@ -124,7 +124,7 @@ export function CategorySelect({
         type="button"
       >
         <span>
-          {selected && <ServiceCategoryIcon icon={selected.icon} aria-hidden="true" />}
+          {selected && <ServiceCategoryBadge icon={selected.icon} />}
           {selected?.name ?? placeholder}
         </span>
         <ChevronDown aria-hidden="true" />
@@ -152,7 +152,7 @@ export function CategorySelect({
                 role="option"
                 type="button"
               >
-                <ServiceCategoryIcon icon={category.icon} aria-hidden="true" />
+                <ServiceCategoryBadge icon={category.icon} />
                 <span>{category.name}</span>
                 {isSelected && <Check aria-hidden="true" />}
               </button>

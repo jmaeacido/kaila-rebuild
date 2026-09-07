@@ -1,7 +1,7 @@
 "use client";
 
 import { Sparkles } from "lucide-react";
-import { ServiceCategoryIcon } from "./service-category-icon";
+import { ServiceCategoryBadge } from "./service-category-icon";
 import styles from "./provider-services-showcase.module.css";
 
 export type ProviderServiceItem = {
@@ -35,9 +35,7 @@ export function ProviderServicesShowcase({
           {services.map((service) => (
             <li key={service.id}>
               <article className={styles.embeddedCard}>
-                <span className={styles.iconWrap} aria-hidden="true">
-                  <ServiceCategoryIcon icon={service.icon || "Wrench"} />
-                </span>
+                <ServiceCategoryBadge icon={service.icon || "Wrench"} className={styles.iconWrap} />
                 <div className={styles.copy}>
                   <h3>{service.name}</h3>
                   <p>Available in your area</p>
@@ -63,9 +61,7 @@ export function ProviderServicesShowcase({
         {services.map((service) => (
           <li key={service.id}>
             <article className={styles.card}>
-              <span className={styles.iconWrap} aria-hidden="true">
-                <ServiceCategoryIcon icon={service.icon || "Wrench"} />
-              </span>
+              <ServiceCategoryBadge icon={service.icon || "Wrench"} className={styles.iconWrap} />
               <div className={styles.copy}>
                 <h3>{service.name}</h3>
                 <p>Available in your area</p>

@@ -1,0 +1,8 @@
+.badge { align-items:center; border-radius:var(--radius-input); display:inline-flex; flex:none; height:var(--spacing-40,2.5rem); justify-content:center; width:var(--spacing-40,2.5rem); }
+.badge svg { height:var(--spacing-24); width:var(--spacing-24); }
+.tone0 { background:color-mix(in srgb,var(--color-primary) 14%,var(--color-surface)); color:var(--color-primary); }
+.tone1 { background:color-mix(in srgb,var(--color-warning) 18%,var(--color-surface)); color:color-mix(in srgb,var(--color-warning) 82%,var(--color-ink)); }
+.tone2 { background:color-mix(in srgb,var(--color-success) 16%,var(--color-surface)); color:var(--color-success); }
+.tone3 { background:color-mix(in srgb,var(--color-danger) 13%,var(--color-surface)); color:var(--color-danger); }
+.tone4 { background:color-mix(in srgb,var(--color-accent) 18%,var(--color-surface)); color:var(--color-accent); }
+.tone5 { background:color-mix(in srgb,var(--color-primary) 10%,var(--color-surface)); color:color-mix(in srgb,var(--color-primary) 72%,var(--color-accent)); }

@@ -104,7 +104,7 @@ function localDateTime(value: string | null): string {
 export default function JobDetailsPage({ params }: { params: Promise<{ jobId: string }> }) {
   const { jobId } = use(params);
   const [job, setJob] = useState<Job | null>(null);
-  const [categories, setCategories] = useState<Reference[]>([]);
+  const [categories, setCategories] = useState<CategoryReference[]>([]);
   const [areas, setAreas] = useState<AreaReference[]>([]);
   const [editing, setEditing] = useState(false);
   const [editAreaId, setEditAreaId] = useState("");
@@ -130,7 +130,7 @@ export default function JobDetailsPage({ params }: { params: Promise<{ jobId: st
       if (!jobResponse.ok || !referenceResponse.ok) throw new Error();
       setJob(((await jobResponse.json()) as { data: Job }).data);
       const references = (await referenceResponse.json()) as {
-        data: { categories: Reference[]; areas: AreaReference[] };
+        data: { categories: CategoryReference[]; areas: AreaReference[] };
       };
       setCategories(references.data.categories);
       setAreas(references.data.areas);
@@ -382,7 +382,7 @@ export default function JobDetailsPage({ params }: { params: Promise<{ jobId: st
           <label>What needs to be done?<textarea name="description" required minLength={10} maxLength={3000} defaultValue={job.description} /></label>
           <label>
             Service
-            <SelectField name="categoryId" label="Service" required defaultValue={String(job.category.id)} disabled={!isDraft} options={categories.map((category) => ({ value:String(category.id), label:category.name }))} />
+            <SelectField name="categoryId" label="Service" required defaultValue={String(job.category.id)} disabled={!isDraft} placeholderServiceIcon="Ellipsis" options={categories.map((category) => ({ value:String(category.id), label:category.name, serviceIcon:category.icon }))} />
           </label>
           <input type="hidden" name="areaId" value={editAreaId || job.area.id} />
           <input type="hidden" name="categoryId" value={job.category.id} disabled={isDraft} />

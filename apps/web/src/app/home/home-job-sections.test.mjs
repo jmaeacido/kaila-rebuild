@@ -16,6 +16,8 @@ const brandStylesSource = readFileSync(new URL("../../components/brand-mark.modu
 const sessionMenuSource = readFileSync(new URL("../../components/session-menu.tsx", import.meta.url), "utf8");
 const marketplaceNavigationSource = readFileSync(new URL("../../components/marketplace-navigation.tsx", import.meta.url), "utf8");
 const marketplaceNavigationStyles = readFileSync(new URL("../../components/marketplace-navigation.module.css", import.meta.url), "utf8");
+const katabangStyles = readFileSync(new URL("../../components/floating-katabang.module.css", import.meta.url), "utf8");
+const katabangSource = readFileSync(new URL("../../components/floating-katabang.tsx", import.meta.url), "utf8");
 
 test("Home keeps every non-terminal job active and terminal jobs in history", () => {
   assert.match(source, /const activeClientJobs = jobs\.filter/);
@@ -56,6 +58,28 @@ test("Home keeps the hero action primary and removes duplicate discovery actions
 
 test("The mobile Katabang trigger lives with header controls instead of covering content", () => {
   assert.match(authGuardSource, /<NotificationBell \/>\s*\{pathname !== "\/help\/katabang" && <FloatingKatabang \/>\}/);
+});
+
+test("Narrow phone navigation keeps every tab label on one line", () => {
+  assert.match(
+    marketplaceNavigationStyles,
+    /@media \(max-width: 30rem\)[\s\S]*?\.bottomNav a \{[\s\S]*?overflow-wrap: normal;[\s\S]*?white-space: nowrap;/,
+  );
+});
+
+test("Client Home follows the compact discovery layout while retaining shared navigation", () => {
+  assert.match(source, /function ClientHome/);
+  assert.match(source, /What service do you need\?/);
+  assert.match(source, />Post a Job</);
+  assert.match(source, /Trusted Providers Nearby/);
+  assert.match(source, /provider\.verified &&/);
+  assert.match(source, /<MarketplaceNavigation \/>/);
+});
+
+test("Katabang uses the approved bull mascot as a mobile floating action", () => {
+  assert.match(katabangSource, /kaila-bull-app-icon-v2\.png/);
+  assert.match(katabangStyles, /@media \(max-width: 63\.999rem\)[\s\S]*?\.launcher \{[\s\S]*?position: fixed/);
+  assert.match(katabangStyles, /bottom: calc\(var\(--spacing-64\)/);
 });
 
 test("Authenticated loading uses the approved KAILA lockup and human-facing copy", () => {

@@ -5,8 +5,10 @@ import Link from "next/link";
 import Image from "next/image";
 import {
   ArrowRight,
+  BadgeCheck,
   BriefcaseBusiness,
   ChevronRight,
+  ClipboardList,
   MapPin,
   Navigation,
   Plus,
@@ -15,7 +17,7 @@ import {
 } from "lucide-react";
 import { Feedback } from "@kaila/ui";
 import { MarketplaceNavigation } from "../../components/marketplace-navigation";
-import { ServiceCategoryIcon } from "../../components/service-category-icon";
+import { ServiceCategoryBadge, ServiceCategoryIcon } from "../../components/service-category-icon";
 import { OpportunityRouteMetrics } from "../../components/job-request-location";
 import styles from "./home.module.css";
 import { isEphemeralRealtimeEvent } from "../notification-feedback";
@@ -64,6 +66,17 @@ type Opportunity = {
   client: { displayName: string; avatarUrl: string | null; rating: string | number | null; reviewCount: number };
   approximateLocation: { latitude: number; longitude: number } | null;
 };
+type Provider = {
+  id: number;
+  displayName: string;
+  avatarUrl: string | null;
+  services: Reference[];
+  serviceAreas: Reference[];
+  verified: boolean;
+  rating: number | null;
+  reviewCount: number;
+  completedJobs: number;
+};
 
 const jobStatusLabels: Record<string, string> = {
   draft: "Draft",
@@ -83,6 +96,7 @@ export default function AuthenticatedHomePage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
+  const [providers, setProviders] = useState<Provider[]>([]);
   const [status, setStatus] = useState<"loading" | "ready" | "error">(
     "loading",
   );
@@ -90,13 +104,14 @@ export default function AuthenticatedHomePage() {
   const load = useCallback(async (quiet = false) => {
     if (!quiet) setStatus("loading");
     try {
-      const [userResponse, referenceResponse, jobsResponse] = await Promise.all([
+      const [userResponse, referenceResponse, jobsResponse, providersResponse] = await Promise.all([
         fetch("/api/v1/me", { cache: "no-store" }),
         fetch("/api/v1/marketplace/reference-data"),
         fetch("/api/v1/jobs", { cache: "no-store" }),
+        fetch("/api/v1/providers", { cache: "no-store" }),
       ]);
 
-      if (!userResponse.ok || !referenceResponse.ok || !jobsResponse.ok) {
+      if (!userResponse.ok || !referenceResponse.ok || !jobsResponse.ok || !providersResponse.ok) {
         throw new Error("Home data request failed.");
       }
 
@@ -105,6 +120,7 @@ export default function AuthenticatedHomePage() {
         data: { categories: Category[] };
       };
       const jobsBody = (await jobsResponse.json()) as { data: Job[] };
+      const providersBody = (await providersResponse.json()) as { data: Provider[] };
       let providerOpportunities: Opportunity[] = [];
 
       if (userBody.data.providerEligible) {
@@ -122,6 +138,7 @@ export default function AuthenticatedHomePage() {
       setUser(userBody.data);
       setCategories(referenceBody.data.categories);
       setJobs(jobsBody.data);
+      setProviders(providersBody.data);
       setOpportunities(providerOpportunities);
       setStatus("ready");
     } catch {
@@ -192,6 +209,17 @@ export default function AuthenticatedHomePage() {
           Try again
         </button>
       </main>
+    );
+  }
+
+  if (!isProvider) {
+    return (
+      <ClientHome
+        firstName={firstName}
+        categories={categories}
+        activeJobs={activeClientJobs}
+        providers={providers}
+      />
     );
   }
 
@@ -375,6 +403,133 @@ export default function AuthenticatedHomePage() {
       <MarketplaceNavigation />
     </main>
   );
+}
+
+function ClientHome({
+  firstName,
+  categories,
+  activeJobs,
+  providers,
+}: {
+  firstName: string;
+  categories: Category[];
+  activeJobs: Job[];
+  providers: Provider[];
+}) {
+  const visibleCategories = categories.slice(0, 7);
+  const locationLabel = activeJobs[0]?.area.name ?? "Your local area";
+
+  return (
+    <main className={`${styles.shell} ${styles.clientShell}`}>
+      <header className={styles.clientWelcome}>
+        <div>
+          <p>Good {timeOfDay()},</p>
+          <h1>{firstName}</h1>
+          <span><MapPin aria-hidden="true" />{locationLabel}</span>
+        </div>
+      </header>
+
+      <Link className={styles.serviceSearch} href="/providers">
+        <Search aria-hidden="true" />
+        <span>What service do you need?</span>
+      </Link>
+
+      <section className={styles.clientCategories} aria-label="Service categories">
+        <div className={styles.clientCategoryGrid}>
+          {visibleCategories.map((category) => (
+            <Link href={`/post-job?categoryId=${category.id}`} key={category.id}>
+              <ServiceCategoryBadge icon={category.icon} className={styles.clientServiceIcon} />
+              <strong>{category.name}</strong>
+            </Link>
+          ))}
+          <Link href="/post-job" className={styles.allServices}>
+            <ServiceCategoryBadge icon="Ellipsis" className={styles.clientServiceIcon} />
+            <strong>More services</strong>
+          </Link>
+        </div>
+      </section>
+
+      <Link className={styles.postJobBanner} href="/post-job">
+        <span className={styles.postJobIcon}><ClipboardList aria-hidden="true" /></span>
+        <span>
+          <strong>Post a Job</strong>
+          <small>Tell KAILA what you need and receive offers nearby.</small>
+        </span>
+        <span className={styles.postJobArrow}><ArrowRight aria-hidden="true" /></span>
+      </Link>
+
+      <section className={styles.clientSection} aria-labelledby="client-active-jobs">
+        <header>
+          <h2 id="client-active-jobs">Active Jobs</h2>
+          <Link href="/home#current-title">See All</Link>
+        </header>
+        {activeJobs.length > 0 ? (
+          <div className={styles.clientJobList}>
+            {activeJobs.slice(0, 2).map((job) => (
+              <article className={styles.clientJobCard} key={job.id}>
+                <span className={styles.clientJobIcon}>
+                  <ServiceCategoryIcon icon={job.category.icon} aria-hidden="true" />
+                </span>
+                <div>
+                  <h3>{job.title}</h3>
+                  <p>{jobStatusLabels[job.status] || "Job updated"}</p>
+                  <small><MapPin aria-hidden="true" />{job.area.name}</small>
+                </div>
+                <Link href={`/jobs/${job.id}`}>View job</Link>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <div className={styles.clientEmpty}>
+            <span><ClipboardList aria-hidden="true" /></span>
+            <div><h3>No active jobs</h3><p>Your posted jobs will appear here.</p></div>
+            <Link href="/post-job">Post a Job</Link>
+          </div>
+        )}
+      </section>
+
+      <section className={styles.clientSection} aria-labelledby="trusted-providers">
+        <header>
+          <h2 id="trusted-providers">Trusted Providers Nearby</h2>
+          <Link href="/providers">See All</Link>
+        </header>
+        {providers.length > 0 ? (
+          <div className={styles.trustedGrid}>
+            {providers.slice(0, 2).map((provider) => (
+              <Link className={styles.trustedCard} href={`/providers/${provider.id}`} key={provider.id}>
+                <span className={styles.providerAvatar}>
+                  {provider.avatarUrl ? (
+                    <Image src={provider.avatarUrl} alt={`${provider.displayName} profile`} width={56} height={56} unoptimized />
+                  ) : provider.displayName.charAt(0).toUpperCase()}
+                </span>
+                <span className={styles.providerDetails}>
+                  <strong>{provider.displayName}</strong>
+                  <small className={styles.providerRating}><Star aria-hidden="true" />{provider.rating === null ? "New" : provider.rating.toFixed(1)} ({provider.reviewCount})</small>
+                  <small><MapPin aria-hidden="true" />{provider.serviceAreas[0]?.name ?? "Local provider"}</small>
+                  {provider.verified && <small className={styles.verified}><BadgeCheck aria-hidden="true" />Verified</small>}
+                </span>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <div className={styles.clientEmpty}>
+            <span><Search aria-hidden="true" /></span>
+            <div><h3>No providers to show yet</h3><p>Try browsing all available providers.</p></div>
+            <Link href="/providers">Find providers</Link>
+          </div>
+        )}
+      </section>
+
+      <MarketplaceNavigation />
+    </main>
+  );
+}
+
+function timeOfDay(): "morning" | "afternoon" | "evening" {
+  const hour = new Date().getHours();
+  if (hour < 12) return "morning";
+  if (hour < 18) return "afternoon";
+  return "evening";
 }
 
 function EmptyJobsIllustration() {

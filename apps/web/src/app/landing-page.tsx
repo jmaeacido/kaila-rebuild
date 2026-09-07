@@ -29,7 +29,7 @@ import { signedInHome, SignedInUser } from "./auth-client";
 import { AddressHierarchy, type AreaReference } from "./address-hierarchy";
 import styles from "./page.module.css";
 
-type Reference = { id: number; name: string };
+type Reference = { id: number; name: string; icon?: string };
 type Provider = {
   id: number;
   displayName: string;
@@ -293,7 +293,7 @@ export default function LandingPage() {
         <div className={styles.searchCard} aria-label="Find local providers">
           <label className={styles.searchService}>
             <span>Service</span>
-            <SelectField label="Service" value={categoryId} onChange={setCategoryId} placeholder="Choose a service" options={categories.map((item) => ({ value:String(item.id), label:item.name }))} />
+            <SelectField label="Service" value={categoryId} onChange={setCategoryId} placeholder="Choose a service" placeholderServiceIcon="Ellipsis" options={categories.map((item) => ({ value:String(item.id), label:item.name, serviceIcon:item.icon }))} />
           </label>
           <div className={styles.searchAddress}>
             <span>Area</span>

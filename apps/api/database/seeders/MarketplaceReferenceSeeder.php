@@ -37,7 +37,7 @@ class MarketplaceReferenceSeeder extends Seeder
         ['Appliance Repair', 'appliance-repair', 'Cog'],
         ['Computer & IT Services', 'computer-it-services', 'MonitorCog'],
         ['Cellphone & Gadget Repair', 'cellphone-gadget-repair', 'Smartphone'],
-        ['Cleaning Services', 'cleaning-services', 'Sparkles'],
+        ['Cleaning Services', 'cleaning-services', 'Cleaning'],
         ['Beauty Services', 'beauty-services', 'Heart'],
         ['Tutoring & Education', 'tutoring-education', 'BookOpen'],
         ['Automotive Services', 'automotive-services', 'Car'],

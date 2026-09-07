@@ -1,7 +1,7 @@
 "use client";
 
 import { Check } from "lucide-react";
-import { ServiceCategoryIcon } from "./service-category-icon";
+import { ServiceCategoryBadge } from "./service-category-icon";
 import type { ServiceCategory } from "./category-select";
 import styles from "./service-category-multi-select.module.css";
 
@@ -44,7 +44,7 @@ export function ServiceCategoryMultiSelect({
                 type="checkbox"
                 value={value}
               />
-              <ServiceCategoryIcon icon={category.icon} aria-hidden="true" />
+              <ServiceCategoryBadge icon={category.icon} />
               <span>{category.name}</span>
               <Check className={styles.check} aria-hidden="true" />
             </label>

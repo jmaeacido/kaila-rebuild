@@ -2,9 +2,10 @@
 
 import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { Check, ChevronDown } from "lucide-react";
+import { ServiceCategoryBadge } from "./service-category-icon";
 import styles from "./select-field.module.css";
 
-export type SelectOption = { value: string; label: string; disabled?: boolean };
+export type SelectOption = { value: string; label: string; disabled?: boolean; serviceIcon?: string };
 
 export function SelectField({
   label,
@@ -17,6 +18,7 @@ export function SelectField({
   disabled = false,
   placeholder = "Choose an option",
   describedBy,
+  placeholderServiceIcon,
 }: {
   label: string;
   options: SelectOption[];
@@ -28,6 +30,7 @@ export function SelectField({
   disabled?: boolean;
   placeholder?: string;
   describedBy?: string;
+  placeholderServiceIcon?: string;
 }) {
   const [internalValue, setInternalValue] = useState(defaultValue);
   const [open, setOpen] = useState(false);
@@ -138,15 +141,20 @@ export function SelectField({
         role="combobox"
         type="button"
       >
-        <span className={selected ? undefined : styles.placeholder}>{selected?.label ?? placeholder}</span>
+        <span className={selected ? undefined : styles.placeholder}>
+          {(selected?.serviceIcon || placeholderServiceIcon) && (
+            <ServiceCategoryBadge icon={selected?.serviceIcon || placeholderServiceIcon || "Ellipsis"} />
+          )}
+          <span className={styles.optionLabel}>{selected?.label ?? placeholder}</span>
+        </span>
         <ChevronDown aria-hidden="true" />
       </button>
       {open ? (
         <div className={styles.options} data-placement={placement} id={listboxId} role="listbox" aria-label={label} style={{ maxHeight }}>
-          {!required ? <button aria-selected={!currentValue} onClick={() => choose("")} role="option" type="button"><span>{placeholder}</span>{!currentValue ? <Check aria-hidden="true" /> : null}</button> : null}
+          {!required ? <button aria-selected={!currentValue} onClick={() => choose("")} role="option" type="button">{placeholderServiceIcon ? <ServiceCategoryBadge icon={placeholderServiceIcon} /> : null}<span className={styles.optionLabel}>{placeholder}</span>{!currentValue ? <Check aria-hidden="true" /> : null}</button> : null}
           {options.map((option) => (
             <button aria-selected={option.value === currentValue} disabled={option.disabled} key={option.value} onClick={() => choose(option.value)} role="option" type="button">
-              <span>{option.label}</span>{option.value === currentValue ? <Check aria-hidden="true" /> : null}
+              {option.serviceIcon ? <ServiceCategoryBadge icon={option.serviceIcon} /> : null}<span className={styles.optionLabel}>{option.label}</span>{option.value === currentValue ? <Check aria-hidden="true" /> : null}
             </button>
           ))}
         </div>
