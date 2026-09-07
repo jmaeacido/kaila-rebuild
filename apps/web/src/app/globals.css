@@ -334,7 +334,7 @@ body button:not([data-flat-button]):disabled {
 }
 
 .appSessionBar button,
-.appSessionBar > div a:not(.sessionAvatar) {
+.appSessionBar > div a {
   align-items: center;
   background: transparent;
   border: var(--control-border-width) solid var(--color-border);
@@ -423,32 +423,6 @@ body button:not([data-flat-button]):disabled {
   width: var(--spacing-16);
 }
 
-.appSessionBar .sessionAvatar {
-  align-items: center;
-  background: var(--gradient-primary);
-  border: var(--control-border-width) solid transparent;
-  border-radius: var(--radius-pill);
-  box-shadow: var(--shadow-neu-avatar);
-  color: var(--color-on-primary);
-  display: flex;
-  font-weight: var(--font-weight-bold);
-  height: var(--control-min-height);
-  justify-content: center;
-  min-height: var(--control-min-height);
-  overflow: hidden;
-  position: relative;
-  text-decoration: none;
-  width: var(--control-min-height);
-}
-
-.appSessionBar .sessionAvatar img {
-  height: 100%;
-  inset: 0;
-  object-fit: cover;
-  position: absolute;
-  width: 100%;
-}
-
 @media (max-width: 63.999rem) {
   .appSessionBar {
     gap: var(--spacing-8);
@@ -493,7 +467,6 @@ body button:not([data-flat-button]):disabled {
     gap: var(--spacing-4);
   }
 
-  .appSessionBar .sessionAvatar,
   .appSessionBar .notificationBell,
   .appSessionBar .sessionMenu > button {
     flex-basis: var(--control-min-height);

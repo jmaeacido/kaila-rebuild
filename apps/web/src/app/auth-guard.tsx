@@ -1,7 +1,6 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
-import Image from "next/image";
 import { BrandMark } from "../components/brand-mark";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -37,7 +36,6 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const { applyAccountTheme } = useTheme();
   const [sessionReady, setSessionReady] = useState(false);
   const [userName, setUserName] = useState("");
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [loggingOut, setLoggingOut] = useState(false);
   const isPublic = isPublicPath(pathname);
   const isSessionAwarePublic = SESSION_AWARE_PUBLIC_PATHS.has(pathname);
@@ -76,7 +74,6 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
           data: { name: string; avatarUrl: string | null; appearanceTheme?: string };
         };
         setUserName(userBody.data.name);
-        setAvatarUrl(userBody.data.avatarUrl);
         if (isThemePreference(userBody.data.appearanceTheme)) {
           applyAccountTheme(userBody.data.appearanceTheme);
         }
@@ -151,22 +148,6 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
             </Link>
             <MarketplaceDesktopNav />
             <div className="appSessionBarActions">
-              <Link
-                className="sessionAvatar"
-                href="/account"
-                aria-label="Open account"
-              >
-                <span aria-hidden="true">{userName.charAt(0).toUpperCase()}</span>
-                {avatarUrl ? (
-                  <Image
-                    src={avatarUrl}
-                    alt=""
-                    width={44}
-                    height={44}
-                    unoptimized
-                  />
-                ) : null}
-              </Link>
               <span className="sessionName">{userName}</span>
               <NotificationBell />
               {pathname !== "/help/katabang" && <FloatingKatabang />}

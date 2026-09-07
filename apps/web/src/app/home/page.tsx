@@ -26,6 +26,7 @@ import type { TravelMetrics } from "../travel-metrics";
 
 type User = {
   name: string;
+  avatarUrl: string | null;
   activeMode: "client" | "provider" | null;
   providerEligible: boolean;
   reputation: { averageRating: number | null; reviewCount: number };
@@ -82,7 +83,32 @@ type Provider = {
 type OwnedProvider = {
   completed_jobs: number;
   response_minutes: number | null;
+  service_areas?: Array<{ id: number; name: string; type?: string }>;
 };
+
+function coverageAreaLabel(
+  serviceAreas: OwnedProvider["service_areas"] | undefined,
+): string | null {
+  if (!serviceAreas?.length) return null;
+  const locality = serviceAreas.find((area) =>
+    ["city", "municipality"].includes(area.type ?? ""),
+  );
+  return locality?.name ?? serviceAreas[0]?.name ?? null;
+}
+
+async function resolveAreaName(areaId: number | null | undefined): Promise<string | null> {
+  if (!areaId) return null;
+  try {
+    const response = await fetch(`/api/v1/marketplace/areas/${areaId}`, {
+      cache: "no-store",
+    });
+    if (!response.ok) return null;
+    const body = (await response.json()) as { data: { name: string } };
+    return body.data.name || null;
+  } catch {
+    return null;
+  }
+}
 
 const jobStatusLabels: Record<string, string> = {
   draft: "Draft",
@@ -104,6 +130,7 @@ export default function AuthenticatedHomePage() {
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
   const [providers, setProviders] = useState<Provider[]>([]);
   const [ownedProvider, setOwnedProvider] = useState<OwnedProvider | null>(null);
+  const [homeAreaName, setHomeAreaName] = useState<string | null>(null);
   const [status, setStatus] = useState<"loading" | "ready" | "error">(
     "loading",
   );
@@ -129,7 +156,12 @@ export default function AuthenticatedHomePage() {
       };
       const jobsBody = (await jobsResponse.json()) as { data: Job[] };
       const providersBody = (await providersResponse.json()) as { data: Provider[] };
-      const profileBody = (await profileResponse.json()) as { data: { provider: OwnedProvider | null } };
+      const profileBody = (await profileResponse.json()) as {
+        data: {
+          client: { area_id: number | null } | null;
+          provider: OwnedProvider | null;
+        };
+      };
       let providerOpportunities: Opportunity[] = [];
 
       if (userBody.data.providerEligible) {
@@ -144,11 +176,14 @@ export default function AuthenticatedHomePage() {
         ).data;
       }
 
+      const resolvedHomeArea = await resolveAreaName(profileBody.data.client?.area_id);
+
       setUser(userBody.data);
       setCategories(referenceBody.data.categories);
       setJobs(jobsBody.data);
       setProviders(providersBody.data);
       setOwnedProvider(profileBody.data.provider);
+      setHomeAreaName(resolvedHomeArea);
       setOpportunities(providerOpportunities);
       setStatus("ready");
     } catch {
@@ -216,30 +251,43 @@ export default function AuthenticatedHomePage() {
     return (
       <ClientHome
         firstName={firstName}
+        avatarUrl={user.avatarUrl}
         categories={categories}
         activeJobs={activeClientJobs}
         providers={providers}
+        homeAreaName={homeAreaName}
       />
     );
   }
 
-  return <ProviderHome firstName={firstName} user={user} provider={ownedProvider} activeJobs={activeProviderJobs} opportunities={opportunities} />;
+  return (
+    <ProviderHome
+      firstName={firstName}
+      avatarUrl={user.avatarUrl}
+      user={user}
+      provider={ownedProvider}
+      activeJobs={activeProviderJobs}
+      opportunities={opportunities}
+    />
+  );
 }
 
 function ProviderHome({
   firstName,
+  avatarUrl,
   user,
   provider,
   activeJobs,
   opportunities,
 }: {
   firstName: string;
+  avatarUrl: string | null;
   user: User;
   provider: OwnedProvider | null;
   activeJobs: Job[];
   opportunities: Opportunity[];
 }) {
-  const locationLabel = activeJobs[0]?.area.name ?? opportunities[0]?.area.name ?? "Your local area";
+  const locationLabel = coverageAreaLabel(provider?.service_areas);
   const openOpportunities = opportunities.filter((opportunity) => !opportunity.offer);
   const sentOffers = opportunities.filter((opportunity) => opportunity.offer);
   const todaysJobs = activeJobs.filter((job) => !job.scheduledAt || isToday(job.scheduledAt));
@@ -247,11 +295,13 @@ function ProviderHome({
   return (
     <main className={`${styles.shell} ${styles.providerShell}`}>
       <header className={styles.providerWelcome}>
-        <span className={styles.providerAvatar} aria-hidden="true">{firstName.charAt(0).toUpperCase()}</span>
+        <GreetingAvatar name={firstName} avatarUrl={avatarUrl} />
         <div>
           <p>Good {timeOfDay()},</p>
           <h1>{firstName}</h1>
-          <span className={styles.providerLocation}><MapPin aria-hidden="true" />{locationLabel}</span>
+          {locationLabel ? (
+            <span className={styles.providerLocation}><MapPin aria-hidden="true" />{locationLabel}</span>
+          ) : null}
         </div>
         <Link className={styles.availabilityPill} href="/provider-profile" aria-label="Review provider availability">
           <span aria-hidden="true" />Available
@@ -359,25 +409,32 @@ function money(min: number | null, max: number | null) {
 
 function ClientHome({
   firstName,
+  avatarUrl,
   categories,
   activeJobs,
   providers,
+  homeAreaName,
 }: {
   firstName: string;
+  avatarUrl: string | null;
   categories: Category[];
   activeJobs: Job[];
   providers: Provider[];
+  homeAreaName: string | null;
 }) {
   const visibleCategories = categories.slice(0, 7);
-  const locationLabel = activeJobs[0]?.area.name ?? "Your local area";
+  const locationLabel = homeAreaName;
 
   return (
     <main className={`${styles.shell} ${styles.clientShell}`}>
       <header className={styles.clientWelcome}>
+        <GreetingAvatar name={firstName} avatarUrl={avatarUrl} />
         <div>
           <p>Good {timeOfDay()},</p>
           <h1>{firstName}</h1>
-          <span><MapPin aria-hidden="true" />{locationLabel}</span>
+          {locationLabel ? (
+            <span><MapPin aria-hidden="true" />{locationLabel}</span>
+          ) : null}
         </div>
       </header>
 
@@ -474,6 +531,15 @@ function ClientHome({
 
       <MarketplaceNavigation />
     </main>
+  );
+}
+
+function GreetingAvatar({ name, avatarUrl }: { name: string; avatarUrl: string | null }) {
+  return (
+    <Link className={styles.greetingAvatar} href="/account" aria-label="Open account">
+      <span aria-hidden="true">{name.charAt(0).toUpperCase()}</span>
+      {avatarUrl ? <Image src={avatarUrl} alt="" width={48} height={48} unoptimized /> : null}
+    </Link>
   );
 }
 
