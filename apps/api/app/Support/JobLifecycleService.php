@@ -7,6 +7,7 @@ use App\Models\CancellationRequest;
 use App\Models\CompletionSubmission;
 use App\Models\DisputeCase;
 use App\Models\JobReview;
+use App\Models\ProviderProfile;
 use App\Models\ServiceJob;
 use App\Models\TravelSession;
 use App\Models\User;
@@ -55,8 +56,7 @@ class JobLifecycleService
             } else {
                 abort_unless($deadlineId === $locked->completion_deadline_id && $locked->auto_confirm_at?->isPast(), 409);
             }
-            $locked->completed_at = now();
-            $locked->review_closes_at = now()->addDays(config('phase_six.review_window_days'));
+            $this->markCompleted($locked);
             $locked->auto_confirm_at = null;
             $this->transition($locked, 'completed', $actor, $actor ? 'completion.confirmed' : 'completion.auto_confirmed');
         });
@@ -137,8 +137,7 @@ class JobLifecycleService
             $lockedCase->update(['status' => 'resolved', 'assigned_to_user_id' => $staff->id, 'decided_at' => now()]);
             $lockedCase->actions()->create(['actor_user_id' => $staff->id, 'action' => 'decided', 'target_state' => $target, 'reason' => $reason, 'metadata' => [], 'occurred_at' => now()]);
             if ($target === 'completed') {
-                $job->completed_at = now();
-                $job->review_closes_at = now()->addDays(config('phase_six.review_window_days'));
+                $this->markCompleted($job);
             } elseif ($target === 'completion_submitted') {
                 $remaining = (int) ($lockedCase->actions()->where('action', 'opened')->value('metadata->remainingAutoConfirmSeconds') ?? 0);
                 $job->auto_confirm_at = now()->addSeconds($remaining);
@@ -199,6 +198,26 @@ class JobLifecycleService
             DB::table('reputation_projections')->updateOrInsert(['user_id' => $uid], ['published_review_count' => $count, 'rating_sum' => $sum, 'average_rating' => $count ? round($sum / $count, 2) : null, 'created_at' => now(), 'updated_at' => now()]);
         }
         $this->transition($job, 'rated_closed', null, $event);
+    }
+
+    private function markCompleted(ServiceJob $job): void
+    {
+        $job->completed_at = now();
+        $job->review_closes_at = now()->addDays(config('phase_six.review_window_days'));
+
+        $providerProfileId = AcceptedOfferSnapshot::query()
+            ->where('service_job_id', $job->id)
+            ->value('provider_profile_id')
+            ?? $job->direct_provider_profile_id;
+
+        if ($providerProfileId === null) {
+            return;
+        }
+
+        ProviderProfile::query()
+            ->whereKey($providerProfileId)
+            ->lockForUpdate()
+            ->increment('completed_jobs');
     }
 
     private function locked(ServiceJob $job, callable $action): ServiceJob

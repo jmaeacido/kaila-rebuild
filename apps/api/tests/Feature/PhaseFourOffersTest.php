@@ -22,6 +22,10 @@ class PhaseFourOffersTest extends TestCase
         $this->assertDatabaseHas('service_jobs', ['id' => $jobId, 'status' => 'offers_received']);
         $this->assertDatabaseHas('job_opportunities', ['service_job_id' => $jobId, 'state' => 'offered']);
         $this->assertDatabaseHas('durable_notifications', ['user_id' => $client->id, 'type' => 'offer.created']);
+        $this->assertDatabaseHas('provider_profiles', [
+            'user_id' => $provider->id,
+            'response_minutes' => 1,
+        ]);
         $this->actingAs($provider)
             ->getJson('/api/v1/opportunities')
             ->assertOk()

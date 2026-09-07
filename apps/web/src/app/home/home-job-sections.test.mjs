@@ -57,6 +57,8 @@ test("Provider Home follows the supplied mobile hierarchy with truthful live dat
   assert.match(source, />Response</);
   assert.match(source, />Opportunities</);
   assert.match(source, /provider\?\.response_minutes/);
+  assert.match(source, /href="\/opportunities"/);
+  assert.match(source, /providerSummaryLink/);
 });
 
 test("The mobile Katabang trigger lives with header controls instead of covering content", () => {

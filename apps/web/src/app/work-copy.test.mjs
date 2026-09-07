@@ -4,6 +4,7 @@ import {
   prominentCompletionCopy,
   shouldShowHistoricalCompletionNote,
   shouldShowReviewDeadline,
+  workActionLabel,
 } from "./jobs/[jobId]/work/work-copy.ts";
 
 test("rated jobs show closed-state guidance instead of stale review instructions", () => {
@@ -46,4 +47,16 @@ test("active completion review keeps the provider's completion summary prominent
     shouldShowReviewDeadline("completed", "2026-08-04T17:17:13Z"),
     true,
   );
+});
+
+test("provider work CTAs match the lifecycle step, not a generic Start work label", () => {
+  assert.equal(workActionLabel("provider", "working"), "Mark as done");
+  assert.equal(workActionLabel("provider", "working", "work"), "Mark as done");
+  assert.equal(workActionLabel("provider", "provider_selected"), "Start work");
+  assert.equal(
+    workActionLabel("provider", "provider_selected", "work"),
+    "Already on site — start work",
+  );
+  assert.equal(workActionLabel("provider", "provider_traveling"), "Start work");
+  assert.equal(workActionLabel("client", "completion_submitted"), "Review completed work");
 });

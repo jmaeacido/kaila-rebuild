@@ -31,6 +31,10 @@ class PhaseSixLifecycleTest extends TestCase
         $job->update(['auto_confirm_at' => now()->subSecond()]);
         $this->artisan('phase-six:deadlines')->assertSuccessful();
         $this->assertDatabaseHas('service_jobs', ['id' => $id, 'status' => 'completed']);
+        $this->assertDatabaseHas('provider_profiles', [
+            'user_id' => $provider->id,
+            'completed_jobs' => 1,
+        ]);
         $this->actingAs($client)->postJson("/api/v1/jobs/$id/reviews", ['rating' => 5, 'comment' => 'Careful work'])->assertCreated();
         $this->actingAs($provider)->getJson("/api/v1/jobs/$id/reviews")->assertOk()->assertJsonCount(0, 'data');
         $this->postJson("/api/v1/jobs/$id/reviews", ['rating' => 4, 'comment' => 'Clear client'])->assertCreated();

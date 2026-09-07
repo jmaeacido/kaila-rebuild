@@ -32,6 +32,7 @@ import { useRealtimeInvalidation } from "../../use-realtime-invalidation";
 import { ServiceCategoryIcon } from "../../../components/service-category-icon";
 import { formatTravelDistance, formatTravelEta, type TravelMetrics } from "../../travel-metrics";
 import { MediaViewer, type ViewableMedia } from "../../../components/media-viewer";
+import { workActionLabel } from "./work/work-copy";
 
 type Reference = { id: number; name: string };
 type CategoryReference = Reference & { icon: string };
@@ -512,7 +513,14 @@ export default function JobDetailsPage({ params }: { params: Promise<{ jobId: st
             {["posted", "offers_received"].includes(job.status) && <Button variant="secondary" onClick={() => location.assign(`/jobs/${job.id}/offers`)}>View offers</Button>}
             {isHired && <Button onClick={() => location.assign(`/jobs/${job.id}/hired/conversation`)}><MessageCircle /> Message {job.role === "client" ? "provider" : "client"}</Button>}
             {isHired && job.serviceLocationMode !== "remote" && ["provider_selected", "provider_traveling"].includes(job.status) && <Button variant="secondary" onClick={() => location.assign(`/jobs/${job.id}/hired/travel`)}><Navigation /> {job.serviceLocationMode === "at_provider" ? job.role === "client" ? "Navigate to Shop" : "Track client" : job.role === "provider" ? "Navigate to Client" : "Track provider"}</Button>}
-            {isHired && <Button variant="secondary" onClick={() => location.assign(`/jobs/${job.id}/work`)}><Hammer /> {job.status === "provider_selected" && job.role === "provider" ? "Start work" : "Work status"}</Button>}
+            {isHired && (
+              <Button
+                variant={job.role === "provider" && job.status === "working" ? "primary" : "secondary"}
+                onClick={() => location.assign(`/jobs/${job.id}/work`)}
+              >
+                <Hammer /> {workActionLabel(job.role, job.status)}
+              </Button>
+            )}
             {job.canCancel && <Button variant="danger" onClick={() => setCancelling(true)}><Trash2 /> Cancel job</Button>}
           </div>
           {!job.canEdit && !["cancelled", "completed", "rated_closed"].includes(job.status) && (

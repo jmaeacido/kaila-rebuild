@@ -29,6 +29,7 @@ import {
   prominentCompletionCopy,
   shouldShowHistoricalCompletionNote,
   shouldShowReviewDeadline,
+  workActionLabel,
 } from "./work-copy";
 import styles from "./work.module.css";
 import { ServiceCategoryIcon } from "../../../../components/service-category-icon";
@@ -498,11 +499,11 @@ export default function WorkPage({ params }: { params: Promise<{ jobId: string }
         )}
         {data.role === "provider" && ["provider_selected", "provider_traveling", "revision_requested"].includes(data.status) && (
           <Button variant={data.status === "revision_requested" ? "primary" : "secondary"} isLoading={requestState === "saving"} onClick={() => void command("work/start", {}, "Work started.")}>
-            <Hammer /> {data.status === "revision_requested" ? "Resume corrections" : data.status === "provider_selected" ? "Already on site — start work" : "Start work"}
+            <Hammer /> {workActionLabel("provider", data.status, "work")}
           </Button>
         )}
         {data.role === "provider" && data.status === "working" && (
-          <Button onClick={() => setPanel("completion")}><CheckCircle2 /> Submit completed work</Button>
+          <Button onClick={() => setPanel("completion")}><CheckCircle2 /> {workActionLabel("provider", "working", "work")}</Button>
         )}
         {data.role === "client" && data.status === "completion_submitted" && (
           <>
@@ -663,7 +664,7 @@ function panelEyebrow(panel: Exclude<Panel, null>): string {
 
 function panelTitle(panel: Exclude<Panel, null>): string {
   return {
-    completion: "Submit completed work",
+    completion: "Mark as done",
     revision: "Request a correction",
     review: "Rate this job",
     cancel: "Request cancellation",

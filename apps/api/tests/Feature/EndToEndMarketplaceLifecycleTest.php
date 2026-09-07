@@ -143,10 +143,20 @@ class EndToEndMarketplaceLifecycleTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.status', 'completed');
 
-        $this->postJson("/api/v1/jobs/$job/reviews", [
-            'rating' => 5,
-            'comment' => 'Careful work and clear updates.',
-        ])->assertCreated();
+        $this->assertDatabaseHas('provider_profiles', [
+            'user_id' => $provider->id,
+            'completed_jobs' => 1,
+        ]);
+        $this->actingAs($provider)
+            ->getJson('/api/v1/me/marketplace-profile')
+            ->assertOk()
+            ->assertJsonPath('data.provider.completed_jobs', 1);
+
+        $this->actingAs($client)
+            ->postJson("/api/v1/jobs/$job/reviews", [
+                'rating' => 5,
+                'comment' => 'Careful work and clear updates.',
+            ])->assertCreated();
 
         $this->actingAs($provider)
             ->getJson("/api/v1/jobs/$job/reviews")

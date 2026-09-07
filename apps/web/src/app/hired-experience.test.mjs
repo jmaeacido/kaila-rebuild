@@ -44,8 +44,18 @@ test("work status keeps the assignment identifiable", () => {
 });
 
 test("work actions keep workflow controls ahead of the full-width report link", () => {
-  assert.ok(work.indexOf("Submit completed work") < work.indexOf("Report this job"));
+  assert.match(work, /workActionLabel\("provider", data\.status, "work"\)/);
+  assert.match(work, /workActionLabel\("provider", "working", "work"\)/);
+  assert.ok(work.indexOf('workActionLabel("provider", "working"') < work.indexOf("Report this job"));
   assert.match(workStyles, /\.actions>button:first-of-type:last-of-type,\.actions>a\{grid-column:1\/-1\}/);
+});
+
+test("job details work entrance uses status-aware labels", () => {
+  assert.match(jobDetails, /workActionLabel\(job\.role, job\.status\)/);
+  assert.doesNotMatch(
+    jobDetails,
+    /job\.status === "provider_selected" && job\.role === "provider" \? "Start work"/,
+  );
 });
 
 test("work and job cancel forms open in a modal overlay instead of an inline panel", () => {

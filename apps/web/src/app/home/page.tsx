@@ -312,7 +312,9 @@ function ProviderHome({
         <div><BriefcaseBusiness aria-hidden="true" /><span><small>Jobs Completed</small><strong>{provider?.completed_jobs ?? 0}</strong></span></div>
         <div><Star aria-hidden="true" /><span><small>Rating</small><strong>{user.reputation.averageRating?.toFixed(1) ?? "New"}</strong></span></div>
         <div><CalendarClock aria-hidden="true" /><span><small>Response</small><strong>{provider?.response_minutes ? `${provider.response_minutes} min` : "New"}</strong></span></div>
-        <div><Search aria-hidden="true" /><span><small>Opportunities</small><strong>{openOpportunities.length}</strong></span></div>
+        <Link className={styles.providerSummaryLink} href="/opportunities" aria-label={`Opportunities, ${openOpportunities.length} open`}>
+          <Search aria-hidden="true" /><span><small>Opportunities</small><strong>{openOpportunities.length}</strong></span>
+        </Link>
       </section>
 
       <ProviderSection title="Jobs Near You" href="/opportunities" id="matched-jobs-title">

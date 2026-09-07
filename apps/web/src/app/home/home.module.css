@@ -115,7 +115,8 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.providerSummary > div {
+.providerSummary > div,
+.providerSummary > a {
   align-items: center;
   background: var(--color-surface);
   border: var(--control-border-width) solid var(--color-border);
@@ -123,8 +124,19 @@
   box-shadow: var(--shadow-card);
   display: flex;
   gap: var(--spacing-8);
+  min-height: 44px;
   min-width: 0;
   padding: var(--spacing-12);
+}
+
+.providerSummaryLink {
+  color: inherit;
+  text-decoration: none;
+}
+
+.providerSummaryLink:focus-visible {
+  outline: 2px solid var(--color-focus-ring, var(--color-primary));
+  outline-offset: 2px;
 }
 
 .providerSummary svg {

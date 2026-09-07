@@ -44,6 +44,7 @@ class OfferService
                 $locked->timeline()->create(['id' => (string) Str::uuid(), 'actor_user_id' => $actor->id, 'event_type' => 'job.offers_received', 'job_version' => $locked->version, 'metadata' => ['offerThreadId' => $thread->id], 'occurred_at' => now()]);
             }
             $this->notify($locked->client_user_id, 'offer.created', 'You received an offer', $provider->display_name.' sent an offer.', $locked, $revision);
+            $provider->refreshResponseMinutes();
 
             return $thread->load(['revisions', 'provider']);
         });

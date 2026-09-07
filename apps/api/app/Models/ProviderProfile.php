@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 /**
  * @property int $id
@@ -77,5 +78,74 @@ class ProviderProfile extends Model
     public function portfolio(): HasMany
     {
         return $this->hasMany(ProfileAsset::class, 'user_id', 'user_id')->where('purpose', 'portfolio')->where('scan_status', 'clean')->orderBy('sort_order');
+    }
+
+    public function completedJobsCount(): int
+    {
+        return (int) DB::table('accepted_offer_snapshots')
+            ->join('service_jobs', 'service_jobs.id', '=', 'accepted_offer_snapshots.service_job_id')
+            ->where('accepted_offer_snapshots.provider_profile_id', $this->id)
+            ->whereNotNull('service_jobs.completed_at')
+            ->count();
+    }
+
+    /**
+     * Typical first-offer response time in minutes (median of recent samples).
+     * Measured from opportunity match to the provider's first offer revision.
+     */
+    public function computeResponseMinutes(): ?int
+    {
+        $samples = DB::table('offer_threads')
+            ->join('offer_revisions', function ($join): void {
+                $join->on('offer_revisions.offer_thread_id', '=', 'offer_threads.id')
+                    ->where('offer_revisions.revision_number', 1);
+            })
+            ->join('job_opportunities', function ($join): void {
+                $join->on('job_opportunities.service_job_id', '=', 'offer_threads.service_job_id')
+                    ->on('job_opportunities.provider_profile_id', '=', 'offer_threads.provider_profile_id');
+            })
+            ->where('offer_threads.provider_profile_id', $this->id)
+            ->whereNotNull('job_opportunities.created_at')
+            ->whereNotNull('offer_revisions.created_at')
+            ->orderByDesc('offer_revisions.created_at')
+            ->limit(20)
+            ->get([
+                'job_opportunities.created_at as opportunity_created_at',
+                'offer_revisions.created_at as offer_created_at',
+            ]);
+
+        if ($samples->isEmpty()) {
+            return null;
+        }
+
+        $sorted = $samples
+            ->map(static function (object $sample): int {
+                $opportunityAt = Carbon::parse($sample->opportunity_created_at);
+                $offerAt = Carbon::parse($sample->offer_created_at);
+
+                return max(1, (int) $opportunityAt->diffInMinutes($offerAt, false));
+            })
+            ->sort()
+            ->values();
+        $count = $sorted->count();
+        $middle = intdiv($count, 2);
+
+        if ($count % 2 === 1) {
+            return $sorted[$middle];
+        }
+
+        return (int) round(($sorted[$middle - 1] + $sorted[$middle]) / 2);
+    }
+
+    public function refreshResponseMinutes(): ?int
+    {
+        $minutes = $this->computeResponseMinutes();
+        if ($minutes === $this->response_minutes) {
+            return $minutes;
+        }
+
+        $this->forceFill(['response_minutes' => $minutes])->save();
+
+        return $minutes;
     }
 }

@@ -30,11 +30,15 @@ class MarketplaceProfileController extends Controller
     public function show(Request $request): JsonResponse
     {
         /** @var User $user */ $user = $request->user();
+        $provider = $this->ownedProvider($user)?->load(['services:id,name,slug,icon', 'serviceAreas:id,name,type,code', 'availability', 'credentials']);
+        if ($provider instanceof ProviderProfile) {
+            $provider->setAttribute('completed_jobs', $provider->completedJobsCount());
+        }
 
         return response()->json(['data' => [
             'activeMode' => $user->active_mode,
             'client' => ClientProfile::query()->where('user_id', $user->id)->first(),
-            'provider' => $this->ownedProvider($user)?->load(['services:id,name,slug,icon', 'serviceAreas:id,name,type,code', 'availability', 'credentials']),
+            'provider' => $provider,
             'providerAvatar' => $this->providerRequirements->avatarState($user),
             'providerPortfolio' => $this->providerRequirements->portfolioAssets($user),
         ]]);
@@ -158,11 +162,7 @@ class MarketplaceProfileController extends Controller
             ->where('scan_status', 'clean')
             ->latest()
             ->first();
-        $completedJobs = DB::table('accepted_offer_snapshots')
-            ->join('service_jobs', 'service_jobs.id', '=', 'accepted_offer_snapshots.service_job_id')
-            ->where('accepted_offer_snapshots.provider_profile_id', $profile->id)
-            ->whereNotNull('service_jobs.completed_at')
-            ->count();
+        $completedJobs = $profile->completedJobsCount();
         $likedAssetIds = $viewer
             ? DB::table('profile_asset_reactions')
                 ->where('user_id', $viewer->id)
