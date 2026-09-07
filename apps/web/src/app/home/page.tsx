@@ -1,17 +1,17 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import {
   ArrowRight,
   BadgeCheck,
   BriefcaseBusiness,
+  CalendarClock,
   ChevronRight,
   ClipboardList,
   MapPin,
   Navigation,
-  Plus,
   Search,
   Star,
 } from "lucide-react";
@@ -22,8 +22,7 @@ import { OpportunityRouteMetrics } from "../../components/job-request-location";
 import styles from "./home.module.css";
 import { isEphemeralRealtimeEvent } from "../notification-feedback";
 import { useRealtimeInvalidation } from "../use-realtime-invalidation";
-import { formatTravelDistance, formatTravelEta, type TravelMetrics } from "../travel-metrics";
-import { useHiredRouteEstimate } from "../use-hired-route-estimate";
+import type { TravelMetrics } from "../travel-metrics";
 
 type User = {
   name: string;
@@ -65,6 +64,9 @@ type Opportunity = {
   scheduledAt: string | null;
   client: { displayName: string; avatarUrl: string | null; rating: string | number | null; reviewCount: number };
   approximateLocation: { latitude: number; longitude: number } | null;
+  budgetMinCentavos: number | null;
+  budgetMaxCentavos: number | null;
+  offer: { id: string; status: string; latestRevisionNumber: number } | null;
 };
 type Provider = {
   id: number;
@@ -76,6 +78,10 @@ type Provider = {
   rating: number | null;
   reviewCount: number;
   completedJobs: number;
+};
+type OwnedProvider = {
+  completed_jobs: number;
+  response_minutes: number | null;
 };
 
 const jobStatusLabels: Record<string, string> = {
@@ -97,6 +103,7 @@ export default function AuthenticatedHomePage() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
   const [providers, setProviders] = useState<Provider[]>([]);
+  const [ownedProvider, setOwnedProvider] = useState<OwnedProvider | null>(null);
   const [status, setStatus] = useState<"loading" | "ready" | "error">(
     "loading",
   );
@@ -104,14 +111,15 @@ export default function AuthenticatedHomePage() {
   const load = useCallback(async (quiet = false) => {
     if (!quiet) setStatus("loading");
     try {
-      const [userResponse, referenceResponse, jobsResponse, providersResponse] = await Promise.all([
+      const [userResponse, referenceResponse, jobsResponse, providersResponse, profileResponse] = await Promise.all([
         fetch("/api/v1/me", { cache: "no-store" }),
         fetch("/api/v1/marketplace/reference-data"),
         fetch("/api/v1/jobs", { cache: "no-store" }),
         fetch("/api/v1/providers", { cache: "no-store" }),
+        fetch("/api/v1/me/marketplace-profile", { cache: "no-store" }),
       ]);
 
-      if (!userResponse.ok || !referenceResponse.ok || !jobsResponse.ok || !providersResponse.ok) {
+      if (!userResponse.ok || !referenceResponse.ok || !jobsResponse.ok || !providersResponse.ok || !profileResponse.ok) {
         throw new Error("Home data request failed.");
       }
 
@@ -121,6 +129,7 @@ export default function AuthenticatedHomePage() {
       };
       const jobsBody = (await jobsResponse.json()) as { data: Job[] };
       const providersBody = (await providersResponse.json()) as { data: Provider[] };
+      const profileBody = (await profileResponse.json()) as { data: { provider: OwnedProvider | null } };
       let providerOpportunities: Opportunity[] = [];
 
       if (userBody.data.providerEligible) {
@@ -139,6 +148,7 @@ export default function AuthenticatedHomePage() {
       setCategories(referenceBody.data.categories);
       setJobs(jobsBody.data);
       setProviders(providersBody.data);
+      setOwnedProvider(profileBody.data.provider);
       setOpportunities(providerOpportunities);
       setStatus("ready");
     } catch {
@@ -176,16 +186,6 @@ export default function AuthenticatedHomePage() {
       job.role === "provider" &&
       !["completed", "rated_closed", "cancelled"].includes(job.status),
   );
-  const activeJobs = isProvider ? activeProviderJobs : activeClientJobs;
-  const currentJob = activeJobs[0];
-  const jobHistory = jobs.filter(
-    (job) =>
-      job.role === (isProvider ? "provider" : "client") &&
-      ["completed", "rated_closed", "cancelled"].includes(job.status),
-  );
-  const primaryHref = isProvider ? "/opportunities" : "/post-job";
-  const primaryLabel = isProvider ? "Find nearby work" : "Post a job";
-
   if (status === "loading") {
     return (
       <main className={styles.shell} aria-label="Loading Home">
@@ -223,186 +223,138 @@ export default function AuthenticatedHomePage() {
     );
   }
 
+  return <ProviderHome firstName={firstName} user={user} provider={ownedProvider} activeJobs={activeProviderJobs} opportunities={opportunities} />;
+}
+
+function ProviderHome({
+  firstName,
+  user,
+  provider,
+  activeJobs,
+  opportunities,
+}: {
+  firstName: string;
+  user: User;
+  provider: OwnedProvider | null;
+  activeJobs: Job[];
+  opportunities: Opportunity[];
+}) {
+  const locationLabel = activeJobs[0]?.area.name ?? opportunities[0]?.area.name ?? "Your local area";
+  const openOpportunities = opportunities.filter((opportunity) => !opportunity.offer);
+  const sentOffers = opportunities.filter((opportunity) => opportunity.offer);
+  const todaysJobs = activeJobs.filter((job) => !job.scheduledAt || isToday(job.scheduledAt));
+
   return (
-    <main className={styles.shell}>
-      <section className={styles.hero} aria-labelledby="home-title">
-        <div className={styles.route} aria-hidden="true">
-          <span />
-          <span />
-          <span />
+    <main className={`${styles.shell} ${styles.providerShell}`}>
+      <header className={styles.providerWelcome}>
+        <span className={styles.providerAvatar} aria-hidden="true">{firstName.charAt(0).toUpperCase()}</span>
+        <div>
+          <p>Good {timeOfDay()},</p>
+          <h1>{firstName}</h1>
+          <span className={styles.providerLocation}><MapPin aria-hidden="true" />{locationLabel}</span>
         </div>
-        <p className={styles.greeting}>Hi, {firstName}</p>
-        <p className={styles.heroReputation}>
-          <Star aria-hidden="true" />
-          {user.reputation.averageRating === null
-            ? "New member · No reviews yet"
-            : `${user.reputation.averageRating.toFixed(1)} overall · ${user.reputation.reviewCount} review${user.reputation.reviewCount === 1 ? "" : "s"}`}
-        </p>
-        <h1 id="home-title">
-          {isProvider
-            ? "Ready to help someone nearby?"
-            : "What do you need right now?"}
-        </h1>
-        <p>
-          {isProvider
-            ? "See local jobs that match your services and coverage area."
-            : "Tell us what needs doing and hear from local providers."}
-        </p>
-        <Link className={styles.primaryAction} href={primaryHref}>
-          {isProvider ? (
-            <BriefcaseBusiness aria-hidden="true" />
-          ) : (
-            <Plus aria-hidden="true" />
-          )}
-          {primaryLabel}
-          <ArrowRight aria-hidden="true" />
+        <Link className={styles.availabilityPill} href="/provider-profile" aria-label="Review provider availability">
+          <span aria-hidden="true" />Available
         </Link>
+      </header>
+
+      <section className={styles.providerSummary} aria-label="Provider summary">
+        <div><BriefcaseBusiness aria-hidden="true" /><span><small>Jobs Completed</small><strong>{provider?.completed_jobs ?? 0}</strong></span></div>
+        <div><Star aria-hidden="true" /><span><small>Rating</small><strong>{user.reputation.averageRating?.toFixed(1) ?? "New"}</strong></span></div>
+        <div><CalendarClock aria-hidden="true" /><span><small>Response</small><strong>{provider?.response_minutes ? `${provider.response_minutes} min` : "New"}</strong></span></div>
+        <div><Search aria-hidden="true" /><span><small>Opportunities</small><strong>{openOpportunities.length}</strong></span></div>
       </section>
 
-      {!isProvider && (
-        <section className={styles.discovery} aria-labelledby="services-title">
-          <header>
-            <div>
-              <p className={styles.eyebrow}>POPULAR NEAR YOU</p>
-              <h2 id="services-title">Choose a service</h2>
-            </div>
-          </header>
-          <div className={styles.categoryGrid}>
-            {categories.slice(0, 6).map((category) => {
-              return (
-                <Link
-                  href={`/post-job?categoryId=${category.id}`}
-                  key={category.id}
-                >
-                  <span>
-                    <ServiceCategoryIcon icon={category.icon} aria-hidden="true" />
-                  </span>
-                  {category.name}
-                </Link>
-              );
-            })}
-          </div>
-          <Link className={styles.moreServices} href="/post-job">
-            View more services
-            <ChevronRight aria-hidden="true" />
-          </Link>
-          <Link className={styles.secondaryAction} href="/providers"><Search aria-hidden="true" />Find a provider<ArrowRight aria-hidden="true" /></Link>
-        </section>
-      )}
-
-      {(!isProvider || activeJobs.length > 0 || opportunities.length === 0) && (
-      <section className={`${styles.current} ${opportunities.length === 0 ? styles.fullWidth : ""}`} aria-labelledby="current-title">
-        <header>
-          <div>
-            <p className={styles.eyebrow}>
-              {activeJobs.length ? `YOUR ACTIVE JOB${activeJobs.length === 1 ? "" : "S"}` : isProvider ? "YOUR NEXT OPPORTUNITY" : "YOUR JOBS"}
-            </p>
-            <h2 id="current-title">
-              {activeJobs.length ? "Hired work" : isProvider ? "Nearby work" : "Your activity"}
-            </h2>
-          </div>
-          <Link href={currentJob ? `/jobs/${currentJob.id}` : isProvider ? "/opportunities" : "/post-job"}>
-            {currentJob ? "Open job" : isProvider ? "See all" : "New job"}
-            <ChevronRight aria-hidden="true" />
-          </Link>
-        </header>
-
-        {activeJobs.length ? (
-          <div className={styles.activeJobList}>
-          {activeJobs.map((job) => <article className={styles.activityCard} key={job.id}>
-            <span className={`${styles.activityIcon} ${job.counterpart ? styles.personAvatar : ""}`}>
-              {job.counterpart?.avatarUrl ? <Image src={job.counterpart.avatarUrl} alt={`${job.counterpart.displayName} profile`} width={48} height={48} unoptimized /> : job.counterpart ? job.counterpart.displayName.charAt(0).toUpperCase() : <ServiceCategoryIcon icon={job.category.icon} aria-hidden="true" />}
-            </span>
-            <div>
-              <span className={styles.opportunityCategory}><ServiceCategoryIcon icon={job.category.icon} aria-hidden="true" />{job.status === "provider_traveling" ? travelStatusLabel(job) : jobStatusLabels[job.status] || "Hired job updated"}</span>
-              <h3>{job.title}</h3>
-              <p><MapPin aria-hidden="true" />{job.area.name}</p>
-              {job.counterpart && <><p className={styles.clientName}>{job.counterpart.displayName}</p><p className={styles.clientReputation}><Star aria-hidden="true" />{job.counterpart.rating === null ? "New · No reviews" : `${Number(job.counterpart.rating).toFixed(1)} · ${job.counterpart.reviewCount} review${job.counterpart.reviewCount === 1 ? "" : "s"}`}</p></>}
-              <p className={styles.routeMetrics}><Navigation aria-hidden="true" /><ActiveJobRouteMetrics job={job} /></p>
-            </div>
-            <Link href={job.status === "provider_traveling" ? `/jobs/${job.id}/hired/travel` : `/jobs/${job.id}`}>
-              {job.status === "provider_traveling" ? job.serviceLocationMode === "at_provider" ? job.role === "client" ? "Navigate to Shop" : "Track client" : job.role === "provider" ? "Navigate to Client" : "Track provider" : "Continue"}
-              <ArrowRight aria-hidden="true" />
-            </Link>
-          </article>)}
-          </div>
-        ) : (
-          <div className={styles.empty}>
-            <EmptyJobsIllustration />
-            <div>
-              <h3>{isProvider ? "No nearby jobs yet" : "No jobs yet"}</h3>
-              <p>
-                {isProvider
-                  ? "We’ll show matching local work here when it becomes available."
-                  : "Tell us what you need and hear from local providers."}
-              </p>
-            </div>
-            <Link href={primaryHref}>{primaryLabel}</Link>
-          </div>
-        )}
-      </section>
-      )}
-
-      {isProvider && opportunities.length > 0 && (
-        <section className={`${styles.opportunities} ${activeJobs.length === 0 ? styles.fullWidth : ""}`} aria-labelledby="matched-jobs-title">
-          <header>
-            <div><p className={styles.eyebrow}>MATCHED FOR YOU</p><h2 id="matched-jobs-title">Nearby jobs</h2></div>
-            <Link href="/opportunities">See all <ChevronRight aria-hidden="true" /></Link>
-          </header>
-          <div className={styles.opportunityList}>
-            {opportunities.map((opportunity) => (
-              <article className={styles.activityCard} key={opportunity.id}>
-                <span className={`${styles.activityIcon} ${styles.personAvatar}`}>{opportunity.client.avatarUrl ? <Image src={opportunity.client.avatarUrl} alt={`${opportunity.client.displayName} profile`} width={48} height={48} unoptimized /> : opportunity.client.displayName.charAt(0).toUpperCase()}</span>
-                <div>
-                  <span className={styles.opportunityCategory}><ServiceCategoryIcon icon={opportunity.category.icon} aria-hidden="true" />{opportunity.category.name}</span>
+      <ProviderSection title="Jobs Near You" href="/opportunities" id="matched-jobs-title">
+        {openOpportunities.length ? (
+          <div className={styles.providerCardList}>
+            {openOpportunities.slice(0, 3).map((opportunity) => (
+              <article className={styles.providerJobCard} key={opportunity.id}>
+                <ServiceCategoryBadge icon={opportunity.category.icon} className={styles.providerJobIcon} />
+                <div className={styles.providerJobBody}>
+                  <span className={styles.providerJobCategory}>{opportunity.category.name}</span>
                   <h3>{opportunity.title}</h3>
                   <p><MapPin aria-hidden="true" />{opportunity.area.name}</p>
-                  <p className={styles.clientName}>{opportunity.client.displayName}</p>
-                  <p className={styles.clientReputation}><Star aria-hidden="true" />{opportunity.client.rating === null ? "New · No reviews" : `${Number(opportunity.client.rating).toFixed(1)} · ${opportunity.client.reviewCount} review${opportunity.client.reviewCount === 1 ? "" : "s"}`}</p>
-                  <p className={styles.routeMetrics}><Navigation aria-hidden="true" /><OpportunityRouteMetrics opportunityId={opportunity.id} location={opportunity.approximateLocation} /></p>
+                  <p className={styles.providerRoute}><Navigation aria-hidden="true" /><OpportunityRouteMetrics opportunityId={opportunity.id} location={opportunity.approximateLocation} /></p>
+                  <strong className={styles.providerBudget}>{money(opportunity.budgetMinCentavos, opportunity.budgetMaxCentavos)}</strong>
                 </div>
-                <Link href={`/opportunities/${opportunity.jobId}`}>View job <ArrowRight aria-hidden="true" /></Link>
+                <Link href={`/opportunities/${opportunity.jobId}`}>View Job</Link>
               </article>
             ))}
           </div>
-        </section>
-      )}
+        ) : (
+          <ProviderEmpty icon={<BriefcaseBusiness aria-hidden="true" />} title="No nearby jobs right now" copy="We’ll show new jobs here when they match your services and area." />
+        )}
+      </ProviderSection>
 
-      {jobHistory.length > 0 && <section className={styles.history} aria-labelledby="history-title" id="job-history">
-          <header>
-            <div>
-              <p className={styles.eyebrow}>{isProvider ? "YOUR WORK" : "YOUR JOBS"}</p>
-              <h2 id="history-title">Job history</h2>
-            </div>
-            <span>{jobHistory.length} job{jobHistory.length === 1 ? "" : "s"}</span>
-          </header>
-          <div className={styles.historyList}>
-              {jobHistory.map((job) => (
-                <Link href={`/jobs/${job.id}`} key={job.id}>
-                  <span className={`${styles.historyIcon} ${job.counterpart ? styles.personAvatar : ""}`}>{job.counterpart?.avatarUrl ? <Image src={job.counterpart.avatarUrl} alt={`${job.counterpart.displayName} profile`} width={48} height={48} unoptimized /> : job.counterpart ? job.counterpart.displayName.charAt(0).toUpperCase() : <ServiceCategoryIcon icon={job.category.icon} aria-hidden="true" />}</span>
-                  <span>
-                    <strong>{job.title}</strong>
-                    <small className={styles.historyCategory}><ServiceCategoryIcon icon={job.category.icon} aria-hidden="true" />{job.category.name}</small>
-                    <small><MapPin aria-hidden="true" /> {job.area.name}</small>
-                    {job.counterpart && <><small className={styles.historyName}>{job.counterpart.displayName}</small><small className={styles.jobRating}><Star aria-hidden="true" />{job.counterpart.rating === null ? "New · No reviews" : `${Number(job.counterpart.rating).toFixed(1)} · ${job.counterpart.reviewCount} review${job.counterpart.reviewCount === 1 ? "" : "s"}`}</small></>}
-                    {job.ratingReceived && (
-                      <small className={styles.jobRating}>
-                        <Star aria-hidden="true" />
-                        {job.ratingReceived.rating}.0 received
-                        {job.ratingGiven ? ` · ${job.ratingGiven.rating}.0 given` : ""}
-                      </small>
-                    )}
-                  </span>
-                  <span className={styles.historyStatus}>{jobStatusLabels[job.status] || job.status}</span>
-                  <ChevronRight aria-hidden="true" />
-                </Link>
-              ))}
+      <ProviderSection title="Today’s Schedule" href="/home#current-title" id="current-title">
+        {todaysJobs.length ? (
+          <div className={styles.providerCompactList}>
+            {todaysJobs.slice(0, 3).map((job) => (
+              <Link href={`/jobs/${job.id}`} key={job.id}>
+                <span className={styles.providerCompactIcon}><CalendarClock aria-hidden="true" /></span>
+                <span><strong>{job.title}</strong><small><MapPin aria-hidden="true" />{job.area.name}</small></span>
+                <span className={styles.providerTime}>{scheduleLabel(job)}</span>
+                <ChevronRight aria-hidden="true" />
+              </Link>
+            ))}
           </div>
-        </section>}
+        ) : (
+          <ProviderEmpty icon={<CalendarClock aria-hidden="true" />} title="No work scheduled" copy="Accepted jobs will appear here." />
+        )}
+      </ProviderSection>
+
+      <ProviderSection title="Your Offers" href="/opportunities">
+        {sentOffers.length ? (
+          <div className={styles.providerCompactList}>
+            {sentOffers.slice(0, 3).map((opportunity) => (
+              <Link href={`/opportunities/${opportunity.jobId}`} key={opportunity.id}>
+                <ServiceCategoryBadge icon={opportunity.category.icon} className={styles.providerOfferIcon} />
+                <span><strong>{opportunity.title}</strong><small>Offer sent · Revision {opportunity.offer?.latestRevisionNumber}</small></span>
+                <ChevronRight aria-hidden="true" />
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <ProviderEmpty icon={<ClipboardList aria-hidden="true" />} title="No offers yet" copy="Jobs you make an offer on will appear here." />
+        )}
+      </ProviderSection>
 
       <MarketplaceNavigation />
     </main>
   );
+}
+
+function ProviderSection({ title, href, id, children }: { title: string; href: string; id?: string; children: ReactNode }) {
+  return (
+    <section className={styles.providerSection} aria-labelledby={id}>
+      <header><h2 id={id}>{title}</h2><Link href={href}>See All</Link></header>
+      {children}
+    </section>
+  );
+}
+
+function ProviderEmpty({ icon, title, copy }: { icon: ReactNode; title: string; copy: string }) {
+  return <div className={styles.providerEmpty}>{icon}<span><strong>{title}</strong><small>{copy}</small></span></div>;
+}
+
+function scheduleLabel(job: Job) {
+  if (!job.scheduledAt) return "ASAP";
+  return new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" }).format(new Date(job.scheduledAt));
+}
+
+function isToday(value: string) {
+  const date = new Date(value);
+  const today = new Date();
+  return date.getFullYear() === today.getFullYear()
+    && date.getMonth() === today.getMonth()
+    && date.getDate() === today.getDate();
+}
+
+function money(min: number | null, max: number | null) {
+  if (min === null && max === null) return "Open to offers";
+  const peso = (value: number | null) => value === null ? "—" : `₱${(value / 100).toLocaleString()}`;
+  return `${peso(min)} – ${peso(max)}`;
 }
 
 function ClientHome({
@@ -530,42 +482,4 @@ function timeOfDay(): "morning" | "afternoon" | "evening" {
   if (hour < 12) return "morning";
   if (hour < 18) return "afternoon";
   return "evening";
-}
-
-function EmptyJobsIllustration() {
-  return (
-    <svg
-      className={styles.emptyIllustration}
-      viewBox="0 0 160 112"
-      role="img"
-      aria-label="A KAILA service bag ready for a new job"
-    >
-      <path className={styles.illustrationRoute} d="M12 82c24-33 52 12 80-19 19-21 37-15 56-43" />
-      <circle className={styles.illustrationPin} cx="13" cy="82" r="6" />
-      <circle className={styles.illustrationPin} cx="148" cy="20" r="6" />
-      <rect className={styles.illustrationBag} x="48" y="35" width="64" height="50" rx="14" />
-      <path className={styles.illustrationHandle} d="M65 36v-5c0-8 6-14 15-14s15 6 15 14v5" />
-      <path className={styles.illustrationDetail} d="M48 55h64M72 55v9h16v-9" />
-    </svg>
-  );
-}
-
-function travelStatusLabel(job: Job): string {
-  const travelerRole = job.serviceLocationMode === "at_provider" ? "client" : "provider";
-  if (job.role === travelerRole) return "You’re on the way";
-  return travelerRole === "client" ? "Client on the way" : "Provider on the way";
-}
-
-function ActiveJobRouteMetrics({ job }: { job: Job }) {
-  const isTraveler = job.role === (job.serviceLocationMode === "at_provider" ? "client" : "provider");
-  const preview = useHiredRouteEstimate(
-    job.id,
-    isTraveler && job.serviceLocationMode !== "remote",
-  );
-  if (job.serviceLocationMode === "remote") {
-    return "Distance: Not applicable · ETA: Not applicable";
-  }
-  const distance = preview?.distanceMeters ?? job.travel?.distanceMeters;
-  const eta = preview?.etaSeconds ?? job.travel?.etaSeconds;
-  return `Distance: ${distance == null ? "—" : formatTravelDistance(distance)} · ETA: ${eta == null ? "—" : formatTravelEta(eta)}`;
 }

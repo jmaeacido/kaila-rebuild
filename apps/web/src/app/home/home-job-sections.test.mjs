@@ -19,19 +19,17 @@ const marketplaceNavigationStyles = readFileSync(new URL("../../components/marke
 const katabangStyles = readFileSync(new URL("../../components/floating-katabang.module.css", import.meta.url), "utf8");
 const katabangSource = readFileSync(new URL("../../components/floating-katabang.tsx", import.meta.url), "utf8");
 
-test("Home keeps every non-terminal job active and terminal jobs in history", () => {
+test("Home keeps every non-terminal job active for each marketplace mode", () => {
   assert.match(source, /const activeClientJobs = jobs\.filter/);
   assert.match(source, /const activeProviderJobs = jobs\.filter/);
-  assert.match(source, /activeJobs\.map\(\(job\)/);
+  assert.match(source, /todaysJobs\.slice\(0, 3\)\.map\(\(job\)/);
   assert.match(source, /\["completed", "rated_closed", "cancelled"\]\.includes\(job\.status\)/);
-  assert.doesNotMatch(source, /job\.id !== currentJob\?\.id/);
 });
 
-test("Client Home presents one empty jobs state and role-aware primary navigation", () => {
-  assert.match(source, /No jobs yet/);
-  assert.match(source, /jobHistory\.length > 0 && <section/);
+test("Client Home presents one empty jobs state and role-aware navigation", () => {
+  assert.match(source, /No active jobs/);
   assert.doesNotMatch(source, /No hired jobs yet/);
-  assert.match(source, /<EmptyJobsIllustration \/>/);
+  assert.match(source, /Your posted jobs will appear here/);
   assert.match(source, /<MarketplaceNavigation \/>/);
   assert.match(marketplaceNavigationSource, /href="\/community"/);
   assert.match(marketplaceNavigationSource, />\s*Jobs\s*<\/Link>/);
@@ -47,13 +45,18 @@ test("Home uses clear active navigation with foreground emphasis", () => {
   assert.doesNotMatch(marketplaceNavigationStyles, /\.bottomNav a \{[\s\S]*?box-shadow: var\(--shadow-neu/);
 });
 
-test("Home keeps the hero action primary and removes duplicate discovery actions", () => {
-  assert.match(source, /className=\{styles\.secondaryAction\} href="\/providers"/);
-  assert.match(source, />Find a provider</);
-  assert.match(source, />\s*View more services/);
-  assert.doesNotMatch(source, /categories\.length > 6 &&/);
-  assert.doesNotMatch(source, /Find a specific provider/);
-  assert.doesNotMatch(source, /<Link href="\/post-job">\s*<Search/);
+test("Provider Home follows the supplied mobile hierarchy with truthful live data", () => {
+  assert.match(source, /function ProviderHome/);
+  assert.match(source, /title="Jobs Near You"/);
+  assert.match(source, /title="Today’s Schedule"/);
+  assert.match(source, /title="Your Offers"/);
+  assert.match(source, /opportunities\.filter\(\(opportunity\) => !opportunity\.offer\)/);
+  assert.match(source, /opportunities\.filter\(\(opportunity\) => opportunity\.offer\)/);
+  assert.match(source, />Jobs Completed</);
+  assert.match(source, />Rating</);
+  assert.match(source, />Response</);
+  assert.match(source, />Opportunities</);
+  assert.match(source, /provider\?\.response_minutes/);
 });
 
 test("The mobile Katabang trigger lives with header controls instead of covering content", () => {
@@ -142,10 +145,9 @@ test("Find work stacks its header action on narrow phones", () => {
   );
 });
 
-test("Home renders each job's service category icon", () => {
-  assert.match(source, /ServiceCategoryIcon icon=\{job\.category\.icon\}/);
-  assert.match(source, /opportunities\.map\(\(opportunity\)/);
-  assert.match(source, /ServiceCategoryIcon icon=\{opportunity\.category\.icon\}/);
+test("Provider Home renders each nearby job's service category icon", () => {
+  assert.match(source, /openOpportunities\.slice\(0, 3\)\.map\(\(opportunity\)/);
+  assert.match(source, /ServiceCategoryBadge icon=\{opportunity\.category\.icon\}/);
   assert.doesNotMatch(source, /<Hammer aria-hidden="true" \/>/);
 });
 
@@ -156,41 +158,21 @@ test("Home keeps matched jobs visible beside active work and announces matches t
   assert.doesNotMatch(source, /setPopupOpportunity/);
 });
 
-test("Home pairs hired work and nearby jobs only when both have content", () => {
-  assert.match(source, /activeJobs\.length > 0 \|\| opportunities\.length === 0/);
-  assert.match(source, /opportunities\.length === 0 \? styles\.fullWidth/);
-  assert.match(source, /activeJobs\.length === 0 \? styles\.fullWidth/);
+test("Provider Home uses the same location fallback pattern as Client Home", () => {
+  assert.match(source, /activeJobs\[0\]\?\.area\.name \?\? opportunities\[0\]\?\.area\.name \?\? "Your local area"/);
+  assert.match(source, /<MapPin aria-hidden="true" \/>\{locationLabel\}/);
+  assert.doesNotMatch(source, />Service Provider</);
 });
 
-test("Nearby jobs show client trust and route information", () => {
-  assert.match(source, /opportunity\.client\.avatarUrl/);
-  assert.match(source, /opportunity\.client\.displayName/);
-  assert.match(source, /opportunity\.client\.reviewCount/);
+test("Nearby jobs show location, route, budget, and one clear action", () => {
   assert.match(source, /OpportunityRouteMetrics opportunityId=\{opportunity\.id\}/);
-  assert.match(source, /styles\.personAvatar/);
-  assert.match(source, /styles\.clientName/);
-  assert.match(source, /styles\.clientReputation/);
-  assert.doesNotMatch(source, />With \{opportunity\.client\.displayName\}/);
+  assert.match(source, /money\(opportunity\.budgetMinCentavos, opportunity\.budgetMaxCentavos\)/);
+  assert.match(source, /href=\{`\/opportunities\/\$\{opportunity\.jobId\}`\}>View Job/);
 });
 
-test("All Home job cards lead with people and stack reputation below names", () => {
-  assert.match(source, /job\.counterpart\?\.avatarUrl/);
-  assert.match(source, /styles\.historyName/);
-  assert.doesNotMatch(source, />With \{job\.counterpart\.displayName\}/);
-});
-
-test("Travel status speaks to the active user in the correct role", () => {
-  assert.match(source, /if \(job\.role === travelerRole\) return "You’re on the way"/);
-  assert.match(source, /travelerRole === "client" \? "Client on the way" : "Provider on the way"/);
-});
-
-test("Every active job keeps a truthful Distance and ETA row visible", () => {
-  assert.match(source, /activeJobs\.map\(\(job\)[\s\S]*<ActiveJobRouteMetrics job=\{job\}/);
-  assert.match(source, /useHiredRouteEstimate/);
-  assert.match(source, /preview\?\.distanceMeters \?\? job\.travel\?\.distanceMeters/);
-  assert.match(source, /Distance: \$\{distance == null \? "—"/);
-  assert.match(source, /ETA: \$\{eta == null \? "—"/);
-  assert.match(source, /Distance: Not applicable · ETA: Not applicable/);
+test("Provider Home retains the shared bottom navigation", () => {
+  assert.match(source, /function ProviderHome[\s\S]*<MarketplaceNavigation \/>/);
+  assert.match(marketplaceNavigationStyles, /grid-template-columns: repeat\(5/);
 });
 
 test("Opportunity cards request approximate driving distance", () => {
