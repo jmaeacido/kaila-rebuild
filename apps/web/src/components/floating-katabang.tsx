@@ -10,7 +10,26 @@ import styles from "./floating-katabang.module.css";
 type Answer = {
   answer: string;
   action: { label: string; href: string };
+  providers: ProviderRecommendations | null;
   disclaimer: string;
+};
+
+type ProviderRecommendations = {
+  category: { id: number; name: string } | null;
+  area: { id: number; name: string } | null;
+  providers: ProviderRecommendation[];
+  total: number;
+};
+
+type ProviderRecommendation = {
+  id: number;
+  displayName: string;
+  rating: number | null;
+  completedJobs: number;
+  verified: boolean;
+  responseMinutes: number | null;
+  serviceAreas: string[];
+  href: string;
 };
 
 type Exchange = {
@@ -135,6 +154,27 @@ export function FloatingKatabang() {
             <p className={styles.question}>{exchange.question}</p>
             <div className={styles.answer}>
               <p>{exchange.answer.answer}</p>
+              {exchange.answer.providers && (
+                <div className={styles.providerResults} aria-label="Recommended providers">
+                  {exchange.answer.providers.providers.length > 0 ? exchange.answer.providers.providers.map((provider) => (
+                    <Link className={styles.providerResult} href={provider.href} key={provider.id}>
+                      <strong>{provider.displayName}</strong>
+                      <span>
+                        {provider.rating === null ? "New provider" : `${provider.rating.toFixed(1)} rating`}
+                        {` · ${provider.completedJobs} completed`}
+                        {provider.verified ? " · Verified" : ""}
+                      </span>
+                      <small>{provider.serviceAreas.join(", ") || "Service area available on profile"}</small>
+                    </Link>
+                  )) : (
+                    <p className={styles.providerEmpty}>
+                      {exchange.answer.providers.category
+                        ? `No matching ${exchange.answer.providers.category.name.toLowerCase()} providers are available in your area yet.`
+                        : "I couldn’t identify that service. Try its category name, such as Plumbing or Cleaning."}
+                    </p>
+                  )}
+                </div>
+              )}
               <Link href={exchange.answer.action.href}>{exchange.answer.action.label}</Link>
               <small>{exchange.answer.disclaimer}</small>
             </div>

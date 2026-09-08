@@ -10,7 +10,25 @@ import styles from "../../phase-nine.module.css";
 type Answer = {
   answer: string;
   action: { label: string; href: string };
+  providers: ProviderRecommendations | null;
   disclaimer: string;
+};
+
+type ProviderRecommendations = {
+  category: { id: number; name: string } | null;
+  area: { id: number; name: string } | null;
+  providers: ProviderRecommendation[];
+  total: number;
+};
+
+type ProviderRecommendation = {
+  id: number;
+  displayName: string;
+  rating: number | null;
+  completedJobs: number;
+  verified: boolean;
+  serviceAreas: string[];
+  href: string;
 };
 
 type Exchange = { question: string; answer: Answer };
@@ -67,7 +85,7 @@ export default function KatabangPage() {
         <Link href="/">Back home</Link>
         <p className={styles.eyebrow}>Katabang</p>
         <h1>What can I help you find?</h1>
-        <p>AI guidance through KAILA. Katabang never chooses providers, prices, or account outcomes.</p>
+        <p>AI guidance through KAILA. Katabang can find matching providers, but you always choose who to hire.</p>
       </header>
 
       <section className={styles.card}>
@@ -93,6 +111,27 @@ export default function KatabangPage() {
           <p className={styles.meta}>You asked: {exchange.question}</p>
           <h2>Katabang</h2>
           <p>{exchange.answer.answer}</p>
+          {exchange.answer.providers && (
+            <div className={styles.providerResults} aria-label="Recommended providers">
+              {exchange.answer.providers.providers.length > 0 ? exchange.answer.providers.providers.map((provider) => (
+                <Link className={styles.providerResult} href={provider.href} key={provider.id}>
+                  <strong>{provider.displayName}</strong>
+                  <span>
+                    {provider.rating === null ? "New provider" : `${provider.rating.toFixed(1)} rating`}
+                    {` · ${provider.completedJobs} completed`}
+                    {provider.verified ? " · Verified" : ""}
+                  </span>
+                  <small>{provider.serviceAreas.join(", ") || "Service area available on profile"}</small>
+                </Link>
+              )) : (
+                <p className={styles.providerEmpty}>
+                  {exchange.answer.providers.category
+                    ? `No matching ${exchange.answer.providers.category.name.toLowerCase()} providers are available in your area yet.`
+                    : "I couldn’t identify that service. Try its category name, such as Plumbing or Cleaning."}
+                </p>
+              )}
+            </div>
+          )}
           <div className={styles.actions}>
             <Link className={styles.actionLink} href={exchange.answer.action.href}>{exchange.answer.action.label}</Link>
           </div>

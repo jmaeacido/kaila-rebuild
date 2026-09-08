@@ -167,6 +167,31 @@
   font-size: var(--font-caption-size);
 }
 
+.providerResults {
+  display: grid;
+  gap: var(--spacing-8);
+}
+
+.answer .providerResult {
+  background: var(--color-background);
+  border: var(--control-border-width) solid var(--color-border);
+  border-radius: var(--radius-input);
+  color: var(--color-ink);
+  display: grid;
+  gap: var(--spacing-4);
+  min-height: var(--control-min-height);
+  padding: var(--spacing-8) var(--spacing-12);
+  text-decoration: none;
+  width: 100%;
+}
+
+.providerResult span,
+.providerResult small,
+.providerEmpty {
+  color: var(--color-text-secondary);
+  font-size: var(--font-caption-size);
+}
+
 .thinking,
 .error {
   font-size: var(--font-small-size);

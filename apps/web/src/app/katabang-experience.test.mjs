@@ -19,6 +19,13 @@ for (const [surface, source] of [["floating assistant", floating], ["full page",
     assert.match(source, /sendQuestion\(pendingQuestion\)/);
     assert.match(source, /Try again/);
   });
+
+  test(`${surface} renders server-matched provider recommendations`, () => {
+    assert.match(source, /exchange\.answer\.providers/);
+    assert.match(source, /Recommended providers/);
+    assert.match(source, /provider\.completedJobs/);
+    assert.match(source, /provider\.href/);
+  });
 }
 
 test("floating thinking feedback respects reduced motion", () => {

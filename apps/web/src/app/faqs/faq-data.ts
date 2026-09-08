@@ -133,7 +133,7 @@ export const faqGroups: FaqGroup[] = [
         id: "katabang",
         question: "What is Katabang?",
         answer:
-          "Katabang is KAILA’s in-app assistant. It can guide you to the right screen, but it never chooses providers, sets prices, or changes your account for you.",
+          "Katabang is KAILA’s in-app assistant. It can guide you and show eligible providers for a requested service. You always choose who to hire; Katabang never sets prices or changes your account.",
       },
       {
         id: "notifications",

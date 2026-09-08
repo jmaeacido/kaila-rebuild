@@ -201,7 +201,7 @@ export default function FaqsPage() {
             <span className={styles.cardIcon} aria-hidden="true"><Sparkles /></span>
             <div>
               <h2>Ask Katabang</h2>
-              <p>Get quick guidance while you use KAILA. Katabang never chooses providers or prices.</p>
+              <p>Get quick guidance and find eligible providers. You always choose who to hire and what price to accept.</p>
             </div>
             <Link href="/home">Open Home to chat <ArrowRight aria-hidden="true" /></Link>
           </article>

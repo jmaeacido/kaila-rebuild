@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Support\KatabangAssistant;
+use App\Support\ProviderRecommendationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -13,7 +14,7 @@ use RuntimeException;
 
 class KatabangController
 {
-    public function __invoke(Request $request, KatabangAssistant $assistant): JsonResponse
+    public function __invoke(Request $request, KatabangAssistant $assistant, ProviderRecommendationService $recommendations): JsonResponse
     {
         abort_unless(config('phase_nine.enabled') && config('phase_nine.katabang'), 404);
         $data = $request->validate([
@@ -35,8 +36,19 @@ class KatabangController
             return response()->json(['message' => 'Katabang is temporarily unavailable. Please try again.'], 503);
         }
 
-        DB::table('assistant_interactions')->insert(['id' => (string) Str::uuid(), 'user_id' => $user->id, 'intent' => $result['intent'], 'input_redacted' => json_encode(['length' => Str::length($data['message']), 'turns' => count($data['conversation'] ?? [])], JSON_THROW_ON_ERROR), 'response_metadata' => json_encode(['action' => $result['action']['href'], 'engine' => 'groq-chat-completions', 'model' => config('services.katabang_ai.model'), 'response_id' => $result['response_id']], JSON_THROW_ON_ERROR), 'escalated' => $result['escalated'], 'created_at' => now(), 'updated_at' => now()]);
+        $providerRecommendations = $result['intent'] === 'provider_recommendation'
+            ? $recommendations->recommend($user, $result['service_query'], $data['message'])
+            : null;
+        if ($providerRecommendations !== null) {
+            $query = array_filter([
+                'categoryId' => $providerRecommendations['category']['id'] ?? null,
+                'areaId' => $providerRecommendations['area']['id'] ?? null,
+            ]);
+            $result['action']['href'] = '/providers'.($query === [] ? '' : '?'.http_build_query($query));
+        }
 
-        return response()->json(['data' => ['intent' => $result['intent'], 'answer' => $result['answer'], 'action' => $result['action'], 'disclaimer' => 'Katabang can make mistakes. Review important details before acting.']]);
+        DB::table('assistant_interactions')->insert(['id' => (string) Str::uuid(), 'user_id' => $user->id, 'intent' => $result['intent'], 'input_redacted' => json_encode(['length' => Str::length($data['message']), 'turns' => count($data['conversation'] ?? [])], JSON_THROW_ON_ERROR), 'response_metadata' => json_encode(['action' => $result['action']['href'], 'engine' => 'groq-chat-completions', 'model' => config('services.katabang_ai.model'), 'response_id' => $result['response_id'], 'recommendation_count' => $providerRecommendations['total'] ?? null], JSON_THROW_ON_ERROR), 'escalated' => $result['escalated'], 'created_at' => now(), 'updated_at' => now()]);
+
+        return response()->json(['data' => ['intent' => $result['intent'], 'answer' => $result['answer'], 'action' => $result['action'], 'providers' => $providerRecommendations, 'disclaimer' => 'Katabang can make mistakes. Review provider details before choosing.']]);
     }
 }

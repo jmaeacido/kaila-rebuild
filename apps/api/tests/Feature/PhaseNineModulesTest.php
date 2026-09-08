@@ -491,6 +491,7 @@ class PhaseNineModulesTest extends TestCase
             'choices' => [['message' => ['content' => json_encode([
                 'intent' => 'offers',
                 'answer' => 'Compare timing, reviews, scope, and price. The final choice is yours.',
+                'service_query' => null,
                 'action' => ['label' => 'View Jobs', 'href' => '/jobs'],
                 'escalated' => false,
             ], JSON_THROW_ON_ERROR)]]],
@@ -519,6 +520,7 @@ class PhaseNineModulesTest extends TestCase
             'choices' => [['message' => ['content' => json_encode([
                 'intent' => 'account',
                 'answer' => 'Open Account Settings, find Delete Account, and follow the confirmation steps.',
+                'service_query' => null,
                 'action' => ['label' => 'Account Settings', 'href' => '/account'],
                 'escalated' => false,
             ], JSON_THROW_ON_ERROR)]]],
@@ -549,6 +551,45 @@ class PhaseNineModulesTest extends TestCase
             ->assertServiceUnavailable();
         Http::assertNothingSent();
         $this->assertDatabaseCount('assistant_interactions', 0);
+    }
+
+    public function test_katabang_returns_matching_service_providers_from_server_data(): void
+    {
+        config(['services.katabang_ai.api_key' => 'test-key']);
+        Http::fake(['api.groq.com/*' => Http::response([
+            'id' => 'resp_provider_recommendation',
+            'choices' => [['message' => ['content' => json_encode([
+                'intent' => 'provider_recommendation',
+                'answer' => 'Here are plumbing providers who serve your area. Compare their profiles before choosing.',
+                'service_query' => 'Plumbing',
+                'action' => ['label' => 'View all plumbing providers', 'href' => '/providers'],
+                'escalated' => false,
+            ], JSON_THROW_ON_ERROR)]]],
+        ])]);
+        $area = Area::query()->create(['name' => 'Butuan City', 'type' => 'city', 'code' => 'BUT', 'is_active' => true]);
+        $otherArea = Area::query()->create(['name' => 'Davao City', 'type' => 'city', 'code' => 'DVO', 'is_active' => true]);
+        $plumbing = ServiceCategory::query()->create(['name' => 'Plumbing', 'slug' => 'plumbing', 'icon' => 'wrench', 'is_active' => true]);
+        $user = User::factory()->create();
+        ClientProfile::query()->create(['user_id' => $user->id, 'display_name' => 'Client', 'area_id' => $area->id]);
+        $matching = ProviderProfile::query()->create(['user_id' => User::factory()->create()->id, 'display_name' => 'Local Plumber', 'bio' => str_repeat('Local plumbing experience. ', 2), 'status' => 'active', 'rating' => 4.8]);
+        $matching->services()->attach($plumbing);
+        $matching->serviceAreas()->attach($area);
+        $outside = ProviderProfile::query()->create(['user_id' => User::factory()->create()->id, 'display_name' => 'Outside Plumber', 'bio' => str_repeat('Local plumbing experience. ', 2), 'status' => 'active']);
+        $outside->services()->attach($plumbing);
+        $outside->serviceAreas()->attach($otherArea);
+
+        $this->actingAs($user)->postJson('/api/v1/katabang', ['message' => 'Can you recommend a plumbing service provider?'])
+            ->assertOk()
+            ->assertJsonPath('data.intent', 'provider_recommendation')
+            ->assertJsonPath('data.providers.category.name', 'Plumbing')
+            ->assertJsonPath('data.providers.area.name', 'Butuan City')
+            ->assertJsonCount(1, 'data.providers.providers')
+            ->assertJsonPath('data.providers.providers.0.displayName', 'Local Plumber')
+            ->assertJsonPath('data.providers.providers.0.href', "/providers/{$matching->id}")
+            ->assertJsonPath('data.action.href', "/providers?categoryId={$plumbing->id}&areaId={$area->id}");
+
+        Http::assertSent(fn ($request) => str_contains((string) $request['messages'][0]['content'], 'provider_recommendation')
+            && $request['response_format']['json_schema']['schema']['properties']['service_query']['type'] === ['string', 'null']);
     }
 
     public function test_calls_fail_closed_without_turn_and_admin_analytics_suppresses_small_cohorts(): void
