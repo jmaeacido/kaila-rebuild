@@ -30,7 +30,14 @@ class DirectServiceRequestController extends Controller
     public function store(Request $request, ProviderProfile $providerProfile): JsonResponse
     {
         $client = $this->user($request);
-        abort_unless($providerProfile->status === 'active' && $providerProfile->user_id !== $client->id, 404);
+        abort_unless($providerProfile->status === 'active', 404);
+        if ($providerProfile->user_id === $client->id) {
+            return response()->json(['error' => [
+                'code' => 'SELF_SERVICE_REQUEST',
+                'message' => 'You cannot request service from your own provider profile.',
+                'fields' => (object) [],
+            ]], 422);
+        }
         $data = $request->validate([
             'title' => ['required', 'string', 'max:120'], 'description' => ['required', 'string', 'min:10', 'max:3000'],
             'categoryId' => ['required', 'integer', Rule::exists('provider_services', 'service_category_id')->where('provider_profile_id', $providerProfile->id)],

@@ -71,6 +71,8 @@ test("Public provider profile renders portfolio gallery and conversion CTA", () 
   assert.match(publicProfileSource, /ProviderServicesShowcase/);
   assert.match(publicProfileSource, /variant="embedded"/);
   assert.match(publicProfileSource, /Request Service/);
+  assert.match(publicProfileSource, /provider\.isOwnProfile/);
+  assert.match(publicProfileSource, /Manage Provider Profile/);
   assert.match(publicProfileSource, /mobileCtaBar/);
   assert.match(gallerySource, /Work photos/);
 });

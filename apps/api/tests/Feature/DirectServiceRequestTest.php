@@ -32,6 +32,23 @@ class DirectServiceRequestTest extends TestCase
         $this->actingAs(User::factory()->create())->getJson("/api/v1/jobs/{$jobId}")->assertNotFound();
     }
 
+    public function test_provider_receives_a_clear_error_when_requesting_their_own_service(): void
+    {
+        [, $providerUser, $profile, $category, $area] = $this->marketplace();
+
+        $this->actingAs($providerUser)
+            ->getJson("/api/v1/providers/{$profile->id}")
+            ->assertOk()
+            ->assertJsonPath('data.isOwnProfile', true);
+
+        $this->postJson("/api/v1/providers/{$profile->id}/direct-requests", $this->requestPayload($category, $area))
+            ->assertUnprocessable()
+            ->assertJsonPath('error.code', 'SELF_SERVICE_REQUEST')
+            ->assertJsonPath('error.message', 'You cannot request service from your own provider profile.');
+
+        $this->assertDatabaseCount('service_jobs', 0);
+    }
+
     public function test_matching_and_provider_reconciliation_never_expose_a_direct_request_to_another_provider(): void
     {
         [$client, $providerUser, $profile, $category, $area] = $this->marketplace();

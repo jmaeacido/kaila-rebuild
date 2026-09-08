@@ -178,6 +178,7 @@ class MarketplaceProfileController extends Controller
             'reviewCount' => $reputation !== null ? (int) $reputation->published_review_count : 0,
             'completedJobs' => $completedJobs, 'responseMinutes' => $profile->response_minutes,
             'memberSince' => $profile->created_at?->toDateString(), 'verified' => $profile->credentials->isNotEmpty(),
+            'isOwnProfile' => $viewer?->id === $profile->user_id,
             'services' => $profile->services, 'serviceAreas' => $profile->serviceAreas, 'availability' => $profile->relationLoaded('availability') ? $profile->availability : [],
             'availabilityStatus' => $profile->relationLoaded('availability') && $profile->availability->contains('is_available', true) ? 'available' : 'unavailable',
             'offersAtShop' => $profile->offers_at_shop, 'shopName' => $profile->offers_at_shop ? $profile->shop_name : null,

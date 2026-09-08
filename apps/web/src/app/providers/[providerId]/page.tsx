@@ -35,6 +35,7 @@ type Provider = {
   reviewCount: number;
   completedJobs: number;
   verified: boolean;
+  isOwnProfile: boolean;
   services: Item[];
   serviceAreas: Item[];
   availability: { id: number; day_of_week: number; starts_at: string; ends_at: string }[];
@@ -111,8 +112,10 @@ export default function ProviderProfilePage() {
 
   const requestHref = useMemo(() => {
     if (!provider) return "/post-job";
+    if (provider.isOwnProfile) return "/provider-profile";
     return `/post-job?providerId=${provider.id}&categoryId=${provider.services[0]?.id || ""}`;
   }, [provider]);
+  const profileActionLabel = provider?.isOwnProfile ? "Manage Provider Profile" : "Request Service";
 
   if (error) {
     return (
@@ -206,7 +209,7 @@ export default function ProviderProfilePage() {
             <ProviderServicesShowcase services={provider.services} variant="embedded" />
 
             <Link className={`${styles.profileLink} ${styles.heroCta}`} href={requestHref}>
-              Request Service
+              {profileActionLabel}
             </Link>
           </section>
 
@@ -316,7 +319,7 @@ export default function ProviderProfilePage() {
                 ) : null}
               </ul>
               <Link className={styles.profileLink} href={requestHref}>
-                Request Service
+                {profileActionLabel}
               </Link>
             </div>
           </div>
@@ -325,7 +328,7 @@ export default function ProviderProfilePage() {
 
       <div className={styles.mobileCtaBar}>
         <Link className={styles.profileLink} href={requestHref}>
-          Request Service
+          {profileActionLabel}
         </Link>
       </div>
     </main>

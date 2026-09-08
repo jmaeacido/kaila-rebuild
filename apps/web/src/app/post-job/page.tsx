@@ -33,10 +33,21 @@ type Reference = {
 type Category = Reference & ServiceCategory;
 type Step = 1 | 2 | 3;
 type LocationStatus = "idle" | "locating" | "resolving" | "pinned" | "error";
+type DirectProvider = { id: number; displayName: string; services: Item[] };
+type Item = { id: number; name: string };
+type ApiError = { error?: { message?: string; fields?: Record<string, string[]> }; message?: string };
 const stepLabels = ["Job details", "Location", "Review & send"] as const;
 
+async function responseError(response: Response, fallback: string): Promise<string> {
+  const body = (await response.json().catch(() => null)) as ApiError | null;
+  const fieldMessage = body?.error?.fields
+    ? Object.values(body.error.fields).flat().find((value) => value.trim() !== "")
+    : undefined;
+  return fieldMessage || body?.error?.message || body?.message || fallback;
+}
+
 export default function PostJobPage() {
-  const [directProvider, setDirectProvider] = useState<{ id: number; displayName: string } | null>(null);
+  const [directProvider, setDirectProvider] = useState<DirectProvider | null>(null);
   const [createdJobId, setCreatedJobId] = useState<string | null>(null);
   const [step, setStep] = useState<Step>(1);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -93,17 +104,23 @@ export default function PostJobPage() {
         }
         const requestedCategory = new URLSearchParams(window.location.search).get("categoryId");
         const requestedProvider = new URLSearchParams(window.location.search).get("providerId");
-        if (
+        if (requestedProvider) {
+          const providerResponse = await fetch(`/api/v1/providers/${requestedProvider}`, { cache: "no-store" });
+          if (!providerResponse.ok) throw new Error();
+          const providerBody = (await providerResponse.json()) as { data: DirectProvider };
+          setDirectProvider(providerBody.data);
+          const requestedService = providerBody.data.services.find(
+            (service) => String(service.id) === requestedCategory,
+          );
+          setForm((current) => ({
+            ...current,
+            categoryId: String(requestedService?.id ?? providerBody.data.services[0]?.id ?? ""),
+          }));
+        } else if (
           requestedCategory &&
           body.data.categories.some((category) => String(category.id) === requestedCategory)
         ) {
           setForm((current) => ({ ...current, categoryId: requestedCategory }));
-        }
-        if (requestedProvider) {
-          const providerResponse = await fetch(`/api/v1/providers/${requestedProvider}`, { cache: "no-store" });
-          if (!providerResponse.ok) throw new Error();
-          const providerBody = (await providerResponse.json()) as { data: { id: number; displayName: string } };
-          setDirectProvider(providerBody.data);
         }
         setStatus("ready");
       })
@@ -264,7 +281,9 @@ export default function PostJobPage() {
         headers: { "Content-Type": "application/json", "Idempotency-Key": createKey.current },
         body: JSON.stringify(payload),
       });
-      if (!created.ok) throw new Error();
+      if (!created.ok) {
+        throw new Error(await responseError(created, "Your job could not be posted. Check the details and try again."));
+      }
       const body = (await created.json()) as { data: { id: string } };
       setCreatedJobId(body.data.id);
       for (const file of attachments) {
@@ -280,7 +299,9 @@ export default function PostJobPage() {
       }
       if (!directProvider) {
         const posted = await fetch(`/api/v1/jobs/${body.data.id}/post`, { method: "POST" });
-        if (!posted.ok) throw new Error();
+        if (!posted.ok) {
+          throw new Error(await responseError(posted, "Your job was saved as a draft but could not be posted."));
+        }
       }
       setStatus("success");
     } catch (error) {
@@ -288,7 +309,9 @@ export default function PostJobPage() {
       setMessage(
         error instanceof Error && error.message === "ATTACHMENT_UPLOAD_FAILED"
           ? "A photo or video could not be uploaded, so your job was kept as a draft. Check your connection and try again."
-          : "Your job could not be posted. Your details are still here—check your connection and try again.",
+          : error instanceof Error && error.message
+            ? error.message
+            : "Your job could not be posted. Your details are still here—check your connection and try again.",
       );
     }
   }
@@ -344,7 +367,9 @@ export default function PostJobPage() {
               <label>
                 Service
                 <CategorySelect
-                  categories={categories}
+                  categories={directProvider
+                    ? categories.filter((category) => directProvider.services.some((service) => service.id === category.id))
+                    : categories}
                   value={form.categoryId}
                   onChange={(value) => {
                     field("categoryId", value);

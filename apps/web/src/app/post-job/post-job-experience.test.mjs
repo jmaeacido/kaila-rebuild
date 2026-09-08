@@ -38,4 +38,7 @@ test("a provider selected from discovery receives a private request only", () =>
   assert.match(page, /directProvider \? `\/api\/v1\/providers\/\$\{directProvider\.id\}\/direct-requests` : "\/api\/v1\/jobs"/);
   assert.match(page, /if \(!directProvider\) \{/);
   assert.match(page, /`\$\{directProvider\.displayName\} received your private request\./);
+  assert.match(page, /directProvider\.services\.some/);
+  assert.match(page, /await responseError\(created/);
+  assert.match(page, /body\?\.error\?\.fields/);
 });
