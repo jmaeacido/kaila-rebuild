@@ -18,8 +18,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { notifyAdminAuthenticated, notifyAdminSignedOut } from "./admin-session-events";
 import { useAdminRealtimeRefresh } from "./admin-realtime";
-import styles from "./page.module.css";
+import authStyles from "./auth.module.css";
+import styles from "./review.module.css";
 import { revokeAdminPushDevice } from "./components/admin-push-runtime";
+import { AdminPageHeader, AdminSkeletons } from "../components/admin-page";
+import { Button } from "@kaila/ui";
 
 type Provider = {
   id: number;
@@ -122,6 +125,7 @@ export default function AdminHome() {
   const [reviewMessage, setReviewMessage] = useState("");
   const [reviewError, setReviewError] = useState("");
   const [rejectionTarget, setRejectionTarget] = useState<RejectionTarget | null>(null);
+  const [focusQueue, setFocusQueue] = useState<"files" | "providers" | "credentials">("files");
 
   const requestQueue = useCallback(async (): Promise<QueueResult> => {
     const response = await fetch("/api/v1/admin/marketplace/review-queue", {
@@ -314,9 +318,9 @@ export default function AdminHome() {
 
   if (state === "signed-out") {
     return (
-      <main className={styles.authPage}>
-        <section className={styles.authCard}>
-          <div className={styles.authIcon}>
+      <main className={authStyles.authPage}>
+        <section className={authStyles.authCard}>
+          <div className={authStyles.authIcon}>
             <Image
               src="/brand/kaila-bull-app-icon-v2.png"
               alt=""
@@ -325,12 +329,12 @@ export default function AdminHome() {
               priority
             />
           </div>
-          <p className={styles.eyebrow}>KAILA ADMINISTRATION</p>
+          <p className={authStyles.eyebrow}>KAILA ADMINISTRATION</p>
           <h1>Sign in to review</h1>
-          <p className={styles.supporting}>
+          <p className={authStyles.supporting}>
             Use an authorized administrator account to continue.
           </p>
-          <form className={styles.form} onSubmit={(event) => void signIn(event)}>
+          <form className={authStyles.form} onSubmit={(event) => void signIn(event)}>
             <label>
               Email
               <input
@@ -344,7 +348,7 @@ export default function AdminHome() {
             </label>
             <label>
               Password
-              <span className={styles.passwordControl}>
+              <span className={authStyles.passwordControl}>
                 <input
                   autoComplete="current-password"
                   onChange={(event) => setPassword(event.target.value)}
@@ -368,25 +372,17 @@ export default function AdminHome() {
               </span>
             </label>
             {loginMessage && (
-              <p className={styles.formError} role="alert">
+              <p className={authStyles.formError} role="alert">
                 {loginMessage}
               </p>
             )}
-            <Link className={styles.textLink} href="/forgot-password">
+            <Link className={authStyles.textLink} href="/forgot-password">
               Forgot your password?
             </Link>
-            <button
-              className={styles.primaryButton}
-              disabled={signingIn}
-              type="submit"
-            >
-              {signingIn ? (
-                <RefreshCw aria-hidden="true" className={styles.spinner} />
-              ) : (
-                <LogIn aria-hidden="true" />
-              )}
+            <Button isLoading={signingIn} type="submit">
+              <LogIn aria-hidden="true" />
               {signingIn ? "Signing in…" : "Sign in"}
-            </button>
+            </Button>
           </form>
         </section>
       </main>
@@ -395,30 +391,23 @@ export default function AdminHome() {
 
   return (
     <main className={styles.page}>
-      <header>
-        <div>
-          <p>KAILA ADMINISTRATION</p>
-          <h1>Marketplace review</h1>
-        </div>
-        <div className={styles.headerActions}>
-          <button disabled={loggingOut} onClick={() => void load()}>
-            <RefreshCw aria-hidden="true" />
-            Refresh
-          </button>
-          <button
-            className={styles.logoutButton}
-            disabled={loggingOut}
-            onClick={() => void signOut()}
-          >
-            {loggingOut ? (
-              <RefreshCw aria-hidden="true" className={styles.spinner} />
-            ) : (
+      <AdminPageHeader
+        actions={
+          <>
+            <Button disabled={loggingOut} onClick={() => void load()} type="button" variant="secondary">
+              <RefreshCw aria-hidden="true" />
+              Refresh
+            </Button>
+            <Button disabled={loggingOut} isLoading={loggingOut} onClick={() => void signOut()} type="button" variant="tertiary">
               <LogOut aria-hidden="true" />
-            )}
-            {loggingOut ? "Signing out…" : "Sign out"}
-          </button>
-        </div>
-      </header>
+              {loggingOut ? "Signing out…" : "Sign out"}
+            </Button>
+          </>
+        }
+        description="Approve or reject files, provider profiles, and credentials waiting on staff review."
+        eyebrow="KAILA OPERATIONS"
+        title="Marketplace review"
+      />
       {logoutMessage && (
         <div className={styles.error} role="alert">
           {logoutMessage}
@@ -435,9 +424,7 @@ export default function AdminHome() {
           try again.
         </div>
       )}
-      {state === "loading" && (
-        <div className={styles.loading}>Loading review queue…</div>
-      )}
+      {state === "loading" && <AdminSkeletons count={4} label="Loading review queue" />}
       {reviewMessage && (
         <div className={styles.success} role="status">
           {reviewMessage}
@@ -449,7 +436,33 @@ export default function AdminHome() {
         </div>
       )}
       {state === "ready" && (
-        <div className={styles.columns}>
+        <>
+          <div aria-label="Review queues" className={styles.queueTabs} role="tablist">
+            {(
+              [
+                { id: "files" as const, label: "Files", count: queue.assets.length },
+                { id: "providers" as const, label: "Providers", count: queue.providers.length },
+                { id: "credentials" as const, label: "Credentials", count: queue.credentials.length },
+              ] as const
+            ).map((tab) => (
+              <button
+                aria-controls={`review-panel-${tab.id}`}
+                aria-selected={focusQueue === tab.id}
+                className={focusQueue === tab.id ? styles.queueTabActive : undefined}
+                id={`review-tab-${tab.id}`}
+                key={tab.id}
+                onClick={() => setFocusQueue(tab.id)}
+                role="tab"
+                tabIndex={focusQueue === tab.id ? 0 : -1}
+                type="button"
+              >
+                {tab.label}
+                <small>{tab.count}</small>
+              </button>
+            ))}
+          </div>
+        <div className={styles.columns} data-focus={focusQueue}>
+          <div aria-labelledby="review-tab-files" className={styles.focusPane} hidden={focusQueue !== "files"} id="review-panel-files" role="tabpanel">
           <Queue
             empty="No files need review."
             icon={<ShieldCheck />}
@@ -550,6 +563,8 @@ export default function AdminHome() {
               </article>
             ))}
           </Queue>
+          </div>
+          <div aria-labelledby="review-tab-providers" className={styles.focusPane} hidden={focusQueue !== "providers"} id="review-panel-providers" role="tabpanel">
           <Queue
             empty="No provider profiles need review."
             icon={<ShieldCheck />}
@@ -613,6 +628,8 @@ export default function AdminHome() {
               </article>
             ))}
           </Queue>
+          </div>
+          <div aria-labelledby="review-tab-credentials" className={styles.focusPane} hidden={focusQueue !== "credentials"} id="review-panel-credentials" role="tabpanel">
           <Queue
             empty="No credentials need review."
             icon={<Tags />}
@@ -653,7 +670,9 @@ export default function AdminHome() {
               </article>
             ))}
           </Queue>
+          </div>
         </div>
+        </>
       )}
       <ReviewRejectionDialog
         busy={rejectionTarget !== null && String(rejectionTarget.id) === reviewingId}
@@ -691,13 +710,19 @@ function Queue({
       <small className={styles.queueCount}>{count}</small>
     </h2>
   );
+  const emptyState = (
+    <div className={styles.emptyState}>
+      <span aria-hidden="true">{icon}</span>
+      <p>{empty}</p>
+    </div>
+  );
 
   if (history) {
     return (
       <details className={`${styles.queueSection} ${styles.historyQueue}`}>
         <summary>{heading}</summary>
         <div className={styles.queueContent}>
-          {count === 0 ? <p className={styles.empty}>{empty}</p> : children}
+          {count === 0 ? emptyState : children}
         </div>
       </details>
     );
@@ -707,7 +732,7 @@ function Queue({
     <section className={styles.queueSection}>
       {heading}
       {count === 0 ? (
-        <p className={styles.empty}>{empty}</p>
+        emptyState
       ) : (
         children
       )}

@@ -1,0 +1,160 @@
+.banner {
+  background: var(--color-danger-surface);
+  border-radius: var(--radius-card);
+  color: var(--color-danger);
+  margin-bottom: var(--spacing-16);
+  padding: var(--spacing-16);
+}
+
+.panel {
+  display: grid;
+  gap: var(--spacing-16);
+  min-width: 0;
+}
+
+.panelHeader {
+  align-items: center;
+  display: flex;
+  gap: var(--spacing-8);
+}
+
+.panelHeader h2 {
+  color: var(--color-ink);
+  font-size: var(--font-section-size);
+}
+
+.panelHeader svg {
+  color: var(--color-primary);
+  height: var(--spacing-20);
+  width: var(--spacing-20);
+}
+
+.list {
+  display: grid;
+  gap: var(--spacing-12);
+}
+
+.card {
+  background: color-mix(in srgb, var(--color-background) 70%, var(--color-surface));
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-neu-raised-sm);
+  display: grid;
+  gap: var(--spacing-8);
+  padding: var(--spacing-16);
+}
+
+.cardActive {
+  outline: 2px solid color-mix(in srgb, var(--color-primary) 45%, transparent);
+}
+
+.card h3 {
+  color: var(--color-ink);
+  font-size: var(--font-card-title-size);
+  text-transform: capitalize;
+}
+
+.card p {
+  color: var(--color-text);
+  line-height: var(--line-height-body);
+}
+
+.card small {
+  color: var(--color-text-secondary);
+  font-size: var(--font-small-size);
+  text-transform: capitalize;
+}
+
+.detail {
+  display: grid;
+  gap: var(--spacing-16);
+}
+
+.detailIntro h3 {
+  color: var(--color-ink);
+  font-size: var(--font-card-title-size);
+  margin-bottom: var(--spacing-8);
+  text-transform: capitalize;
+}
+
+.detailIntro p {
+  color: var(--color-text);
+  line-height: var(--line-height-body);
+}
+
+.summary {
+  display: grid;
+  gap: var(--spacing-8);
+}
+
+.summaryRow {
+  display: grid;
+  gap: var(--spacing-4);
+  grid-template-columns: minmax(7rem, 10rem) minmax(0, 1fr);
+  padding: var(--spacing-8) 0;
+}
+
+.summaryRow dt {
+  color: var(--color-text-secondary);
+  font-size: var(--font-small-size);
+  font-weight: var(--font-weight-semibold);
+  text-transform: capitalize;
+}
+
+.summaryRow dd {
+  color: var(--color-ink);
+  line-height: var(--line-height-body);
+  overflow-wrap: anywhere;
+}
+
+.history {
+  display: grid;
+  gap: var(--spacing-12);
+}
+
+.historyItem {
+  background: color-mix(in srgb, var(--color-background) 65%, var(--color-surface));
+  border-radius: var(--radius-card);
+  display: grid;
+  gap: var(--spacing-4);
+  padding: var(--spacing-12) var(--spacing-16);
+}
+
+.historyItem strong {
+  color: var(--color-ink);
+  text-transform: capitalize;
+}
+
+.historyItem p,
+.historyItem small {
+  color: var(--color-text-secondary);
+  font-size: var(--font-small-size);
+}
+
+.sectionLabel {
+  color: var(--color-text-secondary);
+  font-size: var(--font-caption-size);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-8);
+}
+
+.placeholder {
+  align-content: start;
+  color: var(--color-text-secondary);
+  display: grid;
+  gap: var(--spacing-8);
+  justify-items: center;
+  padding: var(--spacing-48) var(--spacing-16);
+  text-align: center;
+}
+
+.placeholder h3 {
+  color: var(--color-ink);
+  font-size: var(--font-card-title-size);
+}

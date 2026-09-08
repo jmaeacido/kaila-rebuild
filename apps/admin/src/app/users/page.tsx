@@ -17,8 +17,10 @@ import {
   Users,
   X,
 } from "lucide-react";
+import { Button } from "@kaila/ui";
 import { prepareCsrf } from "../auth-client";
-import { OperationsHeader } from "../components/operations-header";
+import { AdminDialog } from "../../components/admin-dialog";
+import { AdminPageHeader } from "../../components/admin-page";
 import styles from "./page.module.css";
 
 type AccountStatus = "active" | "deactivated" | "restricted" | "deleted";
@@ -57,6 +59,9 @@ type Directory = {
   viewer: { id: string; staffRole: StaffRole | null };
   pagination: { currentPage: number; lastPage: number; total: number };
 };
+type PendingDanger =
+  | { kind: "delete"; account: Account }
+  | { kind: "move-deleted"; account: Account };
 
 const roleLabel: Record<StaffRole, string> = {
   super_admin: "Super admin",
@@ -70,7 +75,7 @@ const boardColumns: AccountStatus[] = ["active", "deactivated", "restricted", "d
 export default function UsersDirectoryPage() {
   const [data, setData] = useState<Directory | null>(null);
   const [state, setState] = useState<"loading" | "ready" | "error">("loading");
-  const [view, setView] = useState<"table" | "board">("table");
+  const [view, setView] = useState<"table" | "board">("board");
   const [query, setQuery] = useState("");
   const [role, setRole] = useState<"all" | StaffRole>("all");
   const [status, setStatus] = useState<"all" | AccountStatus>("all");
@@ -81,6 +86,8 @@ export default function UsersDirectoryPage() {
   const [dropTarget, setDropTarget] = useState<AccountStatus | null>(null);
   const [editing, setEditing] = useState<Account | null>(null);
   const [savingEdit, setSavingEdit] = useState(false);
+  const [pendingDanger, setPendingDanger] = useState<PendingDanger | null>(null);
+  const [confirmBusy, setConfirmBusy] = useState(false);
   const [form, setForm] = useState({ name: "", email: "", password: "", accountType: "user" as AccountType });
   const [editForm, setEditForm] = useState({ name: "", email: "", password: "", accountType: "user" as AccountType });
 
@@ -206,24 +213,47 @@ export default function UsersDirectoryPage() {
   }
 
   async function runAction(account: Account, action: "activate" | "deactivate" | "delete") {
-    if (action === "delete" && !window.confirm(`Delete ${account.name}? They will no longer be able to sign in.`)) return;
+    if (action === "delete") {
+      setPendingDanger({ kind: "delete", account });
+      return;
+    }
+
     setBusyId(account.id);
     setNotice("");
     try {
       const token = await prepareCsrf();
-      const response = await fetch(
-        action === "delete"
-          ? `/api/v1/admin/marketplace/users/${account.id}`
-          : `/api/v1/admin/marketplace/users/${account.id}/${action}`,
-        {
-          method: action === "delete" ? "DELETE" : "POST",
-          credentials: "include",
-          headers: {
-            Accept: "application/json",
-            ...(token ? { "X-XSRF-TOKEN": token } : {}),
-          },
+      const response = await fetch(`/api/v1/admin/marketplace/users/${account.id}/${action}`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          Accept: "application/json",
+          ...(token ? { "X-XSRF-TOKEN": token } : {}),
         },
-      );
+      });
+      const body = (await response.json()) as { error?: { message?: string } };
+      if (!response.ok) throw new Error(body.error?.message ?? "Action failed.");
+      setNotice(`${account.name} updated.`);
+      await load();
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Action failed.");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function deleteAccount(account: Account) {
+    setBusyId(account.id);
+    setNotice("");
+    try {
+      const token = await prepareCsrf();
+      const response = await fetch(`/api/v1/admin/marketplace/users/${account.id}`, {
+        method: "DELETE",
+        credentials: "include",
+        headers: {
+          Accept: "application/json",
+          ...(token ? { "X-XSRF-TOKEN": token } : {}),
+        },
+      });
       const body = (await response.json()) as { error?: { message?: string } };
       if (!response.ok) throw new Error(body.error?.message ?? "Action failed.");
       setNotice(`${account.name} updated.`);
@@ -251,10 +281,15 @@ export default function UsersDirectoryPage() {
       );
       return;
     }
-    if (nextStatus === "deleted" && !window.confirm(`Delete ${account.name}? They will no longer be able to sign in.`)) {
+    if (nextStatus === "deleted") {
+      setPendingDanger({ kind: "move-deleted", account });
       return;
     }
 
+    await applyStatusMove(account, nextStatus);
+  }
+
+  async function applyStatusMove(account: Account, nextStatus: AccountStatus) {
     const previous = account.accountStatus;
     setData((current) => {
       if (!current) return current;
@@ -310,6 +345,21 @@ export default function UsersDirectoryPage() {
     }
   }
 
+  async function confirmDangerAction() {
+    if (!pendingDanger) return;
+    setConfirmBusy(true);
+    try {
+      if (pendingDanger.kind === "delete") {
+        await deleteAccount(pendingDanger.account);
+      } else {
+        await applyStatusMove(pendingDanger.account, "deleted");
+      }
+      setPendingDanger(null);
+    } finally {
+      setConfirmBusy(false);
+    }
+  }
+
   function renderActions(account: Account) {
     return (
       <div className={styles.actions}>
@@ -342,7 +392,7 @@ export default function UsersDirectoryPage() {
 
   return (
     <main className={styles.page}>
-      <OperationsHeader
+      <AdminPageHeader
         eyebrow="ACCOUNT DIRECTORY"
         title="People"
         description="View every KAILA account. Super admins and admins can edit accounts and move board cards between statuses."
@@ -354,36 +404,104 @@ export default function UsersDirectoryPage() {
             <button type="button" aria-pressed={view === "board"} onClick={() => setView("board")}>
               <Columns3 /> Board
             </button>
-            <button type="button" onClick={() => void load()} disabled={state === "loading"}>
+            <Button type="button" variant="secondary" onClick={() => void load()} disabled={state === "loading"}>
               <RefreshCw className={state === "loading" ? styles.spinner : ""} /> Refresh
-            </button>
+            </Button>
           </>
         }
       />
 
       <section className={styles.stats} aria-label="Directory summary">
-        <article><span><Users /></span><div><strong>{data?.summary.total ?? "—"}</strong><p>Total accounts</p></div></article>
-        <article><span><Shield /></span><div><strong>{data?.summary.staff ?? "—"}</strong><p>Staff seats</p></div></article>
-        <article className={styles.completed}><span><UserCheck /></span><div><strong>{data?.summary.active ?? "—"}</strong><p>Active</p></div></article>
-        <article className={styles.blocked}><span><UserMinus /></span><div><strong>{data?.summary.deactivated ?? "—"}</strong><p>Deactivated</p></div></article>
+        <article>
+          <span>
+            <Users />
+          </span>
+          <div>
+            <strong>{data?.summary.total ?? "—"}</strong>
+            <p>Total accounts</p>
+          </div>
+        </article>
+        <article>
+          <span>
+            <Shield />
+          </span>
+          <div>
+            <strong>{data?.summary.staff ?? "—"}</strong>
+            <p>Staff seats</p>
+          </div>
+        </article>
+        <article className={styles.completed}>
+          <span>
+            <UserCheck />
+          </span>
+          <div>
+            <strong>{data?.summary.active ?? "—"}</strong>
+            <p>Active</p>
+          </div>
+        </article>
+        <article className={styles.blocked}>
+          <span>
+            <UserMinus />
+          </span>
+          <div>
+            <strong>{data?.summary.deactivated ?? "—"}</strong>
+            <p>Deactivated</p>
+          </div>
+        </article>
       </section>
 
       {createOptions.length > 0 && (
         <section className={styles.createCard} aria-label="Create account">
           <header>
-            <h2><Plus /> Create account</h2>
+            <h2>
+              <Plus /> Create account
+            </h2>
             <p>Admins can create staff and users. Super admins can also create admins.</p>
           </header>
           <form className={styles.createForm} onSubmit={(event) => void createAccount(event)}>
-            <label>Name<input required value={form.name} onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} /></label>
-            <label>Email<input required type="email" value={form.email} onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))} /></label>
-            <label>Temporary password<input required type="password" minLength={8} value={form.password} onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))} /></label>
-            <label>Account type
-              <select value={resolvedCreateType} onChange={(event) => setForm((current) => ({ ...current, accountType: event.target.value as AccountType }))}>
-                {createOptions.map((option) => <option key={option} value={option}>{roleLabel[option]}</option>)}
+            <label>
+              Name
+              <input
+                required
+                value={form.name}
+                onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
+              />
+            </label>
+            <label>
+              Email
+              <input
+                required
+                type="email"
+                value={form.email}
+                onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))}
+              />
+            </label>
+            <label>
+              Temporary password
+              <input
+                required
+                type="password"
+                minLength={8}
+                value={form.password}
+                onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))}
+              />
+            </label>
+            <label>
+              Account type
+              <select
+                value={resolvedCreateType}
+                onChange={(event) => setForm((current) => ({ ...current, accountType: event.target.value as AccountType }))}
+              >
+                {createOptions.map((option) => (
+                  <option key={option} value={option}>
+                    {roleLabel[option]}
+                  </option>
+                ))}
               </select>
             </label>
-            <button type="submit" disabled={creating}>{creating ? "Creating…" : "Create account"}</button>
+            <Button type="submit" disabled={creating} isLoading={creating}>
+              {creating ? "Creating…" : "Create account"}
+            </Button>
           </form>
         </section>
       )}
@@ -411,7 +529,11 @@ export default function UsersDirectoryPage() {
               <option value="staff">Staff</option>
               <option value="user">User</option>
             </select>
-            <select aria-label="Filter by status" value={status} onChange={(event) => setStatus(event.target.value as typeof status)}>
+            <select
+              aria-label="Filter by status"
+              value={status}
+              onChange={(event) => setStatus(event.target.value as typeof status)}
+            >
               <option value="all">All statuses</option>
               <option value="active">Active</option>
               <option value="deactivated">Deactivated</option>
@@ -421,20 +543,36 @@ export default function UsersDirectoryPage() {
           </div>
         </header>
 
-        {notice && <p className={styles.notice} role="status">{notice}</p>}
-        {state === "loading" && <div className={styles.skeletons} aria-label="Loading accounts"><span /><span /><span /></div>}
+        {notice && (
+          <p className={styles.notice} role="status">
+            {notice}
+          </p>
+        )}
+        {state === "loading" && (
+          <div className={styles.skeletons} aria-label="Loading accounts">
+            <span />
+            <span />
+            <span />
+          </div>
+        )}
         {state === "error" && (
           <div className={styles.error} role="alert">
             <AlertCircle />
             <div>
               <h3>Directory unavailable</h3>
               <p>Check your staff session and try again.</p>
-              <button type="button" onClick={() => void load()}>Try again</button>
+              <Button type="button" variant="secondary" onClick={() => void load()}>
+                Try again
+              </Button>
             </div>
           </div>
         )}
         {state === "ready" && data?.items.length === 0 && (
-          <div className={styles.empty}><Users /><h3>No matching accounts</h3><p>Adjust filters or create a new account.</p></div>
+          <div className={styles.empty}>
+            <Users />
+            <h3>No matching accounts</h3>
+            <p>Adjust filters or create a new account.</p>
+          </div>
         )}
 
         {state === "ready" && data && data.items.length > 0 && view === "table" && (
@@ -454,11 +592,18 @@ export default function UsersDirectoryPage() {
                 {data.items.map((account) => (
                   <tr key={account.id}>
                     <td>
-                      <strong>{account.name}{account.isSelf ? " (you)" : ""}</strong>
+                      <strong>
+                        {account.name}
+                        {account.isSelf ? " (you)" : ""}
+                      </strong>
                       <span>{account.email}</span>
                     </td>
-                    <td><span className={styles.roleBadge}>{roleLabel[account.staffRole]}</span></td>
-                    <td><span className={statusClass(account.accountStatus, styles)}>{account.accountStatus}</span></td>
+                    <td>
+                      <span className={styles.roleBadge}>{roleLabel[account.staffRole]}</span>
+                    </td>
+                    <td>
+                      <span className={statusClass(account.accountStatus, styles)}>{account.accountStatus}</span>
+                    </td>
                     <td className={styles.dateCell} title={formatExactDate(account.createdAt)}>
                       {formatDate(account.createdAt)}
                     </td>
@@ -493,7 +638,8 @@ export default function UsersDirectoryPage() {
                   }}
                   onDrop={(event) => {
                     event.preventDefault();
-                    const accountId = event.dataTransfer.getData("text/kaila-account-id") || event.dataTransfer.getData("text/plain");
+                    const accountId =
+                      event.dataTransfer.getData("text/kaila-account-id") || event.dataTransfer.getData("text/plain");
                     const account = data.items.find((item) => item.id === accountId);
                     setDropTarget(null);
                     setDraggingId(null);
@@ -569,24 +715,74 @@ export default function UsersDirectoryPage() {
               </button>
             </header>
             <form className={styles.createForm} onSubmit={(event) => void saveEdit(event)}>
-              <label>Name<input required value={editForm.name} onChange={(event) => setEditForm((current) => ({ ...current, name: event.target.value }))} /></label>
-              <label>Email<input required type="email" value={editForm.email} onChange={(event) => setEditForm((current) => ({ ...current, email: event.target.value }))} /></label>
-              <label>New password <span className={styles.muted}>(optional)</span>
-                <input type="password" minLength={8} value={editForm.password} placeholder="Leave blank to keep" onChange={(event) => setEditForm((current) => ({ ...current, password: event.target.value }))} />
+              <label>
+                Name
+                <input
+                  required
+                  value={editForm.name}
+                  onChange={(event) => setEditForm((current) => ({ ...current, name: event.target.value }))}
+                />
               </label>
-              <label>Account type
-                <select value={editForm.accountType} onChange={(event) => setEditForm((current) => ({ ...current, accountType: event.target.value as AccountType }))}>
-                  {editOptions.map((option) => <option key={option} value={option}>{roleLabel[option]}</option>)}
+              <label>
+                Email
+                <input
+                  required
+                  type="email"
+                  value={editForm.email}
+                  onChange={(event) => setEditForm((current) => ({ ...current, email: event.target.value }))}
+                />
+              </label>
+              <label>
+                New password <span className={styles.muted}>(optional)</span>
+                <input
+                  type="password"
+                  minLength={8}
+                  value={editForm.password}
+                  placeholder="Leave blank to keep"
+                  onChange={(event) => setEditForm((current) => ({ ...current, password: event.target.value }))}
+                />
+              </label>
+              <label>
+                Account type
+                <select
+                  value={editForm.accountType}
+                  onChange={(event) =>
+                    setEditForm((current) => ({ ...current, accountType: event.target.value as AccountType }))
+                  }
+                >
+                  {editOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {roleLabel[option]}
+                    </option>
+                  ))}
                 </select>
               </label>
               <div className={styles.dialogActions}>
-                <button type="button" onClick={() => setEditing(null)}>Cancel</button>
-                <button type="submit" disabled={savingEdit}>{savingEdit ? "Saving…" : "Save changes"}</button>
+                <Button type="button" variant="secondary" onClick={() => setEditing(null)}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={savingEdit} isLoading={savingEdit}>
+                  {savingEdit ? "Saving…" : "Save changes"}
+                </Button>
               </div>
             </form>
           </section>
         </div>
       ) : null}
+
+      <AdminDialog
+        open={pendingDanger !== null}
+        eyebrow="Dangerous action"
+        title={pendingDanger ? `Delete ${pendingDanger.account.name}?` : "Delete account?"}
+        description="They will no longer be able to sign in. This status change should only be used when the account must be removed from active use."
+        confirmLabel="Delete account"
+        confirmVariant="danger"
+        busy={confirmBusy}
+        onClose={() => {
+          if (!confirmBusy) setPendingDanger(null);
+        }}
+        onConfirm={() => void confirmDangerAction()}
+      />
     </main>
   );
 }

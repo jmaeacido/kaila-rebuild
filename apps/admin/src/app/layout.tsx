@@ -1,9 +1,15 @@
 import type { Metadata, Viewport } from "next";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import { AdminShellNav } from "./components/admin-shell-nav";
 import { AdminMaintenanceBanner } from "./components/admin-maintenance-banner";
-import { AppearanceSwitcher } from "./components/appearance-switcher";
 import { AdminPushRuntime } from "./components/admin-push-runtime";
+
+const inter = Inter({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-inter",
+});
 
 const appearanceScript = `(() => {
   try {
@@ -41,7 +47,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html className={inter.variable} lang="en" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: appearanceScript }} />
       </head>
@@ -50,7 +56,6 @@ export default function RootLayout({
         <AdminShellNav />
         <AdminMaintenanceBanner />
         {children}
-        <AppearanceSwitcher />
       </body>
     </html>
   );

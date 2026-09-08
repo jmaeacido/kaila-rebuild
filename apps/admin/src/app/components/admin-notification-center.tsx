@@ -139,6 +139,15 @@ export function AdminNotificationCenter() {
     return () => window.clearTimeout(timer);
   }, [toast]);
 
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
+
   const openNotification = async (notification: AdminNotification) => {
     setOpen(false);
     setToast(null);

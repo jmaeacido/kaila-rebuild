@@ -3,9 +3,10 @@
 import { FormEvent, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft, Mail, RefreshCw } from "lucide-react";
+import { ArrowLeft, Mail } from "lucide-react";
+import { Button } from "@kaila/ui";
 import { prepareCsrf } from "../auth-client";
-import styles from "../page.module.css";
+import styles from "../auth.module.css";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -64,28 +65,20 @@ export default function ForgotPasswordPage() {
               value={email}
             />
           </label>
-          {state === "sent" && (
+          {state === "sent" ? (
             <p className={styles.formSuccess} role="status">
               If that account exists, a reset link is on its way.
             </p>
-          )}
-          {state === "error" && (
+          ) : null}
+          {state === "error" ? (
             <p className={styles.formError} role="alert">
               We couldn’t send the reset link. Please try again.
             </p>
-          )}
-          <button
-            className={styles.primaryButton}
-            disabled={state === "loading"}
-            type="submit"
-          >
-            {state === "loading" ? (
-              <RefreshCw aria-hidden="true" className={styles.spinner} />
-            ) : (
-              <Mail aria-hidden="true" />
-            )}
+          ) : null}
+          <Button isLoading={state === "loading"} type="submit" variant="primary">
+            <Mail aria-hidden="true" />
             {state === "loading" ? "Sending…" : "Send reset link"}
-          </button>
+          </Button>
           <Link className={styles.textLink} href="/">
             <ArrowLeft aria-hidden="true" /> Back to sign in
           </Link>

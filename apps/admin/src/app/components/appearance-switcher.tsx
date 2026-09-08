@@ -29,7 +29,7 @@ function applyTheme(preference: AppearanceTheme) {
   document.documentElement.dataset.theme = resolved;
 }
 
-export function AppearanceSwitcher() {
+export function AppearanceSwitcher({ embedded = false }: { embedded?: boolean }) {
   const [preference, setPreference] = useState<AppearanceTheme>("light");
 
   useEffect(() => {
@@ -67,7 +67,11 @@ export function AppearanceSwitcher() {
   }
 
   return (
-    <div className={styles.switcher} aria-label="Appearance" role="radiogroup">
+    <div
+      aria-label="Appearance"
+      className={embedded ? styles.embedded : styles.switcher}
+      role="radiogroup"
+    >
       {choices.map(({ value, label, icon: Icon }) => (
         <button
           aria-checked={preference === value}

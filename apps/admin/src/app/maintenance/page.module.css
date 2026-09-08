@@ -23,6 +23,8 @@
 .createCard p,.workspace header p{color:var(--color-text-secondary);font-size:var(--font-small-size);margin-top:var(--spacing-4)}
 .createForm{display:grid;gap:var(--spacing-12)}
 .createForm label{color:var(--color-text-secondary);display:grid;font-size:var(--font-small-size);gap:var(--spacing-8)}
+.fullWidthField,.formHelp{grid-column:1/-1}
+.formHelp{margin:0}
 .createForm input,.createForm select,.toolbar select,.search input{background:var(--color-background);border:var(--control-border-width) solid var(--color-border);border-radius:var(--radius-input);color:var(--color-ink);font:inherit;min-height:var(--control-min-height);padding:var(--spacing-8) var(--spacing-12)}
 .workspace>header{display:grid;gap:var(--spacing-16);padding:var(--spacing-24)}
 .workspace h2{color:var(--color-ink);font-size:var(--font-section-size)}
@@ -43,6 +45,7 @@
 .blockBadge{background:var(--color-warning-surface);color:var(--color-warning)}
 .dangerBadge{background:var(--color-danger-surface);color:var(--color-danger)}
 .actions{display:flex;flex-wrap:wrap;gap:var(--spacing-8)}
+.workspaceActions,.activeMessage{padding:0 var(--spacing-24) var(--spacing-24)}
 .actions button{font-size:var(--font-small-size)}
 .danger{border-color:var(--color-danger);color:var(--color-danger)}
 .muted{color:var(--color-text-secondary);font-size:var(--font-small-size)}

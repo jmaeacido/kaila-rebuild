@@ -9,12 +9,12 @@ import {
   Eye,
   EyeOff,
   KeyRound,
-  RefreshCw,
   XCircle,
 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
+import { Button } from "@kaila/ui";
 import { ApiError, prepareCsrf } from "../auth-client";
-import styles from "../page.module.css";
+import styles from "../auth.module.css";
 
 function ResetPasswordForm() {
   const searchParams = useSearchParams();
@@ -24,9 +24,9 @@ function ResetPasswordForm() {
   const [confirmation, setConfirmation] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
-  const [state, setState] = useState<
-    "idle" | "loading" | "success" | "error"
-  >("idle");
+  const [state, setState] = useState<"idle" | "loading" | "success" | "error">(
+    "idle",
+  );
   const [message, setMessage] = useState("");
   const confirmationEntered = confirmation.length > 0;
   const passwordsMatch = password === confirmation;
@@ -153,7 +153,7 @@ function ResetPasswordForm() {
                 </button>
               </span>
             </label>
-            {confirmationEntered && (
+            {confirmationEntered ? (
               <p
                 aria-live="polite"
                 className={
@@ -169,8 +169,8 @@ function ResetPasswordForm() {
                   ? "Passwords match."
                   : "Passwords do not match yet."}
               </p>
-            )}
-            {state === "error" && (
+            ) : null}
+            {state === "error" ? (
               <>
                 <p className={styles.formError} role="alert">
                   {message}
@@ -179,25 +179,21 @@ function ResetPasswordForm() {
                   Request a new reset link
                 </Link>
               </>
-            )}
-            <button
-              className={styles.primaryButton}
+            ) : null}
+            <Button
               disabled={
-                state === "loading" ||
                 !email ||
                 !token ||
                 !confirmationEntered ||
                 !passwordsMatch
               }
+              isLoading={state === "loading"}
               type="submit"
+              variant="primary"
             >
-              {state === "loading" ? (
-                <RefreshCw aria-hidden="true" className={styles.spinner} />
-              ) : (
-                <KeyRound aria-hidden="true" />
-              )}
+              <KeyRound aria-hidden="true" />
               {state === "loading" ? "Saving…" : "Save new password"}
-            </button>
+            </Button>
             <Link className={styles.textLink} href="/">
               <ArrowLeft aria-hidden="true" />
               Back to sign in

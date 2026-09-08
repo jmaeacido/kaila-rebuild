@@ -52,7 +52,7 @@ const STATUS_COPY: Record<StatusCode, StatusCopy> = {
     body: "KAILA operations needs an authenticated staff session.",
     badge: "401 Unauthorized",
     icon: Lock,
-    primaryHref: "/login",
+    primaryHref: "/",
     primaryLabel: "Sign in",
   },
   403: {

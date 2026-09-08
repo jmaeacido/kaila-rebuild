@@ -1,4 +1,4 @@
-.page{margin:auto;max-width:78rem;min-height:100vh;padding:var(--spacing-24) var(--spacing-16) var(--spacing-48)}
+.page{background:radial-gradient(ellipse 80% 50% at 10% -10%,color-mix(in srgb,var(--color-primary) 10%,transparent),transparent),var(--color-background);margin:auto;max-width:78rem;min-height:calc(100vh - 4.5rem);padding:var(--spacing-24) var(--spacing-16) calc(var(--spacing-48)*1.5)}
 .page button{align-items:center;background:var(--color-surface);border:var(--control-border-width) solid var(--color-border);border-radius:var(--radius-button);color:var(--color-text);cursor:pointer;display:inline-flex;font:inherit;gap:var(--spacing-8);justify-content:center;min-height:var(--control-min-height);padding:var(--spacing-8) var(--spacing-16)}
 .page button svg{height:var(--spacing-16);width:var(--spacing-16)}
 .page button:disabled{opacity:var(--opacity-disabled)}
@@ -27,7 +27,7 @@
 .search input{padding-left:var(--spacing-32);width:100%}
 .notice{background:var(--color-success-surface);color:var(--color-success);margin:0 var(--spacing-24) var(--spacing-16);padding:var(--spacing-12) var(--spacing-16);border-radius:var(--radius-card)}
 .tableWrap{overflow:auto}
-.table{border-collapse:collapse;min-width:72rem;width:100%}
+.table{border-collapse:collapse;min-width:48rem;width:100%}
 .table th,.table td{border-top:var(--control-border-width) solid var(--color-border);padding:var(--spacing-16) var(--spacing-24);text-align:left;vertical-align:top}
 .table th{color:var(--color-text-secondary);font-size:var(--font-caption-size);text-transform:uppercase}
 .table td strong{color:var(--color-ink);display:block}

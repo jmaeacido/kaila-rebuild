@@ -11,8 +11,9 @@ import {
   RefreshCw,
   TimerReset,
 } from "lucide-react";
+import { Button } from "@kaila/ui";
 import { prepareCsrf } from "../auth-client";
-import { OperationsHeader } from "../components/operations-header";
+import { AdminPageHeader } from "../../components/admin-page";
 import styles from "./page.module.css";
 
 type MaintenanceData = {
@@ -110,7 +111,11 @@ export default function MaintenancePage() {
       });
       const payload = (await response.json()) as { data?: MaintenanceData; error?: { message?: string } };
       if (!response.ok) throw new Error(payload.error?.message ?? "Request failed.");
-      if (payload.data) setData((current) => current ? { ...current, ...payload.data, capabilities: current.capabilities } : null);
+      if (payload.data) {
+        setData((current) =>
+          current ? { ...current, ...payload.data, capabilities: current.capabilities } : null,
+        );
+      }
       setNotice("Maintenance controls updated.");
       await load();
     } catch (error) {
@@ -139,18 +144,21 @@ export default function MaintenancePage() {
         <div>
           <p>PLATFORM CONTROL</p>
           <h1>Maintenance</h1>
-          <span>Warn every connected user with a countdown toast, then pause consumer traffic on the branded KAILA maintenance page.</span>
+          <span>
+            Warn every connected user with a countdown toast, then pause consumer traffic on the branded KAILA
+            maintenance page.
+          </span>
         </div>
       </section>
 
-      <OperationsHeader
+      <AdminPageHeader
         eyebrow="LIVE WINDOW"
         title="Schedule and control"
         description="Connected users see /maintenance with live countdown. Staff keep access to this operations console."
         actions={
-          <button type="button" onClick={() => void load()} disabled={state === "loading"}>
+          <Button type="button" variant="secondary" onClick={() => void load()} disabled={state === "loading"}>
             <RefreshCw className={state === "loading" ? styles.spinner : undefined} /> Refresh
-          </button>
+          </Button>
         }
       />
 
@@ -160,36 +168,52 @@ export default function MaintenancePage() {
           <div>
             <h3>Could not load maintenance status</h3>
             <p>Check your staff session and try again.</p>
-            <button type="button" onClick={() => void load()}>Retry</button>
+            <Button type="button" variant="secondary" onClick={() => void load()}>
+              Retry
+            </Button>
           </div>
         </section>
       ) : null}
 
       {state === "loading" && !data ? (
         <div className={styles.skeletons} aria-busy="true">
-          <span /><span /><span />
+          <span />
+          <span />
+          <span />
         </div>
       ) : null}
 
       {data ? (
         <>
           <section className={styles.stats} aria-label="Maintenance status">
-            <article className={data.phase === "active" ? styles.blocked : data.phase === "scheduled" ? styles.completed : undefined}>
-              <span><Construction aria-hidden="true" /></span>
+            <article
+              className={
+                data.phase === "active" ? styles.blocked : data.phase === "scheduled" ? styles.completed : undefined
+              }
+            >
+              <span>
+                <Construction aria-hidden="true" />
+              </span>
               <div>
-                <strong>{data.phase === "active" ? "Active" : data.phase === "scheduled" ? "Scheduled" : "Idle"}</strong>
+                <strong>
+                  {data.phase === "active" ? "Active" : data.phase === "scheduled" ? "Scheduled" : "Idle"}
+                </strong>
                 <p>Current platform phase</p>
               </div>
             </article>
             <article>
-              <span><TimerReset aria-hidden="true" /></span>
+              <span>
+                <TimerReset aria-hidden="true" />
+              </span>
               <div>
                 <strong>{formatRemaining(remaining)}</strong>
                 <p>Countdown remaining</p>
               </div>
             </article>
             <article>
-              <span>{data.enabled ? <Power aria-hidden="true" /> : <PowerOff aria-hidden="true" />}</span>
+              <span>
+                {data.enabled ? <Power aria-hidden="true" /> : <PowerOff aria-hidden="true" />}
+              </span>
               <div>
                 <strong>{data.enabled ? "Consumer blocked" : "Consumer open"}</strong>
                 <p>API maintenance gate</p>
@@ -197,11 +221,17 @@ export default function MaintenancePage() {
             </article>
           </section>
 
-          {notice ? <p className={styles.notice} role="status">{notice}</p> : null}
+          {notice ? (
+            <p className={styles.notice} role="status">
+              {notice}
+            </p>
+          ) : null}
 
           <section className={styles.createCard}>
             <header>
-              <h2><Construction aria-hidden="true" /> Schedule maintenance</h2>
+              <h2>
+                <Construction aria-hidden="true" /> Schedule maintenance
+              </h2>
               <p>Connected users receive a persistent toast with a live countdown before activation.</p>
             </header>
             {!data.capabilities.canManageMaintenance ? (
@@ -215,7 +245,9 @@ export default function MaintenancePage() {
                     onChange={(event) => setCountdownSeconds(Number(event.target.value))}
                   >
                     {PRESETS.map((preset) => (
-                      <option key={preset.seconds} value={preset.seconds}>{preset.label}</option>
+                      <option key={preset.seconds} value={preset.seconds}>
+                        {preset.label}
+                      </option>
                     ))}
                   </select>
                 </label>
@@ -229,7 +261,7 @@ export default function MaintenancePage() {
                     onChange={(event) => setCountdownSeconds(Number(event.target.value))}
                   />
                 </label>
-                <label style={{ gridColumn: "1 / -1" }}>
+                <label className={styles.fullWidthField}>
                   Countdown toast message
                   <input
                     value={message}
@@ -237,12 +269,13 @@ export default function MaintenancePage() {
                     onChange={(event) => setMessage(event.target.value)}
                   />
                 </label>
-                <p className={styles.muted} style={{ gridColumn: "1 / -1", margin: 0 }}>
-                  After maintenance starts, users see an “under maintenance / check back soon” message instead of this countdown copy.
+                <p className={`${styles.muted} ${styles.formHelp}`}>
+                  After maintenance starts, users see an “under maintenance / check back soon” message instead of this
+                  countdown copy.
                 </p>
-                <button type="submit" disabled={busy || data.phase === "active"}>
+                <Button type="submit" disabled={busy || data.phase === "active"} isLoading={busy}>
                   <TimerReset /> Start countdown
-                </button>
+                </Button>
               </form>
             )}
           </section>
@@ -254,32 +287,34 @@ export default function MaintenancePage() {
                 <p>Cancel a countdown, activate immediately, or restore the marketplace.</p>
               </div>
             </header>
-            <div className={styles.actions} style={{ padding: "0 var(--spacing-24) var(--spacing-24)" }}>
-              <button
+            <div className={`${styles.actions} ${styles.workspaceActions}`}>
+              <Button
                 type="button"
+                variant="secondary"
                 disabled={busy || !data.capabilities.canManageMaintenance || data.phase !== "scheduled"}
                 onClick={() => void post("cancel")}
               >
                 <PowerOff /> Cancel countdown
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
                 disabled={busy || !data.capabilities.canManageMaintenance || data.phase === "active"}
                 onClick={() => void post("activate")}
               >
                 <Power /> Activate now
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
+                variant="danger"
                 className={styles.danger}
                 disabled={busy || !data.capabilities.canManageMaintenance || data.phase === "idle"}
                 onClick={() => void post("end")}
               >
                 <CheckCircle2 /> End maintenance
-              </button>
+              </Button>
             </div>
             {data.message ? (
-              <p className={styles.muted} style={{ padding: "0 var(--spacing-24) var(--spacing-24)" }}>
+              <p className={`${styles.muted} ${styles.activeMessage}`}>
                 Active message: {data.message}
               </p>
             ) : null}

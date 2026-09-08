@@ -1,0 +1,200 @@
+.page {
+  background:
+    radial-gradient(ellipse 80% 50% at 10% -10%, color-mix(in srgb, var(--color-primary) 12%, transparent), transparent),
+    radial-gradient(ellipse 60% 40% at 100% 0%, color-mix(in srgb, var(--color-accent) 10%, transparent), transparent),
+    var(--color-background);
+  color: var(--color-text);
+  margin: auto;
+  max-width: 78rem;
+  min-height: calc(100vh - 4.5rem);
+  padding: var(--spacing-24) var(--spacing-16) calc(var(--spacing-48) * 1.5);
+}
+
+.header {
+  align-items: center;
+  display: flex;
+  gap: var(--spacing-24);
+  justify-content: space-between;
+  margin-bottom: var(--spacing-24);
+}
+
+.intro {
+  display: grid;
+  gap: var(--spacing-8);
+}
+
+.intro p {
+  color: var(--color-primary);
+  font-size: var(--font-caption-size);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.intro h1 {
+  color: var(--color-ink);
+  font-size: var(--font-heading-size);
+  line-height: var(--line-height-heading);
+}
+
+.intro span {
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-body);
+  max-width: 42rem;
+}
+
+.actions {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  gap: var(--spacing-8);
+}
+
+.stats {
+  display: grid;
+  gap: var(--spacing-12);
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  margin-bottom: var(--spacing-24);
+}
+
+.stat {
+  align-items: center;
+  background: var(--color-surface);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-neu-raised-sm);
+  display: flex;
+  gap: var(--spacing-12);
+  padding: var(--spacing-16);
+}
+
+.stat > span {
+  align-items: center;
+  background: color-mix(in srgb, var(--color-primary) 12%, var(--color-surface));
+  border-radius: var(--radius-pill);
+  color: var(--color-primary);
+  display: inline-flex;
+  height: var(--spacing-48);
+  justify-content: center;
+  width: var(--spacing-48);
+}
+
+.stat[data-tone="success"] > span {
+  background: var(--color-success-surface);
+  color: var(--color-success);
+}
+
+.stat[data-tone="warning"] > span {
+  background: color-mix(in srgb, var(--color-warning) 16%, var(--color-surface));
+  color: var(--color-warning);
+}
+
+.stat[data-tone="danger"] > span {
+  background: var(--color-danger-surface);
+  color: var(--color-danger);
+}
+
+.stat strong {
+  color: var(--color-ink);
+  display: block;
+  font-size: var(--font-section-size);
+}
+
+.stat p {
+  color: var(--color-text-secondary);
+  font-size: var(--font-small-size);
+}
+
+.workspace {
+  background: var(--color-surface);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-neu-raised-md);
+  display: grid;
+  gap: var(--spacing-16);
+  padding: var(--spacing-24);
+}
+
+.split {
+  display: grid;
+  gap: var(--spacing-16);
+}
+
+.empty {
+  align-items: center;
+  color: var(--color-text-secondary);
+  display: grid;
+  gap: var(--spacing-8);
+  justify-items: center;
+  padding: var(--spacing-48) var(--spacing-16);
+  text-align: center;
+}
+
+.empty > span {
+  align-items: center;
+  background: color-mix(in srgb, var(--color-primary) 10%, var(--color-surface));
+  border-radius: var(--radius-pill);
+  color: var(--color-primary);
+  display: inline-flex;
+  height: var(--spacing-48);
+  justify-content: center;
+  width: var(--spacing-48);
+}
+
+.empty h3 {
+  color: var(--color-ink);
+  font-size: var(--font-card-title-size);
+}
+
+.empty p {
+  line-height: var(--line-height-body);
+  max-width: 28rem;
+}
+
+.skeletons {
+  display: grid;
+  gap: var(--spacing-12);
+}
+
+.skeletons > span {
+  animation: pulse var(--duration-slow) ease-in-out infinite;
+  background: color-mix(in srgb, var(--color-border) 55%, var(--color-surface));
+  border-radius: var(--radius-card);
+  display: block;
+  min-height: 4.5rem;
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+@media (min-width: 48rem) {
+  .page {
+    padding: var(--spacing-32) var(--spacing-24) calc(var(--spacing-48) * 1.5);
+  }
+
+  .split {
+    grid-template-columns: minmax(16rem, 1fr) minmax(18rem, 1.2fr);
+  }
+}
+
+@media (max-width: 30rem) {
+  .header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .actions {
+    width: 100%;
+  }
+
+  .actions > * {
+    flex: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeletons > span {
+    animation: none;
+  }
+}
