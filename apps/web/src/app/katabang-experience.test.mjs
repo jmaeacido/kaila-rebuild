@@ -25,6 +25,8 @@ for (const [surface, source] of [["floating assistant", floating], ["full page",
     assert.match(source, /Recommended providers/);
     assert.match(source, /provider\.completedJobs/);
     assert.match(source, /provider\.href/);
+    assert.match(source, /conversationAnswer\(exchange\.answer\)/);
+    assert.match(source, /Matched providers shown:/);
   });
 }
 

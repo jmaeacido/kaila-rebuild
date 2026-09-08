@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ServiceCategory;
 use App\Models\User;
 use App\Support\KatabangAssistant;
 use App\Support\ProviderRecommendationService;
@@ -25,8 +26,9 @@ class KatabangController
         ]);
         $user = $request->user();
         abort_unless($user instanceof User, 401);
+        $serviceCategories = ServiceCategory::query()->where('is_active', true)->orderBy('name')->pluck('name')->all();
         try {
-            $result = $assistant->answer($data['message'], $data['conversation'] ?? []);
+            $result = $assistant->answer($data['message'], $data['conversation'] ?? [], $serviceCategories);
         } catch (RuntimeException $exception) {
             Log::warning('Katabang AI request failed.', [
                 'reason' => $exception->getMessage(),

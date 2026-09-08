@@ -33,6 +33,13 @@ type ProviderRecommendation = {
 
 type Exchange = { question: string; answer: Answer };
 
+function conversationAnswer(answer: Answer): string {
+  const matches = answer.providers?.providers
+    .map((provider) => `${provider.displayName} (${provider.rating === null ? "new" : `${provider.rating.toFixed(1)} rating`})`)
+    .join(", ");
+  return matches ? `${answer.answer}\nMatched providers shown: ${matches}.` : answer.answer;
+}
+
 export default function KatabangPage() {
   const [message, setMessage] = useState("");
   const [exchanges, setExchanges] = useState<Exchange[]>([]);
@@ -57,7 +64,7 @@ export default function KatabangPage() {
           message: question,
           conversation: exchanges.slice(-3).flatMap((exchange) => [
             { role: "user", content: exchange.question },
-            { role: "assistant", content: exchange.answer.answer },
+            { role: "assistant", content: conversationAnswer(exchange.answer) },
           ]),
         }),
       });

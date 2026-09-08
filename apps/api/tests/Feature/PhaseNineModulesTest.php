@@ -508,8 +508,10 @@ class PhaseNineModulesTest extends TestCase
         Http::assertSent(fn ($request) => $request->hasHeader('Authorization', 'Bearer test-key')
             && $request['messages'][1]['content'] === 'I have two offers.'
             && $request['response_format']['json_schema']['strict'] === true
+            && $request['response_format']['json_schema']['schema']['properties']['intent']['pattern'] === '^[a-z][a-z0-9_]{1,63}$'
             && str_contains((string) $request['messages'][0]['content'], 'match the user\'s language exactly')
-            && str_contains((string) $request['messages'][0]['content'], 'Never default to Filipino'));
+            && str_contains((string) $request['messages'][0]['content'], 'Never default to Filipino')
+            && str_contains((string) $request['messages'][0]['content'], 'not limited to a fixed list'));
     }
 
     public function test_katabang_prompt_requires_matching_latest_user_language(): void
@@ -589,6 +591,7 @@ class PhaseNineModulesTest extends TestCase
             ->assertJsonPath('data.action.href', "/providers?categoryId={$plumbing->id}&areaId={$area->id}");
 
         Http::assertSent(fn ($request) => str_contains((string) $request['messages'][0]['content'], 'provider_recommendation')
+            && str_contains((string) $request['messages'][0]['content'], 'Current active service categories: Plumbing')
             && $request['response_format']['json_schema']['schema']['properties']['service_query']['type'] === ['string', 'null']);
     }
 
