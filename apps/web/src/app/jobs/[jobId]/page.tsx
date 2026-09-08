@@ -156,7 +156,7 @@ export default function JobDetailsPage({ params }: { params: Promise<{ jobId: st
     setStatus("saving");
     setNotice("");
     const data = new FormData(event.currentTarget);
-    if (!editLocation) {
+    if (job.serviceLocationMode !== "remote" && !editLocation) {
       setStatus("ready");
       setLocationStatus("error");
       setLocationNotice("Place the job-site pin before saving.");
@@ -182,9 +182,14 @@ export default function JobDetailsPage({ params }: { params: Promise<{ jobId: st
         budgetMaxCentavos: data.get("budgetMax")
           ? Math.round(Number(data.get("budgetMax")) * 100)
           : null,
-        addressLabel: data.get("addressLabel") || null,
-        latitude: editLocation.latitude,
-        longitude: editLocation.longitude,
+        serviceLocationMode: job.serviceLocationMode,
+        ...(job.serviceLocationMode === "remote"
+          ? {}
+          : {
+              addressLabel: data.get("addressLabel") || null,
+              latitude: editLocation?.latitude,
+              longitude: editLocation?.longitude,
+            }),
       }),
     });
     if (!response.ok) {
@@ -212,7 +217,7 @@ export default function JobDetailsPage({ params }: { params: Promise<{ jobId: st
       await load();
       setEditing(false);
       setRemovedAssetIds([]);
-      setNotice("Your job details, location, and media were updated.");
+      setNotice(job.serviceLocationMode === "remote" ? "Your job details and media were updated." : "Your job details, location, and media were updated.");
     } catch {
       await load();
       setEditing(false);
@@ -396,6 +401,7 @@ export default function JobDetailsPage({ params }: { params: Promise<{ jobId: st
             <label>Budget from (₱)<input name="budgetMin" type="number" min="0" defaultValue={job.budgetMinCentavos === null ? "" : job.budgetMinCentavos / 100} /></label>
             <label>Budget to (₱)<input name="budgetMax" type="number" min="0" defaultValue={job.budgetMaxCentavos === null ? "" : job.budgetMaxCentavos / 100} /></label>
           </div>
+          {job.serviceLocationMode !== "remote" && <>
           <label>Landmark or address<input name="addressLabel" maxLength={180} defaultValue={job.addressLabel || ""} /></label>
           <section className={assetStyles.locationPicker} aria-labelledby="edit-job-site-pin">
             <div>
@@ -414,6 +420,7 @@ export default function JobDetailsPage({ params }: { params: Promise<{ jobId: st
             {locationNotice && <p className={locationStatus === "error" ? assetStyles.locationError : assetStyles.locationStatus} role={locationStatus === "error" ? "alert" : "status"}>{locationNotice}</p>}
             <p className={assetStyles.locationNote}>Your exact pin and landmark stay private until hiring.</p>
           </section>
+          </>}
           <section className={assetStyles.mediaEditor} aria-labelledby="edit-job-media">
             <div>
               <h3 id="edit-job-media">Job photos and videos</h3>

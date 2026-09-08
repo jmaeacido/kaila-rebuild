@@ -49,6 +49,7 @@ export default function PostJobPage() {
   const [showMap, setShowMap] = useState(false);
   const [locationStatus, setLocationStatus] = useState<LocationStatus>("idle");
   const [resolvedAreaLabel, setResolvedAreaLabel] = useState("");
+  const [clientAreaId, setClientAreaId] = useState("");
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -69,6 +70,9 @@ export default function PostJobPage() {
       ? { latitude: Number(form.latitude), longitude: Number(form.longitude) }
       : null;
   const selectedCategory = categories.find((category) => String(category.id) === form.categoryId);
+  const remoteFlow = form.serviceLocationMode === "remote";
+  const visibleStep = remoteFlow && step === 3 ? 2 : step;
+  const visibleStepLabels = remoteFlow ? ["Job details", "Review & send"] : stepLabels;
 
   useEffect(() => {
     void fetch("/api/v1/marketplace/reference-data", { cache: "no-store" })
@@ -78,6 +82,15 @@ export default function PostJobPage() {
           data: { categories: Category[]; areas: Reference[] };
         };
         setCategories(body.data.categories);
+        const profileResponse = await fetch("/api/v1/marketplace/profile", { cache: "no-store" });
+        if (profileResponse.ok) {
+          const profileBody = (await profileResponse.json()) as {
+            data: { client: { area_id: number | null } | null };
+          };
+          setClientAreaId(
+            profileBody.data.client?.area_id ? String(profileBody.data.client.area_id) : "",
+          );
+        }
         const requestedCategory = new URLSearchParams(window.location.search).get("categoryId");
         const requestedProvider = new URLSearchParams(window.location.search).get("providerId");
         if (
@@ -99,6 +112,22 @@ export default function PostJobPage() {
 
   function field(name: keyof typeof form, value: string) {
     setForm((current) => ({ ...current, [name]: value }));
+  }
+
+  function chooseLocationMode(mode: "at_client" | "at_provider" | "remote") {
+    pinRequest.current += 1;
+    setShowMap(false);
+    setLocationStatus("idle");
+    setResolvedAreaLabel("");
+    setMessage("");
+    setForm((current) => ({
+      ...current,
+      serviceLocationMode: mode,
+      areaId: mode === "remote" ? clientAreaId : "",
+      addressLabel: "",
+      latitude: "",
+      longitude: "",
+    }));
   }
 
   async function pin(location: JobLocation, source: "current" | "map") {
@@ -195,12 +224,16 @@ export default function PostJobPage() {
         setMessage("Choose a service before continuing.");
         return;
       }
+      if (step === 1 && form.serviceLocationMode === "remote" && !form.areaId) {
+        setMessage("Add your home area in Account before posting an online or remote request.");
+        return;
+      }
       if (step === 2 && (!form.areaId || !form.latitude || !form.longitude)) {
         setLocationStatus("error");
         setMessage("Place the job-site pin in a supported barangay before continuing.");
         return;
       }
-      setStep((step + 1) as Step);
+      setStep(step === 1 && form.serviceLocationMode === "remote" ? 3 : ((step + 1) as Step));
       return;
     }
     setStatus("saving");
@@ -210,16 +243,20 @@ export default function PostJobPage() {
       title: form.title,
       description: form.description,
       categoryId: Number(form.categoryId),
-      areaId: Number(form.areaId),
+      areaId: form.areaId ? Number(form.areaId) : null,
       scheduleType: form.scheduleType,
       serviceLocationMode: form.serviceLocationMode,
       scheduledAt:
         form.scheduleType === "scheduled" ? new Date(form.scheduledAt).toISOString() : null,
       budgetMinCentavos: form.budgetMin ? Math.round(Number(form.budgetMin) * 100) : null,
       budgetMaxCentavos: form.budgetMax ? Math.round(Number(form.budgetMax) * 100) : null,
-      addressLabel: form.addressLabel || null,
-      latitude: form.latitude ? Number(form.latitude) : null,
-      longitude: form.longitude ? Number(form.longitude) : null,
+      ...(form.serviceLocationMode === "remote"
+        ? {}
+        : {
+            addressLabel: form.addressLabel || null,
+            latitude: form.latitude ? Number(form.latitude) : null,
+            longitude: form.longitude ? Number(form.longitude) : null,
+          }),
     };
     try {
       const created = await fetch(directProvider ? `/api/v1/providers/${directProvider.id}/direct-requests` : "/api/v1/jobs", {
@@ -283,14 +320,14 @@ export default function PostJobPage() {
           <ArrowLeft aria-hidden="true" />
         </Link>
         <div className={styles.progressBlock}>
-          <span>Request a service · Step {step} of 3</span>
+          <span>Request a service · Step {visibleStep} of {visibleStepLabels.length}</span>
           <strong>{stepLabels[step - 1]}</strong>
-          <progress value={step} max="3">
-            {step} of 3
+          <progress value={visibleStep} max={visibleStepLabels.length}>
+            {visibleStep} of {visibleStepLabels.length}
           </progress>
           <ol className={styles.stepLabels} aria-label="Job request progress">
-            {stepLabels.map((label, index) => (
-              <li key={label} data-state={index + 1 === step ? "current" : index + 1 < step ? "complete" : "upcoming"}>
+            {visibleStepLabels.map((label, index) => (
+              <li key={label} data-state={index + 1 === visibleStep ? "current" : index + 1 < visibleStep ? "complete" : "upcoming"}>
                 {label}
               </li>
             ))}
@@ -343,15 +380,15 @@ export default function PostJobPage() {
               <fieldset className={styles.locationMode}>
                 <legend>Where will the service happen?</legend>
                 <label>
-                  <input type="radio" name="serviceLocationMode" checked={form.serviceLocationMode === "at_client"} onChange={() => field("serviceLocationMode", "at_client")} />
+                  <input type="radio" name="serviceLocationMode" checked={form.serviceLocationMode === "at_client"} onChange={() => chooseLocationMode("at_client")} />
                   <span><House aria-hidden="true" /><strong>At my location</strong><small>The provider travels to you.</small></span>
                 </label>
                 <label>
-                  <input type="radio" name="serviceLocationMode" checked={form.serviceLocationMode === "at_provider"} onChange={() => field("serviceLocationMode", "at_provider")} />
+                  <input type="radio" name="serviceLocationMode" checked={form.serviceLocationMode === "at_provider"} onChange={() => chooseLocationMode("at_provider")} />
                   <span><Store aria-hidden="true" /><strong>At the provider’s shop</strong><small>You travel to the selected provider.</small></span>
                 </label>
                 <label>
-                  <input type="radio" name="serviceLocationMode" checked={form.serviceLocationMode === "remote"} onChange={() => field("serviceLocationMode", "remote")} />
+                  <input type="radio" name="serviceLocationMode" checked={form.serviceLocationMode === "remote"} onChange={() => chooseLocationMode("remote")} />
                   <span><Video aria-hidden="true" /><strong>Online or remote</strong><small>No one needs to travel.</small></span>
                 </label>
               </fieldset>
@@ -433,7 +470,7 @@ export default function PostJobPage() {
                 <span className={styles.reviewIcon}><Navigation aria-hidden="true" /></span>
                 <div>
                   <strong id="request-summary-title">{form.title}</strong>
-                  <p>{selectedCategory?.name ?? "Service"} · {resolvedAreaLabel || "Location pinned"}</p>
+                  <p>{selectedCategory?.name ?? "Service"} · {remoteFlow ? "Online or remote" : resolvedAreaLabel || "Location pinned"}</p>
                 </div>
                 <button type="button" onClick={() => setStep(1)}><Pencil aria-hidden="true" /> Edit</button>
               </section>
@@ -493,7 +530,7 @@ export default function PostJobPage() {
             <Button
               type="button"
               variant="secondary"
-              onClick={() => setStep((step - 1) as Step)}
+              onClick={() => setStep(step === 3 && remoteFlow ? 1 : ((step - 1) as Step))}
             >
               Back
             </Button>

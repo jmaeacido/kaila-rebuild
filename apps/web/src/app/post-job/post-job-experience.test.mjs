@@ -10,7 +10,14 @@ test("job requests explain and preserve the three-step journey", () => {
   assert.match(page, /aria-label="Job request progress"/);
   assert.match(page, /Review your request/);
   assert.match(page, /request-summary-title/);
-  assert.match(page, /resolvedAreaLabel \|\| "Location pinned"/);
+  assert.match(page, /remoteFlow \? "Online or remote" : resolvedAreaLabel \|\| "Location pinned"/);
+});
+
+test("online or remote requests skip location selection", () => {
+  assert.match(page, /step === 1 && form\.serviceLocationMode === "remote" \? 3/);
+  assert.match(page, /remoteFlow \? \["Job details", "Review & send"\] : stepLabels/);
+  assert.match(page, /mode === "remote" \? clientAreaId : ""/);
+  assert.match(page, /form\.serviceLocationMode === "remote"\s*\? \{\}/);
 });
 
 test("location controls prioritize choosing and adjusting a pin", () => {

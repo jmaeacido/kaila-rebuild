@@ -34,12 +34,14 @@ class DirectServiceRequestController extends Controller
         $data = $request->validate([
             'title' => ['required', 'string', 'max:120'], 'description' => ['required', 'string', 'min:10', 'max:3000'],
             'categoryId' => ['required', 'integer', Rule::exists('provider_services', 'service_category_id')->where('provider_profile_id', $providerProfile->id)],
+            'serviceLocationMode' => ['sometimes', Rule::in(['at_client', 'at_provider', 'remote'])],
             'areaId' => ['required', 'integer', 'exists:areas,id'], 'scheduleType' => ['required', Rule::in(['asap', 'scheduled'])],
             'scheduledAt' => ['nullable', 'required_if:scheduleType,scheduled', 'date', 'after:now'],
             'budgetMinCentavos' => ['nullable', 'integer', 'min:0', 'max:100000000'], 'budgetMaxCentavos' => ['nullable', 'integer', 'gte:budgetMinCentavos', 'max:100000000'],
-            'latitude' => ['required', 'numeric', 'between:-90,90'], 'longitude' => ['required', 'numeric', 'between:-180,180'],
-            'addressLabel' => ['nullable', 'string', 'max:180'],
+            'latitude' => ['nullable', 'required_unless:serviceLocationMode,remote', 'prohibited_if:serviceLocationMode,remote', 'numeric', 'between:-90,90'], 'longitude' => ['nullable', 'required_unless:serviceLocationMode,remote', 'prohibited_if:serviceLocationMode,remote', 'numeric', 'between:-180,180'],
+            'addressLabel' => ['nullable', 'prohibited_if:serviceLocationMode,remote', 'string', 'max:180'],
         ]);
+        $data['serviceLocationMode'] ??= 'at_client';
         $requestArea = Area::query()->whereKey((int) $data['areaId'])->firstOrFail();
         $coveredAreaIds = array_values(array_filter([$requestArea->id, $requestArea->parent_id]));
         abort_unless($providerProfile->serviceAreas()->whereKey($coveredAreaIds)->exists(), 422, 'This provider does not currently cover the selected area.');
@@ -48,10 +50,10 @@ class DirectServiceRequestController extends Controller
             $job = ServiceJob::query()->create([
                 'client_user_id' => $client->id, 'direct_provider_profile_id' => $providerProfile->id,
                 'service_category_id' => $data['categoryId'], 'area_id' => $data['areaId'], 'status' => 'posted', 'version' => 1,
-                'title' => $data['title'], 'description' => $data['description'], 'service_location_mode' => 'at_client',
+                'title' => $data['title'], 'description' => $data['description'], 'service_location_mode' => $data['serviceLocationMode'],
                 'schedule_type' => $data['scheduleType'], 'scheduled_at' => $data['scheduleType'] === 'scheduled' ? $data['scheduledAt'] : null,
                 'budget_min_centavos' => $data['budgetMinCentavos'] ?? null, 'budget_max_centavos' => $data['budgetMaxCentavos'] ?? null,
-                'latitude' => $data['latitude'], 'longitude' => $data['longitude'], 'address_label' => $data['addressLabel'] ?? null, 'posted_at' => now(),
+                'latitude' => $data['serviceLocationMode'] === 'remote' ? null : $data['latitude'], 'longitude' => $data['serviceLocationMode'] === 'remote' ? null : $data['longitude'], 'address_label' => $data['serviceLocationMode'] === 'remote' ? null : ($data['addressLabel'] ?? null), 'posted_at' => now(),
             ]);
             JobOpportunity::query()->create(['service_job_id' => $job->id, 'provider_profile_id' => $providerProfile->id, 'state' => 'new']);
             JobConversation::query()->create(['id' => (string) Str::uuid(), 'service_job_id' => $job->id]);

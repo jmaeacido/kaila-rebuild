@@ -74,6 +74,50 @@ class PhaseThreeJobsTest extends TestCase
             ->count());
     }
 
+    public function test_remote_job_keeps_the_account_area_but_stores_no_location_details(): void
+    {
+        [$category, $area] = $this->references();
+        $provider = $this->provider($category, $area, 'active');
+        $client = User::factory()->create();
+        $draft = $this->draft($category, $area);
+        $draft['serviceLocationMode'] = 'remote';
+        unset($draft['latitude'], $draft['longitude'], $draft['addressLabel']);
+
+        $created = $this->actingAs($client)
+            ->withHeader('Idempotency-Key', 'remote-job')
+            ->postJson('/api/v1/jobs', $draft)
+            ->assertCreated()
+            ->assertJsonPath('data.serviceLocationMode', 'remote')
+            ->assertJsonPath('data.location', null)
+            ->assertJsonPath('data.addressLabel', null);
+
+        $this->postJson("/api/v1/jobs/{$created->json('data.id')}/post")->assertOk();
+        $this->assertDatabaseHas('service_jobs', [
+            'id' => $created->json('data.id'),
+            'area_id' => $area->id,
+            'service_location_mode' => 'remote',
+            'latitude' => null,
+            'longitude' => null,
+            'address_label' => null,
+        ]);
+        $this->assertDatabaseHas('job_opportunities', ['provider_profile_id' => $provider->id]);
+    }
+
+    public function test_remote_job_rejects_location_details(): void
+    {
+        [$category, $area] = $this->references();
+        $client = User::factory()->create();
+        $draft = $this->draft($category, $area);
+        $draft['serviceLocationMode'] = 'remote';
+
+        $this->actingAs($client)
+            ->withHeader('Idempotency-Key', 'invalid-remote-location')
+            ->postJson('/api/v1/jobs', $draft)
+            ->assertUnprocessable();
+
+        $this->assertDatabaseMissing('service_jobs', ['service_location_mode' => 'remote']);
+    }
+
     public function test_opportunity_never_leaks_exact_location_or_client_identity(): void
     {
         [$category, $area] = $this->references();
