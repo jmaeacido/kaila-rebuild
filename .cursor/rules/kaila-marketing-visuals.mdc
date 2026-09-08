@@ -1,0 +1,42 @@
+---
+description: Marketing/visual rules—vectors only; logo + Bull; branded QR
+alwaysApply: true
+---
+
+# KAILA Marketing & Generated Visuals
+
+Applies to campaign posters, ads, reels, empty states, onboarding, hero art, and any AI-generated images.
+
+## People imagery
+
+- **Never** depict realistic or photorealistic people.
+- **Only** use flat, friendly **vector** illustrations when people or human figures appear.
+- Prefer stylized figures, icons, and scene illustrations over lifelike faces or anatomy.
+
+Real photographs are reserved for **user-generated** product content only: profiles, portfolios, and job evidence.
+
+## Logo and Bull mascot (required)
+
+Every campaign / promotional visual **must** include:
+
+1. The approved **KAILA wordmark** (or horizontal lockup)
+2. The **Bull** mascot (friendly blue bull in KAILA polo, thumbs-up)
+
+Use official brand assets—do **not** redraw, recolor, stretch, rotate, or invent alternate logos/mascots. Preserve clear space (at least `0.5x` wordmark cap height). Prefer the lockup: Bull left of wordmark. On dark/gradient surfaces, use the approved white/cyan wordmark variant.
+
+Canonical assets live under product brand paths (e.g. `/brand/…`, marketing kit wordmark + `kaila-bull-mascot`).
+
+## QR codes (when used)
+
+If a QR code is required:
+
+- It **must** be **KAILA-branded**—not a plain black-and-white default QR.
+- Use KAILA Blue (`#1463FF`) modules on white (or approved contrast), high error correction, and the **Bull / app icon** centered in the QR.
+- Label with the KAILA wordmark or clear KAILA destination copy (e.g. download / register).
+- Prefer existing branded QR assets or the in-app branded QR pattern; do not let generative tools invent or redraw the QR modules, logo center, or destination.
+
+## When generating images
+
+- Prompt for vector / flat illustration only; exclude photorealism and stock-photo humans.
+- Leave clear space for compositing the real logo, Bull, and branded QR—do not ask the model to fake those marks.
+- Match design-system colors: primary `#1463FF`, accent `#27B7FF`, ink `#0A1220`.
