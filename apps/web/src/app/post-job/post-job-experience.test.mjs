@@ -18,6 +18,8 @@ test("online or remote requests skip location selection", () => {
   assert.match(page, /remoteFlow \? \["Job details", "Review & send"\] : stepLabels/);
   assert.match(page, /mode === "remote" \? clientAreaId : ""/);
   assert.match(page, /form\.serviceLocationMode === "remote"\s*\? \{\}/);
+  assert.match(page, /fetch\("\/api\/v1\/me\/marketplace-profile"/);
+  assert.doesNotMatch(page, /fetch\("\/api\/v1\/marketplace\/profile"/);
 });
 
 test("location controls prioritize choosing and adjusting a pin", () => {

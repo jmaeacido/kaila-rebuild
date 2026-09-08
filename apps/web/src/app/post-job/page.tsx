@@ -93,7 +93,10 @@ export default function PostJobPage() {
           data: { categories: Category[]; areas: Reference[] };
         };
         setCategories(body.data.categories);
-        const profileResponse = await fetch("/api/v1/marketplace/profile", { cache: "no-store" });
+        const profileResponse = await fetch("/api/v1/me/marketplace-profile", {
+          credentials: "include",
+          cache: "no-store",
+        });
         if (profileResponse.ok) {
           const profileBody = (await profileResponse.json()) as {
             data: { client: { area_id: number | null } | null };

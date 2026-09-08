@@ -12,6 +12,11 @@ test("area warning reevaluates immediately after a home-area save", () => {
   assert.match(account, /window\.dispatchEvent\(new Event\(areaProfileChangedEvent\)\)/);
 });
 
+test("update home area links directly to the client profile editor", () => {
+  assert.match(banner, /href: "\/account#client-profile"/);
+  assert.match(account, /id="client-profile"/);
+});
+
 test("a newer area evaluation cannot be overwritten by a stale request", () => {
   assert.match(banner, /const currentEvaluation = \+\+evaluation/);
   assert.match(banner, /currentEvaluation !== evaluation/);

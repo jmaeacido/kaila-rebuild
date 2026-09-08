@@ -451,6 +451,7 @@ export default function AccountPage() {
 
       <form
         className={styles.card}
+        id="client-profile"
         onInput={markClientFormDirty}
         onSubmit={(event) => void saveProfile(event)}
       >

@@ -46,6 +46,7 @@
 .reputationIcon { align-items:center; background:var(--color-warning-surface); border-radius:var(--radius-pill); color:var(--color-warning); display:flex; flex:0 0 auto; height:var(--spacing-48); justify-content:center; width:var(--spacing-48); }
 .reputationIcon svg { fill:currentColor; height:var(--spacing-24); width:var(--spacing-24); }
 .card { display:grid; gap:var(--spacing-16); padding:var(--spacing-24); }
+#client-profile { scroll-margin-top:var(--spacing-24); }
 .accountGrid, .primaryColumn, .secondaryColumn { display:grid; gap:var(--spacing-16); min-width:0; }
 .secondaryColumn { align-content:start; }
 .modeGrid { display:grid; gap:var(--spacing-12); }

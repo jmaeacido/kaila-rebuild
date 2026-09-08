@@ -176,7 +176,7 @@ export function AreaMismatchBanner() {
           : {
             title: "You're away from your home area",
             body: `You're in ${currentCity}, but your home area is in ${homeCity}. Nearby help works best when your home area matches where you are.`,
-            href: "/account",
+            href: "/account#client-profile",
             actionLabel: "Update home area",
             dismissKey,
           });
