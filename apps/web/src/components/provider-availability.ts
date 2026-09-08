@@ -37,6 +37,29 @@ export function normalizeTimeValue(value: string): string {
   return value.slice(0, 5);
 }
 
+export function formatAvailabilityTime(value: string): string {
+  const normalized = normalizeTimeValue(value);
+  const match = /^(\d{2}):(\d{2})$/.exec(normalized);
+  if (!match) return normalized;
+
+  const hours = Number(match[1]);
+  const minutes = Number(match[2]);
+  if (hours > 23 || minutes > 59) return normalized;
+
+  const period = hours < 12 ? "AM" : "PM";
+  const displayHour = hours % 12 || 12;
+  return `${displayHour}:${match[2]} ${period}`;
+}
+
+export function formatAvailabilityWindow(
+  dayOfWeek: number,
+  startsAt: string,
+  endsAt: string,
+): string {
+  const day = WEEKDAY_LABELS[dayOfWeek] ?? "Day unavailable";
+  return `${day}, ${formatAvailabilityTime(startsAt)}–${formatAvailabilityTime(endsAt)}`;
+}
+
 export function slotsToDaySchedules(slots: AvailabilitySlot[]): DaySchedule[] {
   const slotMap = new Map(slots.map((slot) => [slot.dayOfWeek, slot]));
 

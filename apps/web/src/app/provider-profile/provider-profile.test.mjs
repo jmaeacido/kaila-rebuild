@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
+import { formatAvailabilityTime, formatAvailabilityWindow } from "../../components/provider-availability.ts";
 
 const source = readFileSync(new URL("./page.tsx", import.meta.url), "utf8");
 const bannerSource = readFileSync(new URL("../../components/area-mismatch-banner.tsx", import.meta.url), "utf8");
@@ -75,4 +76,12 @@ test("Public provider profile renders portfolio gallery and conversion CTA", () 
   assert.match(publicProfileSource, /Manage Provider Profile/);
   assert.match(publicProfileSource, /mobileCtaBar/);
   assert.match(gallerySource, /Work photos/);
+});
+
+test("Public provider availability uses a human-readable 12-hour schedule", () => {
+  assert.equal(formatAvailabilityTime("08:00:00"), "8:00 AM");
+  assert.equal(formatAvailabilityTime("12:30:00"), "12:30 PM");
+  assert.equal(formatAvailabilityTime("17:00:00"), "5:00 PM");
+  assert.equal(formatAvailabilityWindow(1, "08:00:00", "17:00:00"), "Monday, 8:00 AM–5:00 PM");
+  assert.match(publicProfileSource, /formatAvailabilityWindow\(slot\.day_of_week, slot\.starts_at, slot\.ends_at\)/);
 });

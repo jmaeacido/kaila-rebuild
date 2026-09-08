@@ -21,6 +21,7 @@ import type { ProviderPortfolioItem } from "../../../components/provider-portfol
 import { ProviderPortfolioGallery } from "../../../components/provider-portfolio-gallery";
 import { isDemoPortfolio, toggleDemoPortfolioLike, withDemoPortfolio } from "../../../components/provider-portfolio-demo";
 import { ProviderServicesShowcase } from "../../../components/provider-services-showcase";
+import { formatAvailabilityWindow } from "../../../components/provider-availability";
 import styles from "../providers.module.css";
 
 type Item = { id: number; name: string; icon?: string | null; slug?: string | null };
@@ -45,8 +46,6 @@ type Provider = {
   portfolio: PortfolioItem[];
   reviews: { id: string; rating: number; comment: string | null; publishedAt: string }[];
 };
-
-const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
 function formatRating(provider: Provider): string {
   if (provider.rating === null) return "New provider";
@@ -246,7 +245,7 @@ export default function ProviderProfilePage() {
               ) : (
                 provider.availability.map((slot) => (
                   <p key={slot.id}>
-                    {days[slot.day_of_week]} · {slot.starts_at.slice(0, 5)}–{slot.ends_at.slice(0, 5)}
+                    {formatAvailabilityWindow(slot.day_of_week, slot.starts_at, slot.ends_at)}
                   </p>
                 ))
               )}
