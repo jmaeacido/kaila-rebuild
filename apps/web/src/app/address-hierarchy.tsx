@@ -185,18 +185,20 @@ export function AddressHierarchy({
   return (
     <div className={styles.fields}>
       <label>
-        Province{optional && <small>Optional</small>}
+        <span className={styles.caption}>
+          Province{optional ? <small>Optional</small> : null}
+        </span>
         <SelectField label="Province" required={!optional} value={provinceId} onChange={chooseProvince} placeholder="Choose province" options={[
           ...provinces.map((province) => ({ value:String(province.id), label:province.name })),
           ...(independentLocalities.length > 0 ? [{ value:independentLocality, label:"Independent City" }] : []),
         ]} />
       </label>
       <label>
-        City / Municipality
+        <span className={styles.caption}>City / Municipality</span>
         <SelectField label="City or municipality" required={!optional && Boolean(provinceId)} disabled={!provinceId} value={cityId} onChange={chooseCity} placeholder="Choose city or municipality" options={cities.map((city) => ({ value:String(city.id), label:city.name }))} />
       </label>
       <label>
-        Barangay
+        <span className={styles.caption}>Barangay</span>
         <SelectField label="Barangay" required={!optional && Boolean(cityId)} disabled={!cityId || barangaysLoading} value={barangays.some((barangay) => String(barangay.id) === value) ? value : ""} onChange={onChange} placeholder={barangaysLoading ? "Loading barangays…" : "Choose barangay"} options={barangays.map((barangay) => ({ value:String(barangay.id), label:barangay.name }))} />
       </label>
     </div>

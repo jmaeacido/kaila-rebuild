@@ -64,7 +64,13 @@ test("Provider Home follows the supplied mobile hierarchy with truthful live dat
 });
 
 test("The mobile Katabang trigger lives with header controls instead of covering content", () => {
-  assert.match(authGuardSource, /<NotificationBell \/>\s*\{pathname !== "\/help\/katabang" && <FloatingKatabang \/>\}/);
+  assert.match(
+    authGuardSource,
+    /const showKatabang = pathname !== "\/help\/katabang" && pathname !== "\/provider-profile"/,
+  );
+  assert.match(authGuardSource, /\{showKatabang && <FloatingKatabang \/>\}/);
+  assert.match(authGuardSource, /sessionUserChangedEvent/);
+  assert.match(authGuardSource, /window\.addEventListener\(sessionUserChangedEvent/);
 });
 
 test("Narrow phone navigation keeps every tab label on one line", () => {

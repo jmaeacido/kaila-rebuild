@@ -45,6 +45,41 @@ class MarketplaceProfilesTest extends TestCase
             ->assertJsonPath('data.reputation.reviewCount', 3);
     }
 
+    public function test_client_profile_display_name_also_updates_account_name(): void
+    {
+        $user = User::factory()->create(['name' => 'Development Consumer']);
+        $area = Area::query()->create([
+            'type' => 'city',
+            'name' => 'Butuan City',
+            'code' => 'BXU',
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($user)
+            ->putJson('/api/v1/me/client-profile', [
+                'displayName' => 'David Palakuan',
+                'areaId' => $area->id,
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.display_name', 'David Palakuan')
+            ->assertJsonPath('data.area_id', $area->id);
+
+        $this->assertDatabaseHas('users', [
+            'id' => $user->id,
+            'name' => 'David Palakuan',
+        ]);
+        $this->assertDatabaseHas('client_profiles', [
+            'user_id' => $user->id,
+            'display_name' => 'David Palakuan',
+            'area_id' => $area->id,
+        ]);
+
+        $this->actingAs($user)
+            ->getJson('/api/v1/me')
+            ->assertOk()
+            ->assertJsonPath('data.name', 'David Palakuan');
+    }
+
     public function test_provider_can_create_a_valid_profile_and_switch_mode_without_gaining_admin_authority(): void
     {
         [$category, $area] = $this->referenceData();

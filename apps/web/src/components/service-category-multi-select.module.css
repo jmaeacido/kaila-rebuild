@@ -38,6 +38,7 @@
   background: var(--color-surface);
   border: var(--control-border-width) solid var(--color-border);
   border-radius: var(--radius-input);
+  color: var(--color-ink);
   cursor: pointer;
   display: grid;
   gap: var(--spacing-12);

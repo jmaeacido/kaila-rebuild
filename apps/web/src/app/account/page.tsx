@@ -27,6 +27,7 @@ import { useRealtimeInvalidation } from "../use-realtime-invalidation";
 import { profilePictureReviewEvent, type NotificationRecord } from "../notification-route";
 import { areaProfileChangedEvent } from "../../components/area-mismatch-banner";
 import { marketplaceModeChangedEvent } from "../use-marketplace-mode";
+import { sessionUserChangedEvent } from "../session-user";
 
 type User = {
   name: string;
@@ -169,6 +170,7 @@ export default function AccountPage() {
       });
       if (!response.ok) throw new Error();
       window.dispatchEvent(new Event(areaProfileChangedEvent));
+      window.dispatchEvent(new Event(sessionUserChangedEvent));
       setNotice("Your profile details are saved.");
       clientFormIsDirty.current = false;
       await load();
@@ -273,6 +275,11 @@ export default function AccountPage() {
   const modeAvatarUrl = isProviderMode
     ? (user.providerAvatarUrl ?? user.displayAvatarUrl ?? user.avatarUrl)
     : user.avatarUrl;
+  const identityName = (
+    isProviderMode
+      ? profile.provider?.display_name
+      : profile.client?.display_name
+  )?.trim() || user.name;
 
   return (
     <main className={styles.shell}>
@@ -290,7 +297,7 @@ export default function AccountPage() {
 
       <section className={styles.identityCard} aria-labelledby="identity-title">
         <div className={styles.avatar}>
-          <span aria-hidden="true">{user.name.charAt(0).toUpperCase()}</span>
+          <span aria-hidden="true">{identityName.charAt(0).toUpperCase()}</span>
           {modeAvatarUrl ? (
             <Image
               src={modeAvatarUrl}
@@ -316,7 +323,7 @@ export default function AccountPage() {
           </button>
         </div>
         <div>
-          <h2 id="identity-title">{user.name}</h2>
+          <h2 id="identity-title">{identityName}</h2>
           <p>{user.email}</p>
           {user.identityVerified ? (
             <div className={styles.verifiedRow}>

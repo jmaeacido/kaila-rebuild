@@ -58,7 +58,14 @@ class MarketplaceProfileController extends Controller
     {
         $data = $request->validate(['displayName' => ['required', 'string', 'max:100'], 'areaId' => ['nullable', 'integer', 'exists:areas,id']]);
         /** @var User $user */ $user = $request->user();
-        $profile = ClientProfile::query()->updateOrCreate(['user_id' => $user->id], ['display_name' => $data['displayName'], 'area_id' => $data['areaId'] ?? null]);
+        $profile = DB::transaction(function () use ($user, $data): ClientProfile {
+            $user->update(['name' => $data['displayName']]);
+
+            return ClientProfile::query()->updateOrCreate(
+                ['user_id' => $user->id],
+                ['display_name' => $data['displayName'], 'area_id' => $data['areaId'] ?? null],
+            );
+        });
 
         return response()->json(['data' => $profile], 200);
     }
@@ -100,6 +107,7 @@ class MarketplaceProfileController extends Controller
                 'shop_latitude' => ($data['offersAtShop'] ?? false) ? $data['shopLatitude'] : null,
                 'shop_longitude' => ($data['offersAtShop'] ?? false) ? $data['shopLongitude'] : null,
             ]);
+            $user->update(['name' => $data['displayName']]);
             $profile->services()->sync($data['serviceIds']);
             $profile->serviceAreas()->sync($data['areaIds']);
             $profile->availability()->delete();

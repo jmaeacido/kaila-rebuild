@@ -4,11 +4,24 @@ import test from "node:test";
 import { formatAvailabilityTime, formatAvailabilityWindow } from "../../components/provider-availability.ts";
 
 const source = readFileSync(new URL("./page.tsx", import.meta.url), "utf8");
+const styles = readFileSync(new URL("./profile.module.css", import.meta.url), "utf8");
+const availabilityStyles = readFileSync(new URL("../../components/provider-availability-editor.module.css", import.meta.url), "utf8");
+const serviceStyles = readFileSync(new URL("../../components/service-category-multi-select.module.css", import.meta.url), "utf8");
 const bannerSource = readFileSync(new URL("../../components/area-mismatch-banner.tsx", import.meta.url), "utf8");
 const publicProfileSource = readFileSync(new URL("../providers/[providerId]/page.tsx", import.meta.url), "utf8");
 const managerSource = readFileSync(new URL("../../components/provider-portfolio-manager.tsx", import.meta.url), "utf8");
 const gallerySource = readFileSync(new URL("../../components/provider-portfolio-gallery.tsx", import.meta.url), "utf8");
 const viewerSource = readFileSync(new URL("../../components/provider-portfolio-viewer.tsx", import.meta.url), "utf8");
+
+test("Provider profile form styles do not override nested service and availability labels", () => {
+  assert.doesNotMatch(styles, /\.form label\s*\{/);
+  assert.match(styles, /\.formSection > label/);
+  assert.match(styles, /\.addressFields > label/);
+  assert.match(availabilityStyles, /\.toggle \{[\s\S]*?display: flex;/);
+  assert.match(availabilityStyles, /flex-direction: row;/);
+  assert.match(availabilityStyles, /\.times \{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
+  assert.match(serviceStyles, /\.option \{[\s\S]*?grid-template-columns: var\(--spacing-40, 2\.5rem\) minmax\(0, 1fr\) var\(--spacing-24\)/);
+});
 
 test("Provider profile loads saved data from marketplace profile", () => {
   assert.match(source, /\/api\/v1\/me\/marketplace-profile/);

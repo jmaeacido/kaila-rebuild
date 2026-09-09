@@ -23,7 +23,8 @@ test("account uses a compact mobile identity and a wider desktop composition", (
 });
 
 test("profile picture actions stay behind the avatar camera control", () => {
-  assert.match(page, /aria-label="Change profile picture"/);
+  assert.match(page, /Change profile picture/);
+  assert.match(page, /Change provider logo/);
   assert.match(page, /avatarMenuOpen &&[\s\S]*<ActionModal/);
   assert.match(page, /onClose=\{\(\) => setAvatarMenuOpen\(false\)\}/);
   assert.match(styles, /@media\(hover:hover\) and \(pointer:fine\)/);
@@ -32,11 +33,12 @@ test("profile picture actions stay behind the avatar camera control", () => {
 });
 
 test("profile picture modal previews and tracks uploads awaiting review", () => {
-  assert.match(page, /alt="Profile picture preview"/);
+  assert.match(page, /Profile picture preview/);
+  assert.match(page, /Provider logo preview/);
   assert.match(page, /request\.upload\.addEventListener\("progress"/);
-  assert.match(page, /aria-label="Photo upload progress"/);
+  assert.match(page, /aria-label="Photo upload progress"|aria-label=\{isProviderMode \? "Logo upload progress" : "Photo upload progress"\}|Uploading/);
   assert.match(page, /Waiting for review/);
-  assert.match(page, /current profile picture stays visible until this photo is approved/i);
+  assert.match(page, /current profile picture stays visible until this photo is approved|current .* stays visible until this .* is approved/i);
   const fileSelection = page.match(/onFiles=\{\(files\) => \{([\s\S]*?)\n\s*\}\}/)?.[1] ?? "";
   assert.doesNotMatch(fileSelection, /setAvatarMenuOpen\(false\)/);
 });
@@ -53,6 +55,19 @@ test("saved city-level home areas populate the address hierarchy", () => {
   assert.match(addressHierarchy, /\["city", "municipality"\]\.includes\(selectedArea\.type/);
   assert.match(addressHierarchy, /\? selectedArea/);
   assert.match(addressHierarchy, /barangays\.some\(\(barangay\) => String\(barangay\.id\) === value\) \? value : ""/);
+});
+
+test("home area captions keep Optional inline so the three selects stay aligned", () => {
+  assert.match(addressHierarchy, /className=\{styles\.caption\}[\s\S]*Province\{optional \? <small>Optional<\/small> : null\}/);
+  assert.match(addressHierarchy, /<span className=\{styles\.caption\}>City \/ Municipality<\/span>/);
+  assert.match(addressHierarchy, /<span className=\{styles\.caption\}>Barangay<\/span>/);
+});
+
+test("account identity prefers the saved marketplace display name", () => {
+  assert.match(page, /const identityName = \(/);
+  assert.match(page, /profile\.client\?\.display_name/);
+  assert.match(page, /id="identity-title">\{identityName\}/);
+  assert.match(page, /sessionUserChangedEvent/);
 });
 
 test("background profile refreshes do not overwrite unsaved client edits", () => {

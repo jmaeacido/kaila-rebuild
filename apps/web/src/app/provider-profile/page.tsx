@@ -17,6 +17,7 @@ import {
   type AvailabilitySlot,
 } from "../../components/provider-availability-editor";
 import { prepareCsrf } from "../auth-client";
+import { sessionUserChangedEvent } from "../session-user";
 import { useRealtimeInvalidation } from "../use-realtime-invalidation";
 import styles from "./profile.module.css";
 
@@ -424,6 +425,7 @@ export default function ProviderProfilePage() {
       setReviewNote(saved.review_note ?? null);
       formIsDirty.current = false;
       setHasUnsavedChanges(false);
+      window.dispatchEvent(new Event(sessionUserChangedEvent));
     }
     setMessage(response.ok ? "saved" : "error");
   }

@@ -19,6 +19,7 @@ import { useTheme } from "./theme-provider";
 import { isThemePreference } from "./theme";
 import { clearSession, ensureMobileSession } from "@kaila/mobile/session";
 import { isPublicPath, normalizePublicPath } from "./public-routes";
+import { sessionUserChangedEvent } from "./session-user";
 
 const SESSION_AWARE_PUBLIC_PATHS = new Set(["/faqs"]);
 
@@ -42,6 +43,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const [publicSessionStatus, setPublicSessionStatus] = useState<PublicSessionStatus>(
     isSessionAwarePublic ? "checking" : "anonymous",
   );
+  const showKatabang = pathname !== "/help/katabang" && pathname !== "/provider-profile";
 
   useEffect(() => {
     if (isPublic && !isSessionAwarePublic) {
@@ -106,6 +108,27 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     };
   }, [applyAccountTheme, isPublic, isSessionAwarePublic, pathname, router, sessionReady]);
 
+  useEffect(() => {
+    if (!sessionReady) return;
+
+    const refreshSessionUser = () => {
+      void fetch("/api/v1/me", {
+        credentials: "include",
+        headers: { Accept: "application/json" },
+        cache: "no-store",
+      })
+        .then(async (response) => {
+          if (!response.ok) return;
+          const userBody = (await response.json()) as { data: { name: string } };
+          setUserName(userBody.data.name);
+        })
+        .catch(() => undefined);
+    };
+
+    window.addEventListener(sessionUserChangedEvent, refreshSessionUser);
+    return () => window.removeEventListener(sessionUserChangedEvent, refreshSessionUser);
+  }, [sessionReady]);
+
   if (isPublic && !isSessionAwarePublic) {
     return children;
   }
@@ -156,7 +179,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
             <div className="appSessionBarActions">
               <span className="sessionName">{userName}</span>
               <NotificationBell />
-              {pathname !== "/help/katabang" && <FloatingKatabang />}
+              {showKatabang && <FloatingKatabang />}
               <SessionMenu loggingOut={loggingOut} onSignOut={() => void signOut()} />
             </div>
           </header>

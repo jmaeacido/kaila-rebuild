@@ -12,6 +12,14 @@
   min-width: 0;
 }
 
+.caption {
+  align-items: baseline;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-8);
+  min-height: 1.25rem;
+}
+
 .fields label small {
   color: var(--color-text-secondary);
   font-size: var(--font-caption-size);

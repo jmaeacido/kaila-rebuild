@@ -99,7 +99,9 @@
   gap: var(--spacing-16);
   margin-top: var(--spacing-8);
 }
-.form label {
+.formSection > label,
+.addressFields > label,
+.basicGrid > label {
   color: var(--color-ink);
   display: grid;
   font-weight: var(--font-weight-medium);
@@ -159,7 +161,7 @@
   line-height: var(--line-height-body);
 }
 .basicGrid { display: grid; gap: var(--spacing-12); }
-.shopToggle { align-items: flex-start; background: var(--color-surface); border: var(--control-border-width) solid var(--color-border); border-radius: var(--radius-input); cursor: pointer; grid-template-columns: auto 1fr; padding: var(--spacing-12); }
+.shopToggle { align-items: flex-start; background: var(--color-surface); border: var(--control-border-width) solid var(--color-border); border-radius: var(--radius-input); cursor: pointer; display: grid; grid-template-columns: auto 1fr; padding: var(--spacing-12); }
 .shopToggle input { min-height: var(--spacing-24); width: var(--spacing-24); }
 .shopToggle span,.shopFields { display: grid; gap: var(--spacing-12); }
 .shopToggle small,.shopFields p { color: var(--color-text-secondary); font-size: var(--font-small-size); font-weight: var(--font-weight-regular); }
@@ -196,7 +198,7 @@
   margin: 0 calc(var(--spacing-16) * -1) calc(var(--spacing-16) * -1);
   padding: var(--spacing-12) var(--spacing-16) calc(var(--spacing-12) + env(safe-area-inset-bottom));
   position: sticky;
-  z-index: 2;
+  z-index: 3;
 }
 .submitBar > span {
   align-items: center;
@@ -225,6 +227,7 @@
   border: var(--control-border-width) solid var(--color-border);
   border-radius: var(--radius-input);
   cursor: pointer;
+  display: grid;
   grid-template-columns: auto 1fr;
   padding: var(--spacing-12);
 }
@@ -269,6 +272,7 @@
   align-items: center;
   border-radius: var(--radius-input);
   cursor: pointer;
+  display: grid;
   grid-template-columns: auto 1fr;
   min-height: var(--spacing-48);
   padding: var(--spacing-8);
