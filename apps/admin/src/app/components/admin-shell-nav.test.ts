@@ -9,6 +9,7 @@ describe("admin shell destinations", () => {
   it("exposes every operations section linked from desktop navigation", () => {
     expect(adminDestinations.map((item) => item.label)).toEqual([
       "Review",
+      "Identity",
       "People",
       "Maintenance",
       "Support",
@@ -19,6 +20,7 @@ describe("admin shell destinations", () => {
     ]);
     expect(adminDestinations.map((item) => item.href)).toEqual([
       "/",
+      "/identity-verifications",
       "/users",
       "/maintenance",
       "/support",

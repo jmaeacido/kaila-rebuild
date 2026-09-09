@@ -17,6 +17,8 @@ return [
 
     'private_assets_disk' => env('PRIVATE_ASSET_DISK', 'private-local'),
 
+    'identity_evidence_disk' => env('IDENTITY_EVIDENCE_DISK', 'identity-evidence-local'),
+
     /*
     |--------------------------------------------------------------------------
     | Filesystem Disks
@@ -75,6 +77,31 @@ return [
                     'private' => 0770,
                 ],
             ],
+        ],
+
+        'identity-evidence-local' => [
+            'driver' => 'local',
+            'root' => storage_path('app/identity-evidence'),
+            'visibility' => 'private',
+            'throw' => true,
+            'report' => true,
+            'permissions' => [
+                'file' => ['public' => 0600, 'private' => 0600],
+                'dir' => ['public' => 0700, 'private' => 0700],
+            ],
+        ],
+
+        'identity-evidence' => [
+            'driver' => 's3',
+            'key' => env('IDENTITY_AWS_ACCESS_KEY_ID'),
+            'secret' => env('IDENTITY_AWS_SECRET_ACCESS_KEY'),
+            'region' => env('IDENTITY_AWS_DEFAULT_REGION'),
+            'bucket' => env('IDENTITY_AWS_BUCKET'),
+            'endpoint' => env('IDENTITY_AWS_ENDPOINT'),
+            'use_path_style_endpoint' => env('IDENTITY_AWS_USE_PATH_STYLE_ENDPOINT', false),
+            'visibility' => 'private',
+            'throw' => true,
+            'report' => true,
         ],
 
         's3' => [

@@ -13,6 +13,7 @@ export type NotificationRecord = {
 export const profilePictureReviewEvent = "kaila:open-profile-picture-review";
 
 export function notificationRoute(notification: NotificationRecord): string {
+  if (notification.resourceType === "identity_verification" || notification.type.startsWith("identity.")) return "/identity-verification";
   if (notification.type === "profile.provider_approved" || notification.type === "profile.provider_rejected") {
     const reviewStatus = notification.data.reviewStatus === "approved" ? "approved" : "rejected";
     const params = new URLSearchParams({

@@ -9,18 +9,19 @@ use App\Models\ProviderProfile;
 use App\Models\ServiceJob;
 use App\Models\User;
 use App\Support\OfferService;
+use App\Support\IdentityVerificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class OfferController
 {
-    public function __construct(private readonly OfferService $service) {}
+    public function __construct(private readonly OfferService $service, private readonly IdentityVerificationService $identity) {}
 
     public function index(Request $request, ServiceJob $serviceJob): JsonResponse
     {
         $user = $this->user($request);
-        $query = OfferThread::query()->where('service_job_id', $serviceJob->id)->with(['revisions', 'provider.credentials']);
+        $query = OfferThread::query()->where('service_job_id', $serviceJob->id)->with(['revisions', 'provider.user.identityVerification']);
         if ($serviceJob->client_user_id !== $user->id) {
             $provider = ProviderProfile::query()->where('user_id', $user->id)->first();
             if (! $provider instanceof ProviderProfile) {
@@ -35,6 +36,7 @@ class OfferController
     public function store(Request $request, ServiceJob $serviceJob): JsonResponse
     {
         $user = $this->user($request);
+        $this->identity->enforce($user, 'activate_provider');
         $provider = ProviderProfile::query()->where('user_id', $user->id)->where('status', 'active')->firstOrFail();
         $thread = $this->service->create($serviceJob, $provider, $user, $this->terms($request));
 
@@ -44,7 +46,7 @@ class OfferController
     public function show(Request $request, OfferThread $offerThread): JsonResponse
     {
         $user = $this->user($request);
-        $offerThread->load(['job', 'provider.credentials', 'revisions']);
+        $offerThread->load(['job', 'provider.user.identityVerification', 'revisions']);
         $job = $offerThread->job;
         $provider = $offerThread->provider;
         if (! $job instanceof ServiceJob || ! $provider instanceof ProviderProfile || ($job->client_user_id !== $user->id && $provider->user_id !== $user->id)) {
@@ -91,7 +93,7 @@ class OfferController
     /** @return array<string, mixed> */
     private function present(OfferThread $thread, User $viewer): array
     {
-        $thread->loadMissing(['provider.credentials', 'provider.serviceAreas:id,name', 'revisions', 'job.area:id,name']);
+        $thread->loadMissing(['provider.user.identityVerification', 'provider.serviceAreas:id,name', 'revisions', 'job.area:id,name']);
         $provider = $thread->provider;
         $job = $thread->job;
         if (! $provider instanceof ProviderProfile || ! $job instanceof ServiceJob) {
@@ -108,7 +110,7 @@ class OfferController
         $rating = $reputation->value('average_rating') ?? $provider->rating;
         $reviewCount = (int) ($reputation->value('published_review_count') ?? 0);
 
-        return ['id' => $thread->id, 'jobId' => $thread->service_job_id, 'status' => $thread->status, 'provider' => ['id' => $provider->id, 'displayName' => $provider->display_name, 'avatarUrl' => $avatar ? "/api/v1/profile-assets/{$avatar->getKey()}" : null, 'rating' => $rating, 'reviewCount' => $reviewCount, 'completedJobs' => $provider->completedJobsCount(), 'responseMinutes' => $provider->response_minutes, 'verified' => $provider->credentials->contains('status', 'approved'), 'address' => $provider->serviceAreas->pluck('name')->join(', '), 'distance' => $provider->serviceAreas->contains('id', $job->area_id) ? 'Serves this job area' : 'Distance unavailable'], 'latestRevisionNumber' => $thread->latest_revision_number, 'revisions' => $thread->revisions->map(fn (OfferRevision $revision) => ['id' => $revision->id, 'revisionNumber' => $revision->revision_number, 'proposedBy' => $revision->proposed_by_user_id === $job->client_user_id ? 'client' : 'provider', 'amountCentavos' => $revision->amount_centavos, 'availabilityText' => $revision->availability_text, 'estimatedDurationText' => $revision->estimated_duration_text, 'scope' => $revision->scope, 'message' => $revision->message, 'expiresAt' => $revision->expires_at?->toIso8601String(), 'createdAt' => $revision->created_at->toIso8601String()])];
+        return ['id' => $thread->id, 'jobId' => $thread->service_job_id, 'status' => $thread->status, 'provider' => ['id' => $provider->id, 'displayName' => $provider->display_name, 'avatarUrl' => $avatar ? "/api/v1/profile-assets/{$avatar->getKey()}" : null, 'rating' => $rating, 'reviewCount' => $reviewCount, 'completedJobs' => $provider->completedJobsCount(), 'responseMinutes' => $provider->response_minutes, 'verified' => $provider->user?->identityVerification?->isApproved() === true, 'address' => $provider->serviceAreas->pluck('name')->join(', '), 'distance' => $provider->serviceAreas->contains('id', $job->area_id) ? 'Serves this job area' : 'Distance unavailable'], 'latestRevisionNumber' => $thread->latest_revision_number, 'revisions' => $thread->revisions->map(fn (OfferRevision $revision) => ['id' => $revision->id, 'revisionNumber' => $revision->revision_number, 'proposedBy' => $revision->proposed_by_user_id === $job->client_user_id ? 'client' : 'provider', 'amountCentavos' => $revision->amount_centavos, 'availabilityText' => $revision->availability_text, 'estimatedDurationText' => $revision->estimated_duration_text, 'scope' => $revision->scope, 'message' => $revision->message, 'expiresAt' => $revision->expires_at?->toIso8601String(), 'createdAt' => $revision->created_at->toIso8601String()])];
     }
 
     private function user(Request $request): User

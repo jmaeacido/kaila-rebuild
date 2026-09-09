@@ -506,6 +506,11 @@ export default function AccountPage() {
       </section>
 
       <section className={styles.links} aria-label="Account destinations">
+        <Link href="/identity-verification">
+          <span><ShieldCheck aria-hidden="true" /></span>
+          <div><strong>Identity verification</strong><small>Check your status or submit an ID and selfie</small></div>
+          <ChevronRight aria-hidden="true" />
+        </Link>
         <Link href="/support">
           <span className={styles.supportIcon}><Image src="/support/support-icon.png" alt="" width={48} height={48} /></span>
           <div><strong>Support</strong><small>Ask a question or follow your requests</small></div>

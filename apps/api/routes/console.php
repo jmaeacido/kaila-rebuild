@@ -22,3 +22,9 @@ Schedule::command('outbox:dispatch')
 Schedule::job(new PurgeExpiredLocationSamples, 'maintenance')
     ->hourly()
     ->withoutOverlapping();
+
+Schedule::command('identity-evidence:purge')
+    ->hourly()
+    ->withoutOverlapping();
+
+Schedule::command('identity-evidence:purge')->hourly()->withoutOverlapping();

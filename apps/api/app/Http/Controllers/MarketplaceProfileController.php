@@ -129,7 +129,7 @@ class MarketplaceProfileController extends Controller
             ->when(isset($data['categoryId']), fn ($q) => $q->whereHas('services', fn ($service) => $service->whereKey($data['categoryId'])->where('is_active', true)))
             ->when($area, fn ($q) => $q->whereHas('serviceAreas', fn ($serviceArea) => $serviceArea->whereKey($matchingAreaIds)->where('is_active', true)))
             ->when(trim($data['query'] ?? '') !== '', fn ($q) => $q->where(fn ($name) => $name->where('display_name', 'like', '%'.trim($data['query']).'%')->orWhere('shop_name', 'like', '%'.trim($data['query']).'%')))
-            ->with(['services:id,name,slug,icon', 'serviceAreas:id,name,type,code', 'availability', 'portfolio:id,user_id,caption,sort_order', 'credentials' => fn ($q) => $q->where('review_status', 'approved')])
+            ->with(['services:id,name,slug,icon', 'serviceAreas:id,name,type,code', 'availability', 'portfolio:id,user_id,caption,sort_order', 'user.identityVerification'])
             ->orderByDesc('rating')->orderBy('id')->paginate(20);
 
         return response()->json(['data' => $profiles->getCollection()->map(fn (ProviderProfile $profile) => $this->publicProvider($profile, $request->user())), 'meta' => ['currentPage' => $profiles->currentPage(), 'lastPage' => $profiles->lastPage()]]);
@@ -140,7 +140,7 @@ class MarketplaceProfileController extends Controller
         abort_unless($providerProfile->status === 'active', 404);
 
         return response()->json(['data' => $this->publicProvider(
-            $providerProfile->load(['services:id,name,slug,icon', 'serviceAreas:id,name,type,code', 'availability', 'portfolio:id,user_id,caption,sort_order,like_count', 'credentials' => fn ($q) => $q->where('review_status', 'approved')]),
+            $providerProfile->load(['services:id,name,slug,icon', 'serviceAreas:id,name,type,code', 'availability', 'portfolio:id,user_id,caption,sort_order,like_count', 'user.identityVerification']),
             $request->user(),
         )]);
     }
@@ -177,7 +177,7 @@ class MarketplaceProfileController extends Controller
                 : ($profile->rating !== null ? (float) $profile->rating : null),
             'reviewCount' => $reputation !== null ? (int) $reputation->published_review_count : 0,
             'completedJobs' => $completedJobs, 'responseMinutes' => $profile->response_minutes,
-            'memberSince' => $profile->created_at?->toDateString(), 'verified' => $profile->credentials->isNotEmpty(),
+            'memberSince' => $profile->created_at?->toDateString(), 'verified' => $profile->user?->identityVerification?->isApproved() === true,
             'isOwnProfile' => $viewer?->id === $profile->user_id,
             'services' => $profile->services, 'serviceAreas' => $profile->serviceAreas, 'availability' => $profile->relationLoaded('availability') ? $profile->availability : [],
             'availabilityStatus' => $profile->relationLoaded('availability') && $profile->availability->contains('is_available', true) ? 'available' : 'unavailable',

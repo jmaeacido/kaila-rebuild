@@ -550,6 +550,7 @@ export default function PostJobPage() {
           {status === "error" && (
             <Feedback kind="error" title="We couldn’t continue">
               {message || "Reload the page and try again."}
+              {message.includes("Verify your identity") ? <Link href="/identity-verification">Verify my identity</Link> : null}
             </Feedback>
           )}
         </section>

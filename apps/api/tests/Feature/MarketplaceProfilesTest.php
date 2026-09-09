@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Area;
 use App\Models\JobOpportunity;
+use App\Models\IdentityVerification;
 use App\Models\OfferThread;
 use App\Models\OutboxEvent;
 use App\Models\ProfileAsset;
@@ -448,7 +449,7 @@ class MarketplaceProfilesTest extends TestCase
         ]);
     }
 
-    public function test_verified_badge_appears_only_after_clean_asset_and_approved_credential(): void
+    public function test_verified_badge_appears_only_after_account_identity_approval(): void
     {
         [$category, $area] = $this->referenceData();
         $profile = $this->provider('Verified Provider', 'active', $category, $area);
@@ -461,6 +462,13 @@ class MarketplaceProfilesTest extends TestCase
         $admin = User::factory()->create(['is_admin' => true]);
         $this->actingAs($admin)->putJson("/api/v1/admin/marketplace/credentials/{$credential->id}/review", ['reviewStatus' => 'approved'])
             ->assertOk();
+        $this->actingAs($viewer)->getJson("/api/v1/providers/{$profile->id}")->assertJsonPath('data.verified', false);
+        IdentityVerification::query()->create([
+            'user_id' => $profile->user_id,
+            'status' => 'approved',
+            'reviewed_at' => now(),
+            'verified_until' => now()->addYear(),
+        ]);
         $this->actingAs($viewer)->getJson("/api/v1/providers/{$profile->id}")->assertJsonPath('data.verified', true);
     }
 

@@ -50,7 +50,7 @@ class ProviderRecommendationService
             ));
         $total = (clone $query)->count();
         $providers = $query
-            ->with(['serviceAreas:id,name,type,parent_id', 'credentials' => fn ($credentials) => $credentials->where('review_status', 'approved')])
+            ->with(['serviceAreas:id,name,type,parent_id', 'user.identityVerification'])
             ->orderByDesc('rating')
             ->orderBy('id')
             ->limit(5)
@@ -64,7 +64,7 @@ class ProviderRecommendationService
                 'displayName' => $provider->display_name,
                 'rating' => $provider->rating === null ? null : (float) $provider->rating,
                 'completedJobs' => $provider->completedJobsCount(),
-                'verified' => $provider->credentials->isNotEmpty(),
+                'verified' => $provider->user?->identityVerification?->isApproved() === true,
                 'responseMinutes' => $provider->response_minutes,
                 'serviceAreas' => $provider->serviceAreas->pluck('name')->values()->all(),
                 'href' => "/providers/{$provider->id}",

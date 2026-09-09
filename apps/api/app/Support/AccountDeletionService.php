@@ -52,6 +52,10 @@ class AccountDeletionService
     {
         $assets = DB::table('profile_assets')->where('user_id', $user->id)->get(['disk', 'object_key']);
         $draftAssets = DB::table('job_assets')->join('service_jobs', 'service_jobs.id', '=', 'job_assets.service_job_id')->where('service_jobs.client_user_id', $user->id)->where('service_jobs.status', 'draft')->get(['job_assets.disk', 'job_assets.object_key']);
+        $identityEvidence = DB::table('identity_evidence')
+            ->join('identity_verifications', 'identity_verifications.id', '=', 'identity_evidence.identity_verification_id')
+            ->where('identity_verifications.user_id', $user->id)->whereNull('identity_evidence.purged_at')
+            ->get(['identity_evidence.id', 'identity_evidence.disk', 'identity_evidence.object_key']);
         $recordId = (string) Str::uuid();
         $deletedAt = now();
 
@@ -104,7 +108,8 @@ class AccountDeletionService
             ])->save();
         });
 
-        $assets->concat($draftAssets)->each(fn ($asset) => Storage::disk($asset->disk)->delete($asset->object_key));
+        $assets->concat($draftAssets)->concat($identityEvidence)->each(fn ($asset) => Storage::disk($asset->disk)->delete($asset->object_key));
+        DB::table('identity_evidence')->whereIn('id', $identityEvidence->pluck('id'))->update(['purged_at' => $deletedAt, 'size_bytes' => 0, 'sha256' => str_repeat('0', 64), 'updated_at' => $deletedAt]);
 
         return ['recordId' => $recordId, 'deletedAt' => $deletedAt->toIso8601String()];
     }
