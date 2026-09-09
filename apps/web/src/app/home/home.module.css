@@ -675,6 +675,13 @@
   text-decoration: none;
 }
 
+.providerAvatarWrap {
+  position: relative;
+  flex: none;
+  height: var(--spacing-48);
+  width: var(--spacing-48);
+}
+
 .providerAvatar {
   align-items: center;
   background: var(--gradient-primary);
@@ -682,16 +689,23 @@
   color: var(--color-on-primary);
   display: flex;
   font-weight: var(--font-weight-bold);
-  height: var(--spacing-48);
+  height: 100%;
   justify-content: center;
   overflow: hidden;
-  width: var(--spacing-48);
+  width: 100%;
 }
 
 .providerAvatar img {
   height: 100%;
   object-fit: cover;
   width: 100%;
+}
+
+.providerVerified {
+  bottom: -2px;
+  position: absolute;
+  right: -2px;
+  z-index: 1;
 }
 
 .providerDetails {
@@ -714,11 +728,6 @@
 
 .providerRating svg {
   fill: currentColor;
-}
-
-.providerDetails .verified {
-  color: var(--color-success);
-  font-weight: var(--font-weight-semibold);
 }
 
 .hero {

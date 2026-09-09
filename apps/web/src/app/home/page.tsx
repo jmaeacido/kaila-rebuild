@@ -516,16 +516,20 @@ function ClientHome({
           <div className={styles.trustedGrid}>
             {providers.slice(0, 2).map((provider) => (
               <Link className={styles.trustedCard} href={`/providers/${provider.id}`} key={provider.id}>
-                <span className={styles.providerAvatar}>
-                  {provider.avatarUrl ? (
-                    <Image src={provider.avatarUrl} alt={`${provider.displayName} profile`} width={56} height={56} unoptimized />
-                  ) : provider.displayName.charAt(0).toUpperCase()}
+                <span className={styles.providerAvatarWrap}>
+                  <span className={styles.providerAvatar}>
+                    {provider.avatarUrl ? (
+                      <Image src={provider.avatarUrl} alt={`${provider.displayName} profile`} width={56} height={56} unoptimized />
+                    ) : provider.displayName.charAt(0).toUpperCase()}
+                  </span>
+                  {provider.verified ? (
+                    <IdentityVerifiedBadge compact className={styles.providerVerified} />
+                  ) : null}
                 </span>
                 <span className={styles.providerDetails}>
                   <strong>{provider.displayName}</strong>
                   <small className={styles.providerRating}><Star aria-hidden="true" />{provider.rating === null ? "New" : provider.rating.toFixed(1)} ({provider.reviewCount})</small>
                   <small><MapPin aria-hidden="true" />{provider.serviceAreas[0]?.name ?? "Local provider"}</small>
-                  {provider.verified ? <IdentityVerifiedBadge compact /> : null}
                 </span>
               </Link>
             ))}

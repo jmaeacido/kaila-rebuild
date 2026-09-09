@@ -79,7 +79,10 @@ test("Client Home follows the compact discovery layout while retaining shared na
   assert.match(source, /What service do you need\?/);
   assert.match(source, />Post a Job</);
   assert.match(source, /Trusted Providers Nearby/);
-  assert.match(source, /provider\.verified \? <IdentityVerifiedBadge/);
+  assert.match(
+    source,
+    /providerAvatarWrap[\s\S]*?provider\.verified \?[\s\S]*?IdentityVerifiedBadge compact className=\{styles\.providerVerified\}/,
+  );
   assert.match(source, /<MarketplaceNavigation \/>/);
 });
 
