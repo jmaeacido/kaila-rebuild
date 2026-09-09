@@ -24,11 +24,11 @@ class ProfileAssetController extends Controller
     public function store(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'purpose' => ['required', Rule::in(['avatar', 'portfolio', 'credential'])],
+            'purpose' => ['required', Rule::in(['avatar', 'provider_avatar', 'portfolio', 'credential'])],
             'file' => ['required', 'file', 'mimes:jpg,jpeg,png,webp,pdf', 'max:10240'],
             'caption' => ['nullable', 'string', 'max:180'],
         ]);
-        if ($data['purpose'] === 'portfolio') {
+        if (in_array($data['purpose'], ['portfolio', 'avatar', 'provider_avatar'], true)) {
             $request->validate(['file' => ['required', 'file', 'mimes:jpg,jpeg,png,webp', 'max:10240']]);
         }
         /** @var User $user */ $user = $request->user();
@@ -79,7 +79,7 @@ class ProfileAssetController extends Controller
         $isOwner = $user !== null && $profileAsset->user_id === $user->id;
         abort_unless(
             $isOwner
-            || (in_array($profileAsset->purpose, ['avatar', 'portfolio'], true) && $profileAsset->scan_status === 'clean'),
+            || (in_array($profileAsset->purpose, ['avatar', 'provider_avatar', 'portfolio'], true) && $profileAsset->scan_status === 'clean'),
             403
         );
 

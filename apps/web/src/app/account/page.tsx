@@ -19,19 +19,24 @@ import { Button, Feedback } from "@kaila/ui";
 import { ActionModal } from "../../components/action-modal";
 import { AttachmentSourceActions } from "../../components/attachment-picker";
 import { MarketplaceNavigation } from "../../components/marketplace-navigation";
+import { IdentityVerifiedBadge } from "../../components/identity-verified-badge";
 import { prepareCsrf } from "../auth-client";
 import { AddressHierarchy, type AreaReference } from "../address-hierarchy";
 import styles from "./account.module.css";
 import { useRealtimeInvalidation } from "../use-realtime-invalidation";
 import { profilePictureReviewEvent, type NotificationRecord } from "../notification-route";
 import { areaProfileChangedEvent } from "../../components/area-mismatch-banner";
+import { marketplaceModeChangedEvent } from "../use-marketplace-mode";
 
 type User = {
   name: string;
   email: string;
   activeMode: "client" | "provider" | null;
   providerEligible: boolean;
+  identityVerified: boolean;
   avatarUrl: string | null;
+  providerAvatarUrl: string | null;
+  displayAvatarUrl: string | null;
   reputation: { averageRating: number | null; reviewCount: number };
 };
 type Profile = {
@@ -174,6 +179,8 @@ export default function AccountPage() {
   }
 
   async function uploadAvatarFile(file: File) {
+    const isProviderMode = profile?.activeMode === "provider" && user?.providerEligible;
+    const purpose = isProviderMode ? "provider_avatar" : "avatar";
     setAvatarPreviewUrl(URL.createObjectURL(file));
     setUploadProgress(0);
     setStatus("uploading");
@@ -181,11 +188,12 @@ export default function AccountPage() {
     try {
       const token = await prepareCsrf();
       const body = new FormData();
-      body.append("purpose", "avatar");
+      body.append("purpose", purpose);
       body.append("file", file);
       const responseStatus = await new Promise<number>((resolve, reject) => {
         const request = new XMLHttpRequest();
         request.open("POST", "/api/v1/me/profile-assets");
+        request.withCredentials = true;
         request.setRequestHeader("Accept", "application/json");
         if (token) request.setRequestHeader("X-XSRF-TOKEN", token);
         request.upload.addEventListener("progress", (event) => {
@@ -202,7 +210,11 @@ export default function AccountPage() {
         throw new Error(responseStatus === 422 ? "invalid-file" : "upload-failed");
       }
       setUploadProgress(100);
-      setAvatarNotice("Uploaded. Your picture will appear after review.");
+      setAvatarNotice(
+        isProviderMode
+          ? "Uploaded. Your provider logo will appear after review."
+          : "Uploaded. Your picture will appear after review.",
+      );
       setStatus("ready");
     } catch (error) {
       setStatus("error");
@@ -224,6 +236,7 @@ export default function AccountPage() {
         body: JSON.stringify({ activeMode }),
       });
       if (!response.ok) throw new Error();
+      window.dispatchEvent(new Event(marketplaceModeChangedEvent));
       await load();
       setNotice(
         activeMode === "provider"
@@ -256,6 +269,11 @@ export default function AccountPage() {
     );
   }
 
+  const isProviderMode = profile.activeMode === "provider" && user.providerEligible;
+  const modeAvatarUrl = isProviderMode
+    ? (user.providerAvatarUrl ?? user.displayAvatarUrl ?? user.avatarUrl)
+    : user.avatarUrl;
+
   return (
     <main className={styles.shell}>
       <header className={styles.pageHeader}>
@@ -273,9 +291,9 @@ export default function AccountPage() {
       <section className={styles.identityCard} aria-labelledby="identity-title">
         <div className={styles.avatar}>
           <span aria-hidden="true">{user.name.charAt(0).toUpperCase()}</span>
-          {user.avatarUrl ? (
+          {modeAvatarUrl ? (
             <Image
-              src={user.avatarUrl}
+              src={modeAvatarUrl}
               alt=""
               width={112}
               height={112}
@@ -284,7 +302,7 @@ export default function AccountPage() {
           ) : null}
           <button
             aria-expanded={avatarMenuOpen}
-            aria-label="Change profile picture"
+            aria-label={isProviderMode ? "Change provider logo" : "Change profile picture"}
             className={styles.avatarTrigger}
             disabled={status === "uploading"}
             onClick={() => {
@@ -300,9 +318,16 @@ export default function AccountPage() {
         <div>
           <h2 id="identity-title">{user.name}</h2>
           <p>{user.email}</p>
+          {user.identityVerified ? (
+            <div className={styles.verifiedRow}>
+              <IdentityVerifiedBadge />
+            </div>
+          ) : null}
           <span className={styles.safetyNote}>
             <ShieldCheck aria-hidden="true" />
-            Pictures are reviewed before they appear
+            {isProviderMode
+              ? "Provider logos are reviewed before they appear"
+              : "Pictures are reviewed before they appear"}
           </span>
           {avatarNotice && (
             <p
@@ -316,8 +341,8 @@ export default function AccountPage() {
         </div>
         {avatarMenuOpen && (
           <ActionModal
-            eyebrow="Profile picture"
-            title="Choose a photo"
+            eyebrow={isProviderMode ? "Provider logo" : "Profile picture"}
+            title={isProviderMode ? "Choose a logo or emblem" : "Choose a photo"}
             onClose={() => setAvatarMenuOpen(false)}
             wide
           >
@@ -326,26 +351,30 @@ export default function AccountPage() {
                 <div className={styles.reviewOutcome} data-kind={avatarReviewOutcome} role="status">
                   {avatarReviewOutcome === "approved" ? <Check aria-hidden="true" /> : <ShieldCheck aria-hidden="true" />}
                   <div>
-                    <strong>{avatarReviewOutcome === "approved" ? "Profile picture approved" : "Profile picture not approved"}</strong>
+                    <strong>
+                      {avatarReviewOutcome === "approved"
+                        ? (isProviderMode ? "Provider logo approved" : "Profile picture approved")
+                        : (isProviderMode ? "Provider logo not approved" : "Profile picture not approved")}
+                    </strong>
                     {avatarReviewOutcome === "approved" ? (
-                      <p>Your approved picture is now available on KAILA.</p>
+                      <p>Your approved image is now available on KAILA.</p>
                     ) : (
                       <>
                         <div className={styles.reviewReason}>
                           <strong>Reason</strong>
                           <p>{avatarReviewReason || "The reviewer did not provide a reason."}</p>
                         </div>
-                        <p>Choose another clear photo to submit for review.</p>
+                        <p>Choose another clear image to submit for review.</p>
                       </>
                     )}
                   </div>
                 </div>
               )}
               <div className={styles.avatarPreview}>
-                {avatarPreviewUrl || user.avatarUrl ? (
+                {avatarPreviewUrl || modeAvatarUrl ? (
                   <Image
-                    src={avatarPreviewUrl || user.avatarUrl || ""}
-                    alt="Profile picture preview"
+                    src={avatarPreviewUrl || modeAvatarUrl || ""}
+                    alt={isProviderMode ? "Provider logo preview" : "Profile picture preview"}
                     width={160}
                     height={160}
                     unoptimized
@@ -356,8 +385,8 @@ export default function AccountPage() {
               </div>
               {status === "uploading" && (
                 <div className={styles.uploadStatus} role="status">
-                  <div><strong>Uploading photo</strong><span>{uploadProgress}%</span></div>
-                  <progress aria-label="Photo upload progress" max="100" value={uploadProgress} />
+                  <div><strong>Uploading {isProviderMode ? "logo" : "photo"}</strong><span>{uploadProgress}%</span></div>
+                  <progress aria-label="Upload progress" max="100" value={uploadProgress} />
                 </div>
               )}
               {avatarPreviewUrl && status === "ready" && avatarNotice && (
@@ -449,6 +478,7 @@ export default function AccountPage() {
         )}
       </section>
 
+      {!isProviderMode ? (
       <form
         className={styles.card}
         id="client-profile"
@@ -485,6 +515,21 @@ export default function AccountPage() {
           Save profile
         </Button>
       </form>
+      ) : (
+        <section className={styles.card} aria-labelledby="provider-profile-title">
+          <p className={styles.eyebrow}>PROVIDER PROFILE</p>
+          <h2 id="provider-profile-title">How clients know your business</h2>
+          <p>
+            {profile.provider?.display_name
+              ? `${profile.provider.display_name} · ${profile.provider.status.replaceAll("_", " ")}`
+              : "Finish your provider profile to appear in discovery."}
+          </p>
+          <Link className={styles.providerLink} href="/provider-profile">
+            Manage provider profile
+            <ChevronRight aria-hidden="true" />
+          </Link>
+        </section>
+      )}
       </div>
 
       <aside className={styles.secondaryColumn} aria-label="Account overview and destinations">
@@ -508,7 +553,17 @@ export default function AccountPage() {
       <section className={styles.links} aria-label="Account destinations">
         <Link href="/identity-verification">
           <span><ShieldCheck aria-hidden="true" /></span>
-          <div><strong>Identity verification</strong><small>Check your status or submit an ID and selfie</small></div>
+          <div>
+            <strong>
+              Identity verification
+              {user.identityVerified ? <>{" "}<IdentityVerifiedBadge compact /></> : null}
+            </strong>
+            <small>
+              {user.identityVerified
+                ? "Your identity is verified on KAILA"
+                : "Check your status or submit an ID and selfie"}
+            </small>
+          </div>
           <ChevronRight aria-hidden="true" />
         </Link>
         <Link href="/support">

@@ -22,11 +22,13 @@ class AdminIdentityVerificationController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $actor = $this->user($request);
-        $items = IdentityVerification::query()->where(function ($query): void {
-            $query->whereIn('status', ['submitted', 'in_review'])->orWhereNotNull('appeal_requested_at');
-        })->where(fn ($query) => $query->whereNull('assigned_to')->orWhere('assigned_to', $actor->id))->with(['user:id,name,email', 'evidence'])->oldest('submitted_at')->get();
+        $items = $this->pendingQuery($this->user($request))->with(['user:id,name,email', 'evidence'])->oldest('submitted_at')->get();
         return response()->json(['data' => $items->map(fn (IdentityVerification $item) => $this->present($item))]);
+    }
+
+    public function summary(Request $request): JsonResponse
+    {
+        return response()->json(['data' => ['pendingCount' => $this->pendingQuery($this->user($request))->count()]]);
     }
 
     public function preview(Request $request, IdentityEvidence $identityEvidence): Response
@@ -110,6 +112,14 @@ class AdminIdentityVerificationController extends Controller
             'appealRequestedAt' => $item->appeal_requested_at?->toIso8601String(), 'user' => ['id' => $item->user_id, 'name' => $item->user?->name, 'email' => $item->user?->email],
             'evidence' => $item->evidence->where('session_id', $item->evidence->sortByDesc('created_at')->first()?->session_id)->values()->map(fn (IdentityEvidence $evidence) => ['id' => $evidence->id, 'kind' => $evidence->kind, 'scanStatus' => $evidence->scan_status, 'previewUrl' => "/api/v1/admin/marketplace/identity-verifications/evidence/{$evidence->id}/preview"]),
         ];
+    }
+
+    /** @return \Illuminate\Database\Eloquent\Builder<IdentityVerification> */
+    private function pendingQuery(User $actor)
+    {
+        return IdentityVerification::query()->where(function ($query): void {
+            $query->whereIn('status', ['submitted', 'in_review'])->orWhereNotNull('appeal_requested_at');
+        })->where(fn ($query) => $query->whereNull('assigned_to')->orWhere('assigned_to', $actor->id));
     }
 
     private function user(Request $request): User { $user = $request->user(); abort_unless($user instanceof User, 401); return $user; }

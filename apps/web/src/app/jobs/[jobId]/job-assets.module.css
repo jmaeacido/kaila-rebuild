@@ -210,8 +210,12 @@ a.preview:focus-visible,
 }
 
 .counterpart h2 {
+  align-items: center;
   color: var(--color-ink);
+  display: inline-flex;
+  flex-wrap: wrap;
   font-size: var(--font-card-title-size);
+  gap: var(--spacing-4);
 }
 
 .counterpart div > span {

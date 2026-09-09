@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 
+export const marketplaceModeChangedEvent = "kaila:marketplace-mode-changed";
+
 export type MarketplaceMode = {
   activeMode: "client" | "provider" | null;
   providerEligible: boolean;
@@ -41,10 +43,12 @@ export function useMarketplaceMode(): MarketplaceMode {
     const reconcile = () => void load();
     window.addEventListener("online", reconcile);
     window.addEventListener("kaila:domain-event", reconcile);
+    window.addEventListener(marketplaceModeChangedEvent, reconcile);
     return () => {
       window.clearTimeout(timer);
       window.removeEventListener("online", reconcile);
       window.removeEventListener("kaila:domain-event", reconcile);
+      window.removeEventListener(marketplaceModeChangedEvent, reconcile);
     };
   }, [load]);
 

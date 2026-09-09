@@ -3,8 +3,9 @@
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowLeft, BadgeCheck, BriefcaseBusiness, MapPin, Search, Star } from "lucide-react";
+import { ArrowLeft, BriefcaseBusiness, MapPin, Search, Star } from "lucide-react";
 import { Button, Feedback } from "@kaila/ui";
+import { IdentityVerifiedBadge } from "../../components/identity-verified-badge";
 import { SelectField } from "../../components/select-field";
 import { ServiceCategoryBadge } from "../../components/service-category-icon";
 import styles from "./providers.module.css";
@@ -177,7 +178,7 @@ export default function FindProvidersPage() {
                     <div className={styles.cardTitleRow}>
                       <h2>
                         {provider.displayName}
-                        {provider.verified && <BadgeCheck aria-label="Verified provider" />}
+                        {provider.verified ? <IdentityVerifiedBadge compact /> : null}
                       </h2>
                       <span className={isAvailable ? styles.available : styles.unavailable}>
                         {isAvailable ? "Available" : "Unavailable"}

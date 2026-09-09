@@ -7,6 +7,7 @@ use App\Models\Area;
 use App\Models\CommunityComment;
 use App\Models\CommunityPost;
 use App\Models\CommunityPostMedia;
+use App\Models\IdentityVerification;
 use App\Models\ProfileAsset;
 use App\Models\User;
 use App\Support\CommunityFeedContextService;
@@ -53,13 +54,20 @@ class CommunityController
 
         $items = $page->items();
         $postIds = [];
+        $authorIds = [];
         foreach ($items as $post) {
             $postIds[] = $post->id;
+            if ($post->author_display_mode !== 'official') {
+                $authorIds[] = $post->author_user_id;
+            }
         }
+        $authorIds = array_values(array_unique($authorIds));
         $featuredByPostId = $this->welcomeProviders->forPostIds($postIds);
+        $avatars = $this->avatarUrlsForUsers($authorIds);
+        $verified = $this->identityVerifiedForUsers($authorIds);
         $posts = [];
         foreach ($items as $post) {
-            $posts[] = $this->present($post, $user, $featuredByPostId[$post->id] ?? null);
+            $posts[] = $this->present($post, $user, $featuredByPostId[$post->id] ?? null, $avatars, $verified);
         }
 
         return response()->json(['data' => $posts, 'meta' => ['nextCursor' => $page->nextCursor()?->encode()]]);
@@ -206,6 +214,21 @@ class CommunityController
         ScanCommunityPostMedia::dispatch($asset->id);
 
         return response()->json(['data' => $this->presentMedia($asset)], 201);
+    }
+
+    public function destroyMedia(Request $request, CommunityPostMedia $communityPostMedia): JsonResponse
+    {
+        $user = $this->user($request);
+        $post = CommunityPost::query()->findOrFail($communityPostMedia->community_post_id);
+        $this->owns($post, $user);
+
+        DB::transaction(function () use ($communityPostMedia, $post, $user): void {
+            Storage::disk($communityPostMedia->disk)->delete($communityPostMedia->object_key);
+            $communityPostMedia->delete();
+            $this->realtime->publish('community.post.updated', $post, $user, ['action' => 'media_updated', 'mediaId' => $communityPostMedia->id]);
+        });
+
+        return response()->json(['data' => ['deleted' => true, 'id' => $communityPostMedia->id]]);
     }
 
     public function showMedia(Request $request, CommunityPostMedia $communityPostMedia): StreamedResponse
@@ -364,17 +387,56 @@ class CommunityController
     }
 
     /** @param array{id: int, displayName: string}|null $welcomeFeatured
+     * @param array<int, string> $avatars
+     * @param array<int, bool> $verified
      * @return array<string, mixed> */
-    private function present(CommunityPost $post, User $user, ?array $welcomeFeatured = null): array
+    private function present(CommunityPost $post, User $user, ?array $welcomeFeatured = null, array $avatars = [], array $verified = []): array
     {
-        $post->loadMissing(['author', 'area', 'media' => fn ($query) => $query->where('scan_status', 'clean')]);
+        $canManage = $post->author_user_id === $user->id;
+        $post->loadMissing(['author', 'area']);
+        $post->loadMissing([
+            'media' => fn ($query) => $canManage
+                ? $query->whereIn('scan_status', ['clean', 'pending', 'failed'])->orderBy('created_at')
+                : $query->where('scan_status', 'clean')->orderBy('created_at'),
+        ]);
         $mention = $this->mentions->fromPost($post);
         if ($mention === null && $welcomeFeatured !== null) {
             $mention = $this->mentions->forProviderProfileId($welcomeFeatured['id']);
         }
         $featuredProvider = $welcomeFeatured ?? $this->mentions->asFeaturedProvider($mention);
+        $official = $post->author_display_mode === 'official';
+        $authorId = (int) $post->author_user_id;
+        $author = $official
+            ? ['id' => $authorId, 'name' => 'KAILA', 'official' => true, 'avatarUrl' => null, 'identityVerified' => false]
+            : [
+                'id' => $authorId,
+                'name' => $post->author->name,
+                'official' => false,
+                'avatarUrl' => $avatars[$authorId] ?? $this->avatarUrlsForUsers([$authorId])[$authorId] ?? null,
+                'identityVerified' => array_key_exists($authorId, $verified)
+                    ? $verified[$authorId]
+                    : ($this->identityVerifiedForUsers([$authorId])[$authorId] ?? false),
+            ];
 
-        return ['id' => $post->id, 'kind' => $post->kind, 'title' => $post->title, 'body' => $post->body, 'hashtags' => $post->hashtags ?? [], 'area' => $post->area?->only(['id', 'name']), 'areaLabel' => $post->area_label, 'author' => $post->author_display_mode === 'official' ? ['id' => $post->author_user_id, 'name' => 'KAILA', 'official' => true] : ['id' => $post->author_user_id, 'name' => $post->author->name, 'official' => false], 'mention' => $mention, 'featuredProvider' => $featuredProvider, 'helpful' => DB::table('community_reactions')->where(['community_post_id' => $post->id, 'user_id' => $user->id])->exists(), 'helpfulCount' => (int) $post->helpful_count, 'commentsCount' => (int) $post->comments_count, 'media' => $post->media->map(fn ($media) => $this->presentMedia($media))->values(), 'canManage' => $post->author_user_id === $user->id, 'publishedAt' => $post->published_at?->toIso8601String(), 'editedAt' => $post->edited_at?->toIso8601String()];
+        return [
+            'id' => $post->id,
+            'kind' => $post->kind,
+            'title' => $post->title,
+            'body' => $post->body,
+            'hashtags' => $post->hashtags ?? [],
+            'area' => $post->area?->only(['id', 'name']),
+            'areaLabel' => $post->area_label,
+            'author' => $author,
+            'mention' => $mention,
+            'featuredProvider' => $featuredProvider,
+            'helpful' => DB::table('community_reactions')->where(['community_post_id' => $post->id, 'user_id' => $user->id])->exists(),
+            'helpfulCount' => (int) $post->helpful_count,
+            'commentsCount' => (int) $post->comments_count,
+            'media' => $post->media->map(fn ($media) => $this->presentMedia($media))->values(),
+            'canManage' => $canManage,
+            'publishedAt' => $post->published_at?->toIso8601String(),
+            'editedAt' => $post->edited_at?->toIso8601String(),
+        ];
     }
 
     /** @return array<string, mixed> */
@@ -428,6 +490,23 @@ class CommunityController
             if (! isset($map[$asset->user_id])) {
                 $map[$asset->user_id] = "/api/v1/profile-assets/{$asset->id}";
             }
+        }
+
+        return $map;
+    }
+
+    /** @param list<int> $userIds
+     * @return array<int, bool>
+     */
+    private function identityVerifiedForUsers(array $userIds): array
+    {
+        if ($userIds === []) {
+            return [];
+        }
+
+        $map = array_fill_keys($userIds, false);
+        foreach (IdentityVerification::query()->whereIn('user_id', $userIds)->get() as $verification) {
+            $map[(int) $verification->user_id] = $verification->isApproved();
         }
 
         return $map;

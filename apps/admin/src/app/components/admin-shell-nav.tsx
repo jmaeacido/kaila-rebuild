@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import { adminDestinations } from "../admin-destinations";
+import { useAdminRealtimeRefresh } from "../admin-realtime";
 import { adminAuthenticatedEvent, adminSignedOutEvent } from "../admin-session-events";
 import styles from "./admin-shell-nav.module.css";
 import { AdminNotificationCenter } from "./admin-notification-center";
@@ -13,10 +14,15 @@ import { ThemeWordmark } from "./theme-wordmark";
 
 const authPaths = new Set(["/forgot-password", "/reset-password"]);
 
+function formatBadge(count: number): string {
+  return count > 99 ? "99+" : String(count);
+}
+
 export function AdminShellNav() {
   const pathname = usePathname();
   const [authenticated, setAuthenticated] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [identityPending, setIdentityPending] = useState(0);
   const menuId = useId();
 
   const refreshSession = useCallback(() => {
@@ -37,10 +43,27 @@ export function AdminShellNav() {
     };
   }, []);
 
+  const refreshIdentityBadge = useCallback(async () => {
+    try {
+      const response = await fetch("/api/v1/admin/marketplace/identity-verifications/summary", {
+        credentials: "include",
+        cache: "no-store",
+      });
+      if (!response.ok) return;
+      const body = (await response.json()) as { data: { pendingCount: number } };
+      setIdentityPending(body.data.pendingCount);
+    } catch {
+      // Keep the last known count when the summary is temporarily unavailable.
+    }
+  }, []);
+
   useEffect(() => {
     const cancel = refreshSession();
     const onAuthenticated = () => setAuthenticated(true);
-    const onSignedOut = () => setAuthenticated(false);
+    const onSignedOut = () => {
+      setAuthenticated(false);
+      setIdentityPending(0);
+    };
     window.addEventListener(adminAuthenticatedEvent, onAuthenticated);
     window.addEventListener(adminSignedOutEvent, onSignedOut);
     return () => {
@@ -49,6 +72,13 @@ export function AdminShellNav() {
       window.removeEventListener(adminSignedOutEvent, onSignedOut);
     };
   }, [pathname, refreshSession]);
+
+  useEffect(() => {
+    if (!authenticated || authPaths.has(pathname)) return;
+    void refreshIdentityBadge();
+  }, [authenticated, pathname, refreshIdentityBadge]);
+
+  useAdminRealtimeRefresh(refreshIdentityBadge);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -61,6 +91,9 @@ export function AdminShellNav() {
 
   if (!authenticated || authPaths.has(pathname)) return null;
 
+  const badgeFor = (badge: "identity" | undefined): number =>
+    badge === "identity" ? identityPending : 0;
+
   return (
     <header className={styles.shell}>
       <div className={styles.bar}>
@@ -70,12 +103,19 @@ export function AdminShellNav() {
         </Link>
 
         <nav aria-label="Administration" className={styles.desktopNav}>
-          {adminDestinations.map(({ href, label, icon: Icon }) => {
+          {adminDestinations.map(({ href, label, icon: Icon, badge }) => {
             const current = pathname === href;
+            const count = badgeFor(badge);
             return (
-              <Link aria-current={current ? "page" : undefined} href={href} key={href}>
+              <Link
+                aria-current={current ? "page" : undefined}
+                aria-label={count > 0 ? `${label}, ${count} awaiting review` : label}
+                href={href}
+                key={href}
+              >
                 <Icon aria-hidden="true" />
                 <span>{label}</span>
+                {count > 0 ? <em className={styles.badge} aria-hidden="true">{formatBadge(count)}</em> : null}
               </Link>
             );
           })}
@@ -126,17 +166,20 @@ export function AdminShellNav() {
               </button>
             </div>
             <p className={styles.drawerTitle}>Operations</p>
-            {adminDestinations.map(({ href, label, icon: Icon }) => {
+            {adminDestinations.map(({ href, label, icon: Icon, badge }) => {
               const current = pathname === href;
+              const count = badgeFor(badge);
               return (
                 <Link
                   aria-current={current ? "page" : undefined}
+                  aria-label={count > 0 ? `${label}, ${count} awaiting review` : label}
                   href={href}
                   key={href}
                   onClick={() => setMenuOpen(false)}
                 >
                   <Icon aria-hidden="true" />
                   <span>{label}</span>
+                  {count > 0 ? <em className={styles.badge} aria-hidden="true">{formatBadge(count)}</em> : null}
                 </Link>
               );
             })}

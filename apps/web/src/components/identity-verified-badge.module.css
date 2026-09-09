@@ -1,0 +1,39 @@
+.badge {
+  align-items: center;
+  background: color-mix(in srgb, var(--color-success) 12%, var(--color-surface));
+  border: var(--control-border-width) solid color-mix(in srgb, var(--color-success) 28%, var(--color-border));
+  border-radius: var(--radius-pill);
+  color: var(--color-success);
+  display: inline-flex;
+  font-size: var(--font-caption-size);
+  font-weight: var(--font-weight-bold);
+  gap: var(--spacing-4);
+  line-height: 1;
+  padding: var(--spacing-4) var(--spacing-8);
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.badge svg {
+  flex: none;
+  height: var(--spacing-16);
+  width: var(--spacing-16);
+}
+
+.compact {
+  background: var(--color-success);
+  border: 2px solid var(--color-surface);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-neu-raised-sm);
+  color: #fff;
+  gap: 0;
+  height: 1.125rem;
+  justify-content: center;
+  padding: 0;
+  width: 1.125rem;
+}
+
+.compact svg {
+  height: 0.75rem;
+  width: 0.75rem;
+}

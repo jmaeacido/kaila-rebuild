@@ -21,7 +21,9 @@ test("native answer can read incoming call state without waiting for a React eff
 
 test("call signal polling never overlaps requests", () => {
   assert.doesNotMatch(callProvider, /setInterval\(\(\) => void poll\(\)/);
-  assert.match(callProvider, /finally \{[\s\S]*?setTimeout\(\(\) => void poll\(\), 750\)/);
+  assert.match(callProvider, /fetchCallConfiguration\(\)/);
+  assert.match(callProvider, /const delayMs = callRef\.current \? 750 : 5_000;/);
+  assert.match(callProvider, /schedule\(delayMs\)/);
 });
 
 test("logout tears down authenticated activity without a final realtime refresh", () => {

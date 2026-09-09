@@ -169,7 +169,7 @@ export function FloatingKatabang() {
                       <span>
                         {provider.rating === null ? "New provider" : `${provider.rating.toFixed(1)} rating`}
                         {` · ${provider.completedJobs} completed`}
-                        {provider.verified ? " · Verified" : ""}
+                        {provider.verified ? " · Identity verified" : ""}
                       </span>
                       <small>{provider.serviceAreas.join(", ") || "Service area available on profile"}</small>
                     </Link>

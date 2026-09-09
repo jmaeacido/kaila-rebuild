@@ -8,6 +8,7 @@ use App\Models\IdentityVerification;
 use App\Models\IdentityVerificationConsent;
 use App\Models\IdentityVerificationSession;
 use App\Models\User;
+use App\Support\AdminNotificationService;
 use App\Support\AuditRecorder;
 use App\Support\IdentityVerificationService;
 use Illuminate\Http\JsonResponse;
@@ -20,7 +21,11 @@ use Illuminate\Validation\Rule;
 
 class IdentityVerificationController extends Controller
 {
-    public function __construct(private readonly IdentityVerificationService $service, private readonly AuditRecorder $audit) {}
+    public function __construct(
+        private readonly IdentityVerificationService $service,
+        private readonly AuditRecorder $audit,
+        private readonly AdminNotificationService $adminNotifications,
+    ) {}
 
     public function show(Request $request): JsonResponse
     {
@@ -68,7 +73,7 @@ class IdentityVerificationController extends Controller
         $max = (int) config('identity_verification.max_upload_kilobytes');
         $data = $request->validate([
             'sessionId' => ['required', 'uuid'], 'uploadToken' => ['required', 'string', 'size:64'],
-            'idType' => ['required', Rule::in(['philid', 'passport', 'drivers_license', 'umid', 'postal_id', 'prc_id'])],
+            'idType' => ['required', Rule::in(['philid', 'passport', 'drivers_license', 'umid', 'postal_id', 'prc_id', 'sss_id', 'gsis_id', 'philhealth_id', 'voters_id', 'senior_citizen_id', 'pwd_id', 'ofw_id', 'seamans_book'])],
             'issuingCountry' => ['required', Rule::in(['PH'])], 'documentExpiresAt' => ['nullable', 'date', 'after:today'],
             'idFront' => ['required', 'file', 'image', "max:{$max}"], 'idBack' => ['nullable', 'file', 'image', "max:{$max}"],
             'selfie' => ['required', 'file', 'image', "max:{$max}"], 'selfieCapturedNow' => ['required', 'accepted'],
@@ -105,6 +110,14 @@ class IdentityVerificationController extends Controller
             throw $exception;
         }
         foreach ($stored as $evidence) ScanIdentityEvidence::dispatch($evidence->id);
+        $this->adminNotifications->send(
+            'admin.identity.submitted',
+            'Identity check needs review',
+            "{$user->name} submitted an identity check.",
+            'identity_verification',
+            $verification->id,
+            ['verificationId' => $verification->id],
+        );
 
         return response()->json(['data' => $this->service->status($user->refresh())], 201);
     }
@@ -116,6 +129,14 @@ class IdentityVerificationController extends Controller
         abort_if($verification->appeal_requested_at !== null, 409, 'An appeal is already pending.');
         $verification->update(['appeal_requested_at' => now(), 'assigned_to' => null]);
         $this->audit->record($request, 'identity.appeal_requested', $user, 'identity_verification', $verification->id);
+        $this->adminNotifications->send(
+            'admin.identity.appeal_requested',
+            'Identity appeal needs review',
+            "{$user->name} appealed an identity decision.",
+            'identity_verification',
+            $verification->id,
+            ['verificationId' => $verification->id],
+        );
         return response()->json(['data' => $this->service->status($user)]);
     }
 

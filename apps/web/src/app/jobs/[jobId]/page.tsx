@@ -24,6 +24,7 @@ import { Button, Feedback } from "@kaila/ui";
 import { areaPathLabel, type AreaReference } from "../../address-hierarchy";
 import { AttachmentPicker, attachmentFiles } from "../../../components/attachment-picker";
 import { ActionModal } from "../../../components/action-modal";
+import { IdentityVerifiedBadge } from "../../../components/identity-verified-badge";
 import { SelectField } from "../../../components/select-field";
 import { JobLocationMap, type JobLocation } from "../../post-job/job-location-map";
 import styles from "./job-details.module.css";
@@ -71,6 +72,7 @@ type Job = {
     avatarUrl: string | null;
     rating: string | number | null;
     reviewCount: number;
+    verified: boolean;
   } | null;
   travel: TravelMetrics | null;
   serviceLocationMode: "at_client" | "at_provider" | "remote";
@@ -368,7 +370,10 @@ export default function JobDetailsPage({ params }: { params: Promise<{ jobId: st
           </span>
           <div>
             <p>{job.role === "client" ? "Your provider" : "Your client"}</p>
-            <h2 id="counterpart-title">{job.counterpart.displayName}</h2>
+            <h2 id="counterpart-title">
+              {job.counterpart.displayName}
+              {job.counterpart.verified ? <>{" "}<IdentityVerifiedBadge compact /></> : null}
+            </h2>
             <span>{job.counterpart.rating === null ? "New · No published reviews" : `${Number(job.counterpart.rating).toFixed(1)} rating · ${job.counterpart.reviewCount} review${job.counterpart.reviewCount === 1 ? "" : "s"}`}</span>
           </div>
         </section>

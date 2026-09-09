@@ -40,6 +40,8 @@
         <env name="PHASE_NINE_CALLS" value="false" force="true"/>
         <env name="PHASE_NINE_COMMUNITY" value="true" force="true"/>
         <env name="TURN_CONFIGURED" value="false" force="true"/>
+        <env name="IDENTITY_VERIFICATION_CAPTURE_ENABLED" value="false" force="true"/>
+        <env name="IDENTITY_VERIFICATION_ENFORCEMENT_ENABLED" value="false" force="true"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>
     </php>

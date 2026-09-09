@@ -10,6 +10,53 @@ const realtime = readFileSync(new URL("./realtime-provider.tsx", import.meta.url
 const invalidation = readFileSync(new URL("./use-realtime-invalidation.ts", import.meta.url), "utf8");
 const home = readFileSync(new URL("./home/page.tsx", import.meta.url), "utf8");
 
+test("identity verification notifications open the identity page", () => {
+  assert.equal(notificationRoute({
+    id: "notification-identity",
+    type: "identity.reviewed",
+    title: "Identity verified",
+    body: "Your identity is verified.",
+    resourceType: "identity_verification",
+    resourceId: "01a08433-d18e-7103-a2aa-8bb0e35b4fdb",
+    data: { status: "approved" },
+    readAt: null,
+    createdAt: new Date().toISOString(),
+  }), "/identity-verification");
+});
+
+test("identity verification toasts deep-link to identity verification", () => {
+  assert.deepEqual(feedbackForDomainEvent({
+    eventId: "event-identity",
+    type: "notification.created",
+    occurredAt: new Date().toISOString(),
+    resourceType: "notification",
+    resourceId: "notification-identity",
+    version: 1,
+    data: {
+      notification: {
+        id: "notification-identity",
+        type: "identity.reviewed",
+        title: "Identity verified",
+        body: "Your identity is verified.",
+        resourceType: "identity_verification",
+        resourceId: "01a08433-d18e-7103-a2aa-8bb0e35b4fdb",
+        data: { status: "approved" },
+        readAt: null,
+        createdAt: new Date().toISOString(),
+      },
+    },
+  }), {
+    title: "Identity verified",
+    body: "Your identity is verified.",
+    href: "/identity-verification",
+    persistent: true,
+    actionLabel: "View identity",
+    eyebrow: undefined,
+    matchJobId: undefined,
+    eventKey: undefined,
+  });
+});
+
 test("profile review notifications return users to their account", () => {
   assert.equal(notificationRoute({
     id: "notification-profile",
@@ -194,6 +241,8 @@ test("mobile notifications are viewport bounded and independently scrollable", (
   assert.match(globals, /max-height: calc\(var\(--kaila-viewport-height, 100dvh\)/);
   assert.match(globals, /\.notificationDropdownList \{ max-height: calc\([^}]+min-height: 0/);
   assert.match(globals, /notificationItemIcon/);
+  assert.match(globals, /a\.notificationItem/);
+  assert.match(globals, /display: grid !important/);
 });
 
 test("realtime feedback advances a bounded non-blocking queue", () => {

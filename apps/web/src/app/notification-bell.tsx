@@ -81,7 +81,12 @@ export function NotificationBell() {
       }
     }
     const target = notificationRoute(item);
-    router.push(target);
+    const current = `${window.location.pathname}${window.location.search}`;
+    if (current === target) {
+      router.refresh();
+    } else {
+      router.push(target);
+    }
     if (target.startsWith("/account?profilePicture=review")) {
       window.dispatchEvent(new CustomEvent(profilePictureReviewEvent, { detail: {
         reviewStatus: item.data.reviewStatus,
@@ -134,9 +139,18 @@ export function NotificationBell() {
             {state === "error" && <div className="notificationDropdownEmpty"><Bell aria-hidden="true" /><strong>Couldn’t load updates</strong><p>Check your connection and try again.</p><button type="button" onClick={() => void load()}><RefreshCw aria-hidden="true" />Try again</button></div>}
             {state === "ready" && items.length === 0 && <div className="notificationDropdownEmpty"><Bell aria-hidden="true" /><strong>No new notifications</strong><p>Job, message, and support updates will appear here.</p></div>}
             {state === "ready" && items.map((item) => (
-              <Link className={item.readAt ? "" : "unread"} href={notificationRoute(item)} key={item.id} onClick={(event) => { event.preventDefault(); void openNotification(item); }}>
+              <Link
+                className={`notificationItem${item.readAt ? "" : " unread"}`}
+                href={notificationRoute(item)}
+                key={item.id}
+                onClick={(event) => { event.preventDefault(); void openNotification(item); }}
+              >
                 <span className="notificationItemIcon"><NotificationGlyph item={item} /></span>
-                <div><strong>{item.title}</strong><p>{item.body}</p><time dateTime={item.createdAt}>{new Date(item.createdAt).toLocaleString()}</time></div>
+                <div className="notificationItemCopy">
+                  <strong>{item.title}</strong>
+                  <p>{item.body}</p>
+                  <time dateTime={item.createdAt}>{new Date(item.createdAt).toLocaleString()}</time>
+                </div>
                 <ChevronRight className="notificationItemChevron" aria-hidden="true" />
               </Link>
             ))}

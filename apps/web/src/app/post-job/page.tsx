@@ -22,6 +22,8 @@ import { JobLocationMap, type JobLocation } from "./job-location-map";
 import { BudgetRange } from "./budget-range";
 import { CategorySelect, type ServiceCategory } from "./category-select";
 import { AttachmentPicker, attachmentFiles } from "../../components/attachment-picker";
+import { IdentityVerificationGate } from "../../components/identity-verification-gate";
+import { identityGateReasonFromMessage, isIdentityVerificationBlock } from "../identity-verification-gate";
 import styles from "./page.module.css";
 
 type Reference = {
@@ -55,6 +57,7 @@ export default function PostJobPage() {
     "loading",
   );
   const [message, setMessage] = useState("");
+  const [identityGateOpen, setIdentityGateOpen] = useState(false);
   const createKey = useRef(crypto.randomUUID());
   const pinRequest = useRef(0);
   const [showMap, setShowMap] = useState(false);
@@ -308,14 +311,15 @@ export default function PostJobPage() {
       }
       setStatus("success");
     } catch (error) {
-      setStatus("error");
-      setMessage(
+      const nextMessage =
         error instanceof Error && error.message === "ATTACHMENT_UPLOAD_FAILED"
           ? "A photo or video could not be uploaded, so your job was kept as a draft. Check your connection and try again."
           : error instanceof Error && error.message
             ? error.message
-            : "Your job could not be posted. Your details are still here—check your connection and try again.",
-      );
+            : "Your job could not be posted. Your details are still here—check your connection and try again.";
+      setStatus("error");
+      setMessage(nextMessage);
+      setIdentityGateOpen(isIdentityVerificationBlock(nextMessage));
     }
   }
 
@@ -547,10 +551,17 @@ export default function PostJobPage() {
               />
             </>
           )}
-          {status === "error" && (
+          {status === "error" && !isIdentityVerificationBlock(message) && (
             <Feedback kind="error" title="We couldn’t continue">
               {message || "Reload the page and try again."}
-              {message.includes("Verify your identity") ? <Link href="/identity-verification">Verify my identity</Link> : null}
+            </Feedback>
+          )}
+          {status === "error" && isIdentityVerificationBlock(message) && (
+            <Feedback kind="warning" title="Identity verification required">
+              Verify your identity to finish posting this job.
+              <Button type="button" onClick={() => setIdentityGateOpen(true)}>
+                Verify my identity
+              </Button>
             </Feedback>
           )}
         </section>
@@ -578,6 +589,11 @@ export default function PostJobPage() {
           </Button>
         </footer>
       </form>
+      <IdentityVerificationGate
+        open={identityGateOpen}
+        reason={identityGateReasonFromMessage(message)}
+        onDismiss={() => setIdentityGateOpen(false)}
+      />
     </main>
   );
 }

@@ -1,7 +1,32 @@
 export type CommunityMedia = { id: string; originalName: string; mimeType: string; scanStatus: string; url: string | null };
 export type CommunityFeaturedProvider = { id: number; displayName: string };
 export type CommunityMention = { userId: number; displayName: string; providerProfileId: number | null; kind: "provider" | "client" };
-export type CommunityPost = { id: string; kind: string; title: string; body: string; hashtags: string[]; area: { id: number; name: string } | null; areaLabel: string | null; author: { id: number; name: string; official: boolean }; mention: CommunityMention | null; featuredProvider: CommunityFeaturedProvider | null; helpful: boolean; helpfulCount: number; commentsCount: number; media: CommunityMedia[]; canManage: boolean; publishedAt: string; editedAt: string | null };
+export type CommunityAuthor = {
+  id: number;
+  name: string;
+  official: boolean;
+  avatarUrl: string | null;
+  identityVerified: boolean;
+};
+export type CommunityPost = {
+  id: string;
+  kind: string;
+  title: string;
+  body: string;
+  hashtags: string[];
+  area: { id: number; name: string } | null;
+  areaLabel: string | null;
+  author: CommunityAuthor;
+  mention: CommunityMention | null;
+  featuredProvider: CommunityFeaturedProvider | null;
+  helpful: boolean;
+  helpfulCount: number;
+  commentsCount: number;
+  media: CommunityMedia[];
+  canManage: boolean;
+  publishedAt: string;
+  editedAt: string | null;
+};
 export type CommunityComment = { id: string; body: string; mention: CommunityMention | null; featuredProvider: CommunityFeaturedProvider | null; author: { id: number; name: string; avatarUrl: string | null }; canEdit: boolean; canDelete: boolean; canHide: boolean; createdAt: string; replies: CommunityComment[] };
 export type CommunityFeedContext = {
   homeArea: { id: number; name: string } | null;
@@ -10,30 +35,47 @@ export type CommunityFeedContext = {
 };
 
 type PublicCommunityPostInput = Omit<CommunityPost, "author" | "helpful" | "canManage"> & {
-  author: { name: string; official: boolean };
+  author: { name: string; official: boolean; avatarUrl?: string | null; identityVerified?: boolean };
 };
 
 export function mapPublicCommunityPost(post: PublicCommunityPostInput): CommunityPost {
   return {
     ...post,
-    author: { id: 0, name: post.author.name, official: post.author.official },
+    author: {
+      id: 0,
+      name: post.author.name,
+      official: post.author.official,
+      avatarUrl: post.author.avatarUrl ?? null,
+      identityVerified: post.author.identityVerified ?? false,
+    },
     helpful: false,
     canManage: false,
   };
 }
 
 export function normalizeCommunityPost(post: CommunityPost | PublicCommunityPostInput): CommunityPost {
-  if ("canManage" in post) return post;
+  if ("canManage" in post) {
+    return {
+      ...post,
+      author: {
+        id: post.author.id ?? 0,
+        name: post.author.name,
+        official: post.author.official,
+        avatarUrl: post.author.avatarUrl ?? null,
+        identityVerified: post.author.identityVerified ?? false,
+      },
+    };
+  }
   return mapPublicCommunityPost(post);
 }
 
 export async function fetchCommunityFeed(query: URLSearchParams): Promise<Response> {
-  const paths = [`/api/v1/community?${query}`, `/api/v1/public/community/feed?${query}`];
-  for (const path of paths) {
-    const response = await fetch(path, { cache: "no-store" });
-    if (response.ok) return response;
+  const authed = await fetch(`/api/v1/community?${query}`, { cache: "no-store", credentials: "include" });
+  if (authed.ok) return authed;
+  if (authed.status === 401 || authed.status === 403) {
+    return fetch(`/api/v1/public/community/feed?${query}`, { cache: "no-store" });
   }
-  return fetch(paths[0], { cache: "no-store" });
+  return authed;
 }
 
 export async function csrfFetch(path: string, init: RequestInit = {}) {

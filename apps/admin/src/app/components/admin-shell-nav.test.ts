@@ -33,6 +33,10 @@ describe("admin shell destinations", () => {
 
   it("surfaces durable realtime notifications in the authenticated shell", () => {
     expect(shell).toContain("<AdminNotificationCenter />");
+    expect(shell).toContain("identity-verifications/summary");
+    expect(shell).toContain("useAdminRealtimeRefresh");
+    expect(shell).toContain("awaiting review");
+    expect(shell).toContain("styles.badge");
     expect(notificationCenter).toContain('socket.on("domain.event"');
     expect(notificationCenter).toContain("publishAdminRealtime");
     expect(notificationCenter).toContain('setRealtimeState("live")');

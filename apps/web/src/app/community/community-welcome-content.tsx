@@ -22,18 +22,18 @@ export function CommunityWelcomeTitle({
   if (!isProviderWelcome) {
     return (
       <Heading className={className}>
-        <Link href={postHref}>{post.title}</Link>
+        <Link className={styles.postTitleLink} href={postHref}>{post.title}</Link>
       </Heading>
     );
   }
 
   return (
     <Heading className={className}>
-      <Link href={postHref}>Welcome </Link>
+      <Link className={styles.postTitleLink} href={postHref}>Welcome </Link>
       <Link className={styles.featuredProviderLink} href={`/providers/${provider.id}`}>
         {provider.displayName}
       </Link>
-      <Link href={postHref}> to KAILA</Link>
+      <Link className={styles.postTitleLink} href={postHref}> to KAILA</Link>
     </Heading>
   );
 }

@@ -274,6 +274,13 @@
   width: 1.125rem;
 }
 
+.cardTitleRow h2 :global([aria-label="Identity verified"]) svg,
+.heroIdentity h1 :global([aria-label="Identity verified"]) svg {
+  color: inherit;
+  height: 0.75rem;
+  width: 0.75rem;
+}
+
 .cardLocation {
   align-items: center;
   color: var(--color-text-secondary);
@@ -346,6 +353,7 @@
   color: var(--color-ink);
   display: flex;
   flex: 1 1 auto;
+  flex-wrap: wrap;
   font-size: var(--font-title-size);
   gap: var(--spacing-4);
   min-width: 0;

@@ -4,6 +4,8 @@ namespace App\Support;
 
 use App\Models\CommunityPost;
 use App\Models\CommunityPostMedia;
+use App\Models\IdentityVerification;
+use App\Models\ProfileAsset;
 
 class CommunityPublicPresenter
 {
@@ -15,13 +17,15 @@ class CommunityPublicPresenter
     /** @return array<string, mixed> */
     public function present(CommunityPost $post): array
     {
-        $post->loadMissing(['author', 'area', 'media' => fn ($query) => $query->where('scan_status', 'clean')]);
+        $post->loadMissing(['author', 'area', 'media' => fn ($query) => $query->where('scan_status', 'clean')->orderBy('created_at')]);
         $mention = $this->mentions->fromPost($post);
         $welcomeFeatured = $this->welcomeProviders->forPost($post);
         if ($mention === null && $welcomeFeatured !== null) {
             $mention = $this->mentions->forProviderProfileId($welcomeFeatured['id']);
         }
         $featuredProvider = $welcomeFeatured ?? $this->mentions->asFeaturedProvider($mention);
+        $official = $post->author_display_mode === 'official';
+        $authorId = (int) $post->author_user_id;
 
         return [
             'id' => $post->id,
@@ -31,9 +35,14 @@ class CommunityPublicPresenter
             'hashtags' => $post->hashtags ?? [],
             'area' => $post->area?->only(['id', 'name']),
             'areaLabel' => $post->area_label,
-            'author' => $post->author_display_mode === 'official'
-                ? ['name' => 'KAILA', 'official' => true]
-                : ['name' => $post->author->name, 'official' => false],
+            'author' => $official
+                ? ['name' => 'KAILA', 'official' => true, 'avatarUrl' => null, 'identityVerified' => false]
+                : [
+                    'name' => $post->author->name,
+                    'official' => false,
+                    'avatarUrl' => $this->avatarUrlForUser($authorId),
+                    'identityVerified' => $this->identityVerifiedForUser($authorId),
+                ],
             'mention' => $mention,
             'featuredProvider' => $featuredProvider,
             'helpfulCount' => (int) $post->helpful_count,
@@ -66,5 +75,24 @@ class CommunityPublicPresenter
             'scanStatus' => $media->scan_status,
             'url' => $media->scan_status === 'clean' ? "/api/v1/public/community-media/{$media->id}" : null,
         ];
+    }
+
+    private function avatarUrlForUser(int $userId): ?string
+    {
+        $asset = ProfileAsset::query()
+            ->where('user_id', $userId)
+            ->where('purpose', 'avatar')
+            ->where('scan_status', 'clean')
+            ->latest()
+            ->first();
+
+        return $asset ? "/api/v1/profile-assets/{$asset->getKey()}" : null;
+    }
+
+    private function identityVerifiedForUser(int $userId): bool
+    {
+        $verification = IdentityVerification::query()->where('user_id', $userId)->first();
+
+        return $verification?->isApproved() === true;
     }
 }

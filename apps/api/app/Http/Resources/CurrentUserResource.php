@@ -2,8 +2,9 @@
 
 namespace App\Http\Resources;
 
-use App\Models\ProfileAsset;
 use App\Models\ProviderProfile;
+use App\Support\IdentityVerificationService;
+use App\Support\ProfileAvatarResolver;
 use App\Support\StaffAuthorization;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -17,32 +18,36 @@ class CurrentUserResource extends JsonResource
     public function toArray(Request $request): array
     {
         $providerEligible = ProviderProfile::query()->where('user_id', $this->resource->getKey())->where('status', 'active')->exists();
-        $avatar = ProfileAsset::query()
-            ->where('user_id', $this->resource->getKey())
-            ->where('purpose', 'avatar')
-            ->where('scan_status', 'clean')
-            ->orderByRaw("CASE WHEN origin = 'upload' THEN 0 ELSE 1 END")
-            ->latest()
-            ->first();
+        $avatars = app(ProfileAvatarResolver::class);
+        $userId = (int) $this->resource->getKey();
+        $avatarUrl = $avatars->clientUrl($userId);
+        $providerAvatarUrl = $avatars->providerUrl($userId, fallbackToClient: false);
+        $activeMode = $this->resource->active_mode;
         $reputation = DB::table('reputation_projections')
-            ->where('user_id', $this->resource->getKey())
+            ->where('user_id', $userId)
             ->first(['average_rating', 'published_review_count']);
+        $identityVerified = app(IdentityVerificationService::class)->approved($this->resource);
 
         return [
-            'id' => (string) $this->resource->getKey(),
+            'id' => (string) $userId,
             'name' => $this->resource->name,
             'email' => $this->resource->email,
             'modes' => ['client', 'provider'],
-            'activeMode' => $this->resource->active_mode,
+            'activeMode' => $activeMode,
             'appearanceTheme' => in_array((string) ($this->resource->appearance_theme ?: 'system'), ['light', 'dark', 'system'], true)
                 ? (string) ($this->resource->appearance_theme ?: 'system')
                 : 'system',
             'providerEligible' => $providerEligible,
+            'identityVerified' => $identityVerified,
             'staffRole' => in_array((string) ($this->resource->staff_role ?? ''), ['super_admin', 'admin', 'staff'], true)
                 ? (string) $this->resource->staff_role
                 : null,
             'staffCapabilities' => StaffAuthorization::capabilities($this->resource),
-            'avatarUrl' => $avatar ? "/api/v1/profile-assets/{$avatar->getKey()}" : null,
+            'avatarUrl' => $avatarUrl,
+            'providerAvatarUrl' => $providerAvatarUrl,
+            'displayAvatarUrl' => $activeMode === 'provider' && $providerEligible
+                ? ($providerAvatarUrl ?? $avatarUrl)
+                : $avatarUrl,
             'reputation' => [
                 'averageRating' => $reputation?->average_rating !== null
                     ? (float) $reputation->average_rating

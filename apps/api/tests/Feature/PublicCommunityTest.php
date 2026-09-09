@@ -24,6 +24,7 @@ class PublicCommunityTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.title', 'Prepare before a repair visit')
             ->assertJsonPath('data.author.name', 'Mia Santos')
+            ->assertJsonPath('data.author.identityVerified', false)
             ->assertJsonMissingPath('data.author.id')
             ->assertJsonMissingPath('data.canManage');
 

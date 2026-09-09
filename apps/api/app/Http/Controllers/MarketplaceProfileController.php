@@ -13,6 +13,7 @@ use App\Support\OpportunityMatchingService;
 use App\Support\OutboxRecorder;
 use App\Support\ProviderOnboardingRequirements;
 use App\Support\ProviderProfileReviewBaseline;
+use App\Support\ProfileAvatarResolver;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -156,12 +157,7 @@ class MarketplaceProfileController extends Controller
         $reputation = DB::table('reputation_projections')
             ->where('user_id', $profile->user_id)
             ->first(['average_rating', 'published_review_count']);
-        $avatar = ProfileAsset::query()
-            ->where('user_id', $profile->user_id)
-            ->where('purpose', 'avatar')
-            ->where('scan_status', 'clean')
-            ->latest()
-            ->first();
+        $avatarUrl = app(ProfileAvatarResolver::class)->providerUrl((int) $profile->user_id);
         $completedJobs = $profile->completedJobsCount();
         $likedAssetIds = $viewer
             ? DB::table('profile_asset_reactions')
@@ -171,7 +167,7 @@ class MarketplaceProfileController extends Controller
                 ->all()
             : [];
 
-        return ['id' => $profile->id, 'displayName' => $profile->display_name, 'avatarUrl' => $avatar ? "/api/v1/profile-assets/{$avatar->id}" : null, 'bio' => $profile->bio, 'yearsExperience' => $profile->years_experience,
+        return ['id' => $profile->id, 'displayName' => $profile->display_name, 'avatarUrl' => $avatarUrl, 'bio' => $profile->bio, 'yearsExperience' => $profile->years_experience,
             'rating' => $reputation?->average_rating !== null
                 ? (float) $reputation->average_rating
                 : ($profile->rating !== null ? (float) $profile->rating : null),

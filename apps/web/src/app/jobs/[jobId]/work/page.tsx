@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { Button, Feedback } from "@kaila/ui";
 import { ActionModal } from "../../../../components/action-modal";
+import { IdentityVerifiedBadge } from "../../../../components/identity-verified-badge";
 import { LifecycleTimeline } from "./lifecycle-timeline";
 import { useJobRealtime } from "./use-job-realtime";
 import { AttachmentPicker, attachmentFiles } from "../../../../components/attachment-picker";
@@ -57,7 +58,7 @@ type Work = {
     agreedAmountCentavos: number;
     agreedScope: string | null;
     estimatedDurationText: string | null;
-    counterpart: { displayName: string; avatarUrl: string | null; rating: string | number | null; reviewCount: number };
+    counterpart: { displayName: string; avatarUrl: string | null; rating: string | number | null; reviewCount: number; verified: boolean };
   };
   workStartedAt: string | null;
   autoConfirmAt: string | null;
@@ -401,7 +402,13 @@ export default function WorkPage({ params }: { params: Promise<{ jobId: string }
         <div className={styles.assignmentDetails}>
           <div className={styles.counterpart}>
             <span>{data.job.counterpart.avatarUrl ? <Image src={data.job.counterpart.avatarUrl} alt={`${data.job.counterpart.displayName} profile`} width={48} height={48} unoptimized /> : data.job.counterpart.displayName.charAt(0).toUpperCase()}</span>
-            <div><strong>{data.job.counterpart.displayName}</strong><small><Star aria-hidden="true" />{counterpartReputation(data.job.counterpart.rating, data.job.counterpart.reviewCount)}</small></div>
+            <div>
+              <strong>
+                {data.job.counterpart.displayName}
+                {data.job.counterpart.verified ? <>{" "}<IdentityVerifiedBadge compact /></> : null}
+              </strong>
+              <small><Star aria-hidden="true" />{counterpartReputation(data.job.counterpart.rating, data.job.counterpart.reviewCount)}</small>
+            </div>
           </div>
           <div><small>Agreed scope</small><p>{data.job.agreedScope || "Complete the job described above."}</p>{data.job.estimatedDurationText && <small>Estimated duration: {data.job.estimatedDurationText}</small>}</div>
         </div>

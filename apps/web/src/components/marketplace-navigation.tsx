@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
-  BriefcaseBusiness,
   ClipboardList,
   Home,
   MessageCircle,
@@ -40,10 +39,10 @@ function detectActive(pathname: string, hash: string, isProvider: boolean): Mark
     return "profile";
   }
   if (pathname.startsWith("/opportunities")) return "opportunities";
-  if (pathname.startsWith("/post-job")) return isProvider ? "work" : "jobs";
+  if (pathname.startsWith("/post-job")) return isProvider ? "opportunities" : "jobs";
   if (pathname.startsWith("/home")) {
-    if (hash === "#current-title") return isProvider ? "work" : "jobs";
-    return isProvider ? undefined : "home";
+    if (hash === "#current-title") return isProvider ? "home" : "jobs";
+    return "home";
   }
 
   return undefined;
@@ -73,22 +72,15 @@ export function MarketplaceNavigation({ active, variant = "bottom" }: Marketplac
   }
 
   return (
-    <nav className={className} aria-label="Marketplace navigation">
+    <nav className={className} aria-label="Marketplace navigation" data-mode={isProvider ? "provider" : "client"}>
+      <Link href="/home" aria-current={currentAttr(resolvedActive, "home")}>
+        <Home aria-hidden="true" />
+        Home
+      </Link>
       {isProvider ? (
         <Link href="/opportunities" aria-current={currentAttr(resolvedActive, "opportunities")}>
           <Search aria-hidden="true" />
           Find work
-        </Link>
-      ) : (
-        <Link href="/home" aria-current={currentAttr(resolvedActive, "home")}>
-          <Home aria-hidden="true" />
-          Home
-        </Link>
-      )}
-      {isProvider ? (
-        <Link href="/home#current-title" aria-current={currentAttr(resolvedActive, "work")}>
-          <BriefcaseBusiness aria-hidden="true" />
-          Work
         </Link>
       ) : (
         <Link href="/home#current-title" aria-current={currentAttr(resolvedActive, "jobs")}>

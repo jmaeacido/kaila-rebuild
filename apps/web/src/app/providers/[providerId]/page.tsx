@@ -6,17 +6,16 @@ import Image from "next/image";
 import { useParams } from "next/navigation";
 import {
   ArrowLeft,
-  BadgeCheck,
   BriefcaseBusiness,
   CalendarClock,
   ChevronDown,
   MapPin,
-  ShieldCheck,
   Star,
   Store,
 } from "lucide-react";
 import { Feedback } from "@kaila/ui";
 import { prepareCsrf } from "../../auth-client";
+import { IdentityVerifiedBadge } from "../../../components/identity-verified-badge";
 import type { ProviderPortfolioItem } from "../../../components/provider-portfolio-gallery";
 import { ProviderPortfolioGallery } from "../../../components/provider-portfolio-gallery";
 import { isDemoPortfolio, toggleDemoPortfolioLike, withDemoPortfolio } from "../../../components/provider-portfolio-demo";
@@ -167,7 +166,7 @@ export default function ProviderProfilePage() {
                 <div className={styles.heroTitleRow}>
                   <h1>
                     {provider.displayName}
-                    {provider.verified ? <BadgeCheck aria-label="Verified provider" /> : null}
+                    {provider.verified ? <IdentityVerifiedBadge compact /> : null}
                   </h1>
                   <span className={isAvailable ? styles.available : styles.unavailable}>
                     {isAvailable ? "Available" : "Unavailable"}
@@ -197,12 +196,7 @@ export default function ProviderProfilePage() {
                 <BriefcaseBusiness aria-hidden="true" />
                 {provider.completedJobs} completed job{provider.completedJobs === 1 ? "" : "s"}
               </span>
-              {provider.verified ? (
-                <span>
-                  <ShieldCheck aria-hidden="true" />
-                  Credentials verified
-                </span>
-              ) : null}
+              {provider.verified ? <IdentityVerifiedBadge /> : null}
             </div>
 
             <ProviderServicesShowcase services={provider.services} variant="embedded" />

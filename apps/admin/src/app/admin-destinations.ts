@@ -15,11 +15,12 @@ export type AdminDestination = {
   href: string;
   label: string;
   icon: LucideIcon;
+  badge?: "identity";
 };
 
 export const adminDestinations: AdminDestination[] = [
   { href: "/", label: "Review", icon: FileCheck2 },
-  { href: "/identity-verifications", label: "Identity", icon: ScanFace },
+  { href: "/identity-verifications", label: "Identity", icon: ScanFace, badge: "identity" },
   { href: "/users", label: "People", icon: Users },
   { href: "/maintenance", label: "Maintenance", icon: Construction },
   { href: "/support", label: "Support", icon: HeartHandshake },

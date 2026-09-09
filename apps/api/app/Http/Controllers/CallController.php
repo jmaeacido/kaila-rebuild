@@ -97,6 +97,9 @@ class CallController
 
     public function signals(Request $request): JsonResponse
     {
+        if (! config('phase_nine.enabled') || ! config('phase_nine.calls')) {
+            return response()->json(['data' => []]);
+        }
         $user = $this->user($request);
         $key = "kaila:calls:signals:{$user->id}";
         $signals = [];

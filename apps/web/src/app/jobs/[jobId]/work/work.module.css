@@ -21,7 +21,7 @@
 .counterpart>span{align-items:center;background:var(--gradient-primary);border-radius:var(--radius-pill);color:var(--color-on-primary);display:flex;font-weight:var(--font-weight-semibold);height:var(--spacing-48);justify-content:center;overflow:hidden;width:var(--spacing-48)}
 .counterpart img{height:100%;object-fit:cover;width:100%}
 .counterpart>div{display:grid;gap:var(--spacing-4)}
-.counterpart strong{color:var(--color-ink)}
+.counterpart strong{align-items:center;color:var(--color-ink);display:inline-flex;flex-wrap:wrap;gap:var(--spacing-4)}
 .counterpart small{align-items:center;color:var(--color-warning);display:flex;font-weight:var(--font-weight-semibold);gap:var(--spacing-4)}
 .counterpart small svg{fill:currentColor;height:var(--spacing-16);width:var(--spacing-16)}
 @media(min-width:48rem){.jobFacts{grid-template-columns:repeat(3,minmax(0,1fr))}.assignmentDetails{grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr)}}

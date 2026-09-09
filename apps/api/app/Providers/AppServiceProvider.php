@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Support\BrevoMailTransport;
 use App\Support\ClamAvMalwareScanner;
 use App\Support\DeterministicFakeMapsProvider;
+use App\Support\FakeMalwareScanner;
 use App\Support\FakePushTransport;
 use App\Support\FcmPushTransport;
 use App\Support\LogOutboxTransport;
@@ -34,11 +35,21 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->app->singleton(MalwareScanner::class, fn () => new ClamAvMalwareScanner(
-            (string) config('media-scanning.clamav_socket'),
-            (int) config('media-scanning.timeout_seconds'),
-            (int) config('media-scanning.chunk_bytes'),
-        ));
+        $scanner = (string) config('media-scanning.driver', 'clamav');
+        if ($scanner === 'fake' && $this->app->environment('production')) {
+            throw new LogicException('The fake malware scanner must not be used in production.');
+        }
+        $this->app->singleton(MalwareScanner::class, function () use ($scanner) {
+            return match ($scanner) {
+                'fake' => new FakeMalwareScanner,
+                'clamav' => new ClamAvMalwareScanner(
+                    (string) config('media-scanning.clamav_socket'),
+                    (int) config('media-scanning.timeout_seconds'),
+                    (int) config('media-scanning.chunk_bytes'),
+                ),
+                default => throw new LogicException('The configured malware scanner is not supported.'),
+            };
+        });
 
         $transport = (string) config('outbox.transport');
         if ($transport === 'log' && $this->app->environment('production')) {

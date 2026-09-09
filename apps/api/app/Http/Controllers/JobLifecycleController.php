@@ -15,7 +15,9 @@ use App\Models\RevisionEvidence;
 use App\Models\ServiceJob;
 use App\Models\User;
 use App\Support\HiredJobAccess;
+use App\Support\IdentityVerificationService;
 use App\Support\JobLifecycleService;
+use App\Support\ProfileAvatarResolver;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -173,7 +175,10 @@ class JobLifecycleController extends Controller
         $snapshot = AcceptedOfferSnapshot::query()->where('service_job_id', $j->id)->firstOrFail();
         $counterpartId = $u->id === $p['clientId'] ? $p['providerId'] : $p['clientId'];
         $counterpart = User::query()->findOrFail($counterpartId);
-        $counterpartAvatar = ProfileAsset::query()->where('user_id', $counterpartId)->where('purpose', 'avatar')->where('scan_status', 'clean')->latest()->first();
+        $counterpartIsProvider = $u->id === $p['clientId'];
+        $counterpartAvatarUrl = $counterpartIsProvider
+            ? app(ProfileAvatarResolver::class)->providerUrl((int) $counterpartId)
+            : app(ProfileAvatarResolver::class)->clientUrl((int) $counterpartId);
         $counterpartReputation = DB::table('reputation_projections')->where('user_id', $counterpartId)->first(['average_rating', 'published_review_count']);
         $sub = CompletionSubmission::query()->where('service_job_id', $j->id)->latest('cycle')->with('evidence:id,completion_submission_id,original_name,mime_type,scan_status')->first();
         $cancellation = CancellationRequest::query()
@@ -213,9 +218,10 @@ class JobLifecycleController extends Controller
                 'estimatedDurationText' => $snapshot->estimated_duration_text,
                 'counterpart' => [
                     'displayName' => $counterpart->name,
-                    'avatarUrl' => $counterpartAvatar ? "/api/v1/profile-assets/{$counterpartAvatar->getKey()}" : null,
+                    'avatarUrl' => $counterpartAvatarUrl,
                     'rating' => $counterpartReputation?->average_rating,
                     'reviewCount' => (int) ($counterpartReputation->published_review_count ?? 0),
+                    'verified' => app(IdentityVerificationService::class)->approved($counterpart),
                 ],
             ],
             'workStartedAt' => $j->work_started_at?->toIso8601String(),

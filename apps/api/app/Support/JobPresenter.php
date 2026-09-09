@@ -48,7 +48,7 @@ class JobPresenter
         $job->loadMissing(['category:id,name,icon', 'area:id,name,type', 'assets' => fn ($query) => $query->where('scan_status', 'clean')->select('id', 'service_job_id', 'original_name', 'mime_type', 'size_bytes', 'scan_status')]);
         $area = $job->area;
         abort_unless($area instanceof Area, 404);
-        $client = User::query()->findOrFail($job->client_user_id);
+        $client = User::query()->with('identityVerification')->findOrFail($job->client_user_id);
         $avatar = ProfileAsset::query()
             ->where('user_id', $job->client_user_id)
             ->where('purpose', 'avatar')
@@ -64,6 +64,7 @@ class JobPresenter
                 'avatarUrl' => $avatar ? "/api/v1/profile-assets/{$avatar->getKey()}" : null,
                 'rating' => $reputation->value('average_rating'),
                 'reviewCount' => (int) ($reputation->value('published_review_count') ?? 0),
+                'verified' => app(IdentityVerificationService::class)->approved($client),
             ],
             'category' => $job->category, 'area' => $job->area, 'scheduleType' => $job->schedule_type,
             'serviceLocationMode' => $job->service_location_mode,

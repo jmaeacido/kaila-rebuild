@@ -21,6 +21,7 @@ import {
 import { Button, Feedback } from "@kaila/ui";
 import { AndroidDownloadSection } from "../components/android-download-section";
 import { BrandMark } from "../components/brand-mark";
+import { IdentityVerifiedBadge } from "../components/identity-verified-badge";
 import { ThemeToggle } from "../components/theme-toggle";
 import { SelectField } from "../components/select-field";
 import Link from "next/link";
@@ -240,7 +241,7 @@ export default function LandingPage() {
                   4.9 · 1.2 km away
                 </span>
               </div>
-              <BadgeCheck aria-label="Verified provider" />
+              <BadgeCheck aria-label="Identity verified" />
             </div>
           </div>
         </div>
@@ -350,12 +351,7 @@ export default function LandingPage() {
                   <div>
                     <div className={styles.providerTitle}>
                       <h3>{provider.displayName}</h3>
-                      {provider.verified && (
-                        <span className={styles.verified}>
-                          <ShieldCheck aria-hidden="true" />
-                          Verified
-                        </span>
-                      )}
+                      {provider.verified ? <IdentityVerifiedBadge compact /> : null}
                     </div>
                     <p>{provider.bio}</p>
                     <p className={styles.facts}>

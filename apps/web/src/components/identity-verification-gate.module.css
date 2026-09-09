@@ -1,0 +1,44 @@
+.content {
+  display: grid;
+  gap: var(--spacing-16);
+}
+
+.icon {
+  align-items: center;
+  background: color-mix(in srgb, var(--color-primary) 12%, var(--color-surface));
+  border-radius: var(--radius-pill);
+  color: var(--color-primary);
+  display: inline-flex;
+  height: var(--spacing-48);
+  justify-content: center;
+  width: var(--spacing-48);
+}
+
+.icon svg {
+  height: var(--spacing-24);
+  width: var(--spacing-24);
+}
+
+.content > p {
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-body);
+  margin: 0;
+}
+
+.actions {
+  display: grid;
+  gap: var(--spacing-8);
+}
+
+.cta {
+  align-items: center;
+  display: inline-flex;
+  justify-content: center;
+  min-height: var(--control-min-height);
+  text-decoration: none;
+  width: 100%;
+}
+
+.actions > :global(button) {
+  width: 100%;
+}

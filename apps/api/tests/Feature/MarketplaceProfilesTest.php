@@ -218,7 +218,7 @@ class MarketplaceProfilesTest extends TestCase
         $this->actingAs($user)
             ->putJson('/api/v1/me/provider-profile', $this->validProfile($category, $area))
             ->assertStatus(422)
-            ->assertJsonPath('message', 'Upload a profile picture before submitting your provider profile.');
+            ->assertJsonPath('message', 'Upload a provider logo or profile picture before submitting your provider profile.');
     }
 
     public function test_approving_a_provider_requires_an_approved_profile_picture(): void
@@ -233,7 +233,7 @@ class MarketplaceProfilesTest extends TestCase
         $this->actingAs($admin)
             ->putJson("/api/v1/admin/marketplace/providers/{$profile->id}/status", ['status' => 'active'])
             ->assertStatus(409)
-            ->assertJsonPath('message', 'Approve the provider profile picture before activating this profile.');
+            ->assertJsonPath('message', 'Approve the provider logo or profile picture before activating this profile.');
     }
 
     public function test_approving_a_provider_creates_an_official_welcome_community_post_with_avatar(): void
@@ -623,6 +623,58 @@ class MarketplaceProfilesTest extends TestCase
         $asset = ProfileAsset::query()->findOrFail($response->json('data.id'));
         $this->assertSame('image/png', $asset->mime_type);
         Storage::disk($disk)->assertExists($asset->object_key);
+    }
+
+    public function test_client_and_provider_avatars_are_tracked_separately_on_me(): void
+    {
+        [$category, $area] = $this->referenceData();
+        $disk = (string) config('filesystems.private_assets_disk');
+        Storage::fake($disk);
+        $profile = $this->provider('Logo Provider', 'active', $category, $area);
+        $user = User::query()->findOrFail($profile->user_id);
+        $user->update(['active_mode' => 'client']);
+        ProfileAsset::query()->where('user_id', $user->id)->whereIn('purpose', ['avatar', 'provider_avatar'])->delete();
+
+        $clientAvatar = ProfileAsset::query()->create([
+            'user_id' => $user->id,
+            'purpose' => 'avatar',
+            'disk' => $disk,
+            'object_key' => "profiles/{$user->id}/avatar/client.jpg",
+            'original_name' => 'client.jpg',
+            'mime_type' => 'image/jpeg',
+            'size_bytes' => 12,
+            'scan_status' => 'clean',
+        ]);
+        $providerAvatar = ProfileAsset::query()->create([
+            'user_id' => $user->id,
+            'purpose' => 'provider_avatar',
+            'disk' => $disk,
+            'object_key' => "profiles/{$user->id}/provider_avatar/logo.jpg",
+            'original_name' => 'logo.jpg',
+            'mime_type' => 'image/jpeg',
+            'size_bytes' => 14,
+            'scan_status' => 'clean',
+        ]);
+        Storage::disk($disk)->put($clientAvatar->object_key, 'client');
+        Storage::disk($disk)->put($providerAvatar->object_key, 'logo');
+
+        $this->actingAs($user)
+            ->getJson('/api/v1/me')
+            ->assertOk()
+            ->assertJsonPath('data.avatarUrl', "/api/v1/profile-assets/{$clientAvatar->id}")
+            ->assertJsonPath('data.providerAvatarUrl', "/api/v1/profile-assets/{$providerAvatar->id}")
+            ->assertJsonPath('data.displayAvatarUrl', "/api/v1/profile-assets/{$clientAvatar->id}");
+
+        $user->update(['active_mode' => 'provider']);
+
+        $this->actingAs($user)
+            ->getJson('/api/v1/me')
+            ->assertOk()
+            ->assertJsonPath('data.displayAvatarUrl', "/api/v1/profile-assets/{$providerAvatar->id}");
+
+        $this->get("/api/v1/profile-assets/{$providerAvatar->id}")
+            ->assertOk()
+            ->assertHeader('Content-Type', 'image/jpeg');
     }
 
     public function test_user_is_notified_when_profile_files_are_approved_or_rejected(): void

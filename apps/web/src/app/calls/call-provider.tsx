@@ -223,9 +223,23 @@ export function CallProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let active = true;
     let pollTimer: number | null = null;
+    let callsAvailable = false;
     const pollAbort = new AbortController();
+    const schedule = (delayMs: number) => {
+      pollTimer = window.setTimeout(() => void poll(), delayMs);
+    };
     const poll = async () => {
       try {
+        if (!callsAvailable) {
+          // php artisan serve is single-threaded; avoid hammering /signals when calls are off.
+          try {
+            await fetchCallConfiguration();
+            callsAvailable = true;
+          } catch {
+            if (active) schedule(30_000);
+            return;
+          }
+        }
         const signals = await pollCallSignals(pollAbort.signal);
         if (!active) return;
         for (const signal of signals) {
@@ -269,11 +283,12 @@ export function CallProvider({ children }: { children: ReactNode }) {
         // The next poll reconciles transient signaling failures.
       } finally {
         if (active) {
-          pollTimer = window.setTimeout(() => void poll(), 750);
+          const delayMs = callRef.current ? 750 : 5_000;
+          schedule(delayMs);
         }
       }
     };
-    pollTimer = window.setTimeout(() => void poll(), 0);
+    schedule(0);
     return () => {
       active = false;
       pollAbort.abort();

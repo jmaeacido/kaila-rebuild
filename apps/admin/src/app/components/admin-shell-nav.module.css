@@ -65,6 +65,28 @@
   transition: background var(--duration-fast) ease-out, color var(--duration-fast) ease-out;
 }
 
+.badge {
+  align-items: center;
+  background: var(--color-danger);
+  border-radius: var(--radius-pill);
+  color: var(--color-on-primary);
+  display: inline-flex;
+  font-size: var(--font-caption-size);
+  font-style: normal;
+  font-weight: var(--font-weight-bold);
+  justify-content: center;
+  line-height: 1;
+  min-height: var(--spacing-16);
+  min-width: var(--spacing-16);
+  padding: 0 var(--spacing-4);
+}
+
+.desktopNav a[aria-current="page"] .badge,
+.drawer a[aria-current="page"] .badge {
+  background: var(--color-on-primary);
+  color: var(--color-primary);
+}
+
 .desktopNav a:hover {
   background: color-mix(in srgb, var(--color-primary) 8%, var(--color-surface));
   color: var(--color-primary);
@@ -197,6 +219,10 @@
   min-height: var(--control-min-height);
   padding: var(--spacing-12);
   text-decoration: none;
+}
+
+.drawer a span:first-of-type {
+  flex: 1 1 auto;
 }
 
 .drawer a[aria-current="page"] {

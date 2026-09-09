@@ -60,7 +60,12 @@ class PhaseNineModulesTest extends TestCase
     {
         $user = User::factory()->create();
         $post = $this->actingAs($user)->postJson('/api/v1/community', ['kind' => 'local_tip', 'title' => 'Prepare before a repair', 'body' => 'Take clear photos and describe where the issue appears.', 'areaLabel' => 'Davao City'])->assertCreated()->json('data.id');
-        $this->getJson('/api/v1/community')->assertOk()->assertJsonPath('data.0.title', 'Prepare before a repair');
+        $this->actingAs($user)->getJson('/api/v1/community')
+            ->assertOk()
+            ->assertJsonPath('data.0.title', 'Prepare before a repair')
+            ->assertJsonPath('data.0.canManage', true)
+            ->assertJsonPath('data.0.author.identityVerified', false)
+            ->assertJsonPath('data.0.author.avatarUrl', null);
         $this->actingAs($user)->putJson("/api/v1/community/$post/helpful")->assertOk();
         $this->putJson("/api/v1/community/$post/helpful")->assertOk();
         $this->assertDatabaseCount('community_reactions', 1);
@@ -342,6 +347,15 @@ class PhaseNineModulesTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.media.0.mimeType', 'image/webp')
             ->assertJsonPath('data.media.0.originalName', CommunityMediaObjectKey::displayName($mediaId));
+
+        $this->actingAs($user)->deleteJson("/api/v1/community-media/$mediaId")
+            ->assertOk()
+            ->assertJsonPath('data.deleted', true);
+        $this->assertDatabaseMissing('community_post_media', ['id' => $mediaId]);
+        Storage::disk('private-assets')->assertMissing($publishedKey);
+        $this->actingAs($user)->getJson("/api/v1/community/$postId")
+            ->assertOk()
+            ->assertJsonPath('data.media', []);
     }
 
     public function test_community_changes_notify_post_owner_and_engaged_users(): void

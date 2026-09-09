@@ -1,12 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { BadgeCheck, ChevronLeft, HeartHandshake, MapPin, MessageCircle, Plus, UserRound, X } from "lucide-react";
+import { BadgeCheck, ChevronLeft, HeartHandshake, MapPin, MessageCircle, Pencil, Plus, Trash2, UserRound, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Feedback } from "@kaila/ui";
 import type { PublicCommunityPost } from "../../lib/community-public";
 import { MarketplaceNavigation } from "../../components/marketplace-navigation";
+import { IdentityVerifiedBadge } from "../../components/identity-verified-badge";
 import { useMarketplaceMode } from "../use-marketplace-mode";
 import { CommunityAuthorAvatar } from "./community-author-avatar";
 import { CommunityBrowseRail } from "./community-browse-rail";
@@ -35,7 +36,7 @@ export function CommunityFeed({ initialPosts }: { initialPosts: PublicCommunityP
 
   const loadContext = useCallback(async () => {
     try {
-      const response = await fetch("/api/v1/community/feed-context", { cache: "no-store" });
+      const response = await fetch("/api/v1/community/feed-context", { cache: "no-store", credentials: "include" });
       if (!response.ok) throw new Error();
       setFeedContext(((await response.json()) as { data: CommunityFeedContext }).data);
     } catch {
@@ -87,6 +88,17 @@ export function CommunityFeed({ initialPosts }: { initialPosts: PublicCommunityP
     setPosts((items) => items.map((item) => item.id === post.id ? { ...item, helpful: !item.helpful, helpfulCount: Math.max(0, item.helpfulCount + (item.helpful ? -1 : 1)) } : item));
     const response = await csrfFetch(`/api/v1/community/${post.id}/helpful`, { method: post.helpful ? "DELETE" : "PUT" });
     if (!response.ok) void load(false);
+  }
+
+  async function remove(post: CommunityPost) {
+    if (!window.confirm("Delete this post? Comments will no longer be visible in Community.")) return;
+    const response = await csrfFetch(`/api/v1/community/${post.id}`, { method: "DELETE" });
+    if (!response.ok) {
+      setStatus("error");
+      return;
+    }
+    setPosts((items) => items.filter((item) => item.id !== post.id));
+    if (viewer?.post.id === post.id) setViewer(null);
   }
 
   function clearTagFilter() {
@@ -161,24 +173,43 @@ export function CommunityFeed({ initialPosts }: { initialPosts: PublicCommunityP
                 <article className={styles.card} key={post.id}>
                   <div className={styles.cardBody}>
                     <div className={styles.author}>
-                      <CommunityAuthorAvatar official={post.author.official} />
+                      <span className={styles.authorAvatar}>
+                        <CommunityAuthorAvatar official={post.author.official} name={post.author.name} avatarUrl={post.author.avatarUrl} />
+                        {!post.author.official && post.author.identityVerified ? (
+                          <IdentityVerifiedBadge compact className={styles.authorVerified} />
+                        ) : null}
+                      </span>
                       <span className={styles.authorText}>
                         <strong>
                           {post.author.name}
-                          {post.author.official && <BadgeCheck className={styles.badge} aria-label="Official KAILA" />}
+                          {post.author.official ? <BadgeCheck className={styles.badge} aria-label="Official KAILA" /> : null}
                         </strong>
                         <small>
                           {kindLabels[post.kind] ?? post.kind}
                           {post.areaLabel && <> · <MapPin size={12} /> {post.areaLabel}</>}
                         </small>
                       </span>
+                      {post.canManage ? (
+                        <div className={styles.ownerActions}>
+                          <Link className={styles.ownerAction} href={`/community/${post.id}/edit`} aria-label="Edit post">
+                            <Pencil aria-hidden="true" />
+                          </Link>
+                          <button className={styles.ownerAction} type="button" data-flat-button onClick={() => void remove(post)} aria-label="Delete post">
+                            <Trash2 aria-hidden="true" />
+                          </button>
+                        </div>
+                      ) : null}
                     </div>
                     <CommunityWelcomeTitle post={post} postHref={`/community/${post.id}`} />
                     <CommunityWelcomeBody post={post} maxLength={360} />
                     <CommunityHashtags tags={post.hashtags} compact />
                   </div>
-                  {post.media.length > 0 && (
-                    <CommunityPostMediaGrid media={post.media} onMediaClick={(index) => setViewer({ post, index })} />
+                  {(post.media.length > 0) && (
+                    <CommunityPostMediaGrid
+                      media={post.media}
+                      showPending={post.canManage}
+                      onMediaClick={(index) => setViewer({ post, index })}
+                    />
                   )}
                   <div className={styles.engagementRow}>
                     <button

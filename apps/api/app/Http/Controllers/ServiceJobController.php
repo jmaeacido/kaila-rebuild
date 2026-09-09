@@ -12,7 +12,9 @@ use App\Models\User;
 use App\Support\JobPostingService;
 use App\Support\JobPresenter;
 use App\Support\JobRealtimePublisher;
+use App\Support\IdentityVerificationService;
 use App\Support\OpportunityMatchingService;
+use App\Support\ProfileAvatarResolver;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -203,31 +205,34 @@ class ServiceJobController extends Controller
 
         if ($job->client_user_id === $user->id) {
             $profileId = $snapshot !== null ? $snapshot->provider_profile_id : $job->direct_provider_profile_id;
-            $profile = ProviderProfile::query()->findOrFail($profileId);
+            $profile = ProviderProfile::query()->with('user.identityVerification')->findOrFail($profileId);
             $counterpartUserId = $profile->user_id;
             $role = 'provider';
             $displayName = $profile->display_name;
+            $verified = $profile->user instanceof User
+                ? app(IdentityVerificationService::class)->approved($profile->user)
+                : false;
         } else {
-            $client = User::query()->findOrFail($job->client_user_id);
+            $client = User::query()->with('identityVerification')->findOrFail($job->client_user_id);
             $counterpartUserId = $client->id;
             $role = 'client';
             $displayName = $client->name;
+            $verified = app(IdentityVerificationService::class)->approved($client);
         }
 
-        $avatar = ProfileAsset::query()
-            ->where('user_id', $counterpartUserId)
-            ->where('purpose', 'avatar')
-            ->where('scan_status', 'clean')
-            ->latest()
-            ->first();
+        $avatars = app(ProfileAvatarResolver::class);
+        $avatarUrl = $role === 'provider'
+            ? $avatars->providerUrl((int) $counterpartUserId)
+            : $avatars->clientUrl((int) $counterpartUserId);
         $reputation = DB::table('reputation_projections')->where('user_id', $counterpartUserId);
 
         return [
             'role' => $role,
             'displayName' => $displayName,
-            'avatarUrl' => $avatar ? "/api/v1/profile-assets/{$avatar->getKey()}" : null,
+            'avatarUrl' => $avatarUrl,
             'rating' => $reputation->value('average_rating'),
             'reviewCount' => (int) ($reputation->value('published_review_count') ?? 0),
+            'verified' => $verified,
         ];
     }
 

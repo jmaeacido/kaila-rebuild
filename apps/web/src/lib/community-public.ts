@@ -8,7 +8,7 @@ export type PublicCommunityPost = {
   hashtags: string[];
   area: { id: number; name: string } | null;
   areaLabel: string | null;
-  author: { name: string; official: boolean };
+  author: { name: string; official: boolean; avatarUrl?: string | null; identityVerified?: boolean };
   mention: {
     userId: number;
     displayName: string;

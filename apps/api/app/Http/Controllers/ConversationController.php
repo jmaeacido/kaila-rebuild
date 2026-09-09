@@ -61,9 +61,15 @@ class ConversationController extends Controller
             return $profiles->get($profileId)?->user_id;
         })->filter()->unique();
         $users = User::query()->whereIn('id', $counterpartUserIds)->get()->keyBy('id');
-        $avatars = ProfileAsset::query()
+        $clientAvatars = ProfileAsset::query()
             ->whereIn('user_id', $counterpartUserIds)
             ->where('purpose', 'avatar')
+            ->where('scan_status', 'clean')
+            ->orderByRaw("CASE WHEN origin = 'upload' THEN 0 ELSE 1 END")
+            ->latest()->get()->unique('user_id')->keyBy('user_id');
+        $providerAvatars = ProfileAsset::query()
+            ->whereIn('user_id', $counterpartUserIds)
+            ->where('purpose', 'provider_avatar')
             ->where('scan_status', 'clean')
             ->orderByRaw("CASE WHEN origin = 'upload' THEN 0 ELSE 1 END")
             ->latest()->get()->unique('user_id')->keyBy('user_id');
@@ -72,7 +78,7 @@ class ConversationController extends Controller
             ->whereIn('conversation_id', $conversations->pluck('id'))
             ->orderByDesc('sequence')->get()->unique('conversation_id')->keyBy('conversation_id');
 
-        $data = $jobs->map(function (ServiceJob $job) use ($actor, $snapshots, $profiles, $users, $avatars, $conversations, $lastMessages): array {
+        $data = $jobs->map(function (ServiceJob $job) use ($actor, $snapshots, $profiles, $users, $clientAvatars, $providerAvatars, $conversations, $lastMessages): array {
             $snapshot = $snapshots->get($job->id);
             $profileId = $snapshot !== null ? $snapshot->provider_profile_id : $job->direct_provider_profile_id;
             $counterpartId = $job->client_user_id === $actor->id ? $profiles->get($profileId)?->user_id : $job->client_user_id;
@@ -80,6 +86,10 @@ class ConversationController extends Controller
             abort_unless($counterpart instanceof User, 404);
             $conversation = $conversations->get($job->id);
             $lastMessage = $conversation ? $lastMessages->get($conversation->id) : null;
+            $isProviderCounterpart = $job->client_user_id === $actor->id;
+            $avatar = $isProviderCounterpart
+                ? ($providerAvatars->get($counterpart->id) ?? $clientAvatars->get($counterpart->id))
+                : $clientAvatars->get($counterpart->id);
 
             return [
                 'jobId' => $job->id,
@@ -89,7 +99,7 @@ class ConversationController extends Controller
                 'otherParty' => [
                     'id' => $counterpart->id,
                     'name' => $counterpart->name,
-                    'avatarUrl' => $avatars->get($counterpart->id) ? "/api/v1/profile-assets/{$avatars->get($counterpart->id)->getKey()}" : null,
+                    'avatarUrl' => $avatar ? "/api/v1/profile-assets/{$avatar->getKey()}" : null,
                 ],
                 'lastMessage' => $lastMessage ? [
                     'body' => $lastMessage->body_ciphertext === null ? 'Sent an attachment' : Crypt::decryptString($lastMessage->body_ciphertext),

@@ -54,6 +54,7 @@ export function ProviderPortfolioManager({
       const responseStatus = await new Promise<number>((resolve, reject) => {
         const request = new XMLHttpRequest();
         request.open("POST", "/api/v1/me/profile-assets");
+        request.withCredentials = true;
         request.setRequestHeader("Accept", "application/json");
         if (token) request.setRequestHeader("X-XSRF-TOKEN", token);
         request.upload.addEventListener("progress", (event) => {

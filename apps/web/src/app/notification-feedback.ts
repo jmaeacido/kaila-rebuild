@@ -136,9 +136,11 @@ export function feedbackForDomainEvent(event: DomainEvent): FeedbackMessage | nu
         ? "View job"
         : record.type.startsWith("profile.provider_")
           ? "View profile"
-          : record.type.startsWith("community.")
-            ? "View post"
-            : "View update",
+          : record.resourceType === "identity_verification" || record.type.startsWith("identity.")
+            ? "View identity"
+            : record.type.startsWith("community.")
+              ? "View post"
+              : "View update",
       eyebrow: matched ? "NEW MATCH NEAR YOU" : undefined,
       matchJobId: matched && /^[A-Za-z0-9-]+$/.test(jobId) ? jobId : undefined,
       eventKey: providerStatusKey,
@@ -191,6 +193,9 @@ export function feedbackForDomainEvent(event: DomainEvent): FeedbackMessage | nu
 }
 
 function realtimeNotificationRoute(notification: RealtimeNotification): string {
+  if (notification.resourceType === "identity_verification" || notification.type.startsWith("identity.")) {
+    return "/identity-verification";
+  }
   if (notification.type === "profile.provider_approved" || notification.type === "profile.provider_rejected") {
     const reviewStatus = notification.data.reviewStatus === "approved" ? "approved" : "rejected";
     return `/provider-profile?reviewStatus=${reviewStatus}`;

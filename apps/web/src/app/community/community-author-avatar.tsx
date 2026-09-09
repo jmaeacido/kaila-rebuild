@@ -4,9 +4,11 @@ import styles from "./community.module.css";
 
 type CommunityAuthorAvatarProps = {
   official: boolean;
+  name?: string;
+  avatarUrl?: string | null;
 };
 
-export function CommunityAuthorAvatar({ official }: CommunityAuthorAvatarProps) {
+export function CommunityAuthorAvatar({ official, name, avatarUrl }: CommunityAuthorAvatarProps) {
   if (official) {
     return (
       <span className={`${styles.avatar} ${styles.avatarOfficial}`}>
@@ -16,6 +18,23 @@ export function CommunityAuthorAvatar({ official }: CommunityAuthorAvatarProps) 
           width={44}
           height={44}
         />
+      </span>
+    );
+  }
+
+  if (avatarUrl) {
+    return (
+      <span className={styles.avatar}>
+        <Image unoptimized src={avatarUrl} alt="" width={44} height={44} />
+      </span>
+    );
+  }
+
+  const initial = name?.trim().charAt(0).toUpperCase();
+  if (initial) {
+    return (
+      <span className={styles.avatar} aria-hidden="true">
+        {initial}
       </span>
     );
   }

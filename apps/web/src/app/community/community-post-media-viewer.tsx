@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import Image from "next/image";
 import Link from "next/link";
 import { BadgeCheck, ChevronLeft, ChevronRight, HeartHandshake, MapPin, MessageCircle, X } from "lucide-react";
+import { IdentityVerifiedBadge } from "../../components/identity-verified-badge";
 import { CommunityAuthorAvatar } from "./community-author-avatar";
 import { CommunityCommentComposer, CommunityCommentsList } from "./community-comments";
 import { CommunityHashtags } from "./community-hashtags";
@@ -157,10 +158,16 @@ export function CommunityPostMediaViewer({
         <aside className={viewerStyles.sideColumn}>
           <header className={viewerStyles.sideHeader}>
             <div className={viewerStyles.authorRow}>
-              <CommunityAuthorAvatar official={currentPost.author.official} />
+              <span className={viewerStyles.authorAvatar}>
+                <CommunityAuthorAvatar official={currentPost.author.official} name={currentPost.author.name} avatarUrl={currentPost.author.avatarUrl} />
+                {!currentPost.author.official && currentPost.author.identityVerified ? (
+                  <IdentityVerifiedBadge compact className={viewerStyles.authorVerified} />
+                ) : null}
+              </span>
               <div className={viewerStyles.authorText}>
                 <strong id="community-media-viewer-title">
-                  {currentPost.author.name} {currentPost.author.official && <BadgeCheck className={styles.badge} aria-label="Official KAILA" />}
+                  {currentPost.author.name}
+                  {currentPost.author.official ? <BadgeCheck className={styles.badge} aria-label="Official KAILA" /> : null}
                 </strong>
                 <small>
                   {kindLabels[currentPost.kind] ?? currentPost.kind}

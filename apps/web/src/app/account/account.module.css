@@ -9,6 +9,7 @@
 .identityCard { align-items:center; display:grid; gap:var(--spacing-16); grid-template-columns:auto minmax(0,1fr); padding:var(--spacing-16); }
 .identityCard h2, .card h2 { color:var(--color-ink); font-size:var(--font-section-size); }
 .identityCard p { color:var(--color-text-secondary); margin-top:var(--spacing-4); }
+.verifiedRow { margin-top:var(--spacing-8); }
 .avatar { background:var(--gradient-primary); border-radius:var(--radius-pill); color:var(--color-on-primary); flex:0 0 auto; font-size:var(--font-section-size); font-weight:var(--font-weight-bold); height:var(--spacing-64); position:relative; width:var(--spacing-64); }
 .avatar > img, .avatar > span { align-items:center; border-radius:inherit; display:flex; height:100%; justify-content:center; object-fit:cover; width:100%; }
 .avatar > img { inset:0; position:absolute; }
@@ -72,7 +73,12 @@
 .links > a > .supportIcon { background:var(--color-surface); overflow:hidden; }
 .supportIcon img { height:100%; object-fit:cover; width:100%; }
 .links svg { height:var(--spacing-24); width:var(--spacing-24); }
+.links > a > div :global([aria-label="Identity verified"]) svg {
+  height: 0.75rem;
+  width: 0.75rem;
+}
 .links > a > div { display:grid; gap:var(--spacing-4); }
+.links > a > div strong { align-items:center; display:inline-flex; flex-wrap:wrap; gap:var(--spacing-4); }
 .profileSkeleton, .cardSkeleton { animation:pulse var(--duration-slow) ease-out infinite alternate; background:var(--color-border); border-radius:var(--radius-card); }
 .profileSkeleton { height:10rem; }
 .cardSkeleton { height:20rem; }

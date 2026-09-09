@@ -12,6 +12,7 @@ import {
   ProviderMentionMenu,
   useProviderMention,
 } from "./community-provider-mention";
+import { CommunityMedia } from "./community-client";
 import styles from "./community.module.css";
 
 type MediaPreview = {
@@ -24,6 +25,8 @@ type CommunityStoryComposerProps = {
   onBodyChange: (body: string) => void;
   files: File[];
   onFilesChange: (files: File[]) => void;
+  existingMedia?: CommunityMedia[];
+  onRemoveExistingMedia?: (mediaId: string) => void;
   selectedMention: MentionCandidate | null;
   onSelectedMentionChange: (mention: MentionCandidate | null) => void;
   maxLength?: number;
@@ -35,6 +38,8 @@ export function CommunityStoryComposer({
   onBodyChange,
   files,
   onFilesChange,
+  existingMedia = [],
+  onRemoveExistingMedia,
   selectedMention,
   onSelectedMentionChange,
   maxLength = 3000,
@@ -42,7 +47,7 @@ export function CommunityStoryComposer({
 }: CommunityStoryComposerProps) {
   const inputId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
-  const canAddMore = files.length < 4;
+  const canAddMore = existingMedia.length + files.length < 4;
 
   const {
     textareaRef,
@@ -92,13 +97,16 @@ export function CommunityStoryComposer({
 
   function pick(event: ChangeEvent<HTMLInputElement>) {
     const selected = Array.from(event.target.files ?? []).filter((file) => file.type.startsWith("image/"));
-    onFilesChange([...files, ...selected].slice(0, 4));
+    const remaining = Math.max(0, 4 - existingMedia.length - files.length);
+    onFilesChange([...files, ...selected].slice(0, files.length + remaining));
     event.target.value = "";
   }
 
   function remove(index: number) {
     onFilesChange(files.filter((_, itemIndex) => itemIndex !== index));
   }
+
+  const hasAttachments = existingMedia.length > 0 || previews.length > 0;
 
   return (
     <div className={styles.storyComposer}>
@@ -125,8 +133,30 @@ export function CommunityStoryComposer({
         onSelect={selectMention}
       />
       {selectedMention ? <MentionChip mention={selectedMention} onClear={clearMention} /> : null}
-      {previews.length > 0 && (
+      {hasAttachments ? (
         <ul className={styles.composerPreviewStrip} aria-label="Selected images">
+          {existingMedia.map((item) => (
+            <li key={item.id}>
+              {item.url ? (
+                <Image unoptimized src={item.url} alt={item.originalName} width={88} height={88} className={styles.composerPreviewAsset} />
+              ) : (
+                <span className={styles.composerPreviewPending}>
+                  {item.scanStatus === "failed" ? "Scan failed" : "Scanning…"}
+                </span>
+              )}
+              {onRemoveExistingMedia ? (
+                <button
+                  type="button"
+                  data-flat-button
+                  className={styles.mediaPreviewRemove}
+                  onClick={() => onRemoveExistingMedia(item.id)}
+                  aria-label={`Remove ${item.originalName}`}
+                >
+                  <X aria-hidden="true" />
+                </button>
+              ) : null}
+            </li>
+          ))}
           {previews.map((preview, index) => (
             <li key={preview.url}>
               <Image unoptimized src={preview.url} alt={preview.file.name} width={88} height={88} className={styles.composerPreviewAsset} />
@@ -136,7 +166,7 @@ export function CommunityStoryComposer({
             </li>
           ))}
         </ul>
-      )}
+      ) : null}
       <div className={styles.storyComposerToolbar}>
         <input ref={inputRef} className={styles.hiddenFileInput} id={inputId} type="file" accept="image/*" multiple onChange={pick} />
         <FeatureProviderButton onClick={openMentionAtCursor} />

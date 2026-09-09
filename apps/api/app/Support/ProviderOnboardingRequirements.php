@@ -8,13 +8,14 @@ use App\Models\User;
 
 class ProviderOnboardingRequirements
 {
+    public function __construct(private readonly ProfileAvatarResolver $avatars) {}
+
     public function avatarUploaded(User $user): bool
     {
-        return ProfileAsset::query()
-            ->where('user_id', $user->id)
-            ->where('purpose', 'avatar')
-            ->whereIn('scan_status', ['pending', 'clean'])
-            ->exists();
+        $latest = $this->avatars->latest((int) $user->id, 'provider_avatar')
+            ?? $this->avatars->latest((int) $user->id, 'avatar');
+
+        return $latest !== null && in_array($latest->scan_status, ['pending', 'clean'], true);
     }
 
     public function avatarApproved(User $user): bool
@@ -24,13 +25,8 @@ class ProviderOnboardingRequirements
 
     public function approvedAvatar(User $user): ?ProfileAsset
     {
-        return ProfileAsset::query()
-            ->where('user_id', $user->id)
-            ->where('purpose', 'avatar')
-            ->where('scan_status', 'clean')
-            ->orderByRaw("CASE WHEN origin = 'upload' THEN 0 ELSE 1 END")
-            ->latest()
-            ->first();
+        return $this->avatars->approved((int) $user->id, 'provider_avatar')
+            ?? $this->avatars->approved((int) $user->id, 'avatar');
     }
 
     public function assertAvatarUploaded(User $user): void
@@ -38,7 +34,7 @@ class ProviderOnboardingRequirements
         abort_unless(
             $this->avatarUploaded($user),
             422,
-            'Upload a profile picture before submitting your provider profile.',
+            'Upload a provider logo or profile picture before submitting your provider profile.',
         );
     }
 
@@ -47,18 +43,15 @@ class ProviderOnboardingRequirements
         abort_unless(
             $this->avatarApproved(User::query()->findOrFail($profile->user_id)),
             409,
-            'Approve the provider profile picture before activating this profile.',
+            'Approve the provider logo or profile picture before activating this profile.',
         );
     }
 
     /** @return array{uploaded: bool, scanStatus: string|null, url: string|null} */
     public function avatarState(User $user): array
     {
-        $latest = ProfileAsset::query()
-            ->where('user_id', $user->id)
-            ->where('purpose', 'avatar')
-            ->latest()
-            ->first();
+        $latest = $this->avatars->latest((int) $user->id, 'provider_avatar')
+            ?? $this->avatars->latest((int) $user->id, 'avatar');
         $clean = $this->approvedAvatar($user);
 
         return [

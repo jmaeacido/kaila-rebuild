@@ -64,7 +64,7 @@ The root development command starts the web, admin, and realtime applications. S
 
 ```powershell
 php apps/api/artisan serve --host=127.0.0.1 --port=8000
-php apps/api/artisan queue:work redis --queue=outbox,default --tries=5
+php apps/api/artisan queue:work redis --queue=outbox,default,maintenance --tries=5
 php apps/api/artisan schedule:work
 ```
 

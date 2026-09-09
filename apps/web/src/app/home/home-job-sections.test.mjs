@@ -34,6 +34,8 @@ test("Client Home presents one empty jobs state and role-aware navigation", () =
   assert.match(marketplaceNavigationSource, /href="\/community"/);
   assert.match(marketplaceNavigationSource, />\s*Jobs\s*<\/Link>/);
   assert.match(marketplaceNavigationSource, /Find work/);
+  assert.match(marketplaceNavigationSource, /href="\/home"/);
+  assert.match(marketplaceNavigationSource, />\s*Home\s*<\/Link>/);
   assert.doesNotMatch(source, /user\.providerEligible \? "\/opportunities" : "\/provider-profile"/);
 });
 
@@ -77,7 +79,7 @@ test("Client Home follows the compact discovery layout while retaining shared na
   assert.match(source, /What service do you need\?/);
   assert.match(source, />Post a Job</);
   assert.match(source, /Trusted Providers Nearby/);
-  assert.match(source, /provider\.verified &&/);
+  assert.match(source, /provider\.verified \? <IdentityVerifiedBadge/);
   assert.match(source, /<MarketplaceNavigation \/>/);
 });
 

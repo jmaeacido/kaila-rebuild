@@ -5,7 +5,6 @@ import Link from "next/link";
 import Image from "next/image";
 import {
   ArrowRight,
-  BadgeCheck,
   BriefcaseBusiness,
   CalendarClock,
   ChevronRight,
@@ -17,16 +16,20 @@ import {
 } from "lucide-react";
 import { Feedback } from "@kaila/ui";
 import { MarketplaceNavigation } from "../../components/marketplace-navigation";
+import { IdentityVerifiedBadge } from "../../components/identity-verified-badge";
 import { ServiceCategoryBadge, ServiceCategoryIcon } from "../../components/service-category-icon";
 import { OpportunityRouteMetrics } from "../../components/job-request-location";
 import styles from "./home.module.css";
 import { isEphemeralRealtimeEvent } from "../notification-feedback";
 import { useRealtimeInvalidation } from "../use-realtime-invalidation";
+import { marketplaceModeChangedEvent } from "../use-marketplace-mode";
 import type { TravelMetrics } from "../travel-metrics";
 
 type User = {
   name: string;
   avatarUrl: string | null;
+  providerAvatarUrl?: string | null;
+  displayAvatarUrl?: string | null;
   activeMode: "client" | "provider" | null;
   providerEligible: boolean;
   reputation: { averageRating: number | null; reviewCount: number };
@@ -199,14 +202,19 @@ export default function AuthenticatedHomePage() {
     const initialLoad = window.setTimeout(() => void load(), 0);
     const reconcile = () => void load(true);
     window.addEventListener("online", reconcile);
+    window.addEventListener(marketplaceModeChangedEvent, reconcile);
     return () => {
       window.clearTimeout(initialLoad);
       window.removeEventListener("online", reconcile);
+      window.removeEventListener(marketplaceModeChangedEvent, reconcile);
     };
   }, [load]);
 
   const isProvider =
     user?.activeMode === "provider" && user.providerEligible === true;
+  const greetingAvatarUrl = isProvider
+    ? (user?.displayAvatarUrl ?? user?.providerAvatarUrl ?? user?.avatarUrl ?? null)
+    : (user?.avatarUrl ?? null);
   const firstName = useMemo(
     () => user?.name.trim().split(/\s+/)[0] || "there",
     [user],
@@ -251,7 +259,7 @@ export default function AuthenticatedHomePage() {
     return (
       <ClientHome
         firstName={firstName}
-        avatarUrl={user.avatarUrl}
+        avatarUrl={greetingAvatarUrl}
         categories={categories}
         activeJobs={activeClientJobs}
         providers={providers}
@@ -263,7 +271,7 @@ export default function AuthenticatedHomePage() {
   return (
     <ProviderHome
       firstName={firstName}
-      avatarUrl={user.avatarUrl}
+      avatarUrl={greetingAvatarUrl}
       user={user}
       provider={ownedProvider}
       activeJobs={activeProviderJobs}
@@ -517,7 +525,7 @@ function ClientHome({
                   <strong>{provider.displayName}</strong>
                   <small className={styles.providerRating}><Star aria-hidden="true" />{provider.rating === null ? "New" : provider.rating.toFixed(1)} ({provider.reviewCount})</small>
                   <small><MapPin aria-hidden="true" />{provider.serviceAreas[0]?.name ?? "Local provider"}</small>
-                  {provider.verified && <small className={styles.verified}><BadgeCheck aria-hidden="true" />Verified</small>}
+                  {provider.verified ? <IdentityVerifiedBadge compact /> : null}
                 </span>
               </Link>
             ))}

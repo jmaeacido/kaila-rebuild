@@ -1,6 +1,6 @@
 # Laravel production queue worker
 
-KAILA runs Laravel queue jobs through a continuously supervised systemd service. The worker consumes `outbox`, `default`, and `maintenance`; push-notification delivery uses the `default` queue.
+KAILA runs Laravel queue jobs through a continuously supervised systemd service. The worker consumes `outbox`, `default`, and `maintenance`; push-notification delivery uses the `default` queue. Local development must use the same three queues so identity and media malware scans leave quarantine.
 
 ## Install
 

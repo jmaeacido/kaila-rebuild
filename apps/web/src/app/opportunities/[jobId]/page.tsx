@@ -22,6 +22,8 @@ import {
 } from "lucide-react";
 import { Button, Feedback } from "@kaila/ui";
 import { ActionModal } from "../../../components/action-modal";
+import { IdentityVerifiedBadge } from "../../../components/identity-verified-badge";
+import { IdentityVerificationGate } from "../../../components/identity-verification-gate";
 import {
   OfferTermsForm,
   suggestedAmountCentavos,
@@ -29,6 +31,7 @@ import {
   type OfferTermsDefaults,
   type OfferTermsPayload,
 } from "../../../components/offer-terms-form";
+import { isIdentityVerificationBlock } from "../../identity-verification-gate";
 import styles from "../../offers.module.css";
 import mediaStyles from "./opportunity-media.module.css";
 import { useRealtimeInvalidation } from "../../use-realtime-invalidation";
@@ -40,7 +43,7 @@ type Opportunity = {
   jobId: string;
   title: string;
   description: string;
-  client: { displayName: string; avatarUrl: string | null; rating: string | null; reviewCount: number };
+  client: { displayName: string; avatarUrl: string | null; rating: string | null; reviewCount: number; verified: boolean };
   area: { name: string };
   category: { name: string; icon: string };
   scheduleType: string;
@@ -77,6 +80,8 @@ export default function MakeOfferPage({ params }: { params: Promise<{ jobId: str
   const [opportunity, setOpportunity] = useState<Opportunity | null>(null);
   const [offer, setOffer] = useState<Offer | null>(null);
   const [status, setStatus] = useState<"loading" | "idle" | "sending" | "success" | "error">("loading");
+  const [errorMessage, setErrorMessage] = useState("");
+  const [identityGateOpen, setIdentityGateOpen] = useState(false);
   const [offerOpen, setOfferOpen] = useState(false);
   const [selectedMediaIndex, setSelectedMediaIndex] = useState<number | null>(null);
   const [mediaZoomed, setMediaZoomed] = useState(false);
@@ -136,8 +141,20 @@ export default function MakeOfferPage({ params }: { params: Promise<{ jobId: str
     };
   }, [closeMedia, moveMedia, selectedMediaIndex]);
 
+  async function failAction(response: Response, fallback: string) {
+    const body = (await response.json().catch(() => null)) as { error?: { message?: string }; message?: string } | null;
+    const message = body?.error?.message || body?.message || fallback;
+    setErrorMessage(message);
+    setStatus("error");
+    if (isIdentityVerificationBlock(message)) {
+      setOfferOpen(false);
+      setIdentityGateOpen(true);
+    }
+  }
+
   async function submitOffer(payload: OfferTermsPayload) {
     setStatus("sending");
+    setErrorMessage("");
     const response = await fetch(
       offer ? `/api/v1/offers/${offer.id}/revisions` : `/api/v1/jobs/${jobId}/offers`,
       {
@@ -147,7 +164,7 @@ export default function MakeOfferPage({ params }: { params: Promise<{ jobId: str
       },
     );
     if (!response.ok) {
-      setStatus("error");
+      await failAction(response, "Your offer wasn’t saved. Check your connection and try again.");
       return;
     }
     setOffer(((await response.json()) as { data: Offer }).data);
@@ -160,8 +177,12 @@ export default function MakeOfferPage({ params }: { params: Promise<{ jobId: str
     const amountCentavos = opportunity.budgetMaxCentavos ?? opportunity.budgetMinCentavos;
     if (!amountCentavos) { setOfferOpen(true); return; }
     setStatus("sending");
+    setErrorMessage("");
     const response = await fetch(`/api/v1/jobs/${jobId}/direct-request/accept`, { method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify({ amountCentavos, availabilityText: suggestedAvailability(opportunity.scheduleType, opportunity.scheduledAt), scope: opportunity.description }) });
-    if (!response.ok) { setStatus("error"); return; }
+    if (!response.ok) {
+      await failAction(response, "This request could not be accepted right now.");
+      return;
+    }
     location.assign(`/jobs/${jobId}`);
   }
 
@@ -196,7 +217,7 @@ export default function MakeOfferPage({ params }: { params: Promise<{ jobId: str
         <section className={styles.requestSummary}>
           <div className={styles.client}>
             <span className={styles.clientAvatar}>{opportunity.client.avatarUrl ? <img src={opportunity.client.avatarUrl} alt={`${opportunity.client.displayName} profile`} /> : opportunity.client.displayName[0]}</span>
-            <span className={styles.clientText}><span>Posted by</span><strong>{opportunity.client.displayName}</strong><span className={styles.clientRating}><Star aria-hidden="true" />{reputation(opportunity.client.rating, opportunity.client.reviewCount)}</span></span>
+            <span className={styles.clientText}><span>Posted by</span><strong>{opportunity.client.displayName}{opportunity.client.verified ? <>{" "}<IdentityVerifiedBadge compact /></> : null}</strong><span className={styles.clientRating}><Star aria-hidden="true" />{reputation(opportunity.client.rating, opportunity.client.reviewCount)}</span></span>
           </div>
           <div><span><ServiceCategoryIcon icon={opportunity.category.icon} aria-hidden="true" />{opportunity.category.name}</span>{offer && <strong>Offer sent · Revision {offer.latestRevisionNumber}</strong>}</div>
           <h1>{opportunity.title}</h1>
@@ -242,7 +263,19 @@ export default function MakeOfferPage({ params }: { params: Promise<{ jobId: str
           <ShieldCheck aria-hidden="true" />The client can compare your price and timing with other providers.
         </Feedback>
       )}
-      {status === "error" && <Feedback kind="error" title="Your offer wasn’t saved">Check your connection and try again.</Feedback>}
+      {status === "error" && !isIdentityVerificationBlock(errorMessage) && (
+        <Feedback kind="error" title="Your offer wasn’t saved">
+          {errorMessage || "Check your connection and try again."}
+        </Feedback>
+      )}
+      {status === "error" && isIdentityVerificationBlock(errorMessage) && (
+        <Feedback kind="warning" title="Identity verification required">
+          Verify your identity before sending offers or accepting work.
+          <Button type="button" onClick={() => setIdentityGateOpen(true)}>
+            Verify my identity
+          </Button>
+        </Feedback>
+      )}
 
       {latest && (
         <section className={styles.sentOffer} aria-labelledby="sent-offer-title">
@@ -329,6 +362,11 @@ export default function MakeOfferPage({ params }: { params: Promise<{ jobId: str
           </section>
         </div>
       )}
+      <IdentityVerificationGate
+        open={identityGateOpen}
+        reason="activate_provider"
+        onDismiss={() => setIdentityGateOpen(false)}
+      />
     </main>
   );
 }

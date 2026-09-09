@@ -6,19 +6,20 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Feedback } from "@kaila/ui";
 import type { PublicCommunityPost } from "../../../lib/community-public";
+import { IdentityVerifiedBadge } from "../../../components/identity-verified-badge";
 import { CommunityAuthorAvatar } from "../community-author-avatar";
 import { CommunityComments } from "../community-comments";
 import { CommunityHashtags } from "../community-hashtags";
 import { CommunityPostMediaGrid } from "../community-post-media-grid";
 import { CommunityPostMediaViewer } from "../community-post-media-viewer";
 import { CommunityWelcomeBody, CommunityWelcomeTitle } from "../community-welcome-content";
-import { CommunityComment, CommunityPost, csrfFetch, kindLabels, mapPublicCommunityPost } from "../community-client";
+import { CommunityComment, CommunityPost, csrfFetch, kindLabels, mapPublicCommunityPost, normalizeCommunityPost } from "../community-client";
 import { useRealtimeInvalidation } from "../../use-realtime-invalidation";
 import styles from "../community.module.css";
 
 async function fetchJson<T>(paths: string[]): Promise<T | null> {
   for (const path of paths) {
-    const response = await fetch(path, { cache: "no-store" });
+    const response = await fetch(path, { cache: "no-store", credentials: path.includes("/public/") ? "omit" : "include" });
     if (response.ok) {
       return (await response.json()) as T;
     }
@@ -49,7 +50,7 @@ export function CommunityPostDetail({
         fetchJson<{ data: CommunityComment[] }>([`/api/v1/community/${postId}/comments`]),
       ]);
       if (!postBody) throw new Error();
-      setPost(postBody.data);
+      setPost(normalizeCommunityPost(postBody.data));
       setComments(commentsBody?.data ?? []);
       setStatus("ready");
     } catch {
@@ -91,10 +92,16 @@ export function CommunityPostDetail({
           <article className={styles.card}>
             <div className={styles.cardBody}>
               <div className={styles.author}>
-                <CommunityAuthorAvatar official={post.author.official} />
+                <span className={styles.authorAvatar}>
+                  <CommunityAuthorAvatar official={post.author.official} name={post.author.name} avatarUrl={post.author.avatarUrl} />
+                  {!post.author.official && post.author.identityVerified ? (
+                    <IdentityVerifiedBadge compact className={styles.authorVerified} />
+                  ) : null}
+                </span>
                 <span className={styles.authorText}>
                   <strong>
-                    {post.author.name} {post.author.official && <BadgeCheck className={styles.badge} aria-label="Official KAILA" />}
+                    {post.author.name}
+                    {post.author.official ? <BadgeCheck className={styles.badge} aria-label="Official KAILA" /> : null}
                   </strong>
                   <small>
                     {kindLabels[post.kind]}
@@ -151,10 +158,16 @@ export function CommunityPostDetail({
         <article className={styles.card}>
           <div className={styles.cardBody}>
             <div className={styles.author}>
-              <CommunityAuthorAvatar official={post.author.official} />
+              <span className={styles.authorAvatar}>
+                <CommunityAuthorAvatar official={post.author.official} name={post.author.name} avatarUrl={post.author.avatarUrl} />
+                {!post.author.official && post.author.identityVerified ? (
+                  <IdentityVerifiedBadge compact className={styles.authorVerified} />
+                ) : null}
+              </span>
               <span className={styles.authorText}>
                 <strong>
-                  {post.author.name} {post.author.official && <BadgeCheck className={styles.badge} aria-label="Official KAILA" />}
+                  {post.author.name}
+                  {post.author.official ? <BadgeCheck className={styles.badge} aria-label="Official KAILA" /> : null}
                 </strong>
                 <small>
                   {kindLabels[post.kind]}
@@ -175,7 +188,9 @@ export function CommunityPostDetail({
               {post.editedAt && " · Edited"}
             </p>
           </div>
-          {post.media.length > 0 && <CommunityPostMediaGrid media={post.media} onMediaClick={setViewerIndex} />}
+          {post.media.length > 0 && (
+            <CommunityPostMediaGrid media={post.media} showPending={post.canManage} onMediaClick={setViewerIndex} />
+          )}
           <div className={styles.engagementRow}>
             <button className={`${styles.engagementButton} ${post.helpful ? styles.engagementButtonActive : ""}`} data-flat-button type="button" onClick={() => void toggle()}>
               <HeartHandshake aria-hidden="true" />

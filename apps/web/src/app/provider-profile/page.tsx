@@ -284,11 +284,12 @@ export default function ProviderProfilePage() {
     try {
       const token = await prepareCsrf();
       const body = new FormData();
-      body.append("purpose", "avatar");
+      body.append("purpose", "provider_avatar");
       body.append("file", file);
       const responseStatus = await new Promise<number>((resolve, reject) => {
         const request = new XMLHttpRequest();
         request.open("POST", "/api/v1/me/profile-assets");
+        request.withCredentials = true;
         request.setRequestHeader("Accept", "application/json");
         if (token) request.setRequestHeader("X-XSRF-TOKEN", token);
         request.upload.addEventListener("progress", (event) => {
@@ -308,7 +309,7 @@ export default function ProviderProfilePage() {
       setAvatarScanStatus("pending");
       setAvatarUploadProgress(100);
       markFormDirty();
-      setAvatarNotice("Uploaded. KAILA reviews profile pictures before they appear in the community welcome post.");
+      setAvatarNotice("Uploaded. KAILA reviews provider logos before they appear on your profile and welcome post.");
     } catch (error) {
       setMessage("error");
       setAvatarNotice(
@@ -384,7 +385,7 @@ export default function ProviderProfilePage() {
     if (!avatarUploaded || !cityId || selectedAreaIds.length === 0 || serviceIds.length === 0 || availabilitySlots.length === 0 || (offersAtShop && !shopLocation)) {
       setMessage("error");
       if (!avatarUploaded) {
-        setAvatarNotice("Add a profile picture before submitting your provider profile.");
+        setAvatarNotice("Add a provider logo or profile picture before submitting your provider profile.");
       }
       return;
     }
@@ -442,7 +443,7 @@ export default function ProviderProfilePage() {
           </div>
         </div>
         <ol className={styles.steps} aria-label="Profile sections">
-          <li><span>1</span>Profile photo</li>
+          <li><span>1</span>Logo or photo</li>
           <li><span>2</span>Work photos</li>
           <li><span>3</span>About you</li>
           <li><span>4</span>Service area</li>
@@ -476,8 +477,8 @@ export default function ProviderProfilePage() {
           className={styles.form}
         >
           <fieldset className={styles.formSection}>
-            <legend><span>1</span><Camera aria-hidden="true" /> Profile photo</legend>
-            <p>KAILA announces every approved provider in Community with your profile picture attached. Upload a clear photo of yourself before submitting.</p>
+            <legend><span>1</span><Camera aria-hidden="true" /> Logo or profile picture</legend>
+            <p>This mark is separate from your client photo. Upload a clear logo, emblem, or business photo before submitting—KAILA announces every approved provider in Community with it attached.</p>
             <div className={styles.avatarSection}>
               <div className={styles.avatarPreview} aria-hidden={!avatarUrl && !avatarPreviewUrl}>
                 {avatarUrl || avatarPreviewUrl ? (
@@ -504,10 +505,10 @@ export default function ProviderProfilePage() {
                 {avatarUploaded && (
                   <p className={styles.avatarStatus}>
                     {avatarScanStatus === "clean"
-                      ? "Profile picture approved."
+                      ? "Provider logo approved."
                       : avatarScanStatus === "rejected"
-                        ? "Profile picture needs a new upload."
-                        : "Profile picture uploaded and awaiting review."}
+                        ? "Provider logo needs a new upload."
+                        : "Provider logo uploaded and awaiting review."}
                   </p>
                 )}
                 {avatarUploading && <p className={styles.avatarStatus}>Uploading… {avatarUploadProgress}%</p>}

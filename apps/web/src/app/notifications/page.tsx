@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Bell, CheckCheck, Trash2 } from "lucide-react";
+import { Bell, CheckCheck, ChevronRight, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Feedback } from "@kaila/ui";
@@ -43,7 +43,9 @@ export default function NotificationsPage() {
   async function open(item: NotificationRecord) {
     if (!item.readAt) await mutate(`/api/v1/notifications/${item.id}/read`, "PUT");
     const target = notificationRoute(item);
-    router.push(target);
+    const current = `${window.location.pathname}${window.location.search}`;
+    if (current === target) router.refresh();
+    else router.push(target);
     if (target.startsWith("/account?profilePicture=review")) {
       window.dispatchEvent(new CustomEvent(profilePictureReviewEvent, { detail: {
         reviewStatus: item.data.reviewStatus,
@@ -67,6 +69,7 @@ export default function NotificationsPage() {
             <Link href={notificationRoute(item)} onClick={(event) => { event.preventDefault(); void open(item); }}>
               <span className={styles.icon}><NotificationGlyph item={item} /></span>
               <div><h2>{item.title}</h2><p>{item.body}</p><time dateTime={item.createdAt}>{new Date(item.createdAt).toLocaleString()}</time></div>
+              <ChevronRight aria-hidden="true" className={styles.chevron} />
             </Link>
             <button type="button" aria-label={`Clear ${item.title}`} onClick={() => void mutate(`/api/v1/notifications/${item.id}`, "DELETE")}><Trash2 aria-hidden="true" /></button>
           </article>

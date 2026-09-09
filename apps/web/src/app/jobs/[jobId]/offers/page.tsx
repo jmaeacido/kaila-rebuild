@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ArrowLeft, BadgeCheck, Clock3, MapPin, MessageSquareQuote, Navigation, RefreshCw, Star, UsersRound } from "lucide-react";
 import { Button, Feedback } from "@kaila/ui";
 import { ActionModal } from "../../../../components/action-modal";
+import { IdentityVerifiedBadge } from "../../../../components/identity-verified-badge";
 import { OfferTermsForm, type OfferTermsPayload } from "../../../../components/offer-terms-form";
 import styles from "../../../offers.module.css";
 import { useRealtimeInvalidation } from "../../../use-realtime-invalidation";
@@ -109,7 +110,7 @@ export default function CompareOffersPage({ params }: { params: Promise<{ jobId:
           const latest = offer.revisions.at(-1)!;
           return (
             <article key={offer.id}>
-              <div className={styles.provider}><span className={styles.avatar}>{offer.provider.avatarUrl ? <img src={offer.provider.avatarUrl} alt={`${offer.provider.displayName} profile`} /> : offer.provider.displayName[0]}</span><div><h2>{offer.provider.displayName}</h2><p>{offer.provider.verified && <><BadgeCheck aria-label="Identity verified" /> Verified · </>}<Star aria-hidden="true" /> {reputation(offer.provider.rating, offer.provider.reviewCount)} · {offer.provider.completedJobs} jobs</p></div></div>
+              <div className={styles.provider}><span className={styles.avatar}>{offer.provider.avatarUrl ? <img src={offer.provider.avatarUrl} alt={`${offer.provider.displayName} profile`} /> : offer.provider.displayName[0]}</span><div><h2>{offer.provider.displayName}{offer.provider.verified ? <>{" "}<IdentityVerifiedBadge compact /></> : null}</h2><p><Star aria-hidden="true" /> {reputation(offer.provider.rating, offer.provider.reviewCount)} · {offer.provider.completedJobs} jobs</p></div></div>
               <p className={styles.price}>₱{(latest.amountCentavos / 100).toLocaleString()}</p>
               <dl>
                 <div><Clock3 aria-hidden="true" /><dt>Available</dt><dd>{latest.availabilityText}</dd></div>

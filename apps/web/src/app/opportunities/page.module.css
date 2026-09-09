@@ -10,7 +10,7 @@
 .client .avatar img { height:100%; object-fit:cover; width:100%; }
 .client div { display:grid; }
 .client small { color:var(--color-text-secondary); font-size:var(--font-caption-size); }
-.client strong { color:var(--color-ink); }
+.client strong { align-items:center; color:var(--color-ink); display:inline-flex; flex-wrap:wrap; gap:var(--spacing-4); }
 .client .reputation { align-items:center; color:var(--color-text-secondary); display:flex; font-size:var(--font-caption-size); gap:var(--spacing-4); }
 .client .reputation svg { color:var(--color-primary); height:var(--spacing-16); width:var(--spacing-16); }
 .title span { color:var(--color-primary); font-size:var(--font-caption-size); font-weight:var(--font-weight-semibold); }

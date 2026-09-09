@@ -8,12 +8,15 @@
 .list { display: grid; gap: var(--spacing-12); }
 .list article { align-items: center; background: var(--color-surface); border: var(--control-border-width) solid var(--color-border); border-radius: var(--radius-card); display: flex; overflow: hidden; }
 .list article.unread { border-color: color-mix(in srgb, var(--color-primary) 55%, var(--color-border)); box-shadow: var(--shadow-card); }
-.list article > a { align-items: center; color: inherit; display: flex; flex: 1; gap: var(--spacing-12); padding: var(--spacing-16); text-decoration: none; }
+.list article > a { align-items: center; color: inherit; display: grid; flex: 1; gap: var(--spacing-12); grid-template-columns: var(--control-min-height) minmax(0, 1fr) auto; padding: var(--spacing-16); text-decoration: none; }
+.list article > a:hover { background: color-mix(in srgb, var(--color-primary) 5%, var(--color-surface)); }
 .list article > button { align-items: center; background: transparent; border: 0; color: var(--color-text-secondary); cursor: pointer; display: flex; justify-content: center; margin-right: var(--spacing-8); width: var(--control-min-height); }
 .list article > button:hover { color: var(--color-danger); }
 .list h2 { font-size: var(--font-card-title-size); }
-.list div { display: grid; gap: var(--spacing-4); }
+.list div { display: grid; gap: var(--spacing-4); min-width: 0; }
 .list time { font-size: var(--font-small-size); }
+.chevron { color: var(--color-text-secondary); height: var(--spacing-20); width: var(--spacing-20); }
+.list article > a:hover .chevron { color: var(--color-primary); }
 .icon { align-items: center; background: var(--color-background); border-radius: var(--radius-pill); color: var(--color-text-secondary); display: flex; flex: 0 0 var(--control-min-height); height: var(--control-min-height); justify-content: center; }
 .icon svg { height: var(--spacing-20); width: var(--spacing-20); }
 .unread .icon { background: color-mix(in srgb, var(--color-primary) 14%, var(--color-surface)); color: var(--color-primary); }

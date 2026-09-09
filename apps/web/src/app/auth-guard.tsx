@@ -71,7 +71,13 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
           return;
         }
         const userBody = (await response.json()) as {
-          data: { name: string; avatarUrl: string | null; appearanceTheme?: string };
+          data: {
+            name: string;
+            avatarUrl: string | null;
+            providerAvatarUrl?: string | null;
+            displayAvatarUrl?: string | null;
+            appearanceTheme?: string;
+          };
         };
         setUserName(userBody.data.name);
         if (isThemePreference(userBody.data.appearanceTheme)) {

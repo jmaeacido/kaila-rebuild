@@ -198,6 +198,7 @@ class AdminMarketplaceController extends Controller
             $approved = $profileAsset->scan_status === 'clean';
             $purpose = match ($profileAsset->purpose) {
                 'avatar' => 'profile picture',
+                'provider_avatar' => 'provider logo',
                 'portfolio' => 'portfolio image',
                 'credential' => 'credential file',
                 default => 'file',
@@ -221,7 +222,7 @@ class AdminMarketplaceController extends Controller
         });
 
         $profileAsset->refresh();
-        if ($profileAsset->purpose === 'avatar' && $profileAsset->scan_status === 'clean') {
+        if (in_array($profileAsset->purpose, ['avatar', 'provider_avatar'], true) && $profileAsset->scan_status === 'clean') {
             $profile = ProviderProfile::query()
                 ->where('user_id', $profileAsset->user_id)
                 ->where('status', 'active')

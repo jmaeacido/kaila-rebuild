@@ -295,6 +295,7 @@ Route::middleware('auth')->group(function (): void {
     Route::put('/community/{communityPost}/helpful', [CommunityController::class, 'react']);
     Route::delete('/community/{communityPost}/helpful', [CommunityController::class, 'unreact']);
     Route::post('/community/{communityPost}/media', [CommunityController::class, 'storeMedia']);
+    Route::delete('/community-media/{communityPostMedia}', [CommunityController::class, 'destroyMedia']);
     Route::post('/community/{communityPost}/comments', [CommunityController::class, 'comment']);
     Route::post('/community/{communityPost}/comments/{communityComment}/replies', [CommunityController::class, 'reply']);
     Route::patch('/community-comments/{communityComment}', [CommunityController::class, 'updateComment']);
@@ -336,6 +337,7 @@ Route::middleware('auth')->group(function (): void {
         Route::get('/report-evidence/{moderationReportEvidence}', [AdminReportController::class, 'evidence']);
         Route::get('/review-queue', [AdminMarketplaceController::class, 'queue']);
         Route::get('/identity-verifications', [AdminIdentityVerificationController::class, 'index']);
+        Route::get('/identity-verifications/summary', [AdminIdentityVerificationController::class, 'summary']);
         Route::get('/identity-verifications/evidence/{identityEvidence}/preview', [AdminIdentityVerificationController::class, 'preview']);
         Route::put('/identity-verifications/{identityVerification}/decision', [AdminIdentityVerificationController::class, 'decide']);
         Route::get('/assets/{profileAsset}/preview', [AdminMarketplaceController::class, 'assetPreview']);

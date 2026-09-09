@@ -5,6 +5,9 @@ export function adminNotificationRoute(data: Record<string, string | undefined>)
   const eventType = data.eventType ?? "";
   const resourceType = data.resourceType ?? "";
 
+  if (eventType.startsWith("admin.identity.") || resourceType === "identity_verification") {
+    return "/identity-verifications";
+  }
   if (eventType.startsWith("report.") || resourceType === "moderation_report") {
     return safeId(data.reportId) ? `/reports?report=${encodeURIComponent(data.reportId)}` : "/reports";
   }
