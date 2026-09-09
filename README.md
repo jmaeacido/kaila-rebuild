@@ -60,12 +60,23 @@ Start the frontend services from the repository root:
 pnpm dev
 ```
 
-The root development command starts the web, admin, and realtime applications. Start the Laravel API, outbox worker, and scheduler in separate development terminals:
+The root development command starts the web, admin, and realtime applications. Start the Laravel API with concurrent Apache (much faster than single-threaded `artisan serve` under the browser’s parallel API calls):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/dev/start-api-apache.ps1
+```
+
+Then start the outbox worker and scheduler:
+
+```powershell
+php apps/api/artisan queue:work redis --queue=outbox,default,maintenance --tries=5
+php apps/api/artisan schedule:work
+```
+
+Fallback single-threaded API (slower when many requests run at once):
 
 ```powershell
 php apps/api/artisan serve --host=127.0.0.1 --port=8000
-php apps/api/artisan queue:work redis --queue=outbox,default,maintenance --tries=5
-php apps/api/artisan schedule:work
 ```
 
 For local development only, the database seeder creates these accounts with password `password`:
