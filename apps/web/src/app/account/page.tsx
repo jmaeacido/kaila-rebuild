@@ -307,6 +307,9 @@ export default function AccountPage() {
               unoptimized
             />
           ) : null}
+          {user.identityVerified ? (
+            <IdentityVerifiedBadge compact className={styles.avatarVerified} />
+          ) : null}
           <button
             aria-expanded={avatarMenuOpen}
             aria-label={isProviderMode ? "Change provider logo" : "Change profile picture"}

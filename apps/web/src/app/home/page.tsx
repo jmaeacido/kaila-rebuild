@@ -32,6 +32,7 @@ type User = {
   displayAvatarUrl?: string | null;
   activeMode: "client" | "provider" | null;
   providerEligible: boolean;
+  identityVerified?: boolean;
   reputation: { averageRating: number | null; reviewCount: number };
 };
 
@@ -260,6 +261,7 @@ export default function AuthenticatedHomePage() {
       <ClientHome
         firstName={firstName}
         avatarUrl={greetingAvatarUrl}
+        verified={Boolean(user.identityVerified)}
         categories={categories}
         activeJobs={activeClientJobs}
         providers={providers}
@@ -272,6 +274,7 @@ export default function AuthenticatedHomePage() {
     <ProviderHome
       firstName={firstName}
       avatarUrl={greetingAvatarUrl}
+      verified={Boolean(user.identityVerified)}
       user={user}
       provider={ownedProvider}
       activeJobs={activeProviderJobs}
@@ -283,6 +286,7 @@ export default function AuthenticatedHomePage() {
 function ProviderHome({
   firstName,
   avatarUrl,
+  verified,
   user,
   provider,
   activeJobs,
@@ -290,6 +294,7 @@ function ProviderHome({
 }: {
   firstName: string;
   avatarUrl: string | null;
+  verified: boolean;
   user: User;
   provider: OwnedProvider | null;
   activeJobs: Job[];
@@ -303,7 +308,7 @@ function ProviderHome({
   return (
     <main className={`${styles.shell} ${styles.providerShell}`}>
       <header className={styles.providerWelcome}>
-        <GreetingAvatar name={firstName} avatarUrl={avatarUrl} />
+        <GreetingAvatar name={firstName} avatarUrl={avatarUrl} verified={verified} />
         <div>
           <p>Good {timeOfDay()},</p>
           <h1>{firstName}</h1>
@@ -420,6 +425,7 @@ function money(min: number | null, max: number | null) {
 function ClientHome({
   firstName,
   avatarUrl,
+  verified,
   categories,
   activeJobs,
   providers,
@@ -427,6 +433,7 @@ function ClientHome({
 }: {
   firstName: string;
   avatarUrl: string | null;
+  verified: boolean;
   categories: Category[];
   activeJobs: Job[];
   providers: Provider[];
@@ -438,7 +445,7 @@ function ClientHome({
   return (
     <main className={`${styles.shell} ${styles.clientShell}`}>
       <header className={styles.clientWelcome}>
-        <GreetingAvatar name={firstName} avatarUrl={avatarUrl} />
+        <GreetingAvatar name={firstName} avatarUrl={avatarUrl} verified={verified} />
         <div>
           <p>Good {timeOfDay()},</p>
           <h1>{firstName}</h1>
@@ -548,12 +555,23 @@ function ClientHome({
   );
 }
 
-function GreetingAvatar({ name, avatarUrl }: { name: string; avatarUrl: string | null }) {
+function GreetingAvatar({
+  name,
+  avatarUrl,
+  verified = false,
+}: {
+  name: string;
+  avatarUrl: string | null;
+  verified?: boolean;
+}) {
   return (
-    <Link className={styles.greetingAvatar} href="/account" aria-label="Open account">
-      <span aria-hidden="true">{name.charAt(0).toUpperCase()}</span>
-      {avatarUrl ? <Image src={avatarUrl} alt="" width={48} height={48} unoptimized /> : null}
-    </Link>
+    <span className={styles.greetingAvatarWrap}>
+      <Link className={styles.greetingAvatar} href="/account" aria-label="Open account">
+        <span aria-hidden="true">{name.charAt(0).toUpperCase()}</span>
+        {avatarUrl ? <Image src={avatarUrl} alt="" width={48} height={48} unoptimized /> : null}
+      </Link>
+      {verified ? <IdentityVerifiedBadge compact className={styles.greetingVerified} /> : null}
+    </span>
   );
 }
 

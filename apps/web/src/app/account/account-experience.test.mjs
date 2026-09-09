@@ -70,6 +70,11 @@ test("account identity prefers the saved marketplace display name", () => {
   assert.match(page, /sessionUserChangedEvent/);
 });
 
+test("account identity avatar shows the compact verified badge when approved", () => {
+  assert.match(page, /IdentityVerifiedBadge compact className=\{styles\.avatarVerified\}/);
+  assert.match(styles, /\.avatarVerified/);
+});
+
 test("background profile refreshes do not overwrite unsaved client edits", () => {
   assert.match(page, /const clientFormIsDirty = useRef\(false\)/);
   assert.match(page, /const loadSequence = useRef\(0\)/);

@@ -29,6 +29,8 @@ test("call signal polling never overlaps requests", () => {
 test("logout tears down authenticated activity without a final realtime refresh", () => {
   assert.match(authGuard, /if \(loggingOut\) \{\s*return <BrandedLoader/);
   assert.match(authGuard, /CustomEvent<boolean>\(realtimeAuthChangedName, \{ detail: false \}\)/);
+  assert.match(authGuard, /AbortSignal\.timeout\(8_000\)/);
+  assert.match(authGuard, /window\.setTimeout\(\(\) => resolve\(undefined\), 5_000\)/);
   assert.match(callProvider, /pollCallSignals\(pollAbort\.signal\)/);
   assert.match(callProvider, /pollAbort\.abort\(\)/);
   assert.match(realtimeProvider, /detail === false[\s\S]*?publishStatus\("disconnected"\);[\s\S]*?return;/);

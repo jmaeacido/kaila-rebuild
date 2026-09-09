@@ -56,12 +56,17 @@ export function ProviderAvailabilityEditor({
                 disabled={disabled}
                 onChange={(event) => updateDay(day.dayOfWeek, { enabled: event.target.checked })}
               />
-              <span>{day.label}</span>
+              <span>
+                <span className={styles.shortLabel} aria-hidden="true">
+                  {day.label.slice(0, 3)}
+                </span>
+                <span className={styles.fullLabel}>{day.label}</span>
+              </span>
             </label>
             {day.enabled && (
               <div className={styles.times}>
                 <label>
-                  From
+                  <span>From</span>
                   <input
                     type="time"
                     required
@@ -71,7 +76,7 @@ export function ProviderAvailabilityEditor({
                   />
                 </label>
                 <label>
-                  Until
+                  <span>Until</span>
                   <input
                     type="time"
                     required

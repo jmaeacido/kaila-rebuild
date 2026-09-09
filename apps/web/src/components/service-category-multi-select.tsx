@@ -44,8 +44,8 @@ export function ServiceCategoryMultiSelect({
                 type="checkbox"
                 value={value}
               />
-              <ServiceCategoryBadge icon={category.icon} />
-              <span>{category.name}</span>
+              <ServiceCategoryBadge className={styles.badge} icon={category.icon} />
+              <span className={styles.label}>{category.name}</span>
               <Check className={styles.check} aria-hidden="true" />
             </label>
           );

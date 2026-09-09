@@ -182,7 +182,12 @@ test("Home greets with the profile area and hides the pin when unset", () => {
 
 test("Client and provider greetings place the account avatar before the name", () => {
   assert.match(source, /function GreetingAvatar/);
-  assert.match(source, /<GreetingAvatar name=\{firstName\} avatarUrl=\{avatarUrl\} \/>[\s\S]*?<h1>\{firstName\}<\/h1>/);
+  assert.match(source, /verified=\{Boolean\(user\.identityVerified\)\}/);
+  assert.match(
+    source,
+    /<GreetingAvatar name=\{firstName\} avatarUrl=\{avatarUrl\} verified=\{verified\} \/>[\s\S]*?<h1>\{firstName\}<\/h1>/,
+  );
+  assert.match(source, /IdentityVerifiedBadge compact className=\{styles\.greetingVerified\}/);
   assert.doesNotMatch(authGuardSource, /className="sessionAvatar"/);
 });
 

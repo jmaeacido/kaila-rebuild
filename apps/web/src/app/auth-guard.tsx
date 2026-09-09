@@ -144,16 +144,27 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   async function signOut() {
     setLoggingOut(true);
     try {
-      const token = await prepareCsrf();
+      const token = await Promise.race([
+        prepareCsrf(),
+        new Promise<undefined>((resolve) => {
+          window.setTimeout(() => resolve(undefined), 5_000);
+        }),
+      ]);
       await fetch("/api/v1/auth/logout", {
         method: "POST",
         credentials: "include",
+        signal: AbortSignal.timeout(8_000),
         headers: {
           Accept: "application/json",
           ...(token ? { "X-XSRF-TOKEN": token } : {}),
         },
-      });
-      await clearSession().catch(() => undefined);
+      }).catch(() => undefined);
+      await Promise.race([
+        clearSession().catch(() => undefined),
+        new Promise<void>((resolve) => {
+          window.setTimeout(resolve, 2_000);
+        }),
+      ]);
     } finally {
       setSessionReady(false);
       window.dispatchEvent(new CustomEvent<boolean>(realtimeAuthChangedName, { detail: false }));

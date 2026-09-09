@@ -9,17 +9,19 @@
 
 .fieldset legend {
   color: var(--color-ink);
-  font-weight: var(--font-weight-medium);
+  font-size: var(--font-small-size);
+  font-weight: var(--font-weight-semibold);
   padding: 0;
 }
 
 .heading {
-  align-items: center;
+  align-items: baseline;
   color: var(--color-text-secondary);
   display: flex;
-  font-size: var(--font-small-size);
+  font-size: var(--font-caption-size);
   gap: var(--spacing-8);
   justify-content: space-between;
+  line-height: var(--line-height-body);
 }
 
 .heading strong {
@@ -31,6 +33,7 @@
 .options {
   display: grid;
   gap: var(--spacing-8);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .option {
@@ -41,11 +44,28 @@
   color: var(--color-ink);
   cursor: pointer;
   display: grid;
-  gap: var(--spacing-12);
-  grid-template-columns: var(--spacing-40, 2.5rem) minmax(0, 1fr) var(--spacing-24);
-  min-height: var(--control-min-height);
-  padding: var(--spacing-12);
+  gap: var(--spacing-8);
+  grid-template-columns: var(--spacing-32) minmax(0, 1fr) auto;
+  min-height: var(--spacing-48);
+  padding: var(--spacing-8);
   position: relative;
+}
+
+.label {
+  font-size: var(--font-small-size);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-body);
+  overflow-wrap: anywhere;
+}
+
+.option .badge {
+  height: var(--spacing-32);
+  width: var(--spacing-32);
+}
+
+.option .badge svg {
+  height: var(--spacing-16);
+  width: var(--spacing-16);
 }
 
 .option[data-selected="true"] {
@@ -55,17 +75,19 @@
 
 .option input {
   height: var(--spacing-24);
-  left: var(--spacing-12);
+  left: var(--spacing-8);
   margin: 0;
   opacity: 0;
   position: absolute;
-  top: var(--spacing-12);
+  top: var(--spacing-8);
   width: var(--spacing-24);
 }
 
 .option .check {
   color: var(--color-success);
+  height: var(--spacing-16);
   opacity: 0;
+  width: var(--spacing-16);
 }
 
 .option[data-selected="true"] .check {
@@ -88,7 +110,42 @@
 }
 
 @media (min-width: 48rem) {
-  .options {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .fieldset {
+    gap: var(--spacing-12);
+  }
+
+  .fieldset legend {
+    font-size: var(--font-body-size, 1rem);
+    font-weight: var(--font-weight-medium);
+  }
+
+  .heading {
+    align-items: center;
+    font-size: var(--font-small-size);
+  }
+
+  .option {
+    gap: var(--spacing-12);
+    grid-template-columns: var(--spacing-40, 2.5rem) minmax(0, 1fr) var(--spacing-24);
+    padding: var(--spacing-12);
+  }
+
+  .label {
+    font-size: inherit;
+  }
+
+  .option .badge {
+    height: var(--spacing-40, 2.5rem);
+    width: var(--spacing-40, 2.5rem);
+  }
+
+  .option .badge svg {
+    height: var(--spacing-24);
+    width: var(--spacing-24);
+  }
+
+  .option .check {
+    height: var(--spacing-24);
+    width: var(--spacing-24);
   }
 }

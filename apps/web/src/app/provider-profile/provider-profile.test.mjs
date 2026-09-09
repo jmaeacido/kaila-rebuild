@@ -20,7 +20,11 @@ test("Provider profile form styles do not override nested service and availabili
   assert.match(availabilityStyles, /\.toggle \{[\s\S]*?display: flex;/);
   assert.match(availabilityStyles, /flex-direction: row;/);
   assert.match(availabilityStyles, /\.times \{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
-  assert.match(serviceStyles, /\.option \{[\s\S]*?grid-template-columns: var\(--spacing-40, 2\.5rem\) minmax\(0, 1fr\) var\(--spacing-24\)/);
+  assert.match(availabilityStyles, /\.row \{[\s\S]*?grid-template-columns: minmax\(4\.5rem, auto\) minmax\(0, 1fr\)/);
+  assert.match(availabilityStyles, /\.shortLabel/);
+  assert.match(serviceStyles, /\.options \{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
+  assert.match(serviceStyles, /\.option \{[\s\S]*?grid-template-columns: var\(--spacing-32\) minmax\(0, 1fr\) auto/);
+  assert.match(serviceStyles, /@media \(min-width: 48rem\)[\s\S]*grid-template-columns: var\(--spacing-40, 2\.5rem\) minmax\(0, 1fr\) var\(--spacing-24\)/);
 });
 
 test("Provider profile loads saved data from marketplace profile", () => {
