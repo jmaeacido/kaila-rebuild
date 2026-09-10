@@ -41,6 +41,9 @@ function readBuildVersions() {
 }
 
 export function publishAndroidDownload({ mode: buildMode, versionName, versionCode, mobileRoot }) {
+  if (buildMode !== "direct") {
+    throw new Error("Only Direct builds may publish the website APK and download metadata.");
+  }
   const webRoot = resolve(mobileRoot, "../web");
   const configPath = resolve(webRoot, "src/app/android-download.ts");
 
@@ -50,11 +53,8 @@ export function publishAndroidDownload({ mode: buildMode, versionName, versionCo
     "utf8",
   );
 
-  if (buildMode === "debug") {
-    const apkSource = resolve(
-      mobileRoot,
-      "android/app/build/outputs/apk/debug/app-debug.apk",
-    );
+  if (buildMode === "direct") {
+    const apkSource = resolve(mobileRoot, "android/app/build/outputs/apk/direct/debug/app-direct-debug.apk");
     const apkDestination = resolve(webRoot, "public/downloads/kaila-android.apk");
 
     if (!existsSync(apkSource)) {
@@ -69,14 +69,14 @@ export function publishAndroidDownload({ mode: buildMode, versionName, versionCo
     configPath,
     versionName,
     versionCode,
-    copiedApk: buildMode === "debug",
+    copiedApk: true,
   };
 }
 
 function main() {
   const mode = process.argv[2];
-  if (mode !== "debug" && mode !== "release") {
-    throw new Error("Usage: node scripts/publish-android-download.mjs <debug|release>");
+  if (mode !== "direct") {
+    throw new Error("Usage: node scripts/publish-android-download.mjs direct");
   }
 
   const mobileRoot = fileURLToPath(new URL("..", import.meta.url));

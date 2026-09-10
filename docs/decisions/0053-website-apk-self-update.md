@@ -26,8 +26,9 @@ handoff for the website-distributed consumer package.
 - Do not resurrect the legacy Drive HMAC endpoints (`/api/mobile-update*`).
 - Prompts are soft and dismissible (24-hour suppress for the same
   `latestVersionCode`). Force-update lockout is out of scope.
-- Play-distributed builds and Play in-app updates remain out of scope until a
-  later decision.
+- Play-distributed builds and Play in-app updates were later separated in
+  ADR 0059: Play builds must not include this self-update permission or
+  installer; Direct/website builds retain it.
 
 ## Consequences
 

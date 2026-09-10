@@ -35,4 +35,8 @@ jobs:
           KAILA_VERSION_NAME: 1.0.0-ci
         run: |
           test -x ./gradlew
-          ./gradlew lintDebug testDebugUnitTest assembleDebug --stacktrace
+          ./gradlew lintDirectDebug testDirectDebugUnitTest assembleDirectDebug --stacktrace
+      - run: pnpm --filter @kaila/mobile android:verify:direct
+        env:
+          KAILA_VERSION_CODE: "1"
+          KAILA_VERSION_NAME: 1.0.0-ci

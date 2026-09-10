@@ -16,10 +16,23 @@ recovery experience when the managed origin is unreachable.
 Laragon may host the repository and local backend, but it is not part of the
 Android compiler toolchain.
 
-## Debug APK
+## Distribution channels
 
-Debug APKs use the same `versionCode` and `versionName` as release bundles. Set
-them for the current PowerShell session before building:
+Consumer Android builds use two Gradle flavors (ADR 0059):
+
+- **Direct** (`android:debug` / `android:direct`): website APK with in-app
+  self-update. May declare `REQUEST_INSTALL_PACKAGES`.
+- **Play** (`android:bundle` / `android:play`): signed App Bundle for Play
+  Console. Must not declare `REQUEST_INSTALL_PACKAGES` or ship the direct
+  installer.
+
+Both keep package ID `com.kaila.marketplace` and the managed origin
+`https://app.kaila-app.com`.
+
+## Direct debug APK
+
+Direct debug APKs use the same `versionCode` and `versionName` as Play bundles.
+Set them for the current PowerShell session before building:
 
 ```powershell
 cd C:\laragon\www\kaila
@@ -40,18 +53,19 @@ pnpm --filter @kaila/mobile android:debug
 The APK is written to:
 
 ```text
-apps\mobile\android\app\build\outputs\apk\debug\app-debug.apk
+apps\mobile\android\app\build\outputs\apk\direct\debug\app-direct-debug.apk
 ```
 
-A successful debug build also copies that APK to
+A successful Direct build also copies that APK to
 `apps\web\public\downloads\kaila-android.apk` and updates
 `apps\web\src\app\android-download.ts` so `/download` shows the matching
-`versionName` and `versionCode`.
+`versionName` and `versionCode`. Play builds must not overwrite that website
+artifact.
 
 Set `KAILA_APP_ORIGIN` before building only when testing another HTTPS consumer
 host reachable by the Android device.
 
-## Signed release bundle
+## Signed Play App Bundle
 
 Never keep signing passwords or the keystore inside the repository. Source the
 release session script (or set the version and signing variables) only for the
@@ -75,11 +89,15 @@ $env:KAILA_ANDROID_KEY_PASSWORD = "<key password>"
 pnpm --filter @kaila/mobile android:bundle
 ```
 
-The signed bundle is written to:
+The signed Play Console artifact is written to:
 
 ```text
-apps\mobile\android\app\build\outputs\bundle\release\app-release.aab
+apps\mobile\android\app\build\outputs\bundle\playRelease\app-play-release.aab
 ```
+
+Verify with `pnpm --filter @kaila/mobile android:verify:play` after the build.
+That check fails if the AAB still contains `REQUEST_INSTALL_PACKAGES` or the
+direct updater class.
 
 `google-services.json` is also required for real push-notification testing. Copy
 the organization-owned non-production file to

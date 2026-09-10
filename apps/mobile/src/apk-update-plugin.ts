@@ -17,7 +17,9 @@ const ApkUpdate = registerPlugin<{
 }>("ApkUpdate");
 
 export function nativeApkUpdateAvailable(): boolean {
-  return Capacitor.isNativePlatform() && Capacitor.getPlatform() === "android";
+  return Capacitor.isNativePlatform()
+    && Capacitor.getPlatform() === "android"
+    && Capacitor.isPluginAvailable("ApkUpdate");
 }
 
 export async function getInstalledAndroidAppInfo(): Promise<InstalledAndroidAppInfo | null> {

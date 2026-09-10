@@ -15,10 +15,14 @@
   "scripts": {
     "build": "vite build",
     "android:doctor": "node scripts/android-doctor.mjs",
-    "android:debug": "node scripts/build-android.mjs debug",
-    "android:bundle": "node scripts/build-android.mjs release",
+    "android:debug": "node scripts/build-android.mjs direct debug",
+    "android:direct": "node scripts/build-android.mjs direct debug",
+    "android:bundle": "node scripts/build-android.mjs play release",
+    "android:play": "node scripts/build-android.mjs play release",
     "android:sync": "pnpm build && cap sync android",
-    "android:verify": "node scripts/verify-android-release.mjs",
+    "android:verify": "node scripts/verify-android-release.mjs source",
+    "android:verify:direct": "node scripts/verify-android-release.mjs direct",
+    "android:verify:play": "node scripts/verify-android-release.mjs play",
     "lint": "tsc --noEmit",
     "test": "vitest run src && node --test scripts/publish-android-download.test.mjs",
     "typecheck": "tsc --noEmit"

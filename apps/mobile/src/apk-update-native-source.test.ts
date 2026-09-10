@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { nativeApkUpdateAvailable } from "./apk-update-plugin";
 
 const plugin = readFileSync(
-  new URL("../android/app/src/main/java/com/kaila/marketplace/ApkUpdatePlugin.java", import.meta.url),
+  new URL("../android/app/src/direct/java/com/kaila/marketplace/ApkUpdatePlugin.java", import.meta.url),
   "utf8",
 );
 const mainActivity = readFileSync(
@@ -14,16 +14,21 @@ const manifest = readFileSync(
   new URL("../android/app/src/main/AndroidManifest.xml", import.meta.url),
   "utf8",
 );
+const directManifest = readFileSync(
+  new URL("../android/app/src/direct/AndroidManifest.xml", import.meta.url),
+  "utf8",
+);
 const filePaths = readFileSync(
   new URL("../android/app/src/main/res/xml/file_paths.xml", import.meta.url),
   "utf8",
 );
 
 describe("ApkUpdate native wiring", () => {
-  it("registers the plugin and install permission", () => {
-    expect(mainActivity).toMatch(/registerPlugin\(ApkUpdatePlugin\.class\)/);
-    expect(manifest).toMatch(/android\.permission\.REQUEST_INSTALL_PACKAGES/);
-    expect(manifest).toMatch(/application\/vnd\.android\.package-archive/);
+  it("limits plugin registration and install permission to Direct builds", () => {
+    expect(mainActivity).toMatch(/BuildConfig\.DIRECT_APK_UPDATES/);
+    expect(manifest).not.toMatch(/android\.permission\.REQUEST_INSTALL_PACKAGES/);
+    expect(directManifest).toMatch(/android\.permission\.REQUEST_INSTALL_PACKAGES/);
+    expect(directManifest).toMatch(/application\/vnd\.android\.package-archive/);
     expect(filePaths).toMatch(/name="apk_updates"/);
     expect(filePaths).toMatch(/path="updates\/"/);
   });

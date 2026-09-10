@@ -27,6 +27,20 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    buildFeatures {
+        buildConfig = true
+    }
+    flavorDimensions += "distribution"
+    productFlavors {
+        play {
+            dimension "distribution"
+            buildConfigField "boolean", "DIRECT_APK_UPDATES", "false"
+        }
+        direct {
+            dimension "distribution"
+            buildConfigField "boolean", "DIRECT_APK_UPDATES", "true"
+        }
+    }
     signingConfigs {
         release {
             if (System.getenv("KAILA_ANDROID_KEYSTORE")) {

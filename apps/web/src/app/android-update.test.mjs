@@ -69,11 +69,17 @@ test("native runtime mounts the Android update prompt", () => {
 
   assert.match(runtime, /<AndroidUpdatePrompt \/>/);
   assert.match(prompt, /downloadAndInstallApk/);
+  assert.match(prompt, /nativeApkUpdateAvailable/);
   assert.match(prompt, /ANDROID_DOWNLOAD/);
   assert.match(prompt, /Later/);
   assert.match(settingsPage, /<AndroidUpdateSettings \/>/);
   assert.match(settings, /Check for updates/);
   assert.match(settings, /Download update/);
+  const bridge = readFileSync(
+    new URL("../../../mobile/src/apk-update-plugin.ts", import.meta.url),
+    "utf8",
+  );
+  assert.match(bridge, /Capacitor\.isPluginAvailable\("ApkUpdate"\)/);
 });
 
 test("decision 0053 documents website-channel self-update for 1.0.2", () => {
@@ -85,4 +91,19 @@ test("decision 0053 documents website-channel self-update for 1.0.2", () => {
   assert.match(decision, /versionCode \*\*3\*\*/);
   assert.match(decision, /kaila-android\.apk/);
   assert.match(decision, /Do not resurrect the legacy Drive HMAC/);
+});
+
+test("decision 0059 splits Play and Direct Android channels", () => {
+  const decision = readFileSync(
+    new URL(
+      "../../../../docs/decisions/0059-android-play-and-direct-distribution-channels.md",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+  assert.match(decision, /REQUEST_INSTALL_PACKAGES/);
+  assert.match(decision, /`play`/);
+  assert.match(decision, /`direct`/);
+  assert.match(decision, /isPluginAvailable\("ApkUpdate"\)/);
+  assert.match(decision, /app-play-release\.aab/);
 });

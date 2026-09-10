@@ -2,9 +2,16 @@ import { spawnSync } from "node:child_process";
 import { platform } from "node:process";
 import { resolve } from "node:path";
 
-const mode = process.argv[2];
-if (mode !== "debug" && mode !== "release") {
-  throw new Error("Usage: node scripts/build-android.mjs <debug|release>");
+const channel = process.argv[2];
+const mode = process.argv[3];
+if (!(["play", "direct"].includes(channel) && ["debug", "release"].includes(mode))) {
+  throw new Error("Usage: node scripts/build-android.mjs <play|direct> <debug|release>");
+}
+if (channel === "play" && mode !== "release") {
+  throw new Error("The Play artifact must be a release App Bundle.");
+}
+if (channel === "direct" && mode !== "debug") {
+  throw new Error("The website artifact must be the explicitly requested Direct debug APK.");
 }
 
 const requiredVariables = ["KAILA_VERSION_CODE", "KAILA_VERSION_NAME"];
@@ -41,5 +48,9 @@ const androidDirectory = resolve("android");
 run(process.execPath, ["scripts/android-doctor.mjs"]);
 run(pnpm, ["android:sync"]);
 run(pnpm, ["android:verify"]);
-run(gradle, [mode === "release" ? "bundleRelease" : "assembleDebug"], androidDirectory);
-run(process.execPath, ["scripts/publish-android-download.mjs", mode]);
+const variant = `${channel[0].toUpperCase()}${channel.slice(1)}${mode[0].toUpperCase()}${mode.slice(1)}`;
+run(gradle, [mode === "release" ? `bundle${variant}` : `assemble${variant}`], androidDirectory);
+run(process.execPath, ["scripts/verify-android-release.mjs", channel]);
+if (channel === "direct") {
+  run(process.execPath, ["scripts/publish-android-download.mjs", "direct"]);
+}

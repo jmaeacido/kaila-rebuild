@@ -20,7 +20,7 @@ test("buildAndroidDownloadSource writes the download page version constants", ()
   assert.match(source, /publish-android-download\.mjs/);
 });
 
-test("publishAndroidDownload updates android-download.ts for release builds", () => {
+test("publishAndroidDownload updates metadata only for Direct builds", () => {
   const workspaceRoot = mkdtempSync(join(tmpdir(), "kaila-mobile-publish-"));
   const mobileRoot = join(workspaceRoot, "mobile");
   const webRoot = join(workspaceRoot, "web");
@@ -29,11 +29,15 @@ test("publishAndroidDownload updates android-download.ts for release builds", ()
   mkdirSync(dirname(configPath), { recursive: true });
   writeFileSync(configPath, "export const ANDROID_DOWNLOAD = {} as const;\n", "utf8");
 
+  assert.throws(() => publishAndroidDownload({
+    mode: "play", versionName: "2.0.0", versionCode: 7, mobileRoot,
+  }), /Only Direct builds/);
+
+  const apkPath = join(mobileRoot, "android/app/build/outputs/apk/direct/debug/app-direct-debug.apk");
+  mkdirSync(dirname(apkPath), { recursive: true });
+  writeFileSync(apkPath, "test apk", "utf8");
   const result = publishAndroidDownload({
-    mode: "release",
-    versionName: "2.0.0",
-    versionCode: 7,
-    mobileRoot,
+    mode: "direct", versionName: "2.0.0", versionCode: 7, mobileRoot,
   });
 
   assert.equal(result.configPath, configPath);

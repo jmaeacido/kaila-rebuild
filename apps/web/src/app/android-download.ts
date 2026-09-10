@@ -3,7 +3,7 @@ import { SITE_URL } from "./seo";
 /** Synced automatically by apps/mobile/scripts/publish-android-download.mjs after Android builds. */
 export const ANDROID_DOWNLOAD = {
   versionName: "1.0.3",
-  versionCode: 4,
+  versionCode: 5,
   fileName: "kaila-android.apk",
   minAndroid: "Android 7.0+",
   packageId: "com.kaila.marketplace",

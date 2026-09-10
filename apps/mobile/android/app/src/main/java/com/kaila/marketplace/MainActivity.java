@@ -4,6 +4,7 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.Intent;
 import android.os.Bundle;
+import com.getcapacitor.Plugin;
 import com.getcapacitor.BridgeActivity;
 
 public class MainActivity extends BridgeActivity {
@@ -13,12 +14,23 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(BackgroundNavigationPlugin.class);
         registerPlugin(IncomingCallPlugin.class);
         registerPlugin(MediaCapturePlugin.class);
-        registerPlugin(ApkUpdatePlugin.class);
+        registerDirectApkUpdatePlugin();
         super.onCreate(savedInstanceState);
         KailaSoundChannels.ensureAll(this);
         // Keep legacy channels registered so older installs do not crash; new pushes use v1/v3 IDs.
         createLegacyChannels();
         routeIncomingCallIntent(getIntent());
+    }
+
+    @SuppressWarnings("unchecked")
+    private void registerDirectApkUpdatePlugin() {
+        if (!BuildConfig.DIRECT_APK_UPDATES) return;
+        try {
+            Class<?> pluginClass = Class.forName("com.kaila.marketplace.ApkUpdatePlugin");
+            registerPlugin((Class<? extends Plugin>) pluginClass);
+        } catch (ClassNotFoundException exception) {
+            throw new IllegalStateException("Direct APK updater is missing from the Direct build", exception);
+        }
     }
 
     @Override
