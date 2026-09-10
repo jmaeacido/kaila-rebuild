@@ -20,6 +20,7 @@ describe("mobile routing", () => {
     expect(notificationRoute({ type: "call", contextType: "job", contextId: "../admin", callId: "call-1" })).toBe("/notifications");
     expect(notificationRoute({ type: "message", jobId: "../admin" })).toBe("/notifications");
     expect(notificationRoute({ type: "unknown", jobId: "job-7" })).toBe("/notifications");
+    expect(notificationRoute({ type: "ops" })).toBe("/android-test");
   });
   it("opens the existing public QR destinations without leaving the managed app", () => {
     expect(deepLinkRoute("https://kaila-app.com/post-job?category=plumbing#details", "app.kaila-app.com"))

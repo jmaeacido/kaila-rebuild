@@ -9,6 +9,7 @@ use App\Http\Controllers\AdminMarketplaceController;
 use App\Http\Controllers\AdminPhaseNineController;
 use App\Http\Controllers\AdminReportController;
 use App\Http\Controllers\AdminSupportCaseController;
+use App\Http\Controllers\AdminMailController;
 use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\AppearanceController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
@@ -322,6 +323,7 @@ Route::middleware('auth')->group(function (): void {
         Route::post('/users/{user}/activate', [AdminUserController::class, 'activate']);
         Route::post('/users/{user}/deactivate', [AdminUserController::class, 'deactivate']);
         Route::delete('/users/{user}', [AdminUserController::class, 'destroy']);
+        Route::post('/mail/android-internal-test', [AdminMailController::class, 'sendAndroidInternalTestInvite']);
         Route::get('/support/cases', [AdminSupportCaseController::class, 'index']);
         Route::get('/support/cases/{supportCase}', [AdminSupportCaseController::class, 'show']);
         Route::put('/support/cases/{supportCase}', [AdminSupportCaseController::class, 'update']);

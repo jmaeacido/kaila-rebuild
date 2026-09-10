@@ -38,7 +38,7 @@ class BrandedMailCoverageTest extends TestCase
             );
         }
 
-        $this->assertCount(4, $mailSenders, 'Review newly added mail senders and update the expected branded sender count.');
+        $this->assertCount(5, $mailSenders, 'Review newly added mail senders and update the expected branded sender count.');
     }
 
     public function test_every_html_mail_view_uses_the_shared_kaila_layout(): void
@@ -46,7 +46,7 @@ class BrandedMailCoverageTest extends TestCase
         $views = glob(resource_path('views/mail/**/*.blade.php')) ?: [];
         $htmlViews = array_values(array_filter($views, fn (string $view): bool => ! str_ends_with($view, '-text.blade.php')));
 
-        $this->assertCount(4, $htmlViews, 'Review newly added HTML email templates and update the expected branded template count.');
+        $this->assertCount(5, $htmlViews, 'Review newly added HTML email templates and update the expected branded template count.');
         foreach ($htmlViews as $view) {
             $this->assertStringContainsString(
                 '<x-mail.layout',

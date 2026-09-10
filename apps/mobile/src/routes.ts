@@ -1,4 +1,4 @@
-const allowedTypes = new Set(["job", "offer", "message", "call", "travel", "completion", "dispute", "review", "security", "support"]);
+const allowedTypes = new Set(["job", "offer", "message", "call", "travel", "completion", "dispute", "review", "security", "support", "ops", "profile", "community"]);
 
 function safeId(value: string | undefined): value is string {
   return Boolean(value && /^[A-Za-z0-9-]+$/.test(value));
@@ -60,6 +60,8 @@ export function notificationRoute(data: Record<string, string | undefined>): str
   }
   if (type === "security") return "/profile/sessions";
   if (type === "support") return "/notifications";
+  if (type === "ops") return "/android-test";
+  if (type === "profile" || type === "community") return "/notifications";
   if (!jobId || !safeId(jobId)) return "/notifications";
   if (type === "message") return `/jobs/${jobId}/hired/conversation`;
   if (type === "travel") return `/jobs/${jobId}/hired/travel`;

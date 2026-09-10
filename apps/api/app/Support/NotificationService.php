@@ -117,6 +117,7 @@ class NotificationService
             str_starts_with($type, 'support.') => 'support',
             str_starts_with($type, 'profile.') => 'profile',
             str_starts_with($type, 'community.') => 'community',
+            str_starts_with($type, 'ops.') => 'ops',
             default => 'job',
         };
     }

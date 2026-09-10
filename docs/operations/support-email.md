@@ -57,3 +57,36 @@ php artisan mail:test you@example.com
 
 The command sends the same KAILA-branded HTML and plain-text layout used by
 production notifications. Check Brevo → **Transactional** for delivery status.
+
+## Android internal-test invites (Admin)
+
+Admins and super admins can send the typed Android internal-test invite from
+**Admin → People**:
+
+1. Select accounts and/or open **Send Android test invite**.
+2. Optionally paste additional emails (comma or newline separated), including
+   addresses that are not KAILA accounts yet.
+3. Confirm to queue branded invites through Brevo.
+
+KAILA accounts also receive a durable **in-app inbox** invitation
+(`ops.android_test_invite`) that opens `/android-test` in the consumer app.
+Pasted emails without an account receive email only.
+
+API env (optional overrides; defaults match production Play internal testing):
+
+```env
+ANDROID_INTERNAL_TEST_URL=https://play.google.com/apps/internaltest/4701403150708602285
+KAILA_FOUNDER_NAME="John Mark Agustin E. Acido"
+KAILA_FOUNDER_TITLE="KAILA Founder"
+```
+
+Consumer web may override the in-app CTA with:
+
+```env
+NEXT_PUBLIC_ANDROID_INTERNAL_TEST_URL=https://play.google.com/apps/internaltest/4701403150708602285
+```
+
+Endpoint: `POST /api/v1/admin/marketplace/mail/android-internal-test` with
+`{ "userIds": ["…"], "emails": ["…"] }` (at least one required; max 50 recipients).
+Response includes `sent`, `inboxSent`, and `skipped`.
+See ADR-0060.

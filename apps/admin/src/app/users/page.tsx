@@ -6,11 +6,13 @@ import {
   Columns3,
   GripVertical,
   LayoutList,
+  Mail,
   Pencil,
   Plus,
   RefreshCw,
   Search,
   Shield,
+  Smartphone,
   Trash2,
   UserCheck,
   UserMinus,
@@ -51,6 +53,7 @@ type Capabilities = {
   canDeleteAccounts: boolean;
   canManageStatuses: boolean;
   canEditAccounts: boolean;
+  canSendOpsMail: boolean;
 };
 type Directory = {
   items: Account[];
@@ -88,6 +91,10 @@ export default function UsersDirectoryPage() {
   const [savingEdit, setSavingEdit] = useState(false);
   const [pendingDanger, setPendingDanger] = useState<PendingDanger | null>(null);
   const [confirmBusy, setConfirmBusy] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [inviteEmails, setInviteEmails] = useState("");
+  const [sendingInvite, setSendingInvite] = useState(false);
   const [form, setForm] = useState({ name: "", email: "", password: "", accountType: "user" as AccountType });
   const [editForm, setEditForm] = useState({ name: "", email: "", password: "", accountType: "user" as AccountType });
 
@@ -128,6 +135,31 @@ export default function UsersDirectoryPage() {
     if (data.capabilities.canCreateStaff) options.push("staff");
     if (data.capabilities.canCreateUser) options.push("user");
     return options;
+  }, [data]);
+
+  const canSendOpsMail = Boolean(data?.capabilities.canSendOpsMail);
+
+  const selectedAccounts = useMemo(() => {
+    if (!data) return [] as Account[];
+    const selected = new Set(selectedIds);
+    return data.items.filter((item) => selected.has(item.id));
+  }, [data, selectedIds]);
+
+  const pastedInviteEmails = useMemo(() => parsePastedEmails(inviteEmails), [inviteEmails]);
+
+  const inviteRecipientCount = useMemo(() => {
+    const selectedEmails = new Set(selectedAccounts.map((account) => account.email.trim().toLowerCase()).filter(Boolean));
+    let extras = 0;
+    for (const email of pastedInviteEmails) {
+      if (!selectedEmails.has(email)) extras += 1;
+    }
+    return selectedAccounts.length + extras;
+  }, [pastedInviteEmails, selectedAccounts]);
+
+  useEffect(() => {
+    if (!data) return;
+    const visible = new Set(data.items.map((item) => item.id));
+    setSelectedIds((current) => current.filter((id) => visible.has(id)));
   }, [data]);
 
   useEffect(() => {
@@ -360,6 +392,75 @@ export default function UsersDirectoryPage() {
     }
   }
 
+  function toggleSelected(accountId: string) {
+    setSelectedIds((current) =>
+      current.includes(accountId) ? current.filter((id) => id !== accountId) : [...current, accountId],
+    );
+  }
+
+  function toggleSelectAllVisible() {
+    if (!data) return;
+    const visibleIds = data.items.map((item) => item.id);
+    const allSelected = visibleIds.length > 0 && visibleIds.every((id) => selectedIds.includes(id));
+    setSelectedIds(allSelected ? [] : visibleIds);
+  }
+
+  async function sendAndroidInvite(event: FormEvent) {
+    event.preventDefault();
+    const emails = parsePastedEmails(inviteEmails);
+    if (selectedIds.length === 0 && emails.length === 0) {
+      setNotice("Select at least one account or paste at least one email.");
+      return;
+    }
+
+    setSendingInvite(true);
+    setNotice("");
+    try {
+      const token = await prepareCsrf();
+      const response = await fetch("/api/v1/admin/marketplace/mail/android-internal-test", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+          ...(token ? { "X-XSRF-TOKEN": token } : {}),
+        },
+        body: JSON.stringify({
+          userIds: selectedIds,
+          emails,
+        }),
+      });
+      const body = (await response.json()) as {
+        error?: { message?: string; fields?: Record<string, string[]> };
+        data?: { sent?: number; skipped?: number; inboxSent?: number };
+      };
+      if (!response.ok) {
+        const fieldMessage = body.error?.fields
+          ? Object.values(body.error.fields).flat().find((value) => typeof value === "string" && value.trim())
+          : undefined;
+        throw new Error(fieldMessage || body.error?.message || "Android test invites could not be sent.");
+      }
+      const sent = body.data?.sent ?? 0;
+      const inboxSent = body.data?.inboxSent ?? 0;
+      const skipped = body.data?.skipped ?? 0;
+      const parts = [`Sent ${sent} email invite${sent === 1 ? "" : "s"}`];
+      if (inboxSent > 0) {
+        parts.push(`${inboxSent} in-app inbox message${inboxSent === 1 ? "" : "s"}`);
+      }
+      if (skipped > 0) {
+        parts.push(`${skipped} skipped`);
+      }
+      setNotice(`${parts.join(" · ")}.`);
+      setInviteOpen(false);
+      setInviteEmails("");
+      setSelectedIds([]);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Android test invites could not be sent.");
+    } finally {
+      setSendingInvite(false);
+    }
+  }
+
   function renderActions(account: Account) {
     return (
       <div className={styles.actions}>
@@ -404,6 +505,12 @@ export default function UsersDirectoryPage() {
             <button type="button" aria-pressed={view === "board"} onClick={() => setView("board")}>
               <Columns3 /> Board
             </button>
+            {canSendOpsMail ? (
+              <button type="button" className={styles.inviteLaunch} onClick={() => setInviteOpen(true)}>
+                <Smartphone /> Send Android test invite
+                {selectedIds.length > 0 ? <span className={styles.inviteCount}>{selectedIds.length}</span> : null}
+              </button>
+            ) : null}
             <Button type="button" variant="secondary" onClick={() => void load()} disabled={state === "loading"}>
               <RefreshCw className={state === "loading" ? styles.spinner : ""} /> Refresh
             </Button>
@@ -508,39 +615,56 @@ export default function UsersDirectoryPage() {
 
       <section className={styles.workspace}>
         <header>
-          <div>
-            <h2>All accounts</h2>
-            <p>Search and filter by role or status. Drag board cards across panels to change status.</p>
+          <div className={styles.workspaceTop}>
+            <div>
+              <h2>All accounts</h2>
+              <p>Search and filter by role or status. Drag board cards across panels to change status.</p>
+            </div>
+            <div className={styles.toolbar}>
+              <label className={styles.search}>
+                <Search aria-hidden="true" />
+                <input
+                  aria-label="Search accounts"
+                  placeholder="Search name or email"
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                />
+              </label>
+              <select aria-label="Filter by role" value={role} onChange={(event) => setRole(event.target.value as typeof role)}>
+                <option value="all">All roles</option>
+                <option value="super_admin">Super admin</option>
+                <option value="admin">Admin</option>
+                <option value="staff">Staff</option>
+                <option value="user">User</option>
+              </select>
+              <select
+                aria-label="Filter by status"
+                value={status}
+                onChange={(event) => setStatus(event.target.value as typeof status)}
+              >
+                <option value="all">All statuses</option>
+                <option value="active">Active</option>
+                <option value="deactivated">Deactivated</option>
+                <option value="restricted">Restricted</option>
+                <option value="deleted">Deleted</option>
+              </select>
+            </div>
           </div>
-          <div className={styles.toolbar}>
-            <label className={styles.search}>
-              <Search aria-hidden="true" />
-              <input
-                aria-label="Search accounts"
-                placeholder="Search name or email"
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-              />
-            </label>
-            <select aria-label="Filter by role" value={role} onChange={(event) => setRole(event.target.value as typeof role)}>
-              <option value="all">All roles</option>
-              <option value="super_admin">Super admin</option>
-              <option value="admin">Admin</option>
-              <option value="staff">Staff</option>
-              <option value="user">User</option>
-            </select>
-            <select
-              aria-label="Filter by status"
-              value={status}
-              onChange={(event) => setStatus(event.target.value as typeof status)}
-            >
-              <option value="all">All statuses</option>
-              <option value="active">Active</option>
-              <option value="deactivated">Deactivated</option>
-              <option value="restricted">Restricted</option>
-              <option value="deleted">Deleted</option>
-            </select>
-          </div>
+          {canSendOpsMail && selectedIds.length > 0 ? (
+            <div className={styles.selectionBar} role="status">
+              <p>
+                <strong>{selectedIds.length}</strong> selected for Android invite
+              </p>
+              <div className={styles.selectionBarActions}>
+                <button type="button" onClick={() => setSelectedIds([])}>
+                  Clear
+                </button>
+                <button type="button" className={styles.inviteLaunch} onClick={() => setInviteOpen(true)}>
+                  <Mail /> Continue
+                </button>
+              </div>
+            </div>
+          ) : null}
         </header>
 
         {notice && (
@@ -580,6 +704,16 @@ export default function UsersDirectoryPage() {
             <table className={styles.table}>
               <thead>
                 <tr>
+                  {canSendOpsMail ? (
+                    <th scope="col" className={styles.selectCol}>
+                      <input
+                        type="checkbox"
+                        aria-label="Select all visible accounts"
+                        checked={data.items.length > 0 && data.items.every((item) => selectedIds.includes(item.id))}
+                        onChange={toggleSelectAllVisible}
+                      />
+                    </th>
+                  ) : null}
                   <th scope="col">Person</th>
                   <th scope="col">Role</th>
                   <th scope="col">Status</th>
@@ -590,7 +724,17 @@ export default function UsersDirectoryPage() {
               </thead>
               <tbody>
                 {data.items.map((account) => (
-                  <tr key={account.id}>
+                  <tr key={account.id} className={selectedIds.includes(account.id) ? styles.rowSelected : undefined}>
+                    {canSendOpsMail ? (
+                      <td className={styles.selectCol}>
+                        <input
+                          type="checkbox"
+                          aria-label={`Select ${account.name}`}
+                          checked={selectedIds.includes(account.id)}
+                          onChange={() => toggleSelected(account.id)}
+                        />
+                      </td>
+                    ) : null}
                     <td>
                       <strong>
                         {account.name}
@@ -659,7 +803,7 @@ export default function UsersDirectoryPage() {
                       return (
                         <article
                           key={account.id}
-                          className={`${styles.card} ${draggingId === account.id ? styles.cardDragging : ""} ${draggable ? styles.cardDraggable : ""}`}
+                          className={`${styles.card} ${draggingId === account.id ? styles.cardDragging : ""} ${draggable ? styles.cardDraggable : ""} ${selectedIds.includes(account.id) ? styles.cardSelected : ""}`}
                           draggable={draggable}
                           onDragStart={(event) => {
                             if (!draggable) {
@@ -677,6 +821,16 @@ export default function UsersDirectoryPage() {
                           }}
                         >
                           <div className={styles.cardTop}>
+                            {canSendOpsMail ? (
+                              <label className={styles.cardSelect} onClick={(event) => event.stopPropagation()}>
+                                <input
+                                  type="checkbox"
+                                  aria-label={`Select ${account.name}`}
+                                  checked={selectedIds.includes(account.id)}
+                                  onChange={() => toggleSelected(account.id)}
+                                />
+                              </label>
+                            ) : null}
                             {draggable ? <GripVertical className={styles.dragHandle} aria-hidden="true" /> : null}
                             <div>
                               <strong>{account.name}</strong>
@@ -770,6 +924,108 @@ export default function UsersDirectoryPage() {
         </div>
       ) : null}
 
+      {inviteOpen ? (
+        <div className={styles.dialogBackdrop} role="presentation" onClick={() => !sendingInvite && setInviteOpen(false)}>
+          <section
+            className={`${styles.dialog} ${styles.inviteDialog}`}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="android-invite-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <header>
+              <div>
+                <p>ANDROID INTERNAL TEST</p>
+                <h2 id="android-invite-title">Send KAILA test invite</h2>
+              </div>
+              <button
+                type="button"
+                aria-label="Close Android invite dialog"
+                disabled={sendingInvite}
+                onClick={() => setInviteOpen(false)}
+              >
+                <X />
+              </button>
+            </header>
+            <form className={styles.inviteForm} onSubmit={(event) => void sendAndroidInvite(event)}>
+              <p className={styles.inviteCopy}>
+                KAILA accounts get a branded email plus an in-app inbox invitation. Pasted emails that are not accounts
+                receive email only. Testers open the Play link with that Google account, then become a tester.
+              </p>
+
+              <section className={styles.inviteSection} aria-labelledby="invite-recipients-heading">
+                <div className={styles.inviteSectionHead}>
+                  <h3 id="invite-recipients-heading">Recipients</h3>
+                  <span className={styles.inviteMeta}>{inviteRecipientCount} total</span>
+                </div>
+
+                {selectedAccounts.length > 0 ? (
+                  <ul className={styles.inviteRecipientList}>
+                    {selectedAccounts.map((account) => (
+                      <li key={account.id}>
+                        <div>
+                          <strong>{account.name}</strong>
+                          <span>{account.email}</span>
+                        </div>
+                        <button
+                          type="button"
+                          aria-label={`Remove ${account.name}`}
+                          disabled={sendingInvite}
+                          onClick={() => toggleSelected(account.id)}
+                        >
+                          <X />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className={styles.inviteEmptyRecipients}>
+                    No accounts selected yet. Paste emails below, or cancel and select rows first.
+                  </p>
+                )}
+              </section>
+
+              <label className={styles.inviteEmailField}>
+                <span className={styles.inviteSectionHead}>
+                  <span>Add emails</span>
+                  {pastedInviteEmails.length > 0 ? (
+                    <span className={styles.inviteMeta}>{pastedInviteEmails.length} pasted</span>
+                  ) : null}
+                </span>
+                <textarea
+                  rows={4}
+                  placeholder={"one@email.com\nanother@email.com"}
+                  value={inviteEmails}
+                  disabled={sendingInvite}
+                  onChange={(event) => setInviteEmails(event.target.value)}
+                />
+                <span className={styles.inviteHint}>
+                  Separate with commas or new lines. Works for people who are not KAILA accounts yet.
+                </span>
+              </label>
+
+              <div className={styles.inviteActions}>
+                <Button type="button" variant="secondary" disabled={sendingInvite} onClick={() => setInviteOpen(false)}>
+                  Cancel
+                </Button>
+                <button
+                  type="submit"
+                  className={styles.inviteSubmit}
+                  disabled={sendingInvite || inviteRecipientCount === 0}
+                  aria-busy={sendingInvite || undefined}
+                >
+                  {sendingInvite
+                    ? "Sending…"
+                    : inviteRecipientCount === 0
+                      ? "Add recipients to send"
+                      : `Send ${inviteRecipientCount} invite${inviteRecipientCount === 1 ? "" : "s"}`}
+                </button>
+              </div>
+            </form>
+          </section>
+        </div>
+      ) : null}
+
       <AdminDialog
         open={pendingDanger !== null}
         eyebrow="Dangerous action"
@@ -784,6 +1040,17 @@ export default function UsersDirectoryPage() {
         onConfirm={() => void confirmDangerAction()}
       />
     </main>
+  );
+}
+
+function parsePastedEmails(raw: string): string[] {
+  return Array.from(
+    new Set(
+      raw
+        .split(/[\s,;]+/)
+        .map((value) => value.trim().toLowerCase())
+        .filter(Boolean),
+    ),
   );
 }
 

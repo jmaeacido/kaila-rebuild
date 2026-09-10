@@ -1,0 +1,125 @@
+.page {
+  margin: auto;
+  max-width: 40rem;
+  min-height: calc(100vh - 4.5rem);
+  padding: var(--spacing-24) var(--spacing-16) calc(var(--spacing-48) * 1.5);
+  background:
+    radial-gradient(ellipse 80% 45% at 10% -10%, color-mix(in srgb, var(--color-primary) 12%, transparent), transparent),
+    var(--color-background);
+}
+
+.back {
+  align-items: center;
+  color: var(--color-text-secondary);
+  display: inline-flex;
+  gap: var(--spacing-8);
+  min-height: var(--control-min-height);
+  text-decoration: none;
+}
+
+.back svg {
+  height: var(--spacing-16);
+  width: var(--spacing-16);
+}
+
+.card {
+  background: var(--color-surface);
+  border: var(--control-border-width) solid var(--color-border);
+  border-radius: var(--radius-dialog);
+  box-shadow: var(--shadow-card);
+  display: grid;
+  gap: var(--spacing-16);
+  margin-top: var(--spacing-24);
+  padding: var(--spacing-24);
+}
+
+.icon {
+  align-items: center;
+  background: color-mix(in srgb, var(--color-primary) 12%, var(--color-surface));
+  border-radius: var(--radius-pill);
+  color: var(--color-primary);
+  display: inline-flex;
+  height: var(--spacing-48);
+  justify-content: center;
+  width: var(--spacing-48);
+}
+
+.icon svg {
+  height: var(--spacing-24);
+  width: var(--spacing-24);
+}
+
+.eyebrow {
+  color: var(--color-primary);
+  font-size: var(--font-caption-size);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.04em;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.card h1 {
+  color: var(--color-ink);
+  font-size: var(--font-section-size);
+  line-height: 1.25;
+  margin: 0;
+}
+
+.card p {
+  color: var(--color-text-secondary);
+  font-size: var(--font-body-size, 1rem);
+  line-height: 1.55;
+  margin: 0;
+}
+
+.hint {
+  font-size: var(--font-small-size) !important;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-8);
+  margin-top: var(--spacing-8);
+}
+
+.primary,
+.secondary {
+  align-items: center;
+  border-radius: var(--radius-button);
+  display: inline-flex;
+  font: inherit;
+  font-weight: var(--font-weight-bold);
+  gap: var(--spacing-8);
+  justify-content: center;
+  min-height: var(--control-min-height);
+  padding: var(--spacing-8) var(--spacing-16);
+  text-decoration: none;
+}
+
+.primary {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.secondary {
+  background: var(--color-surface);
+  border: var(--control-border-width) solid var(--color-border);
+  color: var(--color-text);
+}
+
+.primary svg,
+.secondary svg {
+  height: var(--spacing-16);
+  width: var(--spacing-16);
+}
+
+@media (min-width: 48rem) {
+  .page {
+    padding: var(--spacing-32) var(--spacing-24) var(--spacing-48);
+  }
+
+  .card {
+    padding: var(--spacing-32);
+  }
+}

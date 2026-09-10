@@ -14,3 +14,8 @@ export const ANDROID_APK_PATH = `/downloads/${ANDROID_DOWNLOAD.fileName}`;
 export const ANDROID_DOWNLOAD_PAGE_URL = `${SITE_URL}/download`;
 
 export const ANDROID_APK_DOWNLOAD_URL = `${SITE_URL}${ANDROID_APK_PATH}`;
+
+/** Play Console internal-test track (same default as API `kaila.android_internal_test_url`). */
+export const ANDROID_INTERNAL_TEST_URL =
+  process.env.NEXT_PUBLIC_ANDROID_INTERNAL_TEST_URL?.trim() ||
+  "https://play.google.com/apps/internaltest/4701403150708602285";

@@ -1,8 +1,9 @@
-import { Bell, BriefcaseBusiness, Headphones, MessageCircle, Phone, ScanFace, UserRound } from "lucide-react";
+import { Bell, BriefcaseBusiness, Headphones, MessageCircle, Phone, ScanFace, Smartphone, UserRound } from "lucide-react";
 import type { NotificationRecord } from "./notification-route";
 
 export function NotificationGlyph({ item, className }: { item: NotificationRecord; className?: string }) {
   const props = { "aria-hidden": true, className } as const;
+  if (item.type === "ops.android_test_invite" || item.resourceType === "ops_invite") return <Smartphone {...props} />;
   if (item.resourceType === "identity_verification" || item.type.startsWith("identity.")) return <ScanFace {...props} />;
   if (item.resourceType === "profile_asset" || item.data.type === "profile") return <UserRound {...props} />;
   if (item.resourceType === "support_case") return <Headphones {...props} />;

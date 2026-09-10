@@ -12,7 +12,18 @@ export type NotificationRecord = {
 
 export const profilePictureReviewEvent = "kaila:open-profile-picture-review";
 
+export function notificationExternalUrl(notification: NotificationRecord): string | null {
+  if (notification.type !== "ops.android_test_invite" && notification.resourceType !== "ops_invite") {
+    return null;
+  }
+  const url = String(notification.data.playTestUrl ?? "");
+  return /^https:\/\/play\.google\.com\//.test(url) ? url : null;
+}
+
 export function notificationRoute(notification: NotificationRecord): string {
+  if (notification.type === "ops.android_test_invite" || notification.resourceType === "ops_invite") {
+    return "/android-test";
+  }
   if (notification.resourceType === "identity_verification" || notification.type.startsWith("identity.")) return "/identity-verification";
   if (notification.type === "profile.provider_approved" || notification.type === "profile.provider_rejected") {
     const reviewStatus = notification.data.reviewStatus === "approved" ? "approved" : "rejected";

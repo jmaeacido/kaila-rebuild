@@ -18,8 +18,10 @@
 .createCard p,.workspace header p{color:var(--color-text-secondary);font-size:var(--font-small-size);margin-top:var(--spacing-4)}
 .createForm{display:grid;gap:var(--spacing-12)}
 .createForm label{color:var(--color-text-secondary);display:grid;font-size:var(--font-small-size);gap:var(--spacing-8)}
-.createForm input,.createForm select,.toolbar select,.search input{background:var(--color-background);border:var(--control-border-width) solid var(--color-border);border-radius:var(--radius-input);color:var(--color-ink);font:inherit;min-height:var(--control-min-height);padding:var(--spacing-8) var(--spacing-12)}
+.createForm input,.createForm select,.createForm textarea,.toolbar select,.search input{background:var(--color-background);border:var(--control-border-width) solid var(--color-border);border-radius:var(--radius-input);color:var(--color-ink);font:inherit;min-height:var(--control-min-height);padding:var(--spacing-8) var(--spacing-12)}
+.createForm textarea{min-height:6.5rem;resize:vertical}
 .workspace>header{display:grid;gap:var(--spacing-16);padding:var(--spacing-24)}
+.workspaceTop{display:grid;gap:var(--spacing-16)}
 .workspace h2{color:var(--color-ink);font-size:var(--font-section-size)}
 .toolbar{display:flex;flex-wrap:wrap;gap:var(--spacing-8)}
 .search{align-items:center;display:flex;flex:1 1 16rem;gap:var(--spacing-8);min-width:12rem;position:relative}
@@ -30,6 +32,38 @@
 .table{border-collapse:collapse;min-width:48rem;width:100%}
 .table th,.table td{border-top:var(--control-border-width) solid var(--color-border);padding:var(--spacing-16) var(--spacing-24);text-align:left;vertical-align:top}
 .table th{color:var(--color-text-secondary);font-size:var(--font-caption-size);text-transform:uppercase}
+.selectCol{width:2.75rem;padding-inline:var(--spacing-12)!important;text-align:center;vertical-align:middle}
+.selectCol input,.cardSelect input{accent-color:var(--color-primary);height:1.25rem;margin:0;min-height:1.25rem;min-width:1.25rem;width:1.25rem}
+.rowSelected td{background:color-mix(in srgb,var(--color-primary) 6%,var(--color-surface))}
+.cardSelected{border-color:var(--color-primary);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--color-primary) 35%,transparent)}
+.cardSelect{align-items:center;display:flex;flex:0 0 auto;margin-top:2px;min-height:var(--control-min-height);min-width:var(--control-min-height)}
+.inviteLaunch{background:var(--color-primary)!important;border-color:var(--color-primary)!important;color:var(--color-on-primary)!important;font-weight:var(--font-weight-bold)}
+.inviteLaunch:hover{filter:brightness(1.05)}
+.inviteCount{align-items:center;background:color-mix(in srgb,var(--color-on-primary) 18%,transparent);border-radius:var(--radius-pill);display:inline-flex;font-size:var(--font-caption-size);justify-content:center;min-width:1.5rem;padding:0 var(--spacing-8)}
+.selectionBar{align-items:center;background:color-mix(in srgb,var(--color-primary) 10%,var(--color-surface));border:var(--control-border-width) solid color-mix(in srgb,var(--color-primary) 35%,var(--color-border));border-radius:var(--radius-card);display:flex;flex-wrap:wrap;gap:var(--spacing-12);justify-content:space-between;padding:var(--spacing-12) var(--spacing-16)}
+.selectionBar p{color:var(--color-text-secondary);font-size:var(--font-small-size);margin:0}
+.selectionBar strong{color:var(--color-ink)}
+.selectionBarActions{display:flex;flex-wrap:wrap;gap:var(--spacing-8)}
+.inviteDialog{max-width:28rem;padding:var(--spacing-24);width:min(100%,28rem)}
+.inviteForm{display:grid;gap:var(--spacing-16)}
+.inviteCopy{color:var(--color-text-secondary);font-size:var(--font-small-size);line-height:1.5;margin:0}
+.inviteSection,.inviteEmailField{display:grid;gap:var(--spacing-8)}
+.inviteSectionHead{align-items:baseline;display:flex;font-size:var(--font-small-size);font-weight:var(--font-weight-bold);gap:var(--spacing-8);justify-content:space-between}
+.inviteSectionHead h3,.inviteSectionHead>span:first-child{color:var(--color-ink);font:inherit;margin:0}
+.inviteMeta{color:var(--color-text-secondary);font-size:var(--font-caption-size);font-weight:var(--font-weight-medium,500)}
+.inviteRecipientList{display:grid;gap:var(--spacing-8);list-style:none;margin:0;max-height:12rem;overflow:auto;padding:0}
+.inviteRecipientList li{align-items:center;background:var(--color-background);border:var(--control-border-width) solid var(--color-border);border-radius:var(--radius-card);display:flex;gap:var(--spacing-8);justify-content:space-between;padding:var(--spacing-12)}
+.inviteRecipientList li>div{display:grid;gap:2px;min-width:0}
+.inviteRecipientList strong{color:var(--color-ink);font-size:var(--font-small-size);overflow-wrap:anywhere}
+.inviteRecipientList span{color:var(--color-text-secondary);font-size:var(--font-caption-size);overflow-wrap:anywhere}
+.inviteRecipientList button{background:transparent;border-color:transparent;color:var(--color-text-secondary);flex:0 0 auto;min-height:var(--control-min-height);min-width:var(--control-min-height);padding:0}
+.inviteRecipientList button:hover{color:var(--color-danger)}
+.inviteEmptyRecipients{background:var(--color-background);border:var(--control-border-width) dashed var(--color-border);border-radius:var(--radius-card);color:var(--color-text-secondary);font-size:var(--font-small-size);line-height:1.5;margin:0;padding:var(--spacing-16)}
+.inviteEmailField textarea{background:var(--color-background);border:var(--control-border-width) solid var(--color-border);border-radius:var(--radius-input);color:var(--color-ink);font:inherit;min-height:7rem;padding:var(--spacing-12);resize:vertical;width:100%}
+.inviteHint{color:var(--color-text-secondary);font-size:var(--font-caption-size);line-height:1.4}
+.inviteActions{display:flex;flex-wrap:wrap;gap:var(--spacing-8);justify-content:flex-end;margin-top:var(--spacing-4)}
+.inviteSubmit{background:var(--color-primary)!important;border-color:var(--color-primary)!important;color:var(--color-on-primary)!important;font-weight:var(--font-weight-bold);min-width:11rem}
+.inviteSubmit:disabled{opacity:var(--opacity-disabled)}
 .table td strong{color:var(--color-ink);display:block}
 .table td span{color:var(--color-text-secondary);display:block;font-size:var(--font-small-size);margin-top:var(--spacing-4)}
 .table .dateCell{color:var(--color-text-secondary);font-size:var(--font-small-size);white-space:nowrap}
@@ -86,7 +120,8 @@
   .createForm{grid-template-columns:repeat(2,minmax(0,1fr))}
   .createForm button,.dialogActions{grid-column:1/-1}
   .createForm button{justify-self:start}
-  .workspace>header{align-items:end;display:flex;justify-content:space-between}
+  .workspace>header{align-items:stretch;display:grid;justify-content:stretch}
+  .workspaceTop{align-items:end;display:flex;justify-content:space-between}
   .board{grid-template-columns:repeat(4,minmax(0,1fr))}
   .card .actions{grid-template-columns:1fr}
 }

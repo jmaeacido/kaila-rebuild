@@ -165,6 +165,24 @@ test("community welcome notifications deep-link to the community post", () => {
   }), "/community/1056a747-9d56-4abf-9230-06d9cb3c2aff");
 });
 
+test("android internal-test invites open the in-app invite screen", () => {
+  assert.equal(notificationRoute({
+    id: "notification-android-invite",
+    type: "ops.android_test_invite",
+    title: "You're invited to test KAILA on Android",
+    body: "KAILA invited you to join Android internal testing.",
+    resourceType: "ops_invite",
+    resourceId: "android-internal-test",
+    data: {
+      type: "ops",
+      eventType: "ops.android_test_invite",
+      playTestUrl: "https://play.google.com/apps/internaltest/example",
+    },
+    readAt: null,
+    createdAt: new Date().toISOString(),
+  }), "/android-test");
+});
+
 test("turns durable notification events into visible feedback", () => {
   assert.deepEqual(feedbackForDomainEvent({
     eventId: "event-1", type: "notification.created", occurredAt: new Date().toISOString(),

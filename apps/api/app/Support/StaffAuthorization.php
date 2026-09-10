@@ -91,6 +91,11 @@ class StaffAuthorization
         return in_array($user?->staff_role, [self::ROLE_SUPER_ADMIN, self::ROLE_ADMIN], true);
     }
 
+    public static function canSendOpsMail(?User $user): bool
+    {
+        return in_array($user?->staff_role, [self::ROLE_SUPER_ADMIN, self::ROLE_ADMIN], true);
+    }
+
     public static function normalizeRole(?string $role): ?string
     {
         if ($role === null || $role === '' || $role === 'user') {
@@ -103,7 +108,7 @@ class StaffAuthorization
         return $role;
     }
 
-    /** @return array{canCreateAdmin: bool, canCreateStaff: bool, canCreateUser: bool, canDeleteAccounts: bool, canManageStatuses: bool, canManageMaintenance: bool, canEditAccounts: bool} */
+    /** @return array{canCreateAdmin: bool, canCreateStaff: bool, canCreateUser: bool, canDeleteAccounts: bool, canManageStatuses: bool, canManageMaintenance: bool, canEditAccounts: bool, canSendOpsMail: bool} */
     public static function capabilities(?User $user): array
     {
         $role = $user?->staff_role;
@@ -116,6 +121,7 @@ class StaffAuthorization
             'canManageStatuses' => in_array($role, [self::ROLE_SUPER_ADMIN, self::ROLE_ADMIN], true),
             'canManageMaintenance' => self::canManageMaintenance($user),
             'canEditAccounts' => in_array($role, [self::ROLE_SUPER_ADMIN, self::ROLE_ADMIN], true),
+            'canSendOpsMail' => self::canSendOpsMail($user),
         ];
     }
 }
