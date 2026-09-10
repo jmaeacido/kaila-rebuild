@@ -29,6 +29,8 @@
         <env name="DB_DATABASE" value=":memory:"/>
         <env name="DB_URL" value=""/>
         <env name="MAIL_MAILER" value="array"/>
+        <env name="PRIVATE_ASSET_DISK" value="private-local" force="true"/>
+        <env name="IDENTITY_EVIDENCE_DISK" value="identity-evidence-local" force="true"/>
         <env name="KAILA_WEB_ORIGINS" value="http://localhost:3000,http://localhost:3001" force="true"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="OUTBOX_TRANSPORT" value="log"/>

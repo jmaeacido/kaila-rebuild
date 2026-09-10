@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --experimental-strip-types --test src/app/community/community-experience.test.mjs src/lib/community-public.test.mjs src/components/area-mismatch-banner.test.mjs src/app/account/account-experience.test.mjs src/app/post-job/post-job-experience.test.mjs src/app/auth-client.test.mjs src/app/work-copy.test.mjs src/app/pull-to-refresh-gesture.test.mjs src/app/notification-feedback.test.mjs src/app/home/home-job-sections.test.mjs src/app/hired-experience.test.mjs src/components/attachment-picker.test.mjs src/components/category-select.test.mjs src/components/select-field.test.mjs src/app/theme.test.mjs src/app/notification-sounds.test.mjs src/app/travel-navigation.test.mjs src/app/landing-safe-area.test.mjs src/app/call-runtime-lifecycle.test.mjs src/app/call-overlay-experience.test.mjs src/app/seo-contract.test.mjs src/app/legacy-seo-redirects.test.mjs src/app/faqs/faqs-experience.test.mjs src/app/safety/safety-experience.test.mjs src/app/messages/messages-experience.test.mjs src/app/support/support-experience.test.mjs src/app/katabang-experience.test.mjs src/app/provider-profile/provider-profile.test.mjs src/app/android-download.test.mjs src/app/android-update.test.mjs src/app/public-routes.test.mjs src/app/jobs/lifecycle-timeline.test.mjs",
+    "test": "node --experimental-strip-types --test src/app/auth-session-resolution.test.mjs src/app/community/community-experience.test.mjs src/lib/community-public.test.mjs src/components/area-mismatch-banner.test.mjs src/app/account/account-experience.test.mjs src/app/post-job/post-job-experience.test.mjs src/app/auth-client.test.mjs src/app/work-copy.test.mjs src/app/pull-to-refresh-gesture.test.mjs src/app/notification-feedback.test.mjs src/app/home/home-job-sections.test.mjs src/app/hired-experience.test.mjs src/components/attachment-picker.test.mjs src/components/category-select.test.mjs src/components/select-field.test.mjs src/app/theme.test.mjs src/app/notification-sounds.test.mjs src/app/travel-navigation.test.mjs src/app/landing-safe-area.test.mjs src/app/call-runtime-lifecycle.test.mjs src/app/call-overlay-experience.test.mjs src/app/seo-contract.test.mjs src/app/legacy-seo-redirects.test.mjs src/app/faqs/faqs-experience.test.mjs src/app/safety/safety-experience.test.mjs src/app/messages/messages-experience.test.mjs src/app/support/support-experience.test.mjs src/app/katabang-experience.test.mjs src/app/provider-profile/provider-profile.test.mjs src/app/android-download.test.mjs src/app/android-update.test.mjs src/app/public-routes.test.mjs src/app/jobs/lifecycle-timeline.test.mjs",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -17,8 +17,8 @@
     "@kaila/ui": "workspace:*",
     "firebase": "^12.16.0",
     "lucide-react": "^0.468.0",
-    "maplibre-gl": "5.12.0",
-    "next": "16.2.11",
+    "maplibre-gl": "6.4.1",
+    "next": "16.3.3",
     "qrcode": "^1.5.4",
     "react": "19.2.4",
     "react-dom": "19.2.4",
@@ -30,7 +30,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "16.2.11",
+    "eslint-config-next": "16.3.3",
     "typescript": "^5"
   }
 }

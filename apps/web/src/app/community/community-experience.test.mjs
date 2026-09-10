@@ -70,7 +70,7 @@ test("community media grid uses a hero plus two squares for three attachments", 
 
 test("community composer limits images and publishes without area selection", () => {
   const mention = readFileSync(new URL("./community-provider-mention.tsx", import.meta.url), "utf8");
-  assert.match(storyComposer, /slice\(0, 4\)/);
+  assert.match(storyComposer, /slice\(0, files\.length \+ remaining\)/);
   assert.match(storyComposer, /accept="image\/\*"/);
   assert.match(storyComposer, /file\.type\.startsWith\("image\/"\)/);
   assert.match(storyComposer, /ImagePlus/);

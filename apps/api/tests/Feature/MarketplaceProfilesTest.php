@@ -3,8 +3,8 @@
 namespace Tests\Feature;
 
 use App\Models\Area;
-use App\Models\JobOpportunity;
 use App\Models\IdentityVerification;
+use App\Models\JobOpportunity;
 use App\Models\OfferThread;
 use App\Models\OutboxEvent;
 use App\Models\ProfileAsset;

@@ -13,10 +13,10 @@ use App\Support\AuditRecorder;
 use App\Support\IdentityVerificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
 
 class IdentityVerificationController extends Controller
@@ -61,6 +61,7 @@ class IdentityVerificationController extends Controller
             ]);
             $verification->update(['status' => 'capturing', 'consent_withdrawn_at' => null]);
             $this->audit->record($request, 'identity.consent_given', $user, 'identity_verification', $verification->id, ['noticeVersion' => $data['noticeVersion'], 'trigger' => $data['trigger']]);
+
             return [$verification, $session];
         });
 
@@ -87,7 +88,9 @@ class IdentityVerificationController extends Controller
         $stored = [];
         try {
             foreach (['id_front' => 'idFront', 'id_back' => 'idBack', 'selfie' => 'selfie'] as $kind => $field) {
-                if (! $request->hasFile($field)) continue;
+                if (! $request->hasFile($field)) {
+                    continue;
+                }
                 $upload = $request->file($field);
                 $source = file_get_contents($upload->getRealPath());
                 abort_if($source === false, 422, 'One of the images could not be safely decoded.');
@@ -106,10 +109,15 @@ class IdentityVerificationController extends Controller
                 $this->audit->record($request, 'identity.evidence_submitted', $user, 'identity_verification', $verification->id, ['evidenceCount' => count($verification->evidence()->get())]);
             });
         } catch (\Throwable $exception) {
-            foreach ($stored as $evidence) { Storage::disk($evidence->disk)->delete($evidence->object_key); $evidence->delete(); }
+            foreach ($stored as $evidence) {
+                Storage::disk($evidence->disk)->delete($evidence->object_key);
+                $evidence->delete();
+            }
             throw $exception;
         }
-        foreach ($stored as $evidence) ScanIdentityEvidence::dispatch($evidence->id);
+        foreach ($stored as $evidence) {
+            ScanIdentityEvidence::dispatch($evidence->id);
+        }
         $this->adminNotifications->send(
             'admin.identity.submitted',
             'Identity check needs review',
@@ -124,7 +132,8 @@ class IdentityVerificationController extends Controller
 
     public function appeal(Request $request): JsonResponse
     {
-        $user = $this->user($request); $verification = $user->identityVerification()->firstOrFail();
+        $user = $this->user($request);
+        $verification = $user->identityVerification()->firstOrFail();
         abort_unless(in_array($verification->status, ['rejected', 'needs_resubmission'], true), 409, 'This identity check cannot be appealed.');
         abort_if($verification->appeal_requested_at !== null, 409, 'An appeal is already pending.');
         $verification->update(['appeal_requested_at' => now(), 'assigned_to' => null]);
@@ -137,20 +146,29 @@ class IdentityVerificationController extends Controller
             $verification->id,
             ['verificationId' => $verification->id],
         );
+
         return response()->json(['data' => $this->service->status($user)]);
     }
 
     public function withdraw(Request $request): JsonResponse
     {
-        $user = $this->user($request); $verification = $user->identityVerification()->firstOrFail();
+        $user = $this->user($request);
+        $verification = $user->identityVerification()->firstOrFail();
         $verification->update(['status' => 'withdrawn', 'consent_withdrawn_at' => now()]);
         $verification->consents()->whereNull('withdrawn_at')->update(['withdrawn_at' => now()]);
         $verification->evidence()->whereNull('purged_at')->update(['purge_after' => now()]);
         $this->audit->record($request, 'identity.consent_withdrawn', $user, 'identity_verification', $verification->id);
+
         return response()->json(['data' => $this->service->status($user)]);
     }
 
-    private function user(Request $request): User { $user = $request->user(); abort_unless($user instanceof User, 401); return $user; }
+    private function user(Request $request): User
+    {
+        $user = $request->user();
+        abort_unless($user instanceof User, 401);
+
+        return $user;
+    }
 
     private function normalizedJpeg(string $source): string
     {
@@ -158,8 +176,14 @@ class IdentityVerificationController extends Controller
         $image = @imagecreatefromstring($source);
         abort_if($image === false, 422, 'One of the images could not be safely decoded.');
         ob_start();
-        try { imagejpeg($image, null, 90); $encoded = ob_get_clean(); } finally { imagedestroy($image); }
+        try {
+            imagejpeg($image, null, 90);
+            $encoded = ob_get_clean();
+        } finally {
+            imagedestroy($image);
+        }
         abort_if($encoded === '', 422, 'One of the images could not be safely decoded.');
+
         return $encoded;
     }
 }

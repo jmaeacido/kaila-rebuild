@@ -736,7 +736,12 @@
 }
 
 .footer nav a {
+  align-items: center;
   color: var(--color-text);
+  display: inline-flex;
+  min-height: var(--control-min-height);
+  min-width: var(--control-min-height);
+  justify-content: center;
   text-decoration: none;
 }
 
@@ -892,8 +897,11 @@
 }
 
 .seoLinks a {
+  align-items: center;
   color: var(--color-primary);
+  display: inline-flex;
   font-weight: var(--font-weight-semibold);
+  min-height: var(--control-min-height);
   text-decoration: none;
 }
 

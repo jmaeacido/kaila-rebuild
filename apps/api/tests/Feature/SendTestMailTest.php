@@ -10,7 +10,11 @@ class SendTestMailTest extends TestCase
 {
     public function test_it_sends_the_kaila_branded_delivery_check(): void
     {
-        config(['app.url' => 'https://kaila-app.com']);
+        config([
+            'app.url' => 'https://kaila-app.com',
+            'mail.from.address' => 'no-reply@kaila-app.com',
+            'mail.from.name' => 'KAILA',
+        ]);
         Mail::fake();
 
         $this->artisan('mail:test', ['email' => 'support@kaila-app.com'])

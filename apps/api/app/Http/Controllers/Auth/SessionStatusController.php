@@ -10,9 +10,15 @@ class SessionStatusController extends Controller
 {
     public function __invoke(Request $request): JsonResponse
     {
+        $authenticated = $request->user() !== null;
+        if (! $authenticated) {
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+        }
+
         return response()->json([
             'data' => [
-                'authenticated' => $request->user() !== null,
+                'authenticated' => $authenticated,
             ],
         ]);
     }

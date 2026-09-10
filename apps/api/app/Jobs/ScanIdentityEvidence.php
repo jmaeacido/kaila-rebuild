@@ -14,22 +14,44 @@ use Throwable;
 class ScanIdentityEvidence implements ShouldBeUnique, ShouldQueue
 {
     use Queueable;
+
     public int $tries = 5;
+
     public int $timeout = 60;
+
     public int $uniqueFor = 600;
 
-    public function __construct(public readonly string $evidenceId) { $this->onQueue('maintenance'); }
-    public function uniqueId(): string { return $this->evidenceId; }
+    public function __construct(public readonly string $evidenceId)
+    {
+        $this->onQueue('maintenance');
+    }
+
+    public function uniqueId(): string
+    {
+        return $this->evidenceId;
+    }
+
     /** @return list<int> */
-    public function backoff(): array { return [5, 30, 120, 300]; }
+    public function backoff(): array
+    {
+        return [5, 30, 120, 300];
+    }
 
     public function handle(MalwareScanner $scanner): void
     {
         $evidence = IdentityEvidence::query()->findOrFail($this->evidenceId);
-        if (! in_array($evidence->scan_status, ['pending', 'failed'], true)) return;
+        if (! in_array($evidence->scan_status, ['pending', 'failed'], true)) {
+            return;
+        }
         $stream = Storage::disk($evidence->disk)->readStream($evidence->object_key);
-        if (! is_resource($stream)) throw new RuntimeException('The quarantined identity evidence could not be opened.');
-        try { $result = $scanner->scan($stream); } finally { fclose($stream); }
+        if (! is_resource($stream)) {
+            throw new RuntimeException('The quarantined identity evidence could not be opened.');
+        }
+        try {
+            $result = $scanner->scan($stream);
+        } finally {
+            fclose($stream);
+        }
         $evidence->update(['scan_status' => $result->clean ? 'clean' : 'rejected', 'scan_signature' => $result->signature, 'scan_error' => null, 'scanned_at' => now()]);
     }
 

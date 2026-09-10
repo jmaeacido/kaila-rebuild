@@ -4,7 +4,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { BrandMark } from "../components/brand-mark";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { prepareCsrf } from "./auth-client";
+import { fetchWithTimeout, prepareCsrf } from "./auth-client";
 import { BrandedLoader } from "./branded-loader";
 import { InitialUiGate } from "./initial-ui-gate";
 import { FloatingKatabang } from "../components/floating-katabang";
@@ -20,10 +20,13 @@ import { isThemePreference } from "./theme";
 import { clearSession, ensureMobileSession } from "@kaila/mobile/session";
 import { isPublicPath, normalizePublicPath } from "./public-routes";
 import { sessionUserChangedEvent } from "./session-user";
+import { Button, Feedback } from "@kaila/ui";
+import { LogIn, RefreshCw } from "lucide-react";
 
 const SESSION_AWARE_PUBLIC_PATHS = new Set(["/faqs"]);
 
 type PublicSessionStatus = "checking" | "authenticated" | "anonymous";
+type SessionState = "checking" | "authenticated" | "error";
 
 const PublicSessionContext = createContext<PublicSessionStatus>("anonymous");
 
@@ -35,7 +38,8 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const pathname = normalizePublicPath(usePathname());
   const router = useRouter();
   const { applyAccountTheme } = useTheme();
-  const [sessionReady, setSessionReady] = useState(false);
+  const [sessionState, setSessionState] = useState<SessionState>("checking");
+  const [sessionAttempt, setSessionAttempt] = useState(0);
   const [userName, setUserName] = useState("");
   const [loggingOut, setLoggingOut] = useState(false);
   const isPublic = isPublicPath(pathname);
@@ -46,13 +50,21 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const showKatabang = pathname !== "/help/katabang" && pathname !== "/provider-profile";
 
   useEffect(() => {
+    const ready = (isPublic && !isSessionAwarePublic) || sessionState === "error";
+    document.documentElement.dataset.kailaAppReady = ready ? "true" : "false";
+    return () => {
+      delete document.documentElement.dataset.kailaAppReady;
+    };
+  }, [isPublic, isSessionAwarePublic, sessionState]);
+
+  useEffect(() => {
     if (isPublic && !isSessionAwarePublic) {
       return;
     }
-    if (sessionReady) return;
+    if (sessionState !== "checking") return;
 
     let active = true;
-    void fetch("/api/v1/me", {
+    void fetchWithTimeout("/api/v1/me", {
       credentials: "include",
       headers: { Accept: "application/json" },
       cache: "no-store",
@@ -62,7 +74,10 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
           return;
         }
         if (!response.ok) {
-          if (response.status !== 401) throw new Error("Current user request failed.");
+          if (response.status !== 401 && response.status !== 419) {
+            throw new Error("Current user request failed.");
+          }
+          void clearSession().catch(() => undefined);
           if (isSessionAwarePublic) {
             setPublicSessionStatus("anonymous");
             return;
@@ -85,7 +100,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
         if (isThemePreference(userBody.data.appearanceTheme)) {
           applyAccountTheme(userBody.data.appearanceTheme);
         }
-        setSessionReady(true);
+        setSessionState("authenticated");
         if (isSessionAwarePublic) setPublicSessionStatus("authenticated");
         const capacitor = (window as Window & { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor;
         if (capacitor?.isNativePlatform?.()) {
@@ -99,17 +114,17 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
             return;
           }
           if (isPublicPath(pathname)) return;
-          router.replace(`/login?next=${encodeURIComponent(pathname)}`);
+          setSessionState("error");
         }
       });
 
     return () => {
       active = false;
     };
-  }, [applyAccountTheme, isPublic, isSessionAwarePublic, pathname, router, sessionReady]);
+  }, [applyAccountTheme, isPublic, isSessionAwarePublic, pathname, router, sessionAttempt, sessionState]);
 
   useEffect(() => {
-    if (!sessionReady) return;
+    if (sessionState !== "authenticated") return;
 
     const refreshSessionUser = () => {
       void fetch("/api/v1/me", {
@@ -127,13 +142,13 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 
     window.addEventListener(sessionUserChangedEvent, refreshSessionUser);
     return () => window.removeEventListener(sessionUserChangedEvent, refreshSessionUser);
-  }, [sessionReady]);
+  }, [sessionState]);
 
   if (isPublic && !isSessionAwarePublic) {
     return children;
   }
 
-  if (isSessionAwarePublic && !sessionReady) {
+  if (isSessionAwarePublic && sessionState !== "authenticated") {
     return (
       <PublicSessionContext.Provider value={publicSessionStatus}>
         {children}
@@ -166,7 +181,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
         }),
       ]);
     } finally {
-      setSessionReady(false);
+      setSessionState("checking");
       window.dispatchEvent(new CustomEvent<boolean>(realtimeAuthChangedName, { detail: false }));
       router.replace("/login");
       router.refresh();
@@ -177,9 +192,40 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     return <BrandedLoader label="Signing you out of KAILA…" />;
   }
 
+  if (sessionState === "error") {
+    const destination = `${pathname}${typeof window === "undefined" ? "" : window.location.search}`;
+    return (
+      <main className="sessionRecovery" data-kaila-app-ready="true">
+        <Feedback kind="error" title="We couldn’t finish signing you in">
+          <p>Check your connection, then try again or return to sign in.</p>
+          <div className="sessionRecoveryActions">
+            <Button
+              onClick={() => {
+                setSessionState("checking");
+                setSessionAttempt((attempt) => attempt + 1);
+              }}
+              type="button"
+            >
+              <RefreshCw aria-hidden="true" />
+              Try again
+            </Button>
+            <Button
+              onClick={() => router.replace(`/login?next=${encodeURIComponent(destination)}`)}
+              type="button"
+              variant="secondary"
+            >
+              <LogIn aria-hidden="true" />
+              Sign in
+            </Button>
+          </div>
+        </Feedback>
+      </main>
+    );
+  }
+
   return (
     <CallProvider>
-      {sessionReady ? (
+      {sessionState === "authenticated" ? (
         <InitialUiGate key={pathname}>
           <PullToRefresh />
           <header className="appSessionBar">

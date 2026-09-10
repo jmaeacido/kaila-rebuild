@@ -1,5 +1,5 @@
 import { createServer } from "node:http";
-import { spawn, type ChildProcess } from "node:child_process";
+import { spawn, spawnSync, type ChildProcess } from "node:child_process";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -13,8 +13,11 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 let redisUrl = process.env.REDIS_URL;
 let redisProcess: ChildProcess | undefined;
 let redisDirectory: string | undefined;
+const localRedisAvailable = spawnSync("redis-server", ["--version"], {
+  stdio: "ignore",
+}).status === 0;
 
-describe("Socket.IO Redis multi-node coordination", () => {
+describe.skipIf(!redisUrl && !localRedisAvailable)("Socket.IO Redis multi-node coordination", () => {
   const cleanup: Array<() => Promise<void> | void> = [];
 
   beforeAll(async () => {

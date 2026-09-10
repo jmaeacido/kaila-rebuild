@@ -301,6 +301,7 @@
   gap: var(--spacing-8) !important;
   grid-template-columns: auto 1fr;
   line-height: var(--line-height-body);
+  min-height: var(--control-min-height);
 }
 
 .consent input {
@@ -381,8 +382,11 @@
 }
 
 .switch a {
+  align-items: center;
   color: var(--color-primary);
+  display: inline-flex;
   font-weight: var(--font-weight-semibold);
+  min-height: var(--control-min-height);
 }
 
 @media (max-width: 29.999rem) {

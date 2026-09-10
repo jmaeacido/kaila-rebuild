@@ -8,7 +8,7 @@ const realtimeProvider = readFileSync(new URL("./realtime-provider.tsx", import.
 
 test("CallProvider remains mounted while a protected route authenticates", () => {
   const provider = authGuard.indexOf("<CallProvider>");
-  const sessionGate = authGuard.indexOf("{sessionReady ? (", provider);
+  const sessionGate = authGuard.indexOf('{sessionState === "authenticated" ? (', provider);
   assert.ok(provider >= 0);
   assert.ok(sessionGate > provider);
   assert.match(authGuard.slice(sessionGate), /<BrandedLoader label="Getting KAILA ready for you/);

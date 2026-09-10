@@ -84,5 +84,4 @@ return new class extends Migration
         Schema::dropIfExists('identity_verification_consents');
         Schema::dropIfExists('identity_verifications');
     }
-
 };

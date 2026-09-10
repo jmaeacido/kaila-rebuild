@@ -32,8 +32,9 @@ const routes = [
   "/jobs/audit/hired/travel",
 ];
 const viewports = [
-  { name: "small-android", width: 360, height: 800 },
-  { name: "large-android", width: 412, height: 915 },
+  { name: "small-android", width: 360, height: 800, colorScheme: "light", fontScale: 1 },
+  { name: "small-android-large-text", width: 360, height: 800, colorScheme: "light", fontScale: 1.25 },
+  { name: "large-android-dark", width: 412, height: 915, colorScheme: "dark", fontScale: 1 },
 ];
 
 const nextCli = new URL(
@@ -84,15 +85,35 @@ try {
       deviceScaleFactor: 1,
       isMobile: true,
       hasTouch: true,
+      colorScheme: viewport.colorScheme,
     });
+    await context.addInitScript(() => localStorage.setItem("kaila.theme", "system"));
 
     for (const route of routes) {
       const page = await context.newPage();
       await page.goto(`${origin}${route}`, {
-        waitUntil: "networkidle",
+        waitUntil: "domcontentloaded",
         timeout: 20_000,
       });
-      await page.waitForTimeout(150);
+      await page.waitForSelector('[data-kaila-app-ready="true"]', {
+        state: "attached",
+        timeout: 20_000,
+      });
+      await page.waitForSelector("main", { state: "visible", timeout: 20_000 });
+      if (viewport.fontScale !== 1) {
+        await page.addStyleTag({ content: `html { font-size: ${viewport.fontScale * 100}% !important; }` });
+      }
+
+      await page.evaluate(() => (document.activeElement instanceof HTMLElement ? document.activeElement.blur() : undefined));
+      let keyboardFocusVisible = false;
+      for (let tabIndex = 0; tabIndex < 12 && !keyboardFocusVisible; tabIndex += 1) {
+        await page.keyboard.press("Tab");
+        keyboardFocusVisible = await page.evaluate(() => {
+          const active = document.activeElement;
+          if (!active || active === document.body) return false;
+          return active.matches("a[href], button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled)");
+        });
+      }
 
       const result = await page.evaluate(() => {
         const root = document.documentElement;
@@ -103,6 +124,7 @@ try {
             const style = getComputedStyle(element);
             const rect = element.getBoundingClientRect();
             return (
+              element.getAttribute("aria-hidden") !== "true" &&
               style.display !== "none" &&
               style.visibility !== "hidden" &&
               rect.width > 0 &&
@@ -111,7 +133,7 @@ try {
           });
         const undersized = visibleControls
           .filter((element) => {
-            const rect = element.getBoundingClientRect();
+            const rect = (element.matches("input") ? element.closest("label") ?? element : element).getBoundingClientRect();
             return rect.width < 44 || rect.height < 44;
           })
           .map((element) => ({
@@ -121,8 +143,8 @@ try {
               element.textContent?.trim().slice(0, 60) ||
               element.getAttribute("name") ||
               "",
-            width: Math.round(element.getBoundingClientRect().width),
-            height: Math.round(element.getBoundingClientRect().height),
+            width: Math.round((element.matches("input") ? element.closest("label") ?? element : element).getBoundingClientRect().width),
+            height: Math.round((element.matches("input") ? element.closest("label") ?? element : element).getBoundingClientRect().height),
           }));
         return {
           finalPath: `${location.pathname}${location.search}`,
@@ -130,8 +152,9 @@ try {
           undersized,
         };
       });
+      result.keyboardFocusVisible = keyboardFocusVisible;
 
-      if (result.overflow > 0 || result.undersized.length > 0) {
+      if (result.overflow > 0 || result.undersized.length > 0 || !result.keyboardFocusVisible) {
         failures.push({
           viewport: viewport.name,
           route,
@@ -153,6 +176,6 @@ if (failures.length > 0) {
   process.exitCode = 1;
 } else {
   console.log(
-    `Mobile layout audit passed for ${routes.length} routes at ${viewports.length} Android viewport sizes.`,
+    `Mobile layout audit passed for ${routes.length} routes across ${viewports.length} Android accessibility profiles.`,
   );
 }

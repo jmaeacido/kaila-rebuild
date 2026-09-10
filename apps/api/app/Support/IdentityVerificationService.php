@@ -2,7 +2,6 @@
 
 namespace App\Support;
 
-use App\Models\IdentityVerification;
 use App\Models\User;
 
 class IdentityVerificationService
@@ -18,7 +17,9 @@ class IdentityVerificationService
 
     public function enforce(User $user, string $action): void
     {
-        if (! config('identity_verification.enforcement_enabled')) return;
+        if (! config('identity_verification.enforcement_enabled')) {
+            return;
+        }
 
         abort_unless($this->approved($user), 409, match ($action) {
             'post_job' => 'Verify your identity before posting your first job.',
@@ -31,7 +32,9 @@ class IdentityVerificationService
     {
         $verification = $user->identityVerification()->first();
         $status = $verification === null ? 'not_started' : $verification->status;
-        if ($verification?->status === 'approved' && ! $verification->isApproved()) $status = 'expired';
+        if ($verification?->status === 'approved' && ! $verification->isApproved()) {
+            $status = 'expired';
+        }
 
         return [
             'captureAvailable' => (bool) config('identity_verification.capture_enabled'),

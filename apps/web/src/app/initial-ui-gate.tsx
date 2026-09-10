@@ -65,11 +65,16 @@ export function InitialUiGate({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  useEffect(() => {
+    if (ready) document.documentElement.dataset.kailaAppReady = "true";
+  }, [ready]);
+
   return (
     <>
       {!ready && <BrandedLoader label="Getting KAILA ready for you…" />}
       <div
         ref={contentRef}
+        data-kaila-app-ready={ready ? "true" : "false"}
         className={ready ? "initialUiContent" : "initialUiContent initialUiContentPending"}
         aria-hidden={!ready}
         inert={!ready ? true : undefined}

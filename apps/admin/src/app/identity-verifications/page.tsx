@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { Images, RefreshCw, ScanFace, X } from "lucide-react";
+import Image from "next/image";
 import { Button, Feedback } from "@kaila/ui";
 import { AdminPageHeader, AdminSkeletons } from "../../components/admin-page";
 import { publishAdminRealtime, useAdminRealtimeRefresh } from "../admin-realtime";
@@ -37,12 +38,12 @@ function formatDate(value: string | null): string {
   return new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: value.includes("T") ? "short" : undefined }).format(date);
 }
 
-function formatExpiry(value: string | null): string {
+function formatExpiry(value: string | null, currentTime: number): string {
   if (!value) return "Not provided";
   const date = new Date(`${value}T00:00:00`);
   if (Number.isNaN(date.getTime())) return value;
   const formatted = new Intl.DateTimeFormat(undefined, { dateStyle: "medium" }).format(date);
-  const expired = date.getTime() < Date.now();
+  const expired = date.getTime() < currentTime;
   return expired ? `${formatted} · expired` : formatted;
 }
 
@@ -55,6 +56,7 @@ function previewReason(item: ReviewCase): "appeal_review" | "initial_review" {
 }
 
 export default function IdentityVerificationQueue() {
+  const [currentTime] = useState(() => Date.now());
   const [items, setItems] = useState<ReviewCase[]>([]);
   const [state, setState] = useState<"loading" | "ready" | "error">("loading");
   const [message, setMessage] = useState("");
@@ -154,8 +156,8 @@ export default function IdentityVerificationQueue() {
                 </div>
                 <div>
                   <dt>Expiration date</dt>
-                  <dd data-expired={item.documentExpiresAt && new Date(`${item.documentExpiresAt}T00:00:00`).getTime() < Date.now() ? "true" : undefined}>
-                    {formatExpiry(item.documentExpiresAt)}
+                  <dd data-expired={item.documentExpiresAt && new Date(`${item.documentExpiresAt}T00:00:00`).getTime() < currentTime ? "true" : undefined}>
+                    {formatExpiry(item.documentExpiresAt, currentTime)}
                   </dd>
                 </div>
                 <div>
@@ -182,7 +184,7 @@ export default function IdentityVerificationQueue() {
             </article>
           );
         })}
-      <AttachmentViewer item={viewer} onClose={() => setViewer(null)} onDecide={decide} />
+      <AttachmentViewer currentTime={currentTime} item={viewer} onClose={() => setViewer(null)} onDecide={decide} />
     </main>
   );
 }
@@ -211,10 +213,12 @@ function ReviewActions({
 }
 
 function AttachmentViewer({
+  currentTime,
   item,
   onClose,
   onDecide,
 }: {
+  currentTime: number;
   item: ReviewCase | null;
   onClose: () => void;
   onDecide: (item: ReviewCase, decision: "approved" | "needs_resubmission" | "rejected" | "escalated") => void | Promise<void>;
@@ -259,7 +263,7 @@ function AttachmentViewer({
               <p className={styles.eyebrow}>ATTACHMENTS</p>
               <h2 id={titleId}>{item.user.name}</h2>
               <p>
-                {labelFor(item.idType)} · Expiration {formatExpiry(item.documentExpiresAt)}
+                {labelFor(item.idType)} · Expiration {formatExpiry(item.documentExpiresAt, currentTime)}
               </p>
             </div>
             <button aria-label="Close attachments" className={styles.viewerClose} onClick={onClose} type="button">
@@ -271,7 +275,13 @@ function AttachmentViewer({
               evidence.scanStatus === "clean" ? (
                 <figure className={styles.viewerFigure} key={evidence.id}>
                   <figcaption>{kindLabel(evidence.kind)}</figcaption>
-                  <img alt={`${kindLabel(evidence.kind)} for ${item.user.name}`} src={`${evidence.previewUrl}?reason=${reason}`} />
+                  <Image
+                    alt={`${kindLabel(evidence.kind)} for ${item.user.name}`}
+                    height={900}
+                    src={`${evidence.previewUrl}?reason=${reason}`}
+                    unoptimized
+                    width={1200}
+                  />
                 </figure>
               ) : (
                 <div className={styles.viewerPending} key={evidence.id}>

@@ -75,7 +75,8 @@ export function AdminShellNav() {
 
   useEffect(() => {
     if (!authenticated || authPaths.has(pathname)) return;
-    void refreshIdentityBadge();
+    const refreshTimer = window.setTimeout(() => void refreshIdentityBadge(), 0);
+    return () => window.clearTimeout(refreshTimer);
   }, [authenticated, pathname, refreshIdentityBadge]);
 
   useAdminRealtimeRefresh(refreshIdentityBadge);

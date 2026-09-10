@@ -26,5 +26,3 @@ Schedule::job(new PurgeExpiredLocationSamples, 'maintenance')
 Schedule::command('identity-evidence:purge')
     ->hourly()
     ->withoutOverlapping();
-
-Schedule::command('identity-evidence:purge')->hourly()->withoutOverlapping();

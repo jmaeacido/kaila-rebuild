@@ -4,15 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Models\AcceptedOfferSnapshot;
 use App\Models\JobReview;
-use App\Models\ProfileAsset;
 use App\Models\ProviderProfile;
 use App\Models\ServiceJob;
 use App\Models\TravelSession;
 use App\Models\User;
+use App\Support\IdentityVerificationService;
 use App\Support\JobPostingService;
 use App\Support\JobPresenter;
 use App\Support\JobRealtimePublisher;
-use App\Support\IdentityVerificationService;
 use App\Support\OpportunityMatchingService;
 use App\Support\ProfileAvatarResolver;
 use Illuminate\Http\JsonResponse;

@@ -14,6 +14,7 @@ class JobPostingService
     public function post(ServiceJob $job, User $actor): ServiceJob
     {
         $this->identity->enforce($actor, 'post_job');
+
         return DB::transaction(function () use ($job, $actor): ServiceJob {
             /** @var ServiceJob $locked */
             $locked = ServiceJob::query()->lockForUpdate()->findOrFail($job->id);

@@ -72,9 +72,11 @@ class AuthenticationTest extends TestCase
 
     public function test_session_status_is_public_and_reports_authentication_state(): void
     {
+        session(['stale-auth-state' => true]);
         $this->getJson('/api/v1/auth/session-status')
             ->assertOk()
-            ->assertJsonPath('data.authenticated', false);
+            ->assertJsonPath('data.authenticated', false)
+            ->assertSessionMissing('stale-auth-state');
 
         $this->actingAs(User::factory()->create())
             ->getJson('/api/v1/auth/session-status')

@@ -8,6 +8,7 @@ import { Button } from "@kaila/ui";
 import { AuthFrame } from "../auth-frame";
 import {
   ApiError,
+  fetchWithTimeout,
   prepareCsrf,
   safeDestination,
   signedInHome,
@@ -20,6 +21,7 @@ import {
   readMobileSocialVerifier,
 } from "@kaila/mobile/oauth";
 import { realtimeAuthChangedName } from "../realtime-provider";
+import { clearSession } from "@kaila/mobile/session";
 
 function LoginForm() {
   const router = useRouter();
@@ -75,22 +77,31 @@ function LoginForm() {
       return;
     }
 
-    void fetch("/api/v1/auth/session-status", {
+    let active = true;
+    void fetchWithTimeout("/api/v1/auth/session-status", {
       credentials: "include",
       headers: { Accept: "application/json" },
     }).then(async (response) => {
+      if (!active) return;
       if (!response.ok) {
+        if (response.status === 401 || response.status === 419) {
+          await clearSession().catch(() => undefined);
+        }
         return;
       }
       const body = (await response.json()) as {
         data: { authenticated: boolean };
       };
+      if (!body.data.authenticated) {
+        await clearSession().catch(() => undefined);
+        return;
+      }
       if (body.data.authenticated) {
         if (searchParams.get("next")) {
           router.replace(destination);
           return;
         }
-        const userResponse = await fetch("/api/v1/me", {
+        const userResponse = await fetchWithTimeout("/api/v1/me", {
           credentials: "include",
           headers: { Accept: "application/json" },
         });
@@ -100,8 +111,18 @@ function LoginForm() {
           };
           router.replace(signedInHome(userBody.data));
         }
+        if (userResponse.status === 401 || userResponse.status === 419) {
+          await clearSession().catch(() => undefined);
+        }
+      }
+    }).catch((error: unknown) => {
+      if (active && error instanceof DOMException && error.name === "TimeoutError") {
+        setMessage("KAILA couldn’t check your session. You can still sign in below.");
       }
     });
+    return () => {
+      active = false;
+    };
   }, [destination, router, searchParams]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {

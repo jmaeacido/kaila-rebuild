@@ -4,12 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\OfferRevision;
 use App\Models\OfferThread;
-use App\Models\ProfileAsset;
 use App\Models\ProviderProfile;
 use App\Models\ServiceJob;
 use App\Models\User;
-use App\Support\OfferService;
 use App\Support\IdentityVerificationService;
+use App\Support\OfferService;
 use App\Support\ProfileAvatarResolver;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;

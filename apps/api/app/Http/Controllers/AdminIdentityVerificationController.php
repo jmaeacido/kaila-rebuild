@@ -7,8 +7,8 @@ use App\Models\IdentityVerification;
 use App\Models\IdentityVerificationSession;
 use App\Models\User;
 use App\Support\AuditRecorder;
-use App\Support\IdentityVerificationService;
 use App\Support\NotificationService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -23,6 +23,7 @@ class AdminIdentityVerificationController extends Controller
     public function index(Request $request): JsonResponse
     {
         $items = $this->pendingQuery($this->user($request))->with(['user:id,name,email', 'evidence'])->oldest('submitted_at')->get();
+
         return response()->json(['data' => $items->map(fn (IdentityVerification $item) => $this->present($item))]);
     }
 
@@ -40,20 +41,27 @@ class AdminIdentityVerificationController extends Controller
             $verification = IdentityVerification::query()->lockForUpdate()->findOrFail($identityEvidence->identity_verification_id);
             abort_if($verification->appeal_requested_at !== null && $verification->reviewed_by === $actor->id, 409, 'Appeals must be handled by a different reviewer.');
             abort_if($verification->assigned_to !== null && $verification->assigned_to !== $actor->id, 409, 'Another reviewer is handling this case.');
-            if ($verification->assigned_to === null) $verification->update(['assigned_to' => $actor->id, 'status' => 'in_review']);
+            if ($verification->assigned_to === null) {
+                $verification->update(['assigned_to' => $actor->id, 'status' => 'in_review']);
+            }
         });
         $this->audit->record($request, 'identity.evidence_viewed', $actor, 'identity_evidence', $identityEvidence->id, ['reason' => $data['reason'], 'verificationId' => $identityEvidence->identity_verification_id]);
 
         $bytes = Storage::disk($identityEvidence->disk)->get($identityEvidence->object_key);
         abort_if($bytes === null, 404, 'This evidence is no longer available.');
         abort_unless(function_exists('imagecreatefromstring'), 503, 'Protected preview processing is unavailable.');
-        $image = @imagecreatefromstring($bytes); abort_if($image === false, 409, 'This evidence cannot be previewed.');
+        $image = @imagecreatefromstring($bytes);
+        abort_if($image === false, 409, 'This evidence cannot be previewed.');
         $label = "KAILA REVIEW · USER {$actor->id} · ".now()->utc()->format('Y-m-d H:i').' UTC';
-        $background = imagecolorallocatealpha($image, 10, 18, 32, 35); $foreground = imagecolorallocate($image, 255, 255, 255);
+        $background = imagecolorallocatealpha($image, 10, 18, 32, 35);
+        $foreground = imagecolorallocate($image, 255, 255, 255);
         abort_if($background === false || $foreground === false, 500, 'Protected preview processing failed.');
         imagefilledrectangle($image, 0, max(0, imagesy($image) - 28), imagesx($image), imagesy($image), $background);
         imagestring($image, 3, 8, max(4, imagesy($image) - 21), $label, $foreground);
-        ob_start(); imagejpeg($image, null, 86); $preview = ob_get_clean(); imagedestroy($image);
+        ob_start();
+        imagejpeg($image, null, 86);
+        $preview = ob_get_clean();
+        imagedestroy($image);
 
         return response($preview, 200, [
             'Content-Type' => 'image/jpeg', 'Cache-Control' => 'private, no-store, max-age=0',
@@ -101,6 +109,7 @@ class AdminIdentityVerificationController extends Controller
         $this->notifications->send($identityVerification->user_id, 'identity.reviewed', $approved ? 'Identity verified' : 'Identity check updated', $approved ? 'Your identity is verified.' : 'Open identity verification to review the result and next step.', 'identity_verification', $identityVerification->id, ['status' => $data['decision']]);
 
         $identityVerification->refresh()->load(['user', 'evidence']);
+
         return response()->json(['data' => $this->present($identityVerification)]);
     }
 
@@ -114,7 +123,7 @@ class AdminIdentityVerificationController extends Controller
         ];
     }
 
-    /** @return \Illuminate\Database\Eloquent\Builder<IdentityVerification> */
+    /** @return Builder<IdentityVerification> */
     private function pendingQuery(User $actor)
     {
         return IdentityVerification::query()->where(function ($query): void {
@@ -122,5 +131,11 @@ class AdminIdentityVerificationController extends Controller
         })->where(fn ($query) => $query->whereNull('assigned_to')->orWhere('assigned_to', $actor->id));
     }
 
-    private function user(Request $request): User { $user = $request->user(); abort_unless($user instanceof User, 401); return $user; }
+    private function user(Request $request): User
+    {
+        $user = $request->user();
+        abort_unless($user instanceof User, 401);
+
+        return $user;
+    }
 }

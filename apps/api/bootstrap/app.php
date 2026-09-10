@@ -2,8 +2,8 @@
 
 use App\Console\Commands\ActivateScheduledMaintenance;
 use App\Console\Commands\ImportLegacyUsers;
-use App\Console\Commands\SendTestMail;
 use App\Console\Commands\PurgeIdentityEvidence;
+use App\Console\Commands\SendTestMail;
 use App\Http\Middleware\AssignRequestContext;
 use App\Http\Middleware\AuthenticateMobileAccessToken;
 use App\Http\Middleware\EnsureAdministrator;

@@ -3,10 +3,11 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Support\Carbon;
 
 /**
@@ -24,9 +25,8 @@ use Illuminate\Support\Carbon;
  * @property int|null $assigned_to
  * @property int|null $appeal_reviewed_by
  * @property User|null $user
- * @property \Illuminate\Database\Eloquent\Collection<int, IdentityEvidence> $evidence
+ * @property Collection<int, IdentityEvidence> $evidence
  */
-
 #[Fillable(['user_id', 'status', 'id_type', 'issuing_country', 'document_expires_at', 'name_matches', 'date_of_birth_matches', 'age_eligible', 'decision_reason', 'reviewed_by', 'assigned_to', 'submitted_at', 'reviewed_at', 'verified_until', 'appeal_requested_at', 'appeal_reviewed_by', 'consent_withdrawn_at'])]
 class IdentityVerification extends Model
 {
@@ -44,13 +44,28 @@ class IdentityVerification extends Model
     }
 
     /** @return BelongsTo<User, $this> */
-    public function user(): BelongsTo { return $this->belongsTo(User::class); }
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
     /** @return BelongsTo<User, $this> */
-    public function reviewer(): BelongsTo { return $this->belongsTo(User::class, 'reviewed_by'); }
+    public function reviewer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'reviewed_by');
+    }
+
     /** @return HasMany<IdentityEvidence, $this> */
-    public function evidence(): HasMany { return $this->hasMany(IdentityEvidence::class); }
+    public function evidence(): HasMany
+    {
+        return $this->hasMany(IdentityEvidence::class);
+    }
+
     /** @return HasMany<IdentityVerificationConsent, $this> */
-    public function consents(): HasMany { return $this->hasMany(IdentityVerificationConsent::class); }
+    public function consents(): HasMany
+    {
+        return $this->hasMany(IdentityVerificationConsent::class);
+    }
 
     public function isApproved(): bool
     {

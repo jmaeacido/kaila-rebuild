@@ -10,6 +10,21 @@ export type SignedInUser = {
   providerEligible: boolean;
 };
 
+export const SESSION_REQUEST_TIMEOUT_MS = 8_000;
+
+export function fetchWithTimeout(
+  input: RequestInfo | URL,
+  init: RequestInit = {},
+  timeoutMs = SESSION_REQUEST_TIMEOUT_MS,
+): Promise<Response> {
+  const timeoutSignal = AbortSignal.timeout(timeoutMs);
+  const signal = init.signal
+    ? AbortSignal.any([init.signal, timeoutSignal])
+    : timeoutSignal;
+
+  return fetch(input, { ...init, signal });
+}
+
 export function signedInHome(user: SignedInUser): string {
   void user;
   return "/home";

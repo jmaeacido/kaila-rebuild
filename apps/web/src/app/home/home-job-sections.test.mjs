@@ -116,8 +116,8 @@ test("session branding shows the approved bull and wordmark lockup", () => {
 });
 
 test("Authenticated navigation retains the session and reveals pages after their initial UI settles", () => {
-  assert.match(authGuardSource, /if \(sessionReady\) return/);
-  assert.match(authGuardSource, /\{sessionReady \? \(/);
+  assert.match(authGuardSource, /if \(sessionState !== "checking"\) return/);
+  assert.match(authGuardSource, /\{sessionState === "authenticated" \? \(/);
   assert.match(authGuardSource, /<InitialUiGate key=\{pathname\}>/);
   assert.match(initialUiGateSource, /MutationObserver/);
   assert.match(initialUiGateSource, /image\.complete/);

@@ -2,14 +2,15 @@
 
 namespace App\Console\Commands;
 
-use App\Models\IdentityEvidence;
 use App\Models\AuditEvent;
+use App\Models\IdentityEvidence;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Storage;
 
 class PurgeIdentityEvidence extends Command
 {
     protected $signature = 'identity-evidence:purge';
+
     protected $description = 'Purge identity evidence whose approved retention period has ended';
 
     public function handle(): int
@@ -21,6 +22,7 @@ class PurgeIdentityEvidence extends Command
                 AuditEvent::query()->create(['event_type' => 'identity.evidence_purged', 'subject_type' => 'identity_evidence', 'subject_id' => $item->id, 'metadata' => ['verificationId' => $item->identity_verification_id]]);
             }
         });
+
         return self::SUCCESS;
     }
 }

@@ -658,3 +658,7 @@ a.notificationItem:focus-visible .notificationItemChevron { color: var(--color-p
   .notificationDropdownList > a.notificationItem strong,
   .notificationDropdownList > a.notificationItem p { overflow-wrap: anywhere; white-space: normal; }
 }
+/* Session startup recovery remains usable before the authenticated shell mounts. */
+.sessionRecovery { align-items:center; display:flex; justify-content:center; min-height:100dvh; padding:var(--spacing-24); }
+.sessionRecovery > * { max-width:32rem; width:100%; }
+.sessionRecoveryActions { display:flex; flex-wrap:wrap; gap:var(--spacing-12); margin-top:var(--spacing-16); }
