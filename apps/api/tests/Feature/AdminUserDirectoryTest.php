@@ -2,6 +2,13 @@
 
 namespace Tests\Feature;
 
+use App\Models\Area;
+use App\Models\ClientProfile;
+use App\Models\IdentityVerification;
+use App\Models\ProviderProfile;
+use App\Models\ServiceCategory;
+use App\Models\ServiceJob;
+use App\Models\SupportCase;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -230,5 +237,119 @@ class AdminUserDirectoryTest extends TestCase
 
         $this->assertSame('2026-08-01T10:30:00+00:00', $presented['createdAt']);
         $this->assertSame('2025-08-01T12:46:40+00:00', $presented['lastActiveAt']);
+    }
+
+    public function test_staff_can_view_user_ops_dossier_with_profiles_jobs_and_activity(): void
+    {
+        $staff = User::factory()->create([
+            'is_admin' => true,
+            'staff_role' => 'staff',
+            'account_status' => 'active',
+        ]);
+        $member = User::factory()->create([
+            'name' => 'Dossier Member',
+            'email' => 'dossier.member@example.test',
+            'account_status' => 'active',
+            'staff_role' => null,
+        ]);
+        $area = Area::query()->create([
+            'type' => 'city',
+            'name' => 'Butuan City',
+            'code' => 'BXU',
+            'is_active' => true,
+        ]);
+        $category = ServiceCategory::query()->create([
+            'name' => 'Plumbing',
+            'slug' => 'plumbing-dossier',
+            'icon' => 'Wrench',
+            'is_active' => true,
+        ]);
+        ClientProfile::query()->create([
+            'user_id' => $member->id,
+            'display_name' => 'Dossier Client',
+            'area_id' => $area->id,
+        ]);
+        $provider = ProviderProfile::query()->create([
+            'user_id' => $member->id,
+            'display_name' => 'Dossier Provider',
+            'bio' => 'Local repairs with careful, friendly service.',
+            'status' => 'active',
+            'years_experience' => 3,
+            'completed_jobs' => 2,
+            'rating' => 4.50,
+            'reviewed_at' => now()->subDay(),
+            'review_note' => 'Looks good',
+            'reviewed_by' => $staff->id,
+        ]);
+        $provider->services()->attach($category);
+        $provider->serviceAreas()->attach($area);
+        IdentityVerification::query()->create([
+            'user_id' => $member->id,
+            'status' => 'approved',
+            'submitted_at' => now()->subDays(3),
+            'reviewed_at' => now()->subDays(2),
+            'decision_reason' => null,
+        ]);
+        $job = ServiceJob::query()->create([
+            'client_user_id' => $member->id,
+            'service_category_id' => $category->id,
+            'area_id' => $area->id,
+            'title' => 'Fix kitchen sink',
+            'description' => 'Leaking faucet under the sink',
+            'status' => 'posted',
+            'schedule_type' => 'asap',
+            'posted_at' => now()->subHours(2),
+        ]);
+        SupportCase::query()->create([
+            'reference' => 'SUP-DOSSIER-1',
+            'customer_user_id' => $member->id,
+            'category' => 'account',
+            'subject' => 'Need help signing in',
+            'status' => 'open',
+            'priority' => 'normal',
+            'last_message_at' => now()->subHour(),
+        ]);
+        DB::table('sessions')->insert([
+            'id' => 'dossier-session',
+            'user_id' => $member->id,
+            'ip_address' => '127.0.0.1',
+            'user_agent' => 'Test browser',
+            'payload' => '',
+            'last_activity' => now()->subMinutes(15)->timestamp,
+        ]);
+
+        $payload = $this->actingAs($staff)
+            ->getJson("/api/v1/admin/marketplace/users/{$member->id}")
+            ->assertOk()
+            ->assertJsonPath('data.account.id', (string) $member->id)
+            ->assertJsonPath('data.account.name', 'Dossier Member')
+            ->assertJsonPath('data.account.actions.canEdit', false)
+            ->assertJsonPath('data.client.displayName', 'Dossier Client')
+            ->assertJsonPath('data.client.area.name', 'Butuan City')
+            ->assertJsonPath('data.provider.displayName', 'Dossier Provider')
+            ->assertJsonPath('data.provider.status', 'active')
+            ->assertJsonPath('data.identity.status', 'approved')
+            ->assertJsonPath('data.capabilities.canCreateUser', false)
+            ->json('data');
+
+        $this->assertTrue(collect($payload['recentJobs'])->contains(
+            fn (array $row) => $row['id'] === $job->id && $row['role'] === 'client'
+        ));
+        $this->assertTrue(collect($payload['activity'])->contains(
+            fn (array $row) => $row['kind'] === 'support' && str_contains($row['title'], 'SUP-DOSSIER-1')
+        ));
+        $this->assertTrue(collect($payload['activity'])->contains(
+            fn (array $row) => $row['kind'] === 'provider_review'
+        ));
+    }
+
+    public function test_non_staff_cannot_view_user_ops_dossier(): void
+    {
+        $member = User::factory()->create(['account_status' => 'active']);
+        $target = User::factory()->create(['account_status' => 'active']);
+
+        $this->actingAs($member)
+            ->getJson("/api/v1/admin/marketplace/users/{$target->id}")
+            ->assertForbidden();
     }
 }

@@ -318,6 +318,7 @@ Route::middleware('auth')->group(function (): void {
         Route::get('/account-deletions', [AdminAccountDeletionController::class, 'index']);
         Route::get('/users', [AdminUserController::class, 'index']);
         Route::post('/users', [AdminUserController::class, 'store']);
+        Route::get('/users/{user}', [AdminUserController::class, 'show']);
         Route::put('/users/{user}', [AdminUserController::class, 'update']);
         Route::post('/users/{user}/status', [AdminUserController::class, 'setStatus']);
         Route::post('/users/{user}/activate', [AdminUserController::class, 'activate']);

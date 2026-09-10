@@ -1,9 +1,11 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import {
   AlertCircle,
   Columns3,
+  Eye,
   GripVertical,
   LayoutList,
   Mail,
@@ -112,7 +114,10 @@ export default function UsersDirectoryPage() {
         cache: "no-store",
       });
       if (!response.ok) throw new Error();
-      setData(((await response.json()) as { data: Directory }).data);
+      const directory = ((await response.json()) as { data: Directory }).data;
+      setData(directory);
+      const visible = new Set(directory.items.map((item) => item.id));
+      setSelectedIds((current) => current.filter((id) => visible.has(id)));
       setState("ready");
     } catch {
       setState("error");
@@ -155,12 +160,6 @@ export default function UsersDirectoryPage() {
     }
     return selectedAccounts.length + extras;
   }, [pastedInviteEmails, selectedAccounts]);
-
-  useEffect(() => {
-    if (!data) return;
-    const visible = new Set(data.items.map((item) => item.id));
-    setSelectedIds((current) => current.filter((id) => visible.has(id)));
-  }, [data]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => void load(), 0);
@@ -462,32 +461,80 @@ export default function UsersDirectoryPage() {
   }
 
   function renderActions(account: Account) {
+    const busy = busyId === account.id;
     return (
       <div className={styles.actions}>
+        <Link
+          className={styles.iconAction}
+          href={`/users/${account.id}`}
+          title="View profile"
+          aria-label={`View profile for ${account.name}`}
+        >
+          <Eye />
+        </Link>
         {account.actions.canEdit && (
-          <button type="button" disabled={busyId === account.id} onClick={() => openEdit(account)}>
-            <Pencil /> Edit
+          <button
+            type="button"
+            className={styles.iconAction}
+            disabled={busy}
+            title="Edit"
+            aria-label={`Edit ${account.name}`}
+            onClick={() => openEdit(account)}
+          >
+            <Pencil />
           </button>
         )}
         {account.actions.canActivate && (
-          <button type="button" disabled={busyId === account.id} onClick={() => void runAction(account, "activate")}>
-            <UserCheck /> Activate
+          <button
+            type="button"
+            className={styles.iconAction}
+            disabled={busy}
+            title="Activate"
+            aria-label={`Activate ${account.name}`}
+            onClick={() => void runAction(account, "activate")}
+          >
+            <UserCheck />
           </button>
         )}
         {account.actions.canDeactivate && (
-          <button type="button" disabled={busyId === account.id} onClick={() => void runAction(account, "deactivate")}>
-            <UserMinus /> Deactivate
+          <button
+            type="button"
+            className={styles.iconAction}
+            disabled={busy}
+            title="Deactivate"
+            aria-label={`Deactivate ${account.name}`}
+            onClick={() => void runAction(account, "deactivate")}
+          >
+            <UserMinus />
           </button>
         )}
         {account.actions.canDelete && (
-          <button type="button" className={styles.danger} disabled={busyId === account.id} onClick={() => void runAction(account, "delete")}>
-            <Trash2 /> Delete
+          <button
+            type="button"
+            className={`${styles.iconAction} ${styles.danger}`}
+            disabled={busy}
+            title="Delete"
+            aria-label={`Delete ${account.name}`}
+            onClick={() => void runAction(account, "delete")}
+          >
+            <Trash2 />
           </button>
         )}
-        {!account.actions.canEdit && !account.actions.canActivate && !account.actions.canDeactivate && !account.actions.canDelete && (
-          <span className={styles.muted}>View only</span>
-        )}
       </div>
+    );
+  }
+
+  function renderPerson(account: Account) {
+    return (
+      <>
+        <Link className={styles.personLink} href={`/users/${account.id}`}>
+          <strong>
+            {account.name}
+            {account.isSelf ? " (you)" : ""}
+          </strong>
+        </Link>
+        <span>{account.email}</span>
+      </>
     );
   }
 
@@ -735,13 +782,7 @@ export default function UsersDirectoryPage() {
                         />
                       </td>
                     ) : null}
-                    <td>
-                      <strong>
-                        {account.name}
-                        {account.isSelf ? " (you)" : ""}
-                      </strong>
-                      <span>{account.email}</span>
-                    </td>
+                    <td className={styles.personCell}>{renderPerson(account)}</td>
                     <td>
                       <span className={styles.roleBadge}>{roleLabel[account.staffRole]}</span>
                     </td>
@@ -832,8 +873,10 @@ export default function UsersDirectoryPage() {
                               </label>
                             ) : null}
                             {draggable ? <GripVertical className={styles.dragHandle} aria-hidden="true" /> : null}
-                            <div>
-                              <strong>{account.name}</strong>
+                            <div className={styles.personCell}>
+                              <Link className={styles.personLink} href={`/users/${account.id}`}>
+                                <strong>{account.name}</strong>
+                              </Link>
                               <span>{account.email}</span>
                             </div>
                           </div>

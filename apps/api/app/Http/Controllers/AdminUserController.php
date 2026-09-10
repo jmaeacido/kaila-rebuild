@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Support\AdminAccountService;
+use App\Support\AdminUserDossierPresenter;
 use App\Support\StaffAuthorization;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -13,7 +14,10 @@ use Illuminate\Support\Str;
 
 class AdminUserController extends Controller
 {
-    public function __construct(private readonly AdminAccountService $accounts) {}
+    public function __construct(
+        private readonly AdminAccountService $accounts,
+        private readonly AdminUserDossierPresenter $dossiers,
+    ) {}
 
     public function index(Request $request): JsonResponse
     {
@@ -75,6 +79,24 @@ class AdminUserController extends Controller
                 'total' => $page->total(),
             ],
         ]]);
+    }
+
+    public function show(Request $request, User $user): JsonResponse
+    {
+        $actor = $this->staff($request);
+        abort_unless(StaffAuthorization::canViewAccounts($actor), 403);
+
+        $lastActivity = DB::table('sessions')
+            ->where('user_id', $user->id)
+            ->max('last_activity');
+        $user->setAttribute('last_activity_at', $lastActivity);
+
+        return response()->json([
+            'data' => [
+                ...$this->dossiers->present($user, $this->present($user, $actor)),
+                'capabilities' => StaffAuthorization::capabilities($actor),
+            ],
+        ]);
     }
 
     public function store(Request $request): JsonResponse
