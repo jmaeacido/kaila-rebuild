@@ -214,7 +214,7 @@ export default function AuthenticatedHomePage() {
   const isProvider =
     user?.activeMode === "provider" && user.providerEligible === true;
   const greetingAvatarUrl = isProvider
-    ? (user?.displayAvatarUrl ?? user?.providerAvatarUrl ?? user?.avatarUrl ?? null)
+    ? (user?.providerAvatarUrl ?? user?.displayAvatarUrl ?? null)
     : (user?.avatarUrl ?? null);
   const firstName = useMemo(
     () => user?.name.trim().split(/\s+/)[0] || "there",

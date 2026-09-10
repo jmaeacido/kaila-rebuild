@@ -11,7 +11,7 @@ class ProfileAvatarResolver
         return $this->urlFor($userId, 'avatar');
     }
 
-    /** Provider marketplace mark; falls back to the client avatar for legacy accounts. */
+    /** Provider marketplace mark. Prefer provider_avatar; optional client fallback is for incomplete legacy rows only. */
     public function providerUrl(int $userId, bool $fallbackToClient = true): ?string
     {
         return $this->urlFor($userId, 'provider_avatar')

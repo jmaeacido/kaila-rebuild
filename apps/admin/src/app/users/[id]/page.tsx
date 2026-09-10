@@ -56,6 +56,7 @@ type Dossier = {
     displayName: string;
     area: { id: number; name: string } | null;
     updatedAt: string | null;
+    avatarUrl: string | null;
   } | null;
   provider: {
     id: number;
@@ -386,20 +387,40 @@ export default function UserDossierPage() {
                 <h3>Client profile</h3>
               </header>
               {dossier.client ? (
-                <dl className={styles.facts}>
-                  <div>
-                    <dt>Display name</dt>
-                    <dd>{dossier.client.displayName}</dd>
-                  </div>
-                  <div>
-                    <dt>Area</dt>
-                    <dd>{dossier.client.area?.name ?? "Not set"}</dd>
-                  </div>
-                  <div>
-                    <dt>Updated</dt>
-                    <dd>{formatDate(dossier.client.updatedAt, "—")}</dd>
-                  </div>
-                </dl>
+                <div className={styles.profileBody}>
+                  {dossier.client.avatarUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element -- admin ops preview of user-uploaded avatar
+                    <img
+                      className={styles.avatar}
+                      src={dossier.client.avatarUrl}
+                      alt=""
+                      width={64}
+                      height={64}
+                    />
+                  ) : (
+                    <span className={styles.avatarFallback} aria-hidden="true">
+                      <UserRound />
+                    </span>
+                  )}
+                  <dl className={styles.facts}>
+                    <div>
+                      <dt>Profile picture</dt>
+                      <dd>{dossier.client.avatarUrl ? "Client photo on file" : "Not uploaded"}</dd>
+                    </div>
+                    <div>
+                      <dt>Display name</dt>
+                      <dd>{dossier.client.displayName}</dd>
+                    </div>
+                    <div>
+                      <dt>Area</dt>
+                      <dd>{dossier.client.area?.name ?? "Not set"}</dd>
+                    </div>
+                    <div>
+                      <dt>Updated</dt>
+                      <dd>{formatDate(dossier.client.updatedAt, "—")}</dd>
+                    </div>
+                  </dl>
+                </div>
               ) : (
                 <p className={styles.emptyCopy}>No client profile yet.</p>
               )}
@@ -411,7 +432,7 @@ export default function UserDossierPage() {
                 <h3>Provider profile</h3>
               </header>
               {dossier.provider ? (
-                <div className={styles.providerBody}>
+                <div className={styles.profileBody}>
                   {dossier.provider.avatarUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element -- admin ops preview of user-uploaded avatar
                     <img
@@ -421,8 +442,16 @@ export default function UserDossierPage() {
                       width={64}
                       height={64}
                     />
-                  ) : null}
+                  ) : (
+                    <span className={styles.avatarFallback} aria-hidden="true">
+                      <Wrench />
+                    </span>
+                  )}
                   <dl className={styles.facts}>
+                    <div>
+                      <dt>Provider logo</dt>
+                      <dd>{dossier.provider.avatarUrl ? "Provider logo on file" : "Not uploaded"}</dd>
+                    </div>
                     <div>
                       <dt>Display name</dt>
                       <dd>{dossier.provider.displayName}</dd>

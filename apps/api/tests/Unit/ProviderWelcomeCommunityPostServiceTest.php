@@ -36,12 +36,12 @@ class ProviderWelcomeCommunityPostServiceTest extends TestCase
         $profile->serviceAreas()->attach([$region->id, $city->id]);
 
         $upload = UploadedFile::fake()->image('avatar.jpg', 64, 64);
-        $avatarKey = "profiles/{$user->id}/avatar/test.jpg";
+        $avatarKey = "profiles/{$user->id}/provider_avatar/test.jpg";
         Storage::disk('private-assets')->put($avatarKey, file_get_contents($upload->getRealPath()) ?: '');
 
         $avatar = ProfileAsset::query()->create([
             'user_id' => $user->id,
-            'purpose' => 'avatar',
+            'purpose' => 'provider_avatar',
             'disk' => 'private-assets',
             'object_key' => $avatarKey,
             'original_name' => 'avatar.jpg',
@@ -91,12 +91,12 @@ class ProviderWelcomeCommunityPostServiceTest extends TestCase
         ]);
 
         $firstUpload = UploadedFile::fake()->image('old.jpg', 64, 64);
-        $firstKey = "profiles/{$user->id}/avatar/old.jpg";
+        $firstKey = "profiles/{$user->id}/provider_avatar/old.jpg";
         Storage::disk('private-assets')->put($firstKey, file_get_contents($firstUpload->getRealPath()) ?: '');
 
         $firstAvatar = ProfileAsset::query()->create([
             'user_id' => $user->id,
-            'purpose' => 'avatar',
+            'purpose' => 'provider_avatar',
             'origin' => 'upload',
             'disk' => 'private-assets',
             'object_key' => $firstKey,
@@ -112,12 +112,12 @@ class ProviderWelcomeCommunityPostServiceTest extends TestCase
         $this->assertSame("profile_asset:{$firstAvatar->id}", $post->media()->first()?->scan_signature);
 
         $secondUpload = UploadedFile::fake()->image('logo.jpg', 96, 96);
-        $secondKey = "profiles/{$user->id}/avatar/logo.jpg";
+        $secondKey = "profiles/{$user->id}/provider_avatar/logo.jpg";
         Storage::disk('private-assets')->put($secondKey, file_get_contents($secondUpload->getRealPath()) ?: '');
 
         $secondAvatar = ProfileAsset::query()->create([
             'user_id' => $user->id,
-            'purpose' => 'avatar',
+            'purpose' => 'provider_avatar',
             'origin' => 'upload',
             'disk' => 'private-assets',
             'object_key' => $secondKey,

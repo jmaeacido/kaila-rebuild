@@ -6,13 +6,13 @@ use App\Models\AcceptedOfferSnapshot;
 use App\Models\CallSession;
 use App\Models\ConversationMessage;
 use App\Models\JobConversation;
-use App\Models\ProfileAsset;
 use App\Models\ProviderProfile;
 use App\Models\ServiceJob;
 use App\Models\User;
 use App\Support\HiredJobAccess;
 use App\Support\NotificationService;
 use App\Support\OutboxRecorder;
+use App\Support\ProfileAvatarResolver;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
@@ -24,7 +24,12 @@ class ConversationController extends Controller
 {
     private const ALLOWED_REACTIONS = ['👍', '👎', '❤️', '😂', '🤣', '😮', '😢', '😭', '😡', '🎉', '🔥', '👏', '🙏', '💯', '✅', '👀', '🤔', '🙌'];
 
-    public function __construct(private readonly HiredJobAccess $access, private readonly OutboxRecorder $outbox, private readonly NotificationService $notifications) {}
+    public function __construct(
+        private readonly HiredJobAccess $access,
+        private readonly OutboxRecorder $outbox,
+        private readonly NotificationService $notifications,
+        private readonly ProfileAvatarResolver $avatars,
+    ) {}
 
     public function index(Request $request): JsonResponse
     {
@@ -61,24 +66,12 @@ class ConversationController extends Controller
             return $profiles->get($profileId)?->user_id;
         })->filter()->unique();
         $users = User::query()->whereIn('id', $counterpartUserIds)->get()->keyBy('id');
-        $clientAvatars = ProfileAsset::query()
-            ->whereIn('user_id', $counterpartUserIds)
-            ->where('purpose', 'avatar')
-            ->where('scan_status', 'clean')
-            ->orderByRaw("CASE WHEN origin = 'upload' THEN 0 ELSE 1 END")
-            ->latest()->get()->unique('user_id')->keyBy('user_id');
-        $providerAvatars = ProfileAsset::query()
-            ->whereIn('user_id', $counterpartUserIds)
-            ->where('purpose', 'provider_avatar')
-            ->where('scan_status', 'clean')
-            ->orderByRaw("CASE WHEN origin = 'upload' THEN 0 ELSE 1 END")
-            ->latest()->get()->unique('user_id')->keyBy('user_id');
         $conversations = JobConversation::query()->whereIn('service_job_id', $jobs->pluck('id'))->get()->keyBy('service_job_id');
         $lastMessages = ConversationMessage::query()
             ->whereIn('conversation_id', $conversations->pluck('id'))
             ->orderByDesc('sequence')->get()->unique('conversation_id')->keyBy('conversation_id');
 
-        $data = $jobs->map(function (ServiceJob $job) use ($actor, $snapshots, $profiles, $users, $clientAvatars, $providerAvatars, $conversations, $lastMessages): array {
+        $data = $jobs->map(function (ServiceJob $job) use ($actor, $snapshots, $profiles, $users, $conversations, $lastMessages): array {
             $snapshot = $snapshots->get($job->id);
             $profileId = $snapshot !== null ? $snapshot->provider_profile_id : $job->direct_provider_profile_id;
             $counterpartId = $job->client_user_id === $actor->id ? $profiles->get($profileId)?->user_id : $job->client_user_id;
@@ -87,9 +80,9 @@ class ConversationController extends Controller
             $conversation = $conversations->get($job->id);
             $lastMessage = $conversation ? $lastMessages->get($conversation->id) : null;
             $isProviderCounterpart = $job->client_user_id === $actor->id;
-            $avatar = $isProviderCounterpart
-                ? ($providerAvatars->get($counterpart->id) ?? $clientAvatars->get($counterpart->id))
-                : $clientAvatars->get($counterpart->id);
+            $avatarUrl = $isProviderCounterpart
+                ? $this->avatars->providerUrl((int) $counterpart->id, fallbackToClient: false)
+                : $this->avatars->clientUrl((int) $counterpart->id);
 
             return [
                 'jobId' => $job->id,
@@ -99,7 +92,7 @@ class ConversationController extends Controller
                 'otherParty' => [
                     'id' => $counterpart->id,
                     'name' => $counterpart->name,
-                    'avatarUrl' => $avatar ? "/api/v1/profile-assets/{$avatar->getKey()}" : null,
+                    'avatarUrl' => $avatarUrl,
                 ],
                 'lastMessage' => $lastMessage ? [
                     'body' => $lastMessage->body_ciphertext === null ? 'Sent an attachment' : Crypt::decryptString($lastMessage->body_ciphertext),
@@ -154,14 +147,16 @@ class ConversationController extends Controller
         });
         $otherUserId = $actor->id === $participants['clientId'] ? $participants['providerId'] : $participants['clientId'];
         $otherUser = User::query()->findOrFail($otherUserId);
-        $avatar = ProfileAsset::query()->where('user_id', $otherUserId)->where('purpose', 'avatar')->where('scan_status', 'clean')->latest()->first();
+        $avatarUrl = $actor->id === $participants['clientId']
+            ? $this->avatars->providerUrl((int) $otherUserId, fallbackToClient: false)
+            : $this->avatars->clientUrl((int) $otherUserId);
 
         return response()->json(['data' => [
             'id' => $conversation->id,
             'jobId' => $serviceJob->id,
             'version' => $conversation->version,
             'viewerUserId' => $actor->id,
-            'otherParty' => ['id' => $otherUser->id, 'name' => $otherUser->name, 'avatarUrl' => $avatar ? "/api/v1/profile-assets/{$avatar->id}" : null],
+            'otherParty' => ['id' => $otherUser->id, 'name' => $otherUser->name, 'avatarUrl' => $avatarUrl],
             'messages' => $messages,
             'calls' => CallSession::query()
                 ->where('context_type', 'job')

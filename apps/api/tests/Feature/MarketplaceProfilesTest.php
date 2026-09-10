@@ -245,6 +245,90 @@ class MarketplaceProfilesTest extends TestCase
             ->assertJsonPath('data.providers.0.changes', []);
     }
 
+    public function test_provider_profile_submission_requires_a_provider_logo_not_only_a_client_avatar(): void
+    {
+        [$category, $area] = $this->referenceData();
+        $user = User::factory()->create();
+        ProfileAsset::query()->create([
+            'user_id' => $user->id,
+            'purpose' => 'avatar',
+            'disk' => 'private-assets',
+            'object_key' => "profiles/{$user->id}/avatar/client.jpg",
+            'original_name' => 'client.jpg',
+            'mime_type' => 'image/jpeg',
+            'size_bytes' => 12,
+            'scan_status' => 'clean',
+        ]);
+
+        $this->actingAs($user)
+            ->putJson('/api/v1/me/provider-profile', $this->validProfile($category, $area))
+            ->assertStatus(422)
+            ->assertJsonPath('message', 'Upload a provider logo or profile picture before submitting your provider profile.');
+    }
+
+    public function test_approving_a_client_avatar_does_not_rewrite_provider_welcome_media(): void
+    {
+        [$category, $area] = $this->referenceData();
+        config(['filesystems.private_assets_disk' => 'private-assets']);
+        Storage::fake('private-assets');
+        $user = User::factory()->create(['name' => 'Logo Owner']);
+        $admin = User::factory()->create(['is_admin' => true]);
+        $logoUpload = UploadedFile::fake()->image('logo.jpg', 64, 64);
+        $logoKey = "profiles/{$user->id}/provider_avatar/logo.jpg";
+        Storage::disk('private-assets')->put($logoKey, file_get_contents($logoUpload->getRealPath()) ?: '');
+        $logo = ProfileAsset::query()->create([
+            'user_id' => $user->id,
+            'purpose' => 'provider_avatar',
+            'disk' => 'private-assets',
+            'object_key' => $logoKey,
+            'original_name' => 'logo.jpg',
+            'mime_type' => 'image/jpeg',
+            'size_bytes' => Storage::disk('private-assets')->size($logoKey),
+            'scan_status' => 'clean',
+        ]);
+        $profilePayload = $this->validProfile($category, $area);
+        $profilePayload['displayName'] = 'Logo Owner';
+        $this->actingAs($user)->putJson('/api/v1/me/provider-profile', $profilePayload)->assertOk();
+        $profile = ProviderProfile::query()->where('user_id', $user->id)->firstOrFail();
+        $this->actingAs($admin)
+            ->putJson("/api/v1/admin/marketplace/providers/{$profile->id}/status", ['status' => 'active'])
+            ->assertOk();
+        $profile->refresh();
+        $postId = $profile->welcome_community_post_id;
+        $this->assertNotNull($postId);
+        $this->assertDatabaseHas('community_post_media', [
+            'community_post_id' => $postId,
+            'scan_signature' => "profile_asset:{$logo->id}",
+        ]);
+
+        $clientUpload = UploadedFile::fake()->image('client.jpg', 64, 64);
+        $clientKey = "profiles/{$user->id}/avatar/client.jpg";
+        Storage::disk('private-assets')->put($clientKey, file_get_contents($clientUpload->getRealPath()) ?: '');
+        $clientAvatar = ProfileAsset::query()->create([
+            'user_id' => $user->id,
+            'purpose' => 'avatar',
+            'disk' => 'private-assets',
+            'object_key' => $clientKey,
+            'original_name' => 'client.jpg',
+            'mime_type' => 'image/jpeg',
+            'size_bytes' => Storage::disk('private-assets')->size($clientKey),
+            'scan_status' => 'pending',
+        ]);
+
+        $this->actingAs($admin)
+            ->putJson("/api/v1/admin/marketplace/assets/{$clientAvatar->id}/scan", ['scanStatus' => 'clean'])
+            ->assertOk();
+
+        $this->assertDatabaseHas('community_post_media', [
+            'community_post_id' => $postId,
+            'scan_signature' => "profile_asset:{$logo->id}",
+        ]);
+        $this->assertDatabaseMissing('community_post_media', [
+            'community_post_id' => $postId,
+            'scan_signature' => "profile_asset:{$clientAvatar->id}",
+        ]);
+    }
+
     public function test_provider_profile_submission_requires_a_profile_picture(): void
     {
         [$category, $area] = $this->referenceData();
@@ -941,7 +1025,7 @@ class MarketplaceProfilesTest extends TestCase
     /** @param array<string, mixed> $payload */
     private function submitProviderProfile(User $user, array $payload): TestResponse
     {
-        if (! ProfileAsset::query()->where('user_id', $user->id)->where('purpose', 'avatar')->exists()) {
+        if (! ProfileAsset::query()->where('user_id', $user->id)->where('purpose', 'provider_avatar')->exists()) {
             $this->seedAvatar($user);
         }
 
@@ -952,12 +1036,12 @@ class MarketplaceProfilesTest extends TestCase
     {
         Storage::fake('private-assets');
         $upload = UploadedFile::fake()->image('avatar.jpg', 128, 128);
-        $key = "profiles/{$user->id}/avatar/".fake()->uuid().'.jpg';
+        $key = "profiles/{$user->id}/provider_avatar/".fake()->uuid().'.jpg';
         Storage::disk('private-assets')->put($key, file_get_contents($upload->getRealPath()) ?: '');
 
         return ProfileAsset::query()->create([
             'user_id' => $user->id,
-            'purpose' => 'avatar',
+            'purpose' => 'provider_avatar',
             'disk' => 'private-assets',
             'object_key' => $key,
             'original_name' => 'avatar.jpg',

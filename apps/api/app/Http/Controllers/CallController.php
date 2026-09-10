@@ -5,13 +5,13 @@ namespace App\Http\Controllers;
 use App\Models\CallSession;
 use App\Models\ClientProfile;
 use App\Models\DirectConversation;
-use App\Models\ProfileAsset;
 use App\Models\ProviderProfile;
 use App\Models\ServiceJob;
 use App\Models\User;
 use App\Support\HiredJobAccess;
 use App\Support\NotificationService;
 use App\Support\OutboxRecorder;
+use App\Support\ProfileAvatarResolver;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -25,6 +25,7 @@ class CallController
         private readonly HiredJobAccess $jobAccess,
         private readonly OutboxRecorder $outbox,
         private readonly NotificationService $notifications,
+        private readonly ProfileAvatarResolver $avatars,
     ) {}
 
     public function store(Request $request): JsonResponse
@@ -250,9 +251,12 @@ class CallController
 
     private function avatarUrl(User $user): ?string
     {
-        $avatar = ProfileAsset::query()->where('user_id', $user->id)->where('purpose', 'avatar')->where('scan_status', 'clean')->latest()->first();
+        if ($user->active_mode === 'provider') {
+            return $this->avatars->providerUrl((int) $user->id, fallbackToClient: false)
+                ?? $this->avatars->clientUrl((int) $user->id);
+        }
 
-        return $avatar ? "/api/v1/profile-assets/{$avatar->id}" : null;
+        return $this->avatars->clientUrl((int) $user->id);
     }
 
     /** @param array<string, mixed> $payload */

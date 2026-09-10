@@ -205,7 +205,7 @@ class ProviderWelcomeCommunityPostService
         $disk = (string) config('filesystems.private_assets_disk');
         $publishedKey = CommunityMediaObjectKey::published($post->id, $assetId);
         $stored = Storage::disk($disk)->put($publishedKey, $normalized['contents']);
-        if ($stored !== true) {
+        if (! $stored) {
             throw new RuntimeException('The provider profile picture could not be published to the community feed.');
         }
 

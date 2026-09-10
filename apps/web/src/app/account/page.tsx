@@ -272,9 +272,7 @@ export default function AccountPage() {
   }
 
   const isProviderMode = profile.activeMode === "provider" && user.providerEligible;
-  const modeAvatarUrl = isProviderMode
-    ? (user.providerAvatarUrl ?? user.displayAvatarUrl ?? user.avatarUrl)
-    : user.avatarUrl;
+  const modeAvatarUrl = isProviderMode ? user.providerAvatarUrl : user.avatarUrl;
   const identityName = (
     isProviderMode
       ? profile.provider?.display_name

@@ -222,7 +222,8 @@ class AdminMarketplaceController extends Controller
         });
 
         $profileAsset->refresh();
-        if (in_array($profileAsset->purpose, ['avatar', 'provider_avatar'], true) && $profileAsset->scan_status === 'clean') {
+        // Client avatars must not rewrite provider welcome art; only provider logos do.
+        if ($profileAsset->purpose === 'provider_avatar' && $profileAsset->scan_status === 'clean') {
             $profile = ProviderProfile::query()
                 ->where('user_id', $profileAsset->user_id)
                 ->where('status', 'active')

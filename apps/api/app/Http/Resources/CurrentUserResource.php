@@ -46,7 +46,7 @@ class CurrentUserResource extends JsonResource
             'avatarUrl' => $avatarUrl,
             'providerAvatarUrl' => $providerAvatarUrl,
             'displayAvatarUrl' => $activeMode === 'provider' && $providerEligible
-                ? ($providerAvatarUrl ?? $avatarUrl)
+                ? $providerAvatarUrl
                 : $avatarUrl,
             'reputation' => [
                 'averageRating' => $reputation?->average_rating !== null

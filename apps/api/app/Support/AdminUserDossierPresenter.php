@@ -57,6 +57,7 @@ class AdminUserDossierPresenter
             'displayName' => $profile->display_name,
             'area' => $area ? ['id' => $area->id, 'name' => $area->name] : null,
             'updatedAt' => $profile->updated_at?->toIso8601String(),
+            'avatarUrl' => $this->avatars->clientUrl((int) $target->id),
         ];
     }
 
@@ -88,7 +89,7 @@ class AdminUserDossierPresenter
             'reviewedBy' => $profile->reviewed_by
                 ? ['id' => (string) $profile->reviewed_by, 'name' => $profile->reviewer?->name ?? 'Unknown reviewer']
                 : null,
-            'avatarUrl' => $this->avatars->providerUrl((int) $profile->user_id),
+            'avatarUrl' => $this->avatars->providerUrl((int) $profile->user_id, fallbackToClient: false),
         ];
     }
 

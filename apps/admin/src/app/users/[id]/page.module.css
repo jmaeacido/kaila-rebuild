@@ -235,7 +235,8 @@
   margin: 0;
 }
 
-.providerBody {
+.providerBody,
+.profileBody {
   display: grid;
   gap: var(--spacing-16);
 }
@@ -245,6 +246,22 @@
   height: 4rem;
   object-fit: cover;
   width: 4rem;
+}
+
+.avatarFallback {
+  align-items: center;
+  background: color-mix(in srgb, var(--color-primary) 12%, var(--color-surface));
+  border-radius: var(--radius-pill);
+  color: var(--color-primary);
+  display: inline-flex;
+  height: 4rem;
+  justify-content: center;
+  width: 4rem;
+}
+
+.avatarFallback svg {
+  height: var(--spacing-24);
+  width: var(--spacing-24);
 }
 
 .inlineLink {

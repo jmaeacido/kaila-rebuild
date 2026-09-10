@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Area;
 use App\Models\ClientProfile;
 use App\Models\IdentityVerification;
+use App\Models\ProfileAsset;
 use App\Models\ProviderProfile;
 use App\Models\ServiceCategory;
 use App\Models\ServiceJob;
@@ -269,6 +270,28 @@ class AdminUserDirectoryTest extends TestCase
             'display_name' => 'Dossier Client',
             'area_id' => $area->id,
         ]);
+        $clientAvatar = ProfileAsset::query()->create([
+            'user_id' => $member->id,
+            'purpose' => 'avatar',
+            'disk' => 'private-assets',
+            'object_key' => "profiles/{$member->id}/avatar/client.jpg",
+            'original_name' => 'client.jpg',
+            'mime_type' => 'image/jpeg',
+            'size_bytes' => 12,
+            'scan_status' => 'clean',
+            'origin' => 'upload',
+        ]);
+        $providerAvatar = ProfileAsset::query()->create([
+            'user_id' => $member->id,
+            'purpose' => 'provider_avatar',
+            'disk' => 'private-assets',
+            'object_key' => "profiles/{$member->id}/provider_avatar/logo.jpg",
+            'original_name' => 'logo.jpg',
+            'mime_type' => 'image/jpeg',
+            'size_bytes' => 14,
+            'scan_status' => 'clean',
+            'origin' => 'upload',
+        ]);
         $provider = ProviderProfile::query()->create([
             'user_id' => $member->id,
             'display_name' => 'Dossier Provider',
@@ -326,8 +349,10 @@ class AdminUserDirectoryTest extends TestCase
             ->assertJsonPath('data.account.actions.canEdit', false)
             ->assertJsonPath('data.client.displayName', 'Dossier Client')
             ->assertJsonPath('data.client.area.name', 'Butuan City')
+            ->assertJsonPath('data.client.avatarUrl', "/api/v1/profile-assets/{$clientAvatar->id}")
             ->assertJsonPath('data.provider.displayName', 'Dossier Provider')
             ->assertJsonPath('data.provider.status', 'active')
+            ->assertJsonPath('data.provider.avatarUrl', "/api/v1/profile-assets/{$providerAvatar->id}")
             ->assertJsonPath('data.identity.status', 'approved')
             ->assertJsonPath('data.capabilities.canCreateUser', false)
             ->json('data');

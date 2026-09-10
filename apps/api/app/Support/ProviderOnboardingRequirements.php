@@ -12,8 +12,7 @@ class ProviderOnboardingRequirements
 
     public function avatarUploaded(User $user): bool
     {
-        $latest = $this->avatars->latest((int) $user->id, 'provider_avatar')
-            ?? $this->avatars->latest((int) $user->id, 'avatar');
+        $latest = $this->avatars->latest((int) $user->id, 'provider_avatar');
 
         return $latest !== null && in_array($latest->scan_status, ['pending', 'clean'], true);
     }
@@ -25,8 +24,7 @@ class ProviderOnboardingRequirements
 
     public function approvedAvatar(User $user): ?ProfileAsset
     {
-        return $this->avatars->approved((int) $user->id, 'provider_avatar')
-            ?? $this->avatars->approved((int) $user->id, 'avatar');
+        return $this->avatars->approved((int) $user->id, 'provider_avatar');
     }
 
     public function assertAvatarUploaded(User $user): void
@@ -50,8 +48,7 @@ class ProviderOnboardingRequirements
     /** @return array{uploaded: bool, scanStatus: string|null, url: string|null} */
     public function avatarState(User $user): array
     {
-        $latest = $this->avatars->latest((int) $user->id, 'provider_avatar')
-            ?? $this->avatars->latest((int) $user->id, 'avatar');
+        $latest = $this->avatars->latest((int) $user->id, 'provider_avatar');
         $clean = $this->approvedAvatar($user);
 
         return [
