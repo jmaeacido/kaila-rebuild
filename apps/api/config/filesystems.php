@@ -85,9 +85,11 @@ return [
             'visibility' => 'private',
             'throw' => true,
             'report' => true,
+            // Group-readable so PHP-FPM (www-data) and the queue worker (ubuntu:www-data)
+            // can both write uploads and complete malware scans on the same host.
             'permissions' => [
-                'file' => ['public' => 0600, 'private' => 0600],
-                'dir' => ['public' => 0700, 'private' => 0700],
+                'file' => ['public' => 0660, 'private' => 0660],
+                'dir' => ['public' => 0770, 'private' => 0770],
             ],
         ],
 

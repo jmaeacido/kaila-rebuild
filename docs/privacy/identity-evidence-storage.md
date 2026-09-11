@@ -15,7 +15,7 @@
 | Public access | Denied — disk is private; no public URL route for evidence |
 | Access | Short-lived authenticated admin preview only (`Cache-Control: private, no-store`); MFA required |
 | Encryption in transit | HTTPS/TLS at the reverse proxy |
-| Encryption at rest | Application-level encryption via Laravel `Crypt` (`IDENTITY_EVIDENCE_ENCRYPT_AT_REST=true`) plus filesystem permissions `0600`/`0700` |
+| Encryption at rest | Application-level encryption via Laravel `Crypt` (`IDENTITY_EVIDENCE_ENCRYPT_AT_REST=true`) plus filesystem permissions `0660`/`0770` (owner www-data, group www-data — shared by PHP-FPM and the queue worker) |
 | Object naming | `quarantine/{verificationId}/{uuid}.jpg` — never original filenames |
 | Quarantine | Objects start `scan_status=pending` until malware scan marks `clean` or `rejected` |
 | Backup behavior | Host backups may retain ciphertext blobs until backup expiry; deletion tombstones + `identity-evidence:replay-tombstones` must run after restore |
