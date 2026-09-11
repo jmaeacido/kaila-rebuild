@@ -20,6 +20,7 @@ import {
   Zap,
 } from "lucide-react";
 import type { LucideIcon, LucideProps } from "lucide-react";
+import { SewingMachine } from "./icons/sewing-machine";
 import styles from "./service-category-icon.module.css";
 
 const serviceCategoryIcons: Record<string, LucideIcon> = {
@@ -37,6 +38,8 @@ const serviceCategoryIcons: Record<string, LucideIcon> = {
   Heart,
   House,
   MonitorCog,
+  Scissors: SewingMachine,
+  SewingMachine,
   Smartphone,
   Snowflake,
   Sparkles,

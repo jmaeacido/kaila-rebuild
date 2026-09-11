@@ -45,6 +45,7 @@ class MarketplaceReferenceSeeder extends Seeder
         ['Photography & Videography', 'photography-videography', 'Camera'],
         ['Home Improvement', 'home-improvement', 'House'],
         ['General Handyman', 'general-handyman', 'Drill'],
+        ['Tailoring', 'tailoring', 'SewingMachine'],
         ['Other Services', 'other-services', 'Ellipsis'],
     ];
 

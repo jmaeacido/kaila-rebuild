@@ -12,7 +12,7 @@
 
 KAILA connects people who need services with trusted local independent service providers through a fast, modern, and reliable marketplace.
 
-KAILA should make hiring a plumber, beautician, electrician, cleaner, tutor, gadget technician, or any local service provider feel as easy as booking a ride.
+KAILA should make hiring a plumber, beautician, electrician, cleaner, tutor, tailor, gadget technician, or any local service provider feel as easy as booking a ride.
 
 ### Product Philosophy
 

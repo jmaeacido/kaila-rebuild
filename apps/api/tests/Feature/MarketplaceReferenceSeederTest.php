@@ -20,14 +20,19 @@ class MarketplaceReferenceSeederTest extends TestCase
 
         $this->seed(MarketplaceReferenceSeeder::class);
 
-        $this->assertSame(17, ServiceCategory::query()->count());
+        $this->assertSame(18, ServiceCategory::query()->count());
         $this->assertSame(
             ['Plumbing', 'Electrical', 'Carpentry', 'Welding', 'Aircon & Refrigeration', 'Appliance Repair',
                 'Computer & IT Services', 'Cellphone & Gadget Repair', 'Cleaning Services', 'Beauty Services',
                 'Tutoring & Education', 'Automotive Services', 'Motorcycle Services', 'Photography & Videography',
-                'Home Improvement', 'General Handyman', 'Other Services'],
+                'Home Improvement', 'General Handyman', 'Tailoring', 'Other Services'],
             ServiceCategory::query()->orderBy('sort_order')->pluck('name')->all(),
         );
+        $this->assertDatabaseHas('service_categories', [
+            'slug' => 'tailoring',
+            'icon' => 'SewingMachine',
+            'is_active' => true,
+        ]);
 
         $this->assertSame(count($payload['areas']), Area::query()->count());
         $this->assertSame($expectedByType['region'], Area::query()->where('type', 'region')->count());
@@ -70,7 +75,7 @@ class MarketplaceReferenceSeederTest extends TestCase
         $count = Area::query()->count();
         $this->seed(MarketplaceReferenceSeeder::class);
 
-        $this->assertSame(17, ServiceCategory::query()->count());
+        $this->assertSame(18, ServiceCategory::query()->count());
         $this->assertSame($count, Area::query()->count());
         $butuan = Area::query()->where('code', '1630400000')->firstOrFail();
         $this->assertSame('Agusan del Norte', Area::query()->findOrFail($butuan->parent_id)->name);
@@ -95,7 +100,7 @@ class MarketplaceReferenceSeederTest extends TestCase
 
         $this->assertDatabaseHas('service_categories', ['slug' => 'home-cleaning', 'is_active' => false]);
         $this->assertDatabaseHas('areas', ['code' => 'PH-DVO', 'is_active' => false]);
-        $this->assertSame(17, ServiceCategory::query()->where('is_active', true)->count());
+        $this->assertSame(18, ServiceCategory::query()->where('is_active', true)->count());
         $this->assertTrue(Area::query()->where('code', '1130700000')->where('is_active', true)->exists());
         $this->assertTrue(Area::query()->where('code', '0730600000')->where('is_active', true)->exists());
         $this->assertTrue(Area::query()->where('code', '1380600000')->where('is_active', true)->exists());

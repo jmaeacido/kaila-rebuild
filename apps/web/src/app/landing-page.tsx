@@ -7,7 +7,6 @@ import {
   BriefcaseBusiness,
   CheckCircle2,
   Clock3,
-  HeartHandshake,
   House,
   MapPin,
   MessageCircle,
@@ -22,6 +21,7 @@ import { Button, Feedback } from "@kaila/ui";
 import { AndroidDownloadSection } from "../components/android-download-section";
 import { BrandMark } from "../components/brand-mark";
 import { IdentityVerifiedBadge } from "../components/identity-verified-badge";
+import { ServiceCategoryIcon } from "../components/service-category-icon";
 import { ThemeToggle } from "../components/theme-toggle";
 import { SelectField } from "../components/select-field";
 import Link from "next/link";
@@ -261,16 +261,7 @@ export default function LandingPage() {
         </div>
 
         <div className={styles.categoryRail} aria-label="Popular services">
-          {categories.slice(0, 6).map((category, index) => {
-            const icons = [
-              Wrench,
-              Sparkles,
-              House,
-              UsersRound,
-              BriefcaseBusiness,
-              HeartHandshake,
-            ];
-            const Icon = icons[index % icons.length];
+          {categories.slice(0, 6).map((category) => {
             return (
               <button
                 className={
@@ -283,7 +274,7 @@ export default function LandingPage() {
                 type="button"
               >
                 <span>
-                  <Icon aria-hidden="true" />
+                  <ServiceCategoryIcon icon={category.icon ?? "Ellipsis"} aria-hidden="true" />
                 </span>
                 {category.name}
               </button>
