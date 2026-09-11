@@ -9,6 +9,10 @@ class TotpService
 {
     public function generateSecret(int $bytes = 20): string
     {
+        if ($bytes < 1) {
+            throw new RuntimeException('Secret length must be at least 1 byte.');
+        }
+
         return $this->base32Encode(random_bytes($bytes));
     }
 
@@ -70,7 +74,7 @@ class TotpService
             if (strlen($chunk) < 5) {
                 $chunk = str_pad($chunk, 5, '0', STR_PAD_RIGHT);
             }
-            $output .= $alphabet[bindec($chunk)];
+            $output .= $alphabet[$this->bitStringToInt($chunk)];
         }
 
         return $output;
@@ -94,10 +98,22 @@ class TotpService
         $output = '';
         foreach (str_split($bits, 8) as $chunk) {
             if (strlen($chunk) === 8) {
-                $output .= chr(bindec($chunk));
+                $output .= chr($this->bitStringToInt($chunk));
             }
         }
 
         return $output;
+    }
+
+    /** Convert a binary digit string (length 1–8) to an int without float intermediate. */
+    private function bitStringToInt(string $bits): int
+    {
+        $value = 0;
+        $length = strlen($bits);
+        for ($i = 0; $i < $length; $i++) {
+            $value = ($value << 1) | ($bits[$i] === '1' ? 1 : 0);
+        }
+
+        return $value;
     }
 }

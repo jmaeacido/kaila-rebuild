@@ -222,11 +222,11 @@ class IdentityVerificationController extends Controller
         ob_start();
         try {
             imagejpeg($image, null, 90);
-            $encoded = ob_get_clean();
+            $encoded = (string) ob_get_clean();
         } finally {
             imagedestroy($image);
         }
-        abort_if($encoded === false || $encoded === '', 422, 'One of the images could not be safely decoded.');
+        abort_if($encoded === '', 422, 'One of the images could not be safely decoded.');
 
         return $encoded;
     }

@@ -112,6 +112,9 @@ class SeparateProviderAvatars extends Command
         $extension = pathinfo($source->object_key, PATHINFO_EXTENSION) ?: 'bin';
         $key = "profiles/{$source->user_id}/provider_avatar/{$id}.{$extension}";
         $contents = Storage::disk($source->disk)->get($source->object_key);
+        if ($contents === null) {
+            throw new \RuntimeException("Failed to read file: {$source->object_key}");
+        }
         Storage::disk($source->disk)->put($key, $contents);
 
         return ProfileAsset::query()->create([

@@ -87,7 +87,7 @@ class AdminUserDossierPresenter
             'reviewedAt' => $profile->reviewed_at?->toIso8601String(),
             'reviewNote' => $profile->review_note,
             'reviewedBy' => $profile->reviewed_by
-                ? ['id' => (string) $profile->reviewed_by, 'name' => $profile->reviewer?->name ?? 'Unknown reviewer']
+                ? ['id' => (string) $profile->reviewed_by, 'name' => $profile->reviewer->name ?? 'Unknown reviewer']
                 : null,
             'avatarUrl' => $this->avatars->providerUrl((int) $profile->user_id, fallbackToClient: false),
         ];
@@ -139,13 +139,13 @@ class AdminUserDossierPresenter
                 ->map(fn (ServiceJob $job) => $this->jobRow($job, 'provider'));
         }
 
-        return $clientJobs
+        return array_values($clientJobs
             ->concat($providerJobs)
             ->unique('id')
             ->sortByDesc(fn (array $row) => $row['updatedAt'] ?? $row['postedAt'] ?? '')
             ->take(10)
             ->values()
-            ->all();
+            ->all());
     }
 
     /** @return array<string, mixed> */
@@ -281,11 +281,11 @@ class AdminUserDossierPresenter
             ]);
         }
 
-        return $items
+        return array_values($items
             ->sortByDesc('at')
             ->unique('id')
             ->take(20)
             ->values()
-            ->all();
+            ->all());
     }
 }

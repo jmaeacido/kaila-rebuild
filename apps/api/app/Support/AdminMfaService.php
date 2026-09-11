@@ -21,12 +21,12 @@ class AdminMfaService
     public function isSessionVerified(Request $request): bool
     {
         $verifiedAt = $request->session()->get(self::SESSION_VERIFIED_AT);
-        if (! is_numeric($verifiedAt) && ! is_string($verifiedAt)) {
+        if (! is_numeric($verifiedAt)) {
             return false;
         }
         $expiresMinutes = (int) config('identity_verification.mfa_session_minutes', 60);
 
-        return now()->timestamp - (int) $verifiedAt < ($expiresMinutes * 60);
+        return now()->getTimestamp() - (int) $verifiedAt < ($expiresMinutes * 60);
     }
 
     public function markSessionVerified(Request $request): void
@@ -39,6 +39,9 @@ class AdminMfaService
         $request->session()->forget([self::SESSION_VERIFIED_AT, self::SESSION_PENDING_SECRET]);
     }
 
+    /**
+     * @return array{secret: string, otpauthUrl: string, configured: bool}
+     */
     public function beginSetup(User $user, Request $request): array
     {
         $secret = $this->totp->generateSecret();
@@ -76,11 +79,12 @@ class AdminMfaService
         $secret = decrypt((string) $user->mfa_secret);
         $ok = $this->totp->verify($secret, $code);
         if (! $ok) {
-            $codes = $user->mfa_recovery_codes ?? [];
+            $rawCodes = $user->mfa_recovery_codes;
+            $codes = is_array($rawCodes) ? $rawCodes : [];
             $hash = hash('sha256', strtoupper(preg_replace('/\s+/', '', $code) ?? ''));
             $remaining = [];
             foreach ($codes as $stored) {
-                if (! $ok && hash_equals((string) $stored, $hash)) {
+                if (! $ok && hash_equals($stored, $hash)) {
                     $ok = true;
 
                     continue;

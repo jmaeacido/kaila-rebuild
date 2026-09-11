@@ -11,7 +11,13 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property string|null $mfa_secret
+ * @property list<string>|null $mfa_recovery_codes
+ * @property Carbon|null $mfa_confirmed_at
+ */
 #[Fillable([
     'legacy_id',
     'name',
