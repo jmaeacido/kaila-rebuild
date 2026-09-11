@@ -140,5 +140,14 @@ class AppServiceProvider extends ServiceProvider
 
             return [Limit::perMinute(10)->by(hash('sha256', $userId.'|'.$request->ip())), Limit::perHour(30)->by($userId ?: $request->ip())];
         });
+
+        RateLimiter::for('android-test-request', function (Request $request) {
+            $email = Str::lower((string) $request->input('email'));
+
+            return [
+                Limit::perHour(5)->by(hash('sha256', $email.'|'.$request->ip())),
+                Limit::perHour(10)->by($request->ip()),
+            ];
+        });
     }
 }

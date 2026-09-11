@@ -150,7 +150,7 @@ export default function LandingPage() {
         <nav className={styles.primaryNav} aria-label="Main navigation">
           <a href="#find-help">Find help</a>
           <a href="#how-it-works">How it works</a>
-          <a href="#download">Download</a>
+          <a href="#download">Get the app</a>
           <Link href="/community">Community</Link>
         </nav>
         <div className={styles.headerActions}>
@@ -439,7 +439,7 @@ export default function LandingPage() {
         <p>Nearby help, made simple.</p>
         <nav aria-label="Footer navigation">
           <Link href="/community">Community</Link>
-          <Link href="/download">Download</Link>
+          <Link href="/download">Get the app</Link>
           <Link href="/faqs">FAQs</Link>
           <Link href="/privacy">Privacy</Link>
           <Link href="/terms">Terms</Link>

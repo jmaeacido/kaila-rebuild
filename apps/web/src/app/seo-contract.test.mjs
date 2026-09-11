@@ -74,7 +74,7 @@ test("search and AI crawlers can read public truth without reaching private work
   assert.doesNotMatch(robots, /"\/account-deletion"/);
   assert.doesNotMatch(robots, /\ballow: \[/);
   assert.match(llms, /Community feed/);
-  assert.match(llms, /Download KAILA for Android/);
+  assert.match(llms, /Request KAILA Android early access/);
   assert.match(llms, /KAILA is a marketplace platform, not a provider/);
   assert.doesNotMatch(llms, /\/jobs\//);
   assert.doesNotMatch(llms, /\/messages\//);

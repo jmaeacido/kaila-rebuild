@@ -74,6 +74,15 @@ KAILA accounts also receive a durable **in-app inbox** invitation
 (`ops.android_test_invite`) that opens `/android-test` in the consumer app.
 Pasted emails without an account receive email only.
 
+### Public early-access requests
+
+The marketing `#download` / `/download` form posts to
+`POST /api/v1/public/android-internal-test-requests` (throttled). That queues a
+KAILA-branded message **to** `support@kaila-app.com` with the requester’s name,
+Google account email, optional note, and Reply-To set to the requester. It does
+**not** auto-invite on Play Console—invite them from Admin → People after review.
+See ADR-0067.
+
 API env (optional overrides; defaults match production Play internal testing):
 
 ```env

@@ -9,7 +9,7 @@ KAILA is the official local services marketplace app for the Philippines. Client
 ## Public pages
 
 - [KAILA home](${SITE_URL}/): Official marketplace overview, services, client flow, and provider flow.
-- [Download KAILA for Android](${SITE_URL}/download): Install the official KAILA Android app.
+- [Request KAILA Android early access](${SITE_URL}/download): Request a Google Play internal-testing invite for the KAILA Android app.
 - [Frequently asked questions](${SITE_URL}/faqs): Authoritative answers about jobs, offers, providers, coverage, travel, safety, notifications, and support.
 - [Community feed](${SITE_URL}/community): Public local tips, service questions, work stories, and official updates from the KAILA community.
 - [Privacy policy](${SITE_URL}/privacy): Data collection, location, navigation, messages, media, retention, and user choices.

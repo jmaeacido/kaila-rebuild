@@ -12,6 +12,7 @@ use App\Http\Controllers\AdminPhaseNineController;
 use App\Http\Controllers\AdminReportController;
 use App\Http\Controllers\AdminSupportCaseController;
 use App\Http\Controllers\AdminUserController;
+use App\Http\Controllers\AndroidInternalTestRequestController;
 use App\Http\Controllers\AppearanceController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\MobileSessionController;
@@ -67,6 +68,10 @@ Route::get('/public/community', [PublicCommunityController::class, 'index']);
 Route::get('/public/community/feed', [PublicCommunityController::class, 'feed']);
 Route::get('/public/community/{communityPost}', [PublicCommunityController::class, 'show']);
 Route::get('/public/community-media/{communityPostMedia}', [PublicCommunityController::class, 'showMedia']);
+Route::middleware('throttle:android-test-request')->post(
+    '/public/android-internal-test-requests',
+    [AndroidInternalTestRequestController::class, 'store'],
+);
 Route::middleware('throttle:login')->post('/auth/login', [AuthenticatedSessionController::class, 'store']);
 Route::middleware('throttle:login')->get('/auth/social/{provider}/redirect', [SocialAuthenticationController::class, 'redirect']);
 Route::get('/auth/social/{provider}/callback', [SocialAuthenticationController::class, 'callback']);

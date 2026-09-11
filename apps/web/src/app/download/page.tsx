@@ -8,9 +8,9 @@ import { publicPageMetadata, safeJsonLd } from "../seo";
 import styles from "./page.module.css";
 
 export const metadata: Metadata = publicPageMetadata({
-  title: "Download KAILA for Android",
+  title: "Request KAILA Android early access",
   description:
-    "Install the official KAILA Android app to post jobs, compare local provider offers, and manage service work in the Philippines.",
+    "Request early access to the KAILA Android app on Google Play internal testing. We’ll invite your Google account so you can install from Play.",
   path: "/download",
 });
 
