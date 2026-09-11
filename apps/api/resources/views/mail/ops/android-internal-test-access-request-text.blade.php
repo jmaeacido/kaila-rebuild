@@ -1,6 +1,6 @@
 New Android early access request
 
-Someone requested early access to KAILA's Android internal testing on Google Play.
+Someone requested early access to KAILA's Android closed testing on Google Play.
 
 Name: {{ $requesterName }}
 Google account email: {{ $requesterEmail }}
@@ -14,6 +14,6 @@ Review and invite them from Admin → Early access.
 Reply to this message to contact the requester directly.
 
 Early access queue: {{ $adminEarlyAccessUrl }}
-Play internal testing: {{ $playTestUrl }}
+Play closed testing: {{ $playTestUrl }}
 
 KAILA — Nearby help, made simple.

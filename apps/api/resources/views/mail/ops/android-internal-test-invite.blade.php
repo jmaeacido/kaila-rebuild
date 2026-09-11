@@ -1,15 +1,22 @@
 <x-mail.layout
     action-label="Become a tester"
     :action-url="$testUrl"
-    eyebrow="Android internal testing"
-    preheader="You’re invited to participate in KAILA’s internal testing on Android."
-    title="You’re invited to test KAILA"
+    eyebrow="Android closed testing"
+    :preheader="$isCorrection
+        ? 'Please use this corrected link to join KAILA’s closed test on Android.'
+        : 'You’re invited to participate in KAILA’s closed testing on Android.'"
+    :title="$isCorrection ? 'Correction: Android testing link' : 'You’re invited to test KAILA'"
 >
     <p style="margin:0 0 16px;">
         Hi {{ $name !== '' ? $name : 'there' }},
     </p>
     <p style="margin:0 0 16px;">
-        You’re invited to participate in KAILA’s internal testing on Android.
+        @if ($isCorrection)
+            Our earlier invitation included the wrong Google Play testing link. We’re sorry for the confusion.
+            Please use the corrected link below to join KAILA’s closed test.
+        @else
+            You’re invited to participate in KAILA’s closed testing on Android.
+        @endif
     </p>
     <p style="margin:0 0 16px;">
         Please open the link below using the Google account associated with this email address.

@@ -12,7 +12,7 @@ class BrandedAndroidInternalTestInviteTest extends TestCase
     public function test_it_renders_the_android_internal_test_invite(): void
     {
         config([
-            'kaila.android_internal_test_url' => 'https://play.google.com/apps/internaltest/example',
+            'kaila.android_internal_test_url' => 'https://play.google.com/apps/testing/com.kaila.marketplace',
             'kaila.founder_name' => 'John Mark Agustin E. Acido',
             'kaila.founder_title' => 'KAILA Founder',
         ]);
@@ -28,7 +28,8 @@ class BrandedAndroidInternalTestInviteTest extends TestCase
         $html = $mail->render();
         $this->assertStringContainsString('Hi Arlene', $html);
         $this->assertStringContainsString('Become a tester', $html);
-        $this->assertStringContainsString('https://play.google.com/apps/internaltest/example', $html);
+        $this->assertStringContainsString('closed testing', $html);
+        $this->assertStringContainsString('https://play.google.com/apps/testing/com.kaila.marketplace', $html);
         $this->assertStringContainsString('John Mark Agustin E. Acido', $html);
         $this->assertStringContainsString('KAILA Founder', $html);
     }
@@ -38,5 +39,20 @@ class BrandedAndroidInternalTestInviteTest extends TestCase
         $this->assertSame('', BrandedAndroidInternalTestInvite::firstName(null));
         $this->assertSame('', BrandedAndroidInternalTestInvite::firstName('   '));
         $this->assertSame('Arlene', BrandedAndroidInternalTestInvite::firstName('Arlene Santos'));
+    }
+
+    public function test_it_renders_a_correction_for_an_earlier_bad_link(): void
+    {
+        config([
+            'kaila.android_internal_test_url' => 'https://play.google.com/apps/testing/com.kaila.marketplace',
+        ]);
+
+        $user = new User(['name' => 'Arlene Santos', 'email' => 'arlene@example.test']);
+        $mail = (new BrandedAndroidInternalTestInvite($user->name, true))->toMail($user);
+
+        $this->assertSame('Correction: KAILA Android testing link', $mail->subject);
+        $html = $mail->render();
+        $this->assertStringContainsString('earlier invitation included the wrong', $html);
+        $this->assertStringContainsString('https://play.google.com/apps/testing/com.kaila.marketplace', $html);
     }
 }

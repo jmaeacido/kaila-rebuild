@@ -18,7 +18,7 @@ export default function AndroidTestInvitePage() {
         <p className={styles.eyebrow}>KAILA invitation</p>
         <h1 id="android-test-title">You’re invited to test KAILA on Android</h1>
         <p>
-          KAILA invited you to join our Android internal testing on Google Play. Open the link with the Google account
+          KAILA invited you to join our Android closed testing on Google Play. Open the link with the Google account
           for your KAILA email, choose Become a tester, then download and install KAILA.
         </p>
         <p className={styles.hint}>Your feedback helps us catch issues before public release.</p>

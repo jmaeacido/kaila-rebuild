@@ -376,8 +376,30 @@
   }
 
   .viewer {
+    max-height: calc(100dvh - var(--spacing-16));
     max-width: calc(100vw - var(--spacing-16));
     padding: var(--spacing-8);
+  }
+
+  .viewerPanel {
+    grid-template-rows: auto;
+    max-height: calc(100dvh - var(--spacing-32));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .viewerGrid {
+    grid-auto-rows: max-content;
+    overflow: visible;
+    padding-right: 0;
+  }
+
+  .viewerFigure {
+    align-self: start;
+  }
+
+  .viewerFigure img {
+    max-height: none;
   }
 
   .mfaSetupGrid {

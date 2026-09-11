@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 
 const page = readFileSync(new URL("./page.tsx", import.meta.url), "utf8");
+const identityStyles = readFileSync(new URL("./identity-verifications/page.module.css", import.meta.url), "utf8");
 
 test("file rejection uses the branded accessible dialog", () => {
   assert.doesNotMatch(page, /window\.confirm/);
@@ -28,4 +29,10 @@ test("provider and credential reviews expose complete cards and histories", () =
   assert.match(page, /Changes in this submission/);
   assert.match(page, /provider\.changes\.map/);
   assert.match(page, /Profile update/);
+});
+
+test("identity attachment previews remain fully visible in the mobile dialog", () => {
+  assert.match(identityStyles, /@media \(max-width: 48rem\)[\s\S]*\.viewerPanel\s*\{[\s\S]*overflow-y:\s*auto/);
+  assert.match(identityStyles, /@media \(max-width: 48rem\)[\s\S]*\.viewerGrid\s*\{[\s\S]*grid-auto-rows:\s*max-content/);
+  assert.match(identityStyles, /@media \(max-width: 48rem\)[\s\S]*\.viewerFigure img\s*\{[\s\S]*max-height:\s*none/);
 });

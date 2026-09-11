@@ -64,9 +64,9 @@ php artisan mail:test you@example.com
 The command sends the same KAILA-branded HTML and plain-text layout used by
 production notifications. Check Resend → **Emails** for delivery status.
 
-## Android internal-test invites (Admin)
+## Android closed-test invites (Admin)
 
-Admins and super admins can send the typed Android internal-test invite from
+Admins and super admins can send the typed Android closed-test invite from
 **Admin → People**:
 
 1. Select accounts and/or open **Send Android test invite**.
@@ -91,10 +91,10 @@ It does **not** auto-invite on Play Console. Review and invite from
 **Admin → Early access** (`/early-access`), or from People bulk invite.
 See ADR-0067 and ADR-0069.
 
-API env (optional overrides; defaults match production Play internal testing):
+API env (optional overrides; defaults match the Play closed-testing opt-in page):
 
 ```env
-ANDROID_INTERNAL_TEST_URL=https://play.google.com/apps/internaltest/4701403150708602285
+ANDROID_INTERNAL_TEST_URL=https://play.google.com/apps/testing/com.kaila.marketplace
 KAILA_FOUNDER_NAME="John Mark Agustin E. Acido"
 KAILA_FOUNDER_TITLE="KAILA Founder"
 ```
@@ -102,7 +102,7 @@ KAILA_FOUNDER_TITLE="KAILA Founder"
 Consumer web may override the in-app CTA with:
 
 ```env
-NEXT_PUBLIC_ANDROID_INTERNAL_TEST_URL=https://play.google.com/apps/internaltest/4701403150708602285
+NEXT_PUBLIC_ANDROID_INTERNAL_TEST_URL=https://play.google.com/apps/testing/com.kaila.marketplace
 ```
 
 Endpoint: `POST /api/v1/admin/marketplace/mail/android-internal-test` with

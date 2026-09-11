@@ -17,17 +17,17 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Android Play internal testing
+    | Android Play closed testing
     |--------------------------------------------------------------------------
     |
     | Used by the Admin “Send Android test invite” branded email. Keep the
-    | Play Console internal-test URL here so copy stays consistent.
+    | Play Console closed-test opt-in URL here so copy stays consistent.
     |
     */
 
     'android_internal_test_url' => env(
         'ANDROID_INTERNAL_TEST_URL',
-        'https://play.google.com/apps/internaltest/4701403150708602285',
+        'https://play.google.com/apps/testing/com.kaila.marketplace',
     ),
 
     'founder_name' => env('KAILA_FOUNDER_NAME', 'John Mark Agustin E. Acido'),

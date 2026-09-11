@@ -176,7 +176,7 @@ test("android internal-test invites open the in-app invite screen", () => {
     data: {
       type: "ops",
       eventType: "ops.android_test_invite",
-      playTestUrl: "https://play.google.com/apps/internaltest/example",
+      playTestUrl: "https://play.google.com/apps/testing/com.kaila.marketplace",
     },
     readAt: null,
     createdAt: new Date().toISOString(),

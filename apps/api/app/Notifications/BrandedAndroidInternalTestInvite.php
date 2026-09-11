@@ -14,6 +14,7 @@ class BrandedAndroidInternalTestInvite extends Notification implements ShouldQue
 
     public function __construct(
         private readonly ?string $recipientName = null,
+        private readonly bool $isCorrection = false,
     ) {
         $this->afterCommit();
     }
@@ -36,10 +37,13 @@ class BrandedAndroidInternalTestInvite extends Notification implements ShouldQue
             'testUrl' => (string) config('kaila.android_internal_test_url'),
             'founderName' => (string) config('kaila.founder_name'),
             'founderTitle' => (string) config('kaila.founder_title'),
+            'isCorrection' => $this->isCorrection,
         ];
 
         return (new MailMessage)
-            ->subject("You're invited to test KAILA on Android")
+            ->subject($this->isCorrection
+                ? 'Correction: KAILA Android testing link'
+                : "You're invited to test KAILA on Android")
             ->view('mail.ops.android-internal-test-invite', $data)
             ->text('mail.ops.android-internal-test-invite-text', $data);
     }

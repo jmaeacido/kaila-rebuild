@@ -1,8 +1,12 @@
-You're invited to test KAILA on Android
+{{ $isCorrection ? 'Correction: KAILA Android testing link' : "You're invited to test KAILA on Android" }}
 
 Hi {{ $name !== '' ? $name : 'there' }},
 
-You're invited to participate in KAILA's internal testing on Android.
+@if ($isCorrection)
+Our earlier invitation included the wrong Google Play testing link. We're sorry for the confusion. Please use the corrected link below to join KAILA's closed test.
+@else
+You're invited to participate in KAILA's closed testing on Android.
+@endif
 
 Please open the link below using the Google account associated with this email address:
 

@@ -13,7 +13,7 @@ class BrandedAndroidInternalTestAccessRequestTest extends TestCase
     {
         config([
             'app.admin_url' => 'https://admin.kaila-app.com',
-            'kaila.android_internal_test_url' => 'https://play.google.com/apps/internaltest/example',
+            'kaila.android_internal_test_url' => 'https://play.google.com/apps/testing/com.kaila.marketplace',
         ]);
 
         $notification = new BrandedAndroidInternalTestAccessRequest(
@@ -37,7 +37,8 @@ class BrandedAndroidInternalTestAccessRequestTest extends TestCase
         $this->assertStringContainsString('Happy to test provider flows.', $html);
         $this->assertStringContainsString('Open Early Access queue', $html);
         $this->assertStringContainsString('https://admin.kaila-app.com/early-access?request=req-123', $html);
-        $this->assertStringContainsString('https://play.google.com/apps/internaltest/example', $html);
+        $this->assertStringContainsString('closed testing', $html);
+        $this->assertStringContainsString('https://play.google.com/apps/testing/com.kaila.marketplace', $html);
         $this->assertStringContainsString('kaila-bull-app-icon-v2.png', $html);
         $this->assertStringContainsString('kaila-wordmark.png', $html);
     }
