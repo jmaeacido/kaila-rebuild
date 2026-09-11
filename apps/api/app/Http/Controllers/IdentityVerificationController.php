@@ -10,6 +10,8 @@ use App\Models\IdentityVerificationSession;
 use App\Models\User;
 use App\Support\AdminNotificationService;
 use App\Support\AuditRecorder;
+use App\Support\IdentityEvidenceCipher;
+use App\Support\IdentityImageValidator;
 use App\Support\IdentityVerificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -25,6 +27,8 @@ class IdentityVerificationController extends Controller
         private readonly IdentityVerificationService $service,
         private readonly AuditRecorder $audit,
         private readonly AdminNotificationService $adminNotifications,
+        private readonly IdentityImageValidator $images,
+        private readonly IdentityEvidenceCipher $cipher,
     ) {}
 
     public function show(Request $request): JsonResponse
@@ -34,15 +38,18 @@ class IdentityVerificationController extends Controller
 
     public function consent(Request $request): JsonResponse
     {
-        abort_unless(config('identity_verification.capture_enabled'), 503, 'Identity verification is not available yet.');
+        $user = $this->user($request);
+        $this->service->assertCaptureReady();
+        abort_unless($this->service->captureAvailableFor($user), 503, 'Identity verification is not available for this account yet.');
         $data = $request->validate([
             'noticeVersion' => ['required', Rule::in([(string) config('identity_verification.notice_version')])],
+            'consentVersion' => ['required', Rule::in([(string) config('identity_verification.consent_version')])],
             'privacyPolicyVersion' => ['required', Rule::in([(string) config('identity_verification.privacy_policy_version')])],
             'purpose' => ['required', Rule::in(['identity_verification'])],
+            'purposeStatement' => ['required', Rule::in([(string) config('identity_verification.purpose_statement')])],
             'trigger' => ['required', Rule::in(['post_first_job', 'activate_provider', 'account_settings'])],
             'consented' => ['required', 'accepted'],
         ]);
-        $user = $this->user($request);
         abort_if($this->service->approved($user), 409, 'Your identity is already verified.');
         $plainToken = Str::random(64);
 
@@ -51,62 +58,99 @@ class IdentityVerificationController extends Controller
             abort_if(in_array($verification->status, ['submitted', 'in_review'], true), 409, 'Your identity check is already in review.');
             $consent = IdentityVerificationConsent::query()->create([
                 'identity_verification_id' => $verification->id, 'user_id' => $user->id,
-                'notice_version' => $data['noticeVersion'], 'privacy_policy_version' => $data['privacyPolicyVersion'],
-                'purpose' => $data['purpose'], 'trigger' => $data['trigger'],
-                'request_id' => $request->attributes->get('requestId') ?? (string) Str::uuid(), 'consented_at' => now(),
+                'notice_version' => $data['noticeVersion'],
+                'consent_version' => $data['consentVersion'],
+                'privacy_policy_version' => $data['privacyPolicyVersion'],
+                'purpose' => $data['purpose'],
+                'purpose_statement' => $data['purposeStatement'],
+                'trigger' => $data['trigger'],
+                'request_id' => $request->attributes->get('requestId') ?? (string) Str::uuid(),
+                'consented_at' => now(),
             ]);
             $session = IdentityVerificationSession::query()->create([
                 'identity_verification_id' => $verification->id, 'consent_id' => $consent->id,
                 'token_hash' => hash('sha256', $plainToken), 'expires_at' => now()->addMinutes(30),
             ]);
-            $verification->update(['status' => 'capturing', 'consent_withdrawn_at' => null]);
-            $this->audit->record($request, 'identity.consent_given', $user, 'identity_verification', $verification->id, ['noticeVersion' => $data['noticeVersion'], 'trigger' => $data['trigger']]);
+            $verification->update([
+                'status' => 'capturing',
+                'consent_withdrawn_at' => null,
+                'consent_purpose' => $data['purposeStatement'],
+                'consent_version' => $data['consentVersion'],
+            ]);
+            $this->audit->record($request, 'identity.consent_given', $user, 'identity_verification', $verification->id, [
+                'noticeVersion' => $data['noticeVersion'],
+                'consentVersion' => $data['consentVersion'],
+                'trigger' => $data['trigger'],
+            ]);
 
             return [$verification, $session];
         });
 
-        return response()->json(['data' => ['sessionId' => $session->id, 'uploadToken' => $plainToken, 'expiresAt' => Carbon::parse($session->expires_at)->toIso8601String(), 'verificationId' => $verification->id]], 201);
+        return response()->json(['data' => [
+            'sessionId' => $session->id,
+            'uploadToken' => $plainToken,
+            'expiresAt' => Carbon::parse($session->expires_at)->toIso8601String(),
+            'verificationId' => $verification->id,
+        ]], 201);
     }
 
     public function submit(Request $request): JsonResponse
     {
-        abort_unless(config('identity_verification.capture_enabled'), 503, 'Identity verification is not available yet.');
+        $user = $this->user($request);
+        $this->service->assertCaptureReady();
+        abort_unless($this->service->captureAvailableFor($user), 503, 'Identity verification is not available for this account yet.');
         $max = (int) config('identity_verification.max_upload_kilobytes');
         $data = $request->validate([
             'sessionId' => ['required', 'uuid'], 'uploadToken' => ['required', 'string', 'size:64'],
             'idType' => ['required', Rule::in(['philid', 'passport', 'drivers_license', 'umid', 'postal_id', 'prc_id', 'sss_id', 'gsis_id', 'philhealth_id', 'voters_id', 'senior_citizen_id', 'pwd_id', 'ofw_id', 'seamans_book'])],
             'issuingCountry' => ['required', Rule::in(['PH'])], 'documentExpiresAt' => ['nullable', 'date', 'after:today'],
-            'idFront' => ['required', 'file', 'image', "max:{$max}"], 'idBack' => ['nullable', 'file', 'image', "max:{$max}"],
-            'selfie' => ['required', 'file', 'image', "max:{$max}"], 'selfieCapturedNow' => ['required', 'accepted'],
+            'idFront' => ['required', 'file', "max:{$max}"], 'idBack' => ['nullable', 'file', "max:{$max}"],
+            'selfie' => ['required', 'file', "max:{$max}"], 'selfieCapturedNow' => ['required', 'accepted'],
         ]);
-        $user = $this->user($request);
         $session = IdentityVerificationSession::query()->whereKey($data['sessionId'])->lockForUpdate()->firstOrFail();
         abort_unless(hash_equals($session->token_hash, hash('sha256', $data['uploadToken'])), 403, 'This verification session is invalid.');
         abort_if($session->used_at !== null || Carbon::parse($session->expires_at)->isPast(), 409, 'This verification session has expired.');
         $verification = IdentityVerification::query()->whereKey($session->identity_verification_id)->where('user_id', $user->id)->firstOrFail();
         $disk = (string) config('identity_verification.disk');
+        $encrypt = (bool) config('identity_verification.encrypt_at_rest', true);
         $stored = [];
         try {
             foreach (['id_front' => 'idFront', 'id_back' => 'idBack', 'selfie' => 'selfie'] as $kind => $field) {
                 if (! $request->hasFile($field)) {
                     continue;
                 }
-                $upload = $request->file($field);
-                $source = file_get_contents($upload->getRealPath());
-                abort_if($source === false, 422, 'One of the images could not be safely decoded.');
-                $bytes = $this->normalizedJpeg($source);
+                $validated = $this->images->validateAndRead($request->file($field), $max);
+                $bytes = $this->normalizedJpeg($validated['bytes']);
                 $key = "quarantine/{$verification->id}/".Str::uuid().'.jpg';
-                Storage::disk($disk)->put($key, $bytes);
+                $payload = $encrypt ? $this->cipher->encrypt($bytes) : $bytes;
+                Storage::disk($disk)->put($key, $payload);
                 $stored[] = IdentityEvidence::query()->create([
-                    'identity_verification_id' => $verification->id, 'session_id' => $session->id, 'kind' => $kind, 'disk' => $disk,
-                    'object_key' => $key, 'mime_type' => 'image/jpeg', 'size_bytes' => strlen($bytes),
-                    'sha256' => hash('sha256', $bytes), 'scan_status' => 'pending', 'purge_after' => now()->addHours((int) config('identity_verification.abandoned_hours')),
+                    'identity_verification_id' => $verification->id,
+                    'session_id' => $session->id,
+                    'kind' => $kind,
+                    'disk' => $disk,
+                    'encrypted_at_rest' => $encrypt,
+                    'object_key' => $key,
+                    'mime_type' => 'image/jpeg',
+                    'size_bytes' => strlen($bytes),
+                    'sha256' => hash('sha256', $bytes),
+                    'scan_status' => 'pending',
+                    'purge_after' => now()->addHours((int) config('identity_verification.abandoned_hours')),
                 ]);
             }
-            DB::transaction(function () use ($session, $verification, $data, $request, $user): void {
+            DB::transaction(function () use ($session, $verification, $data, $request, $user, $stored): void {
                 $session->update(['used_at' => now()]);
-                $verification->update(['status' => 'submitted', 'id_type' => $data['idType'], 'issuing_country' => $data['issuingCountry'], 'document_expires_at' => $data['documentExpiresAt'] ?? null, 'submitted_at' => now(), 'decision_reason' => null]);
-                $this->audit->record($request, 'identity.evidence_submitted', $user, 'identity_verification', $verification->id, ['evidenceCount' => count($verification->evidence()->get())]);
+                $verification->update([
+                    'status' => 'submitted',
+                    'id_type' => $data['idType'],
+                    'issuing_country' => $data['issuingCountry'],
+                    'document_expires_at' => $data['documentExpiresAt'] ?? null,
+                    'submitted_at' => now(),
+                    'decision_reason' => null,
+                ]);
+                $this->audit->record($request, 'identity.evidence_submitted', $user, 'identity_verification', $verification->id, [
+                    'evidenceCount' => count($stored),
+                ]);
             });
         } catch (\Throwable $exception) {
             foreach ($stored as $evidence) {
@@ -156,7 +200,7 @@ class IdentityVerificationController extends Controller
         $verification = $user->identityVerification()->firstOrFail();
         $verification->update(['status' => 'withdrawn', 'consent_withdrawn_at' => now()]);
         $verification->consents()->whereNull('withdrawn_at')->update(['withdrawn_at' => now()]);
-        $verification->evidence()->whereNull('purged_at')->update(['purge_after' => now()]);
+        $verification->evidence()->whereNull('purged_at')->whereNull('legal_hold_at')->update(['purge_after' => now()]);
         $this->audit->record($request, 'identity.consent_withdrawn', $user, 'identity_verification', $verification->id);
 
         return response()->json(['data' => $this->service->status($user)]);
@@ -182,7 +226,7 @@ class IdentityVerificationController extends Controller
         } finally {
             imagedestroy($image);
         }
-        abort_if($encoded === '', 422, 'One of the images could not be safely decoded.');
+        abort_if($encoded === false || $encoded === '', 422, 'One of the images could not be safely decoded.');
 
         return $encoded;
     }

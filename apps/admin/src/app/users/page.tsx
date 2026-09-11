@@ -766,7 +766,7 @@ export default function UsersDirectoryPage() {
                   <th scope="col">Status</th>
                   <th scope="col">Registered</th>
                   <th scope="col">Last activity</th>
-                  <th scope="col">Actions</th>
+                  <th scope="col" className={styles.actionsCell}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -795,7 +795,7 @@ export default function UsersDirectoryPage() {
                     <td className={styles.dateCell} title={formatExactDate(account.lastActiveAt)}>
                       {formatDate(account.lastActiveAt, "Never")}
                     </td>
-                    <td>{renderActions(account)}</td>
+                    <td className={styles.actionsCell}>{renderActions(account)}</td>
                   </tr>
                 ))}
               </tbody>

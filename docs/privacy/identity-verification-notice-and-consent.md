@@ -2,12 +2,18 @@
 
 | Field | Value |
 | --- | --- |
-| Status | Draft — not approved for production |
-| Owner | KAILA DPO and product content owner |
-| Version identifier | `identity-verification-1.0` |
-| Requires | Approved compliance pack, corporate PIC details, processor details, translations, and counsel review |
+| Status | Finalized for English — 2026-09-11 (v1.1 purpose statement) |
+| Owner | DPO and product content owner — John Mark Agustin Estrosos Acido |
+| Version identifier | `identity-verification-1.1` |
+| Consent version | `identity-consent-1.1` |
+| Privacy policy version bound at consent | `2026-09-11` |
+| Purpose statement | To verify account identity, prevent and investigate fraud or impersonation, resolve platform disputes, enforce KAILA’s terms, and respond to valid legal requests. |
+| PIC | John Mark Agustin Estrosos Acido, an individual operating the KAILA platform |
+| DPO contact | privacy@kaila-app.com (also reachable via Support) |
 
 This copy is separate from the Terms and general Privacy Policy. The application must store the exact notice and consent version accepted by the user. Consent controls must be unticked by default and must not be bundled with marketing or unrelated processing.
+
+**Organizational disclosure.** KAILA is operated by one person. Reviewers and the DPO are the same operator until additional staff are engaged. That is a self-operated control, not an independent assurance.
 
 ## Gate shown to a client
 
@@ -42,7 +48,7 @@ You can continue using client features that do not require verification, but you
 
 ### Why we need it
 
-An authorized KAILA reviewer will compare the ID and selfie, check that the ID appears valid and unexpired, and confirm that the account holder is at least 18. We use this information only for identity verification, fraud and safety investigations, appeals, and related legal claims.
+An authorized KAILA reviewer will compare the ID and selfie, check that the ID appears valid and unexpired, and confirm that the account holder is at least 18. Purpose: **To verify account identity, prevent and investigate fraud or impersonation, resolve platform disputes, enforce KAILA’s terms, and respond to valid legal requests.** We do not use this information for advertising, profiling for marketing, or unrelated purposes.
 
 The initial verification process does not use automated facial recognition or create a facial template. KAILA does not sell this information or use it for advertising or AI training.
 
@@ -50,17 +56,23 @@ The initial verification process does not use automated facial recognition or cr
 
 Only assigned, trained KAILA verification or privacy/safety reviewers can view a protected, audited preview. Other users see only whether your identity is verified. They never see your ID, selfie, ID number, birth date, or address.
 
-Before production release, replace this paragraph with the legal name and address of KAILA as Personal Information Controller, its DPO contact details, every identity-verification processor, processing country, and recipient category. If there is no processor, say that verification is performed by authorized KAILA personnel using KAILA-controlled systems.
+**Personal Information Controller (PIC):** John Mark Agustin Estrosos Acido, an individual operating the KAILA platform (Philippines). KAILA is not yet a separately registered company.
+
+**Data Protection Officer / privacy contact:** privacy@kaila-app.com. You may also open an in-app Support request at `/support/new` or email support@kaila-app.com.
+
+Verification is performed by authorized KAILA personnel using KAILA-controlled systems. There is currently **no** identity-verification processor or external facial-matching vendor.
+
+Processing country: Philippines (application and evidence hosts under the operator’s control). Recipients: the operator acting as reviewer/DPO; infrastructure providers that host encrypted storage and transport (they are not authorized to use identity evidence for their own purposes).
 
 ### How long we keep it
 
-Unsubmitted captures are deleted within 24 hours. After a final decision, raw ID and selfie images are normally deleted within 30 days after approval or, for a rejection, within 30 days after the appeal window closes. They may be kept longer only for an active appeal, documented fraud or safety investigation, legal claim, or legal hold. A minimized consent, decision, and audit record is kept while your account is open and normally for two years after it closes.
+Unsubmitted captures are deleted within 24 hours. After a final decision, raw ID and selfie images are normally deleted within 30 days after approval or, for a rejection, within 30 days after the appeal window closes (or within 60 days after decision if no appeal). They may be kept longer only for an active appeal, documented fraud or safety investigation, legal claim, or legal hold. A minimized consent, decision, and audit record is kept while your account is open and normally for two years after it closes.
 
 ### Your choices and rights
 
-Verification is optional for registration and browsing, but it is required before posting a job or activating provider mode. If you do not consent, those actions remain unavailable. You may withdraw consent or ask about access, correction, objection, blocking/erasure, or portability through **[insert in-app privacy request path]** or **[insert DPO email]**. Withdrawal does not affect processing already lawfully completed and may not override a documented legal hold or legal-claim requirement. It may remove your verified status and the features that depend on it.
+Verification is optional for registration and browsing, but it is required before posting a job or activating provider mode. If you do not consent, those actions remain unavailable. You may withdraw consent or ask about access, correction, objection, blocking/erasure, or portability through **in-app Support** (`/support/new`) or **privacy@kaila-app.com**. Withdrawal does not affect processing already lawfully completed and may not override a documented legal hold or legal-claim requirement. It may remove your verified status and the features that depend on it.
 
-If verification fails, you can correct your account details, submit clearer evidence, or request review by a different trained reviewer. A failed check does not automatically mean fraud.
+If verification fails, you can correct your account details, submit clearer evidence, or request review by a different trained reviewer. A failed check does not automatically mean fraud. While KAILA has only one operator, independent appeal may be delayed until a second reviewer is available.
 
 Read the complete [KAILA Privacy Policy](/privacy) for KAILA's legal identity, contact information, data-subject rights, complaint process, security practices, and other processing activities. You may also file a complaint with the Philippine National Privacy Commission.
 
@@ -72,7 +84,7 @@ Read the complete [KAILA Privacy Policy](/privacy) for KAILA's legal identity, c
 
 **Secondary action:** Cancel
 
-The API must reject a consent event unless it records all of: authenticated user, `identity-verification-1.0`, privacy-policy version, declared purpose, affirmative action, server timestamp, request identifier, and the role/action that triggered the gate. A general `data_privacy_consent` boolean is insufficient.
+The API must reject a consent event unless it records all of: authenticated user, notice version `identity-verification-1.1`, consent version `identity-consent-1.1`, privacy-policy version, declared purpose code, purpose statement, affirmative action, server timestamp, request identifier, and the role/action that triggered the gate. A general `data_privacy_consent` boolean is insufficient. Identity consent must not be bundled with precise-location consent.
 
 ## Capture guidance
 
@@ -99,4 +111,3 @@ Take a new selfie in good light. Keep your face visible and follow the on-screen
 | Consent withdrawn | Verification stopped. Uploaded evidence is scheduled for deletion unless a documented hold applies. |
 
 Never display full ID numbers, birth dates, or addresses in status messages, notifications, analytics, URLs, logs, or reviewer notes.
-

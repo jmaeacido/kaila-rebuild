@@ -10,11 +10,14 @@
 
 .bar {
   align-items: center;
+  container-name: admin-shell;
+  container-type: inline-size;
   display: flex;
-  gap: var(--spacing-16);
+  gap: var(--spacing-12);
   margin: auto;
-  max-width: 78rem;
-  padding: var(--spacing-12) var(--spacing-16);
+  max-width: none;
+  padding: var(--spacing-16) var(--spacing-16);
+  width: 100%;
 }
 
 .brand {
@@ -41,28 +44,55 @@
 }
 
 .desktopNav {
+  align-items: center;
   display: flex;
   flex: 1 1 auto;
+  flex-wrap: nowrap;
   gap: var(--spacing-4);
   justify-content: flex-start;
   margin-left: auto;
-  overflow: auto;
-  scrollbar-width: none;
+  min-width: 0;
+  overflow: visible;
+  padding-right: var(--spacing-8);
 }
 
 .desktopNav a {
   align-items: center;
   border-radius: var(--radius-button);
   color: var(--color-text-secondary);
-  display: flex;
+  display: inline-flex;
   flex: 0 0 auto;
   font-size: var(--font-small-size);
   font-weight: var(--font-weight-semibold);
   gap: var(--spacing-8);
+  justify-content: center;
   min-height: var(--control-min-height);
-  padding: var(--spacing-8) var(--spacing-12);
+  padding: var(--spacing-8);
+  position: relative;
   text-decoration: none;
   transition: background var(--duration-fast) ease-out, color var(--duration-fast) ease-out;
+  white-space: nowrap;
+  width: var(--control-min-height);
+}
+
+/* Icon-first by default so every destination fits beside brand + tools. */
+.desktopNav a > span {
+  border: 0;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}
+
+.desktopNav a .badge {
+  position: absolute;
+  right: var(--spacing-4);
+  top: var(--spacing-4);
 }
 
 .badge {
@@ -107,6 +137,7 @@
   display: flex;
   flex: 0 0 auto;
   gap: var(--spacing-8);
+  margin-left: var(--spacing-4);
 }
 
 .menuButton {
@@ -238,6 +269,30 @@
 .drawer svg {
   height: var(--spacing-20);
   width: var(--spacing-20);
+}
+
+/* Labeled tabs only when the shell is wide enough for all nine destinations. */
+@container admin-shell (min-width: 100rem) {
+  .desktopNav a {
+    justify-content: flex-start;
+    padding: var(--spacing-8) var(--spacing-12);
+    width: auto;
+  }
+
+  .desktopNav a > span {
+    clip: auto;
+    clip-path: none;
+    height: auto;
+    margin: 0;
+    overflow: visible;
+    padding: 0;
+    position: static;
+    width: auto;
+  }
+
+  .desktopNav a .badge {
+    position: static;
+  }
 }
 
 @media (max-width: 74.99rem) {

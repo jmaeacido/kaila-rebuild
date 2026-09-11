@@ -70,7 +70,7 @@ class ProviderWelcomeCommunityPostService
             $welcomeArea = $this->resolveWelcomeArea($locked);
             $areaName = $welcomeArea?->name;
             $title = "Welcome {$displayName} to KAILA";
-            $body = "Congratulations to {$displayName} for joining KAILA as a trusted local service provider";
+            $body = "Congratulations to {$displayName} for joining KAILA as a local service provider";
             if ($serviceNames !== '') {
                 $body .= " offering {$serviceNames}";
             }

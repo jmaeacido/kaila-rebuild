@@ -14,8 +14,9 @@ DNS for `kaila-app.com` is managed separately from Brevo sending records.
 3. In DNS, add ImprovMX **MX records** (exact values shown in ImprovMX dashboard), typically:
    - `MX` `@` → `mx1.improvmx.com` priority **10**
    - `MX` `@` → `mx2.improvmx.com` priority **20**
-4. In ImprovMX, create alias:
+4. In ImprovMX, create aliases:
    - **`support@kaila-app.com`** → your ops inbox
+   - **`privacy@kaila-app.com`** → the same ops/DPO inbox (required for identity-verification and Privacy Policy contact)
 5. Wait for DNS propagation (often 5–30 minutes).
 6. Send a test to `support@kaila-app.com` and confirm it arrives.
 
@@ -44,7 +45,8 @@ Consumer Support surfaces that use the same address:
 - `/support` hub — secondary “Email support@…” CTA beside New support request
 - `/support/new` — email fallback under the case form (and on send failure)
 - FAQs — “How do I contact support?” and the “Still need help?” aside
-- Privacy policy Contact section
+- Privacy policy Contact section (general support)
+- Privacy / DPO contact **`privacy@kaila-app.com`** on Privacy Policy and identity-verification notice (forward to the same inbox until a separate mailbox exists)
 
 In-app support cases remain the primary tracked channel (ADR-0032). Email is the signed-out / fallback path.
 

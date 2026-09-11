@@ -3,11 +3,12 @@
 | Field | Value |
 | --- | --- |
 | Owner | KAILA Data Protection Officer (DPO) |
-| Status | **Pre-launch control — processing is prohibited until every launch gate is approved** |
-| Version | Draft 1.0 — 2026-08-27 |
+| Status | **Partial owner self-reviews recorded 2026-09-11 — production processing remains prohibited while NPC, counsel, MFA, repository/backup, and QA gates stay open** |
+| Version | 1.1 — 2026-09-11 (from Draft 1.0 — 2026-08-27) |
 | Scope | Government-issued ID and a live selfie used to verify clients and providers in the Philippines |
+| Operator model | One-person operation. PIC/DPO/security/ops/product/release roles are the same individual. Sign-offs are self-reviews, not independent assurances. KAILA is not yet a registered business. |
 
-This document is KAILA's privacy impact assessment, control specification, and launch checklist for identity verification. It does not itself authorize collection. The DPO must sign the completed approval record at the end of this document before production collection begins.
+This document is KAILA's privacy impact assessment, control specification, and launch checklist for identity verification. It does not itself authorize collection. Live gate status lives in `identity-verification-gate-status.md`. Production collection remains blocked until every remaining §12 blocker is closed with real evidence.
 
 ## 1. Proposed processing and product rule
 
@@ -173,33 +174,41 @@ The identity-verification system must be included in KAILA's Privacy Management 
 
 ## 12. Launch gate and approval record
 
-Production collection is **blocked** until all entries are complete. An unchecked item is a release blocker.
+Production collection is **blocked** until all entries are complete **or** honestly marked N/A with justification. An unchecked item is a release blocker. Classification detail: `identity-verification-gate-status.md`.
 
-- [ ] Corporate PIC name, address, registration details, and DPO contact are present in the notice.
-- [ ] DPO/DPS registration or documented exemption has been completed and evidence retained.
-- [ ] Counsel confirms the lawful criteria, mandatory-consent design, accepted IDs, two-year post-closure period, and claims/hold rules.
-- [ ] The DPO approves this PIA and records residual-risk decisions.
-- [ ] The versioned full notice and separate just-in-time consent in `identity-verification-notice-and-consent.md` are finalized and localized as required.
-- [ ] Product flows implement the proposed gates without duplicate collection and without dark patterns.
-- [ ] Identity evidence uses a separate private schema/store and cannot make a generic provider credential an identity badge.
-- [ ] Repository region, encryption, key custody, backup expiry, and deletion controls are documented and tested.
-- [ ] Access matrix, MFA, managed-device requirements, audits, alerts, and quarterly review are operating.
-- [ ] Retention and hold jobs pass live-store, failure/retry, and restored-backup deletion tests.
-- [ ] Reviewer, appeal, rights, incident, and vendor runbooks have named trained owners and rehearsal evidence.
-- [ ] Any processor has passed due diligence, signed required terms, disclosed locations/subprocessors, and demonstrated deletion.
-- [ ] Security testing covers authorization, cross-user access, uploads, malicious files, object URLs, logs, rate limits, replay, consent evidence, and status enforcement.
+**Approved production repository (current host).** Disk: `identity-evidence-local` under `storage/app/identity-evidence` on the KAILA API host. Region: Philippines operator-controlled VPS/hosting (exact provider/region to be recorded when a dedicated production evidence bucket is commissioned). Backup behavior: host-level backups are **not** yet proven to honor identity tombstones on restore — **blocker**. Encryption/key owner: TLS at edge; at-rest relies on host disk permissions (0600/0700); no separate CMK yet. Subprocessors for identity content: none. Deletion: `identity-evidence:purge` hourly + account deletion / consent withdraw.
+
+- [x] PIC identity and DPO contact are present in the notice (individual operator wording; not a registered company).
+- [ ] DPO/DPS registration or documented exemption has been completed and evidence retained. **Pending determination and filing. KAILA processes identity documents and precise location; no exemption is presently claimed.**
+- [ ] Counsel confirms the lawful criteria, mandatory-consent design, accepted IDs, two-year post-closure period, and claims/hold rules. **Pending — no legal counsel currently retained.**
+- [x] The DPO approves this PIA and records residual-risk decisions.
+- [x] The versioned full notice and separate just-in-time consent in `identity-verification-notice-and-consent.md` are finalized in English (`identity-verification-1.0` / privacy `2026-09-11`). Additional localization deferred.
+- [x] Product flows implement the proposed gates without duplicate collection and without dark patterns (server enforcement + unticked consent + browse/register without verification).
+- [x] Identity evidence uses a separate private schema/store and cannot make a generic provider credential an identity badge.
+- [ ] Repository region, encryption, key custody, backup expiry, and deletion controls are documented and tested. **Partial:** live purge documented; dedicated production bucket/CMK/backup-restore tombstone tests outstanding.
+- [ ] Access matrix, MFA, managed-device requirements, audits, alerts, and quarterly review are operating. **Partial:** matrix + audits exist; **admin MFA not implemented**; managed-device and quarterly review are operator commitments only.
+- [ ] Retention and hold jobs pass live-store, failure/retry, and restored-backup deletion tests. **Partial:** live purge job + automated test; identity legal-hold and backup-restore tests outstanding.
+- [ ] Reviewer, appeal, rights, incident, and vendor runbooks have named owners and rehearsal evidence. **Runbooks written** under `docs/privacy/runbooks/`; **tabletop rehearsal log still outstanding.**
+- [x] Any processor has passed due diligence… **N/A — no identity processor.** Re-open if a vendor is added.
+- [ ] Security testing covers authorization, cross-user access, uploads, malicious files, object URLs, logs, rate limits, replay, consent evidence, and status enforcement. **Partial automated coverage; no independent assessment.**
 - [ ] Accessibility, small-phone, Android, desktop, large-text, loading, failure, resubmission, and offline-interruption states pass QA.
-- [ ] Public/privacy copy and in-product wording say “Identity verified,” never “safe,” “trusted,” or “fraud-free.”
-- [ ] A feature flag defaults off and rollback deletes or lawfully quarantines already collected evidence.
+- [x] Public/privacy copy and in-product identity wording say “Identity verified,” never “safe,” “trusted,” or “fraud-free” as an identity claim (badge + verification UX). Generic marketing “trusted local providers” is separate and not an identity badge.
+- [x] A feature flag defaults off and rollback deletes or lawfully quarantines already collected evidence.
+
+### Owner sign-off table (same person, separate decisions)
+
+One signature does **not** imply independent review of another role. External rows remain vacant.
 
 | Approval | Name | Decision/date | Evidence/reference |
 | --- | --- | --- | --- |
-| DPO / PIA and residual risk |  |  |  |
-| Philippine legal counsel |  |  |  |
-| Security owner |  |  |  |
-| Trust and safety/operations owner |  |  |  |
-| Product owner |  |  |  |
-| Production release owner |  |  |  |
+| PIC / operator | John Mark Agustin Estrosos Acido | Accept individual PIC wording; publish privacy notice; 2026-09-11 | `/privacy`; notice doc; gate-status |
+| DPO / PIA and residual risk | John Mark Agustin Estrosos Acido, Data Protection Officer / KAILA Founder | PIA Approved — residual high/critical risks in §9 accepted with required treatments; 2026-09-11 | This pack; decisions 0049, 0054, 0064 |
+| Security owner | John Mark Agustin Estrosos Acido | Accept controls in `identity-verification-technical-controls.md`; MFA and backup-restore gaps acknowledged as blockers; 2026-09-11 | Technical controls doc (self-review) |
+| Trust and safety / operations owner | John Mark Agustin Estrosos Acido | Accept runbooks and sole-reviewer model; independent appeal paused until second reviewer; 2026-09-11 | `docs/privacy/runbooks/*` |
+| Product owner | John Mark Agustin Estrosos Acido | Accept gate UX, accepted-ID list, “Identity verified” wording; 2026-09-11 | Web identity flows; badge component |
+| Production release owner | John Mark Agustin Estrosos Acido | **Do not** enable production identity capture until pending blockers close; 2026-09-11 | Gate-status production blockers |
+| Philippine legal counsel | — | Pending — no legal counsel currently retained | — |
+| Independent security auditor | — | Not retained; no independent assessment claimed | — |
 
 ## 13. Authoritative references
 

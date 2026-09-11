@@ -28,13 +28,15 @@
 .search svg{color:var(--color-text-secondary);left:var(--spacing-12);pointer-events:none;position:absolute}
 .search input{padding-left:var(--spacing-32);width:100%}
 .notice{background:var(--color-success-surface);color:var(--color-success);margin:0 var(--spacing-24) var(--spacing-16);padding:var(--spacing-12) var(--spacing-16);border-radius:var(--radius-card)}
-.tableWrap{overflow:auto}
-.table{border-collapse:collapse;min-width:48rem;width:100%}
-.table th,.table td{border-top:var(--control-border-width) solid var(--color-border);padding:var(--spacing-16) var(--spacing-24);text-align:left;vertical-align:top}
-.table th{color:var(--color-text-secondary);font-size:var(--font-caption-size);text-transform:uppercase}
+.tableWrap{overflow:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;scrollbar-gutter:stable}
+.table{border-collapse:separate;border-spacing:0;min-width:64rem;width:100%}
+.table th,.table td{border-top:var(--control-border-width) solid var(--color-border);padding:var(--spacing-16) var(--spacing-16);text-align:left;vertical-align:middle}
+.table th{color:var(--color-text-secondary);font-size:var(--font-caption-size);text-transform:uppercase;white-space:nowrap}
+.table tbody tr:hover td{background:color-mix(in srgb,var(--color-primary) 6%,var(--color-surface))}
 .selectCol{width:2.75rem;padding-inline:var(--spacing-12)!important;text-align:center;vertical-align:middle}
 .selectCol input,.cardSelect input{accent-color:var(--color-primary);height:1.25rem;margin:0;min-height:1.25rem;min-width:1.25rem;width:1.25rem}
-.rowSelected td{background:color-mix(in srgb,var(--color-primary) 6%,var(--color-surface))}
+.rowSelected td{background:color-mix(in srgb,var(--color-primary) 8%,var(--color-surface))}
+.rowSelected:hover td{background:color-mix(in srgb,var(--color-primary) 11%,var(--color-surface))}
 .cardSelected{border-color:var(--color-primary);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--color-primary) 35%,transparent)}
 .cardSelect{align-items:center;display:flex;flex:0 0 auto;margin-top:2px;min-height:var(--control-min-height);min-width:var(--control-min-height)}
 .inviteLaunch{background:var(--color-primary)!important;border-color:var(--color-primary)!important;color:var(--color-on-primary)!important;font-weight:var(--font-weight-bold)}
@@ -67,17 +69,21 @@
 .table td strong{color:var(--color-ink);display:block}
 .table td span{color:var(--color-text-secondary);display:block;font-size:var(--font-small-size);margin-top:var(--spacing-4)}
 .table .dateCell{color:var(--color-text-secondary);font-size:var(--font-small-size);white-space:nowrap}
-.personCell{min-width:0}
+.personCell{min-width:12rem;max-width:20rem}
 .personCell>span{color:var(--color-text-secondary);display:block;font-size:var(--font-small-size);margin-top:var(--spacing-4)}
 .personLink{color:inherit;display:inline-block;max-width:100%;text-decoration:none}
 .personLink:hover strong,.personLink:focus-visible strong{color:var(--color-primary);text-decoration:underline}
 .personLink strong{color:var(--color-ink);display:block;overflow-wrap:anywhere}
-.roleBadge,.doneBadge,.blockBadge,.dangerBadge{border-radius:var(--radius-pill);display:inline-flex;font-size:var(--font-caption-size);font-weight:var(--font-weight-bold);padding:var(--spacing-4) var(--spacing-8);text-transform:uppercase}
+.roleBadge,.doneBadge,.blockBadge,.dangerBadge{border-radius:var(--radius-pill);display:inline-flex;font-size:var(--font-caption-size);font-weight:var(--font-weight-bold);padding:var(--spacing-4) var(--spacing-8);text-transform:uppercase;white-space:nowrap}
 .roleBadge{background:color-mix(in srgb,var(--color-primary) 12%,var(--color-surface));color:var(--color-primary)}
 .doneBadge{background:var(--color-success-surface);color:var(--color-success)}
 .blockBadge{background:var(--color-warning-surface);color:var(--color-warning)}
 .dangerBadge{background:var(--color-danger-surface);color:var(--color-danger)}
-.actions{align-items:center;display:flex;flex-wrap:nowrap;gap:var(--spacing-4);min-width:0}
+.actionsCell{padding-inline:var(--spacing-12)!important;position:sticky;right:0;background:var(--color-surface);box-shadow:inset 1px 0 0 var(--color-border);white-space:nowrap;width:1%;z-index:1}
+.table thead .actionsCell{background:var(--color-surface);z-index:2}
+.table tbody tr:hover .actionsCell{background:color-mix(in srgb,var(--color-primary) 6%,var(--color-surface))}
+.rowSelected .actionsCell,.rowSelected:hover .actionsCell{background:color-mix(in srgb,var(--color-primary) 8%,var(--color-surface))}
+.actions{align-items:center;display:inline-flex;flex-wrap:nowrap;gap:var(--spacing-4);min-width:max-content}
 .iconAction{align-items:center;background:var(--color-surface);border:var(--control-border-width) solid var(--color-border);border-radius:var(--radius-button);color:var(--color-text);cursor:pointer;display:inline-flex;flex:0 0 auto;height:var(--control-min-height);justify-content:center;min-height:var(--control-min-height);min-width:var(--control-min-height);padding:0;text-decoration:none;width:var(--control-min-height)}
 .iconAction:hover{border-color:var(--color-primary);color:var(--color-primary)}
 .iconAction:disabled{opacity:var(--opacity-disabled)}

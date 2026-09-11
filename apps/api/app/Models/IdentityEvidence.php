@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
 /** @property string $id @property string $identity_verification_id @property string $session_id @property string $kind @property string $disk @property string $object_key @property string $mime_type @property int $size_bytes @property string $sha256 @property string $scan_status @property string|null $scan_signature @property string|null $scan_error @property Carbon|null $scanned_at @property Carbon $purge_after @property Carbon|null $purged_at */
-#[Fillable(['identity_verification_id', 'session_id', 'kind', 'disk', 'object_key', 'mime_type', 'size_bytes', 'sha256', 'scan_status', 'scan_signature', 'scan_error', 'scanned_at', 'purge_after', 'purged_at'])]
+#[Fillable(['identity_verification_id', 'session_id', 'kind', 'disk', 'encrypted_at_rest', 'object_key', 'mime_type', 'size_bytes', 'sha256', 'scan_status', 'scan_signature', 'scan_error', 'scanned_at', 'purge_after', 'purged_at', 'legal_hold_at', 'legal_hold_id'])]
 class IdentityEvidence extends Model
 {
     use HasUuids;
@@ -18,7 +18,13 @@ class IdentityEvidence extends Model
 
     protected function casts(): array
     {
-        return ['scanned_at' => 'datetime', 'purge_after' => 'datetime', 'purged_at' => 'datetime'];
+        return [
+            'scanned_at' => 'datetime',
+            'purge_after' => 'datetime',
+            'purged_at' => 'datetime',
+            'encrypted_at_rest' => 'boolean',
+            'legal_hold_at' => 'datetime',
+        ];
     }
 
     /** @return BelongsTo<IdentityVerification, $this> */

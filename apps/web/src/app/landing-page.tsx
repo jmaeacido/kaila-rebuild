@@ -180,7 +180,7 @@ export default function LandingPage() {
           </h1>
           <p className={styles.heroLead}>
             From urgent repairs to beauty, cleaning, and tutoring—tell KAILA
-            what you need and hear from trusted local providers.
+            what you need and hear from independent local providers.
           </p>
           <div className={styles.heroActions}>
             <Link

@@ -23,4 +23,23 @@ class SensitiveDataRedactorTest extends TestCase
         $this->assertSame('[REDACTED]', $redacted['nested']['authorization']);
         $this->assertSame('[REDACTED]', $redacted['nested']['coordinates']);
     }
+
+    public function test_identity_evidence_keys_are_redacted(): void
+    {
+        $redacted = (new SensitiveDataRedactor)->redact([
+            'idFront' => 'binary',
+            'selfie' => 'binary',
+            'object_key' => 'quarantine/abc.jpg',
+            'sha256' => 'abc',
+            'uploadToken' => 'secret',
+            'status' => 'submitted',
+        ]);
+
+        $this->assertSame('[REDACTED]', $redacted['idFront']);
+        $this->assertSame('[REDACTED]', $redacted['selfie']);
+        $this->assertSame('[REDACTED]', $redacted['object_key']);
+        $this->assertSame('[REDACTED]', $redacted['sha256']);
+        $this->assertSame('[REDACTED]', $redacted['uploadToken']);
+        $this->assertSame('submitted', $redacted['status']);
+    }
 }

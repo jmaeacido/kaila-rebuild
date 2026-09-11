@@ -9,7 +9,7 @@ export function LandingSeoSection({ recentPosts }: { recentPosts: PublicCommunit
         <p className={styles.kicker}>DISCOVER KAILA</p>
         <h2 id="kaila-discovery-title">KAILA is the local services marketplace for the Philippines</h2>
         <p>
-          KAILA helps people hire trusted independent service providers nearby. Post a job, compare local offers,
+          KAILA helps people hire independent service providers nearby. Post a job, compare local offers,
           chat in one place, follow travel and work progress, and leave ratings when the job is done. KAILA is a
           marketplace platform — not a service provider — so clients stay in control of who they hire and what they pay.
         </p>

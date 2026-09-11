@@ -5,6 +5,7 @@ import { Images, RefreshCw, ScanFace, X } from "lucide-react";
 import Image from "next/image";
 import { Button, Feedback } from "@kaila/ui";
 import { AdminPageHeader, AdminSkeletons } from "../../components/admin-page";
+import { KailaBrandedQr } from "../../components/kaila-branded-qr";
 import { publishAdminRealtime, useAdminRealtimeRefresh } from "../admin-realtime";
 import styles from "./page.module.css";
 
@@ -55,16 +56,43 @@ function previewReason(item: ReviewCase): "appeal_review" | "initial_review" {
   return item.appealRequestedAt ? "appeal_review" : "initial_review";
 }
 
+type Notice = {
+  kind: "info" | "success" | "warning" | "error";
+  title: string;
+  body: string;
+};
+
 export default function IdentityVerificationQueue() {
   const [currentTime] = useState(() => Date.now());
   const [items, setItems] = useState<ReviewCase[]>([]);
-  const [state, setState] = useState<"loading" | "ready" | "error">("loading");
-  const [message, setMessage] = useState("");
+  const [state, setState] = useState<"loading" | "ready" | "error" | "mfa">("loading");
+  const [notice, setNotice] = useState<Notice | null>(null);
   const [viewer, setViewer] = useState<ReviewCase | null>(null);
+  const [mfaConfigured, setMfaConfigured] = useState(false);
+  const [mfaSecret, setMfaSecret] = useState<string | null>(null);
+  const [mfaOtpauthUrl, setMfaOtpauthUrl] = useState<string | null>(null);
+  const [mfaCode, setMfaCode] = useState("");
+  const [mfaBusy, setMfaBusy] = useState(false);
+  const [copiedSecret, setCopiedSecret] = useState(false);
+  const [recoveryCodes, setRecoveryCodes] = useState<string[] | null>(null);
+  const [copiedRecovery, setCopiedRecovery] = useState(false);
   const load = useCallback(async () => {
     setState("loading");
     try {
+      const mfaStatus = await fetch("/api/v1/admin/marketplace/mfa", { credentials: "include", cache: "no-store" });
+      if (mfaStatus.ok) {
+        const status = ((await mfaStatus.json()) as { data: { configured: boolean; sessionVerified: boolean } }).data;
+        setMfaConfigured(status.configured);
+        if (!status.configured || !status.sessionVerified) {
+          setState("mfa");
+          return;
+        }
+      }
       const response = await fetch("/api/v1/admin/marketplace/identity-verifications", { credentials: "include", cache: "no-store" });
+      if (response.status === 403) {
+        setState("mfa");
+        return;
+      }
       if (!response.ok) throw new Error();
       setItems(((await response.json()) as { data: ReviewCase[] }).data);
       setState("ready");
@@ -77,6 +105,90 @@ export default function IdentityVerificationQueue() {
     return () => window.clearTimeout(initialLoad);
   }, [load]);
   useAdminRealtimeRefresh(load);
+
+  async function beginMfaSetup() {
+    setMfaBusy(true);
+    setNotice(null);
+    try {
+      await fetch("/api/v1/auth/csrf", { credentials: "include" });
+      const token = csrfToken();
+      const response = await fetch("/api/v1/admin/marketplace/mfa/setup", {
+        method: "POST",
+        credentials: "include",
+        headers: token ? { "X-XSRF-TOKEN": token } : {},
+      });
+      if (!response.ok) {
+        setNotice({ kind: "error", title: "Setup failed", body: "MFA setup could not start. Try again." });
+        return;
+      }
+      const data = ((await response.json()) as { data: { secret: string; otpauthUrl: string } }).data;
+      setMfaSecret(data.secret);
+      setMfaOtpauthUrl(data.otpauthUrl);
+    } finally {
+      setMfaBusy(false);
+    }
+  }
+
+  async function copySecret() {
+    if (!mfaSecret) return;
+    try {
+      await navigator.clipboard.writeText(mfaSecret);
+      setCopiedSecret(true);
+      window.setTimeout(() => setCopiedSecret(false), 2000);
+    } catch {
+      setNotice({ kind: "warning", title: "Copy unavailable", body: "Could not copy the secret. Select it manually." });
+    }
+  }
+
+  async function copyRecoveryCodes() {
+    if (!recoveryCodes?.length) return;
+    try {
+      await navigator.clipboard.writeText(recoveryCodes.join("\n"));
+      setCopiedRecovery(true);
+      window.setTimeout(() => setCopiedRecovery(false), 2000);
+    } catch {
+      setNotice({ kind: "warning", title: "Copy unavailable", body: "Select the recovery codes and copy them manually." });
+    }
+  }
+
+  async function submitMfa(kind: "confirm" | "challenge") {
+    setMfaBusy(true);
+    setNotice(null);
+    try {
+      await fetch("/api/v1/auth/csrf", { credentials: "include" });
+      const token = csrfToken();
+      const response = await fetch(`/api/v1/admin/marketplace/mfa/${kind}`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json", ...(token ? { "X-XSRF-TOKEN": token } : {}) },
+        body: JSON.stringify({ code: mfaCode }),
+      });
+      if (!response.ok) {
+        setNotice({ kind: "error", title: "Code rejected", body: "The MFA code was rejected. Check your authenticator and try again." });
+        return;
+      }
+      const payload = (await response.json()) as { data?: { recoveryCodes?: string[] } };
+      setMfaCode("");
+      setMfaSecret(null);
+      setMfaOtpauthUrl(null);
+      if (kind === "confirm") {
+        const codes = payload.data?.recoveryCodes ?? [];
+        setRecoveryCodes(codes);
+        setNotice({
+          kind: "success",
+          title: "MFA configured",
+          body: codes.length
+            ? "Save the recovery codes below now. They are shown only once."
+            : "Your authenticator is ready for identity reviews.",
+        });
+      } else {
+        setNotice({ kind: "success", title: "Verified", body: "MFA challenge passed. You can review identity evidence." });
+      }
+      await load();
+    } finally {
+      setMfaBusy(false);
+    }
+  }
 
   async function decide(item: ReviewCase, decision: "approved" | "needs_resubmission" | "rejected" | "escalated") {
     const passing = decision === "approved";
@@ -97,12 +209,16 @@ export default function IdentityVerificationQueue() {
         body: JSON.stringify({ decision, reason, nameMatches: passing, dateOfBirthMatches: passing, ageEligible: passing }),
       });
       if (!response.ok) throw new Error(((await response.json()) as { error?: { message?: string } }).error?.message);
-      setMessage("Review decision saved and the member was notified.");
+      setNotice({ kind: "success", title: "Decision saved", body: "The member was notified of the review result." });
       publishAdminRealtime({ type: "admin.identity.decided", resourceType: "identity_verification", resourceId: item.id });
       setViewer(null);
       await load();
     } catch (error) {
-      setMessage(error instanceof Error && error.message ? error.message : "The review could not be saved.");
+      setNotice({
+        kind: "error",
+        title: "Decision failed",
+        body: error instanceof Error && error.message ? error.message : "The review could not be saved.",
+      });
     }
   }
 
@@ -113,10 +229,99 @@ export default function IdentityVerificationQueue() {
         title="Identity reviews"
         description="Compare only the submitted ID and selfie. Never copy document details into notes."
       />
-      {message && (
-        <Feedback kind={message.startsWith("Review") ? "success" : "error"} title={message.startsWith("Review") ? "Decision saved" : "Action needed"}>
-          {message}
+      {notice && (
+        <Feedback kind={notice.kind} title={notice.title}>
+          {notice.body}
         </Feedback>
+      )}
+      {recoveryCodes && recoveryCodes.length > 0 ? (
+        <section className={`${styles.card} ${styles.recoveryCard}`} aria-label="MFA recovery codes">
+          <div className={styles.mfaIntro}>
+            <p className={styles.eyebrow}>Save these once</p>
+            <h2>Recovery codes</h2>
+            <p>Store these offline. Each code works once if you lose your authenticator.</p>
+          </div>
+          <ol className={styles.recoveryList}>
+            {recoveryCodes.map((code) => (
+              <li key={code}><code>{code}</code></li>
+            ))}
+          </ol>
+          <div className={styles.secretRow}>
+            <Button type="button" variant="secondary" onClick={() => void copyRecoveryCodes()}>
+              {copiedRecovery ? "Copied" : "Copy all codes"}
+            </Button>
+            <Button type="button" onClick={() => setRecoveryCodes(null)}>
+              I’ve saved them
+            </Button>
+          </div>
+        </section>
+      ) : null}
+      {state === "mfa" && (
+        <section className={`${styles.card} ${styles.mfaCard}`}>
+          <div className={styles.mfaIntro}>
+            <p className={styles.eyebrow}>Account security</p>
+            <h2>Multi-factor authentication required</h2>
+            <p>Identity evidence access requires MFA on this admin account. Scan the KAILA QR with your authenticator app, then enter a 6-digit code.</p>
+          </div>
+          {!mfaConfigured ? (
+            <div className={styles.mfaSetup}>
+              {!mfaOtpauthUrl ? (
+                <Button type="button" variant="secondary" disabled={mfaBusy} onClick={() => void beginMfaSetup()}>
+                  {mfaBusy ? "Preparing…" : "Start MFA setup"}
+                </Button>
+              ) : (
+                <div className={styles.mfaSetupGrid}>
+                  <KailaBrandedQr
+                    value={mfaOtpauthUrl}
+                    label="Scan with Google Authenticator, Authy, or 1Password"
+                    size={220}
+                  />
+                  <div className={styles.mfaManual}>
+                    <h3>Can’t scan?</h3>
+                    <p>Add the account manually with this secret, then confirm the code below.</p>
+                    <div className={styles.secretRow}>
+                      <code className={styles.secret}>{mfaSecret}</code>
+                      <Button type="button" variant="secondary" onClick={() => void copySecret()}>
+                        {copiedSecret ? "Copied" : "Copy secret"}
+                      </Button>
+                    </div>
+                    <label className={styles.mfaField}>
+                      Confirmation code
+                      <input
+                        value={mfaCode}
+                        onChange={(e) => setMfaCode(e.target.value)}
+                        inputMode="numeric"
+                        autoComplete="one-time-code"
+                        placeholder="000000"
+                        maxLength={8}
+                      />
+                    </label>
+                    <Button type="button" disabled={mfaBusy || mfaCode.trim().length < 6} onClick={() => void submitMfa("confirm")}>
+                      {mfaBusy ? "Confirming…" : "Confirm MFA"}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className={styles.mfaChallenge}>
+              <label className={styles.mfaField}>
+                Authenticator code
+                <input
+                  value={mfaCode}
+                  onChange={(e) => setMfaCode(e.target.value)}
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  placeholder="000000"
+                  maxLength={8}
+                />
+              </label>
+              <Button type="button" disabled={mfaBusy || mfaCode.trim().length < 6} onClick={() => void submitMfa("challenge")}>
+                {mfaBusy ? "Verifying…" : "Verify MFA"}
+              </Button>
+            </div>
+          )}
+        </section>
       )}
       {state === "loading" && <AdminSkeletons count={3} />}
       {state === "error" && (
@@ -129,9 +334,13 @@ export default function IdentityVerificationQueue() {
       )}
       {state === "ready" && items.length === 0 && (
         <section className={styles.empty}>
-          <ScanFace />
+          <ScanFace aria-hidden="true" />
           <h2>No identity checks waiting</h2>
-          <p>New submissions and appeals will appear here.</p>
+          <p>When members submit ID and selfie evidence, new reviews and appeals appear here.</p>
+          <Button type="button" variant="secondary" onClick={() => void load()}>
+            <RefreshCw aria-hidden="true" />
+            Refresh queue
+          </Button>
         </section>
       )}
       {state === "ready" &&

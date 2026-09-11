@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, X } from "lucide-react";
+import { Bell, CheckCheck, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -165,6 +165,25 @@ export function AdminNotificationCenter() {
     }
   };
 
+  const markAllRead = useCallback(async () => {
+    if (unreadCount === 0) return;
+    const readAt = new Date().toISOString();
+    setItems((current) => current.map((item) => (item.readAt ? item : { ...item, readAt })));
+    setUnreadCount(0);
+    try {
+      const token = await csrfToken();
+      const response = await fetch("/api/v1/notifications/read", {
+        method: "PUT",
+        credentials: "include",
+        headers: { Accept: "application/json", ...(token ? { "X-XSRF-TOKEN": token } : {}) },
+      });
+      if (!response.ok) throw new Error();
+      await reconcile();
+    } catch {
+      await reconcile();
+    }
+  }, [reconcile, unreadCount]);
+
   return (
     <div className={styles.center}>
       <button
@@ -181,7 +200,18 @@ export function AdminNotificationCenter() {
 
       {open && (
         <section className={styles.panel} aria-label="Admin notifications">
-          <header><strong>Notifications</strong><span>{unreadCount} unread</span></header>
+          <header>
+            <div>
+              <strong>Notifications</strong>
+              <span>{unreadCount === 0 ? "You’re all caught up" : `${unreadCount} unread`}</span>
+            </div>
+            {unreadCount > 0 ? (
+              <button className={styles.markAll} type="button" onClick={() => void markAllRead()}>
+                <CheckCheck aria-hidden="true" />
+                Mark all as read
+              </button>
+            ) : null}
+          </header>
           <div className={styles.list}>
             {items.length === 0 && <p>No notifications yet.</p>}
             {items.slice(0, 20).map((item) => (

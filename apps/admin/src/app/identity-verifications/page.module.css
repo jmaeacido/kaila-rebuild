@@ -97,9 +97,9 @@
 
 .empty {
   align-items: center;
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-8);
+  display: grid;
+  gap: var(--spacing-12);
+  justify-items: center;
   text-align: center;
 }
 
@@ -107,6 +107,15 @@
   color: var(--color-primary);
   height: var(--spacing-48);
   width: var(--spacing-48);
+}
+
+.empty h2,
+.empty p {
+  margin: 0;
+}
+
+.empty p {
+  max-width: 28rem;
 }
 
 .viewer {
@@ -228,6 +237,120 @@
   text-transform: capitalize;
 }
 
+.mfaCard {
+  gap: var(--spacing-24);
+  max-width: 48rem;
+}
+
+.mfaIntro {
+  display: grid;
+  gap: var(--spacing-8);
+}
+
+.mfaIntro h2 {
+  margin: 0;
+}
+
+.mfaIntro p {
+  margin: 0;
+}
+
+.mfaSetup,
+.mfaChallenge {
+  display: grid;
+  gap: var(--spacing-16);
+}
+
+.mfaSetupGrid {
+  align-items: start;
+  display: grid;
+  gap: var(--spacing-24);
+  grid-template-columns: minmax(13rem, 15rem) minmax(0, 1fr);
+}
+
+.mfaManual {
+  display: grid;
+  gap: var(--spacing-12);
+}
+
+.mfaManual h3 {
+  color: var(--color-ink);
+  font-size: var(--font-body-size);
+  margin: 0;
+}
+
+.mfaManual p {
+  margin: 0;
+}
+
+.secretRow {
+  align-items: stretch;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-8);
+}
+
+.secret {
+  background: color-mix(in srgb, var(--color-primary) 8%, var(--color-surface));
+  border: var(--control-border-width) solid var(--color-border);
+  border-radius: var(--radius-input);
+  color: var(--color-ink);
+  flex: 1 1 12rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: var(--font-small-size);
+  letter-spacing: 0.04em;
+  overflow-wrap: anywhere;
+  padding: var(--spacing-12);
+}
+
+.mfaField {
+  color: var(--color-text-secondary);
+  display: grid;
+  font-size: var(--font-small-size);
+  font-weight: var(--font-weight-semibold);
+  gap: var(--spacing-8);
+}
+
+.mfaField input {
+  background: var(--color-surface);
+  border: var(--control-border-width) solid var(--color-border);
+  border-radius: var(--radius-input);
+  color: var(--color-ink);
+  font-size: 1.25rem;
+  letter-spacing: 0.24em;
+  min-height: 2.75rem;
+  padding-inline: var(--spacing-12);
+  text-align: center;
+}
+
+.recoveryCard {
+  border-color: color-mix(in srgb, var(--color-success, #12b76a) 35%, var(--color-border));
+  box-shadow:
+    var(--shadow-card),
+    0 0 0 1px color-mix(in srgb, var(--color-success, #12b76a) 18%, transparent);
+}
+
+.recoveryList {
+  display: grid;
+  gap: var(--spacing-8);
+  grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.recoveryList code {
+  background: color-mix(in srgb, var(--color-primary) 8%, var(--color-surface));
+  border: var(--control-border-width) solid var(--color-border);
+  border-radius: var(--radius-input);
+  color: var(--color-ink);
+  display: block;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  letter-spacing: 0.06em;
+  padding: var(--spacing-12);
+  text-align: center;
+}
+
 @media (max-width: 48rem) {
   .shell {
     padding: var(--spacing-16);
@@ -255,5 +378,14 @@
   .viewer {
     max-width: calc(100vw - var(--spacing-16));
     padding: var(--spacing-8);
+  }
+
+  .mfaSetupGrid {
+    grid-template-columns: 1fr;
+    justify-items: center;
+  }
+
+  .mfaManual {
+    width: 100%;
   }
 }

@@ -3,10 +3,12 @@
 use App\Console\Commands\ActivateScheduledMaintenance;
 use App\Console\Commands\ImportLegacyUsers;
 use App\Console\Commands\PurgeIdentityEvidence;
+use App\Console\Commands\ReplayIdentityDeletionTombstones;
 use App\Console\Commands\SendTestMail;
 use App\Http\Middleware\AssignRequestContext;
 use App\Http\Middleware\AuthenticateMobileAccessToken;
 use App\Http\Middleware\EnsureAdministrator;
+use App\Http\Middleware\EnsureIdentityReviewerMfa;
 use App\Http\Middleware\EnsureNotInMaintenance;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
@@ -23,7 +25,7 @@ use Illuminate\View\Middleware\ShareErrorsFromSession;
 use Symfony\Component\HttpFoundation\Response;
 
 return Application::configure(basePath: dirname(__DIR__))
-    ->withCommands([ImportLegacyUsers::class, ActivateScheduledMaintenance::class, SendTestMail::class, PurgeIdentityEvidence::class])
+    ->withCommands([ImportLegacyUsers::class, ActivateScheduledMaintenance::class, SendTestMail::class, PurgeIdentityEvidence::class, ReplayIdentityDeletionTombstones::class])
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
         api: __DIR__.'/../routes/api.php',
@@ -39,6 +41,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'mobile.auth' => AuthenticateMobileAccessToken::class,
             'admin' => EnsureAdministrator::class,
+            'identity.mfa' => EnsureIdentityReviewerMfa::class,
         ]);
 
         $middleware->api(prepend: [

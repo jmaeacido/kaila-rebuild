@@ -2,7 +2,9 @@
 
 ## Status
 
-Proposed and implementation-blocking — 2026-08-27
+Accepted for architecture; production enablement still blocked — 2026-08-27
+
+DPO PIA / residual-risk approval recorded 2026-09-11 by John Mark Agustin Estrosos Acido. Decision 0064 records the one-person PIC/self-review model. Remaining production blockers (NPC filing, counsel, admin MFA, evidence repository/backup-restore evidence, QA, runbook rehearsal) are tracked in `docs/privacy/identity-verification-gate-status.md`.
 
 ## Context
 

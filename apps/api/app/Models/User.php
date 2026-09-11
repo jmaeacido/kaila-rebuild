@@ -41,7 +41,7 @@ use Illuminate\Notifications\Notifiable;
     'status_updated_at',
     'banned_at',
 ])]
-#[Hidden(['password', 'remember_token'])]
+#[Hidden(['password', 'remember_token', 'mfa_secret', 'mfa_recovery_codes'])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
@@ -59,8 +59,6 @@ class User extends Authenticatable
     }
 
     /**
-     * Get the attributes that should be cast.
-     *
      * @return array<string, string>
      */
     protected function casts(): array
@@ -73,6 +71,8 @@ class User extends Authenticatable
             'status_updated_at' => 'datetime',
             'banned_at' => 'datetime',
             'deleted_at' => 'datetime',
+            'mfa_confirmed_at' => 'datetime',
+            'mfa_recovery_codes' => 'array',
         ];
     }
 }

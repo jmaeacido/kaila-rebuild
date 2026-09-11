@@ -17,6 +17,10 @@ type Verification = {
   submittedAt: string | null;
   verifiedUntil: string | null;
   appealRequestedAt: string | null;
+  noticeVersion?: string;
+  consentVersion?: string;
+  privacyPolicyVersion?: string;
+  purposeStatement?: string;
 };
 
 const reasonCopy: Record<string, string> = {
@@ -131,13 +135,22 @@ export default function IdentityVerificationPage() {
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!idFront || !selfie || !consented) return;
+    if (!verification || !idFront || !selfie || !consented) return;
+    const current = verification;
     setState("consenting"); setMessage("");
     try {
       const token = await prepareCsrf();
       const headers = { "Content-Type": "application/json", ...(token ? { "X-XSRF-TOKEN": token } : {}) };
       const consentResponse = await fetch("/api/v1/me/identity-verification/consent", {
-        method: "POST", headers, body: JSON.stringify({ noticeVersion: "identity-verification-1.0", privacyPolicyVersion: "1.0", purpose: "identity_verification", trigger: "account_settings", consented: true }),
+        method: "POST", headers, body: JSON.stringify({
+          noticeVersion: current.noticeVersion ?? "identity-verification-1.1",
+          consentVersion: current.consentVersion ?? "identity-consent-1.1",
+          privacyPolicyVersion: current.privacyPolicyVersion ?? "2026-09-11",
+          purpose: "identity_verification",
+          purposeStatement: current.purposeStatement ?? "To verify account identity, prevent and investigate fraud or impersonation, resolve platform disputes, enforce KAILA’s terms, and respond to valid legal requests.",
+          trigger: "account_settings",
+          consented: true,
+        }),
       });
       const consentBody = (await consentResponse.json()) as ApiError & { data?: { sessionId: string; uploadToken: string } };
       if (!consentResponse.ok || !consentBody.data) throw new Error(consentBody.error?.message || "CONSENT_FAILED");
@@ -173,12 +186,12 @@ export default function IdentityVerificationPage() {
   const retry = ["needs_resubmission", "rejected", "withdrawn", "expired"].includes(verification.status);
   return <main className={styles.shell}>
     <header className={styles.header}><Link href="/account" aria-label="Back to account"><ArrowLeft /></Link><div><p>ACCOUNT SAFETY</p><h1>Identity verification</h1></div></header>
-    {verification.identityVerified ? <section className={styles.statusCard} data-kind="success"><BadgeCheck /><div><h2>Identity verified</h2><p>Your ID and selfie passed KAILA’s identity checks. This is not a background check or safety guarantee.</p>{verification.verifiedUntil && <small>Valid until {verification.verifiedUntil}</small>}</div></section>
+    {verification.identityVerified ? <section className={styles.statusCard} data-kind="success"><BadgeCheck /><div><h2>Identity verified</h2><p>Your ID and selfie passed KAILA’s identity checks. This is not a background check, skills guarantee, safety guarantee, or protection against fraud.</p>{verification.verifiedUntil && <small>Valid until {verification.verifiedUntil}</small>}</div></section>
       : awaiting ? <section className={styles.statusCard}><RefreshCw /><div><h2>Your check is in review</h2><p>An authorized reviewer will compare your ID and selfie. We’ll notify you when it is ready.</p></div></section> : null}
     {verification.decisionReason && retry ? <Feedback kind="error" title="We could not complete the check">{reasonCopy[verification.decisionReason] ?? "Review the result and submit new evidence if requested."}</Feedback> : null}
     {!verification.captureAvailable && !verification.identityVerified ? <Feedback kind="info" title="Verification is not available yet">KAILA has not enabled identity-document collection. You can keep browsing in the meantime.</Feedback> : null}
     {verification.captureAvailable && !verification.identityVerified && !awaiting ? <form className={styles.form} onSubmit={submit}>
-      <section className={styles.card}><div className={styles.title}><ShieldCheck /><div><h2>Before you start</h2><p>KAILA collects your ID and a new selfie only to verify identity, handle appeals, and protect lawful claims.</p></div></div><ul><li>Only assigned, trained reviewers can view protected evidence.</li><li>Other members see only “Identity verified.”</li><li>Raw evidence is scheduled for deletion under KAILA’s retention policy.</li><li>No facial-recognition automation or AI training is used.</li></ul><Link href="/privacy">Read the full Privacy Policy</Link></section>
+      <section className={styles.card}><div className={styles.title}><ShieldCheck /><div><h2>Before you start</h2><p>{verification.purposeStatement ?? "To verify account identity, prevent and investigate fraud or impersonation, resolve platform disputes, enforce KAILA’s terms, and respond to valid legal requests."} The PIC is John Mark Agustin Estrosos Acido, an individual operating the KAILA platform. Privacy contact: privacy@kaila-app.com.</p></div></div><ul><li>Only assigned, trained reviewers can view protected evidence.</li><li>Other members see only “Identity verified.”</li><li>Raw evidence is scheduled for deletion under KAILA’s retention policy.</li><li>Identity consent is separate from location consent and is unticked by default.</li><li>No facial-recognition automation or AI training is used.</li></ul><Link href="/privacy">Read the full Privacy Policy</Link>{" · "}<Link href="/support/new">Privacy request via Support</Link></section>
       <section className={styles.card}><div className={styles.title}><FileCheck2 /><div><h2>Photograph your ID</h2><p>Use your own valid Philippine government-issued ID. Show every corner and avoid glare.</p></div></div>
         <label>ID type<select value={idType} onChange={(e) => setIdType(e.target.value)}>{idTypes.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
         <label>Expiry date <small>(if shown)</small><input type="date" value={expiresAt} onChange={(e) => setExpiresAt(e.target.value)} /></label>
@@ -189,7 +202,7 @@ export default function IdentityVerificationPage() {
         <Button type="button" variant="secondary" onClick={() => void openCamera("selfie")}><Camera />{selfie ? "Retake selfie" : "Open front camera"}</Button>
         {selfie ? <p className={styles.captured}>Fresh selfie captured</p> : null}
       </section>
-      <label className={styles.consent}><input type="checkbox" checked={consented} onChange={(e) => setConsented(e.target.checked)} /><span>I have read the Identity Verification Notice. I freely and specifically consent to KAILA collecting and using my government-issued ID and selfie for identity verification. I understand I can browse without consenting, but verification-dependent actions remain unavailable.</span></label>
+      <label className={styles.consent}><input type="checkbox" checked={consented} onChange={(e) => setConsented(e.target.checked)} /><span>I have read the Identity Verification Notice. I freely and specifically consent to KAILA collecting and using my government-issued ID and selfie for this purpose: {verification.purposeStatement ?? "To verify account identity, prevent and investigate fraud or impersonation, resolve platform disputes, enforce KAILA’s terms, and respond to valid legal requests."} I understand I can browse without consenting, but verification-dependent actions remain unavailable. This consent is separate from location sharing.</span></label>
       {message && <p role="alert">{message}</p>}<Button type="submit" disabled={!consented || !idFront || !selfie || state === "consenting" || state === "uploading"}>{state === "uploading" ? "Protecting and uploading…" : "I agree — submit for review"}</Button>
     </form> : null}
     {awaiting && <Button variant="secondary" disabled={state === "uploading"} onClick={() => void act("consent", "DELETE")}>Withdraw consent</Button>}

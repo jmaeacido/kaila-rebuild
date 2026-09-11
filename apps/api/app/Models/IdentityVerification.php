@@ -27,7 +27,7 @@ use Illuminate\Support\Carbon;
  * @property User|null $user
  * @property Collection<int, IdentityEvidence> $evidence
  */
-#[Fillable(['user_id', 'status', 'id_type', 'issuing_country', 'document_expires_at', 'name_matches', 'date_of_birth_matches', 'age_eligible', 'decision_reason', 'reviewed_by', 'assigned_to', 'submitted_at', 'reviewed_at', 'verified_until', 'appeal_requested_at', 'appeal_reviewed_by', 'consent_withdrawn_at'])]
+#[Fillable(['user_id', 'status', 'consent_purpose', 'consent_version', 'id_type', 'issuing_country', 'document_expires_at', 'name_matches', 'date_of_birth_matches', 'age_eligible', 'decision_reason', 'reviewed_by', 'assigned_to', 'submitted_at', 'reviewed_at', 'verified_until', 'appeal_requested_at', 'appeal_reviewed_by', 'consent_withdrawn_at'])]
 class IdentityVerification extends Model
 {
     use HasUuids;

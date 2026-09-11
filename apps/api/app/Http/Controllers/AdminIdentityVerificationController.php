@@ -3,10 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\IdentityEvidence;
+use App\Models\IdentityLegalHold;
 use App\Models\IdentityVerification;
 use App\Models\IdentityVerificationSession;
 use App\Models\User;
+use App\Support\AdminMfaService;
 use App\Support\AuditRecorder;
+use App\Support\IdentityEvidenceCipher;
 use App\Support\NotificationService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
@@ -18,10 +21,16 @@ use Symfony\Component\HttpFoundation\Response;
 
 class AdminIdentityVerificationController extends Controller
 {
-    public function __construct(private readonly AuditRecorder $audit, private readonly NotificationService $notifications) {}
+    public function __construct(
+        private readonly AuditRecorder $audit,
+        private readonly NotificationService $notifications,
+        private readonly AdminMfaService $mfa,
+        private readonly IdentityEvidenceCipher $cipher,
+    ) {}
 
     public function index(Request $request): JsonResponse
     {
+        $this->mfa->assertCanAccessIdentityEvidence($this->user($request), $request);
         $items = $this->pendingQuery($this->user($request))->with(['user:id,name,email', 'evidence'])->oldest('submitted_at')->get();
 
         return response()->json(['data' => $items->map(fn (IdentityVerification $item) => $this->present($item))]);
@@ -29,14 +38,17 @@ class AdminIdentityVerificationController extends Controller
 
     public function summary(Request $request): JsonResponse
     {
+        $this->mfa->assertCanAccessIdentityEvidence($this->user($request), $request);
+
         return response()->json(['data' => ['pendingCount' => $this->pendingQuery($this->user($request))->count()]]);
     }
 
     public function preview(Request $request, IdentityEvidence $identityEvidence): Response
     {
+        $actor = $this->user($request);
+        $this->mfa->assertCanAccessIdentityEvidence($actor, $request);
         $data = $request->validate(['reason' => ['required', Rule::in(['initial_review', 'appeal_review', 'safety_investigation'])]]);
         abort_unless($identityEvidence->scan_status === 'clean' && $identityEvidence->purged_at === null, 409, 'This evidence is not available for review.');
-        $actor = $this->user($request);
         DB::transaction(function () use ($identityEvidence, $actor): void {
             $verification = IdentityVerification::query()->lockForUpdate()->findOrFail($identityEvidence->identity_verification_id);
             abort_if($verification->appeal_requested_at !== null && $verification->reviewed_by === $actor->id, 409, 'Appeals must be handled by a different reviewer.');
@@ -45,10 +57,14 @@ class AdminIdentityVerificationController extends Controller
                 $verification->update(['assigned_to' => $actor->id, 'status' => 'in_review']);
             }
         });
-        $this->audit->record($request, 'identity.evidence_viewed', $actor, 'identity_evidence', $identityEvidence->id, ['reason' => $data['reason'], 'verificationId' => $identityEvidence->identity_verification_id]);
+        $this->audit->record($request, 'identity.evidence_viewed', $actor, 'identity_evidence', $identityEvidence->id, [
+            'reason' => $data['reason'],
+            'verificationId' => $identityEvidence->identity_verification_id,
+        ]);
 
-        $bytes = Storage::disk($identityEvidence->disk)->get($identityEvidence->object_key);
-        abort_if($bytes === null, 404, 'This evidence is no longer available.');
+        $payload = Storage::disk($identityEvidence->disk)->get($identityEvidence->object_key);
+        abort_if($payload === null, 404, 'This evidence is no longer available.');
+        $bytes = $identityEvidence->encrypted_at_rest ? $this->cipher->decrypt($payload) : $payload;
         abort_unless(function_exists('imagecreatefromstring'), 503, 'Protected preview processing is unavailable.');
         $image = @imagecreatefromstring($bytes);
         abort_if($image === false, 409, 'This evidence cannot be previewed.');
@@ -72,12 +88,13 @@ class AdminIdentityVerificationController extends Controller
 
     public function decide(Request $request, IdentityVerification $identityVerification): JsonResponse
     {
+        $reviewer = $this->user($request);
+        $this->mfa->assertCanAccessIdentityEvidence($reviewer, $request);
         $data = $request->validate([
             'decision' => ['required', Rule::in(['approved', 'rejected', 'needs_resubmission', 'escalated'])],
             'reason' => ['required', Rule::in(['matched', 'image_unclear', 'document_expired', 'document_unsupported', 'identity_mismatch', 'age_uncertain', 'underage', 'suspected_tampering', 'needs_senior_review'])],
             'nameMatches' => ['required', 'boolean'], 'dateOfBirthMatches' => ['required', 'boolean'], 'ageEligible' => ['required', 'boolean'],
         ]);
-        $reviewer = $this->user($request);
         abort_unless($identityVerification->assigned_to === $reviewer->id, 409, 'Open the evidence to claim this case before deciding it.');
         abort_unless($identityVerification->status === 'submitted' || $identityVerification->status === 'in_review' || $identityVerification->appeal_requested_at !== null, 409, 'This case is not awaiting review.');
         $latestSessionId = IdentityVerificationSession::query()->where('identity_verification_id', $identityVerification->id)->whereNotNull('used_at')->latest('used_at')->value('id');
@@ -102,15 +119,88 @@ class AdminIdentityVerificationController extends Controller
                 'assigned_to' => null,
             ]);
             $retention = $data['decision'] === 'approved' ? config('identity_verification.approved_retention_days') : config('identity_verification.rejected_retention_days');
-            $identityVerification->evidence()->update(['purge_after' => now()->addDays((int) $retention)]);
-            $this->audit->record($request, 'identity.review_decided', $reviewer, 'identity_verification', $identityVerification->id, ['decision' => $data['decision'], 'reason' => $data['reason'], 'appeal' => $appeal]);
+            $identityVerification->evidence()->whereNull('legal_hold_at')->update(['purge_after' => now()->addDays((int) $retention)]);
+            $this->audit->record($request, 'identity.review_decided', $reviewer, 'identity_verification', $identityVerification->id, [
+                'decision' => $data['decision'],
+                'reason' => $data['reason'],
+                'appeal' => $appeal,
+            ]);
         });
         $approved = $data['decision'] === 'approved';
-        $this->notifications->send($identityVerification->user_id, 'identity.reviewed', $approved ? 'Identity verified' : 'Identity check updated', $approved ? 'Your identity is verified.' : 'Open identity verification to review the result and next step.', 'identity_verification', $identityVerification->id, ['status' => $data['decision']]);
+        $this->notifications->send(
+            $identityVerification->user_id,
+            'identity.reviewed',
+            $approved ? 'Identity verified' : 'Identity check updated',
+            $approved
+                ? 'Your identity is verified. This is not a background check, skills guarantee, safety guarantee, or protection against fraud.'
+                : 'Open identity verification to review the result and next step.',
+            'identity_verification',
+            $identityVerification->id,
+            ['status' => $data['decision']],
+        );
 
         $identityVerification->refresh()->load(['user', 'evidence']);
 
         return response()->json(['data' => $this->present($identityVerification)]);
+    }
+
+    public function placeHold(Request $request, IdentityVerification $identityVerification): JsonResponse
+    {
+        $actor = $this->user($request);
+        $this->mfa->assertCanAccessIdentityEvidence($actor, $request);
+        $data = $request->validate([
+            'caseReference' => ['required', 'string', 'max:128'],
+            'reason' => ['required', 'string', 'max:255'],
+            'reviewAt' => ['nullable', 'date', 'after:now'],
+        ]);
+        $hold = DB::transaction(function () use ($identityVerification, $actor, $data, $request) {
+            $hold = IdentityLegalHold::query()->create([
+                'identity_verification_id' => $identityVerification->id,
+                'authorized_by' => $actor->id,
+                'case_reference' => $data['caseReference'],
+                'reason' => $data['reason'],
+                'starts_at' => now(),
+                'review_at' => $data['reviewAt'] ?? now()->addDays(30),
+            ]);
+            $identityVerification->evidence()->whereNull('purged_at')->update([
+                'legal_hold_at' => now(),
+                'legal_hold_id' => $hold->id,
+                'purge_after' => now()->addYears(50),
+            ]);
+            $this->audit->record($request, 'identity.legal_hold_placed', $actor, 'identity_verification', $identityVerification->id, [
+                'holdId' => $hold->id,
+                'caseReference' => $data['caseReference'],
+            ]);
+
+            return $hold;
+        });
+
+        return response()->json(['data' => ['id' => $hold->id, 'caseReference' => $hold->case_reference]], 201);
+    }
+
+    public function releaseHold(Request $request, IdentityLegalHold $identityLegalHold): JsonResponse
+    {
+        $actor = $this->user($request);
+        $this->mfa->assertCanAccessIdentityEvidence($actor, $request);
+        $data = $request->validate(['releaseReason' => ['required', 'string', 'max:255']]);
+        abort_if($identityLegalHold->released_at !== null, 409, 'This hold is already released.');
+        DB::transaction(function () use ($identityLegalHold, $actor, $data, $request): void {
+            $identityLegalHold->update([
+                'released_at' => now(),
+                'released_by' => $actor->id,
+                'release_reason' => $data['releaseReason'],
+            ]);
+            IdentityEvidence::query()->where('legal_hold_id', $identityLegalHold->id)->whereNull('purged_at')->update([
+                'legal_hold_at' => null,
+                'legal_hold_id' => null,
+                'purge_after' => now()->addDays((int) config('identity_verification.rejected_retention_days')),
+            ]);
+            $this->audit->record($request, 'identity.legal_hold_released', $actor, 'identity_verification', $identityLegalHold->identity_verification_id, [
+                'holdId' => $identityLegalHold->id,
+            ]);
+        });
+
+        return response()->json(['data' => ['id' => $identityLegalHold->id, 'released' => true]]);
     }
 
     /** @return array<string, mixed> */

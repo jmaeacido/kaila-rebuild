@@ -9,7 +9,7 @@
         Hi {{ $name !== '' ? $name : 'there' }}, welcome to KAILA. Your account is ready.
     </p>
     <p style="margin:0;">
-        Find trusted local services, post what you need, and connect with people nearby.
+        Find local services nearby, post what you need, and connect with people in your community.
         @if ($providerIntent)
             You can also finish your provider profile when you’re ready to offer your services.
         @endif

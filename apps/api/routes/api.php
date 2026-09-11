@@ -10,6 +10,7 @@ use App\Http\Controllers\AdminPhaseNineController;
 use App\Http\Controllers\AdminReportController;
 use App\Http\Controllers\AdminSupportCaseController;
 use App\Http\Controllers\AdminMailController;
+use App\Http\Controllers\AdminMfaController;
 use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\AppearanceController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
@@ -103,8 +104,8 @@ Route::middleware('mobile.auth')->group(function (): void {
     Route::get('/auth/mobile/identity-verification', [IdentityVerificationController::class, 'show']);
     Route::middleware('throttle:identity-verification')->post('/auth/mobile/identity-verification/consent', [IdentityVerificationController::class, 'consent']);
     Route::middleware('throttle:identity-verification')->post('/auth/mobile/identity-verification/submit', [IdentityVerificationController::class, 'submit']);
-    Route::post('/auth/mobile/identity-verification/appeal', [IdentityVerificationController::class, 'appeal']);
-    Route::delete('/auth/mobile/identity-verification/consent', [IdentityVerificationController::class, 'withdraw']);
+    Route::middleware('throttle:identity-verification')->post('/auth/mobile/identity-verification/appeal', [IdentityVerificationController::class, 'appeal']);
+    Route::middleware('throttle:identity-verification')->delete('/auth/mobile/identity-verification/consent', [IdentityVerificationController::class, 'withdraw']);
     Route::get('/auth/mobile/jobs', [ServiceJobController::class, 'index']);
     Route::post('/auth/mobile/jobs', [ServiceJobController::class, 'store']);
     Route::get('/auth/mobile/jobs/{serviceJob}', [ServiceJobController::class, 'show']);
@@ -219,8 +220,8 @@ Route::middleware('auth')->group(function (): void {
     Route::get('/me/identity-verification', [IdentityVerificationController::class, 'show']);
     Route::middleware('throttle:identity-verification')->post('/me/identity-verification/consent', [IdentityVerificationController::class, 'consent']);
     Route::middleware('throttle:identity-verification')->post('/me/identity-verification/submit', [IdentityVerificationController::class, 'submit']);
-    Route::post('/me/identity-verification/appeal', [IdentityVerificationController::class, 'appeal']);
-    Route::delete('/me/identity-verification/consent', [IdentityVerificationController::class, 'withdraw']);
+    Route::middleware('throttle:identity-verification')->post('/me/identity-verification/appeal', [IdentityVerificationController::class, 'appeal']);
+    Route::middleware('throttle:identity-verification')->delete('/me/identity-verification/consent', [IdentityVerificationController::class, 'withdraw']);
     Route::get('/jobs', [ServiceJobController::class, 'index']);
     Route::get('/jobs/resolve-area', JobAreaController::class);
     Route::post('/jobs', [ServiceJobController::class, 'store']);
@@ -341,8 +342,16 @@ Route::middleware('auth')->group(function (): void {
         Route::get('/review-queue', [AdminMarketplaceController::class, 'queue']);
         Route::get('/identity-verifications', [AdminIdentityVerificationController::class, 'index']);
         Route::get('/identity-verifications/summary', [AdminIdentityVerificationController::class, 'summary']);
-        Route::get('/identity-verifications/evidence/{identityEvidence}/preview', [AdminIdentityVerificationController::class, 'preview']);
-        Route::put('/identity-verifications/{identityVerification}/decision', [AdminIdentityVerificationController::class, 'decide']);
+        Route::middleware('identity.mfa')->group(function (): void {
+            Route::get('/identity-verifications/evidence/{identityEvidence}/preview', [AdminIdentityVerificationController::class, 'preview']);
+            Route::put('/identity-verifications/{identityVerification}/decision', [AdminIdentityVerificationController::class, 'decide']);
+            Route::post('/identity-verifications/{identityVerification}/holds', [AdminIdentityVerificationController::class, 'placeHold']);
+            Route::post('/identity-legal-holds/{identityLegalHold}/release', [AdminIdentityVerificationController::class, 'releaseHold']);
+        });
+        Route::get('/mfa', [AdminMfaController::class, 'status']);
+        Route::post('/mfa/setup', [AdminMfaController::class, 'beginSetup']);
+        Route::post('/mfa/confirm', [AdminMfaController::class, 'confirmSetup']);
+        Route::post('/mfa/challenge', [AdminMfaController::class, 'challenge']);
         Route::get('/assets/{profileAsset}/preview', [AdminMarketplaceController::class, 'assetPreview']);
         Route::post('/categories', [AdminMarketplaceController::class, 'category']);
         Route::put('/categories/{serviceCategory}', [AdminMarketplaceController::class, 'category']);

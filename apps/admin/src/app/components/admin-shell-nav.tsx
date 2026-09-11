@@ -113,6 +113,7 @@ export function AdminShellNav() {
                 aria-label={count > 0 ? `${label}, ${count} awaiting review` : label}
                 href={href}
                 key={href}
+                title={label}
               >
                 <Icon aria-hidden="true" />
                 <span>{label}</span>
