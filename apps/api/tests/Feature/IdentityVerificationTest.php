@@ -9,12 +9,14 @@ use App\Models\IdentityVerificationConsent;
 use App\Models\IdentityVerificationSession;
 use App\Models\User;
 use App\Support\IdentityVerificationService;
+use App\Support\TotpService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Tests\TestCase;
 
 class IdentityVerificationTest extends TestCase
@@ -91,7 +93,7 @@ class IdentityVerificationTest extends TestCase
         ]);
 
         // Pending summary requires MFA; configure and challenge first.
-        $totp = app(\App\Support\TotpService::class);
+        $totp = app(TotpService::class);
         $secret = $totp->generateSecret();
         $admin->forceFill(['mfa_secret' => encrypt($secret), 'mfa_confirmed_at' => now(), 'mfa_recovery_codes' => []])->save();
         $this->actingAs($admin)->postJson('/api/v1/admin/marketplace/mfa/challenge', [
@@ -115,7 +117,7 @@ class IdentityVerificationTest extends TestCase
         try {
             app(IdentityVerificationService::class)->enforce($user, 'post_job');
             $this->fail('Expected enforcement abort.');
-        } catch (\Symfony\Component\HttpKernel\Exception\HttpException $exception) {
+        } catch (HttpException $exception) {
             $this->assertSame(409, $exception->getStatusCode());
             $this->assertSame('Verify your identity before posting your first job.', $exception->getMessage());
         }

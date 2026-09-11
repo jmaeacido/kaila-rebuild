@@ -21,22 +21,22 @@ class ReplayIdentityDeletionTombstones extends Command
         $dry = (bool) $this->option('dry-run');
         $removed = 0;
         IdentityDeletionTombstone::query()->orderBy('purged_at')->chunkById(100, function ($rows) use ($dry, &$removed): void {
-                foreach ($rows as $tombstone) {
-                    $disk = Storage::disk($tombstone->disk);
-                    $candidates = array_unique(array_filter([
-                        $tombstone->object_key,
-                        "purged/{$tombstone->identity_evidence_id}",
-                    ]));
-                    foreach ($candidates as $key) {
-                        if ($disk->exists($key)) {
-                            if (! $dry) {
-                                $disk->delete($key);
-                            }
-                            $removed++;
-                            $this->line(($dry ? '[dry-run] would delete ' : 'deleted ').$tombstone->disk.':'.$key);
+            foreach ($rows as $tombstone) {
+                $disk = Storage::disk($tombstone->disk);
+                $candidates = array_unique(array_filter([
+                    $tombstone->object_key,
+                    "purged/{$tombstone->identity_evidence_id}",
+                ]));
+                foreach ($candidates as $key) {
+                    if ($disk->exists($key)) {
+                        if (! $dry) {
+                            $disk->delete($key);
                         }
+                        $removed++;
+                        $this->line(($dry ? '[dry-run] would delete ' : 'deleted ').$tombstone->disk.':'.$key);
                     }
                 }
+            }
         });
         $this->info("Tombstone replay complete. Objects touched: {$removed}");
 

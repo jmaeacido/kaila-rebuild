@@ -82,6 +82,7 @@ class AdminMfaService
             foreach ($codes as $stored) {
                 if (! $ok && hash_equals((string) $stored, $hash)) {
                     $ok = true;
+
                     continue;
                 }
                 $remaining[] = $stored;

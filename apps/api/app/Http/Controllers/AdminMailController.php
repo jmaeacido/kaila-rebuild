@@ -132,7 +132,7 @@ class AdminMailController extends Controller
                     (int) $recipient['user']->id,
                     self::INBOX_EVENT_TYPE,
                     "You're invited to test KAILA on Android",
-                    "KAILA invited you to join Android internal testing. Open this update, become a tester on Google Play, then install the app.",
+                    'KAILA invited you to join Android internal testing. Open this update, become a tester on Google Play, then install the app.',
                     self::INBOX_RESOURCE_TYPE,
                     self::INBOX_RESOURCE_ID,
                     [

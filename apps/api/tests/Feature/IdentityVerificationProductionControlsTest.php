@@ -4,13 +4,11 @@ namespace Tests\Feature;
 
 use App\Jobs\ScanIdentityEvidence;
 use App\Models\AuditEvent;
-use App\Models\IdentityDeletionTombstone;
 use App\Models\IdentityEvidence;
 use App\Models\IdentityVerification;
 use App\Models\IdentityVerificationConsent;
 use App\Models\IdentityVerificationSession;
 use App\Models\User;
-use App\Support\AdminMfaService;
 use App\Support\IdentityEvidenceCipher;
 use App\Support\IdentityImageValidator;
 use App\Support\SensitiveDataRedactor;
@@ -21,6 +19,7 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Tests\TestCase;
 
 class IdentityVerificationProductionControlsTest extends TestCase
@@ -234,7 +233,7 @@ class IdentityVerificationProductionControlsTest extends TestCase
         try {
             app(IdentityImageValidator::class)->validateAndRead($file, 10240);
             $this->fail('Expected abort');
-        } catch (\Symfony\Component\HttpKernel\Exception\HttpException $exception) {
+        } catch (HttpException $exception) {
             $this->assertSame(422, $exception->getStatusCode());
         } finally {
             @unlink($tmp);
