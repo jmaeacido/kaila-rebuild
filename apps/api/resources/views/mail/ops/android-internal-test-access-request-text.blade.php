@@ -10,10 +10,10 @@ Note:
 {{ $note }}
 @endif
 
-Invite them from Admin → People using Send Android test invite with this Google account email.
+Review and invite them from Admin → Early access.
 Reply to this message to contact the requester directly.
 
-Admin People: {{ $adminPeopleUrl }}
+Early access queue: {{ $adminEarlyAccessUrl }}
 Play internal testing: {{ $playTestUrl }}
 
 KAILA — Nearby help, made simple.

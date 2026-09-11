@@ -21,6 +21,14 @@ export function adminNotificationRoute(data: Record<string, string | undefined>)
     return `/support?${query.toString()}`;
   }
   if (
+    eventType === "ops.android_test_access_request" ||
+    resourceType === "android_internal_test_request"
+  ) {
+    return safeId(data.requestId)
+      ? `/early-access?request=${encodeURIComponent(data.requestId)}`
+      : "/early-access";
+  }
+  if (
     eventType.startsWith("admin.review.") ||
     ["provider_profile", "provider_credential", "profile_asset", "message_asset"].includes(resourceType)
   ) {

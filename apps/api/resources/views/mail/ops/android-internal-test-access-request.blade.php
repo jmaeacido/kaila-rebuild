@@ -1,6 +1,6 @@
 <x-mail.layout
-    action-label="Open Admin People"
-    :action-url="$adminPeopleUrl"
+    action-label="Open Early Access queue"
+    :action-url="$adminEarlyAccessUrl"
     eyebrow="Android early access"
     preheader="Someone requested KAILA Android internal testing access."
     title="New Android early access request"
@@ -25,8 +25,7 @@
         <p style="margin:0 0 16px;white-space:pre-wrap;color:#344054;font-size:14px;line-height:1.6;">{{ $note }}</p>
     @endif
     <p style="margin:0 0 16px;">
-        Invite them from <strong>Admin → People</strong> using
-        <strong>Send Android test invite</strong> with this Google account email.
+        Review and invite them from <strong>Admin → Early access</strong>.
         Reply to this message to contact the requester directly.
     </p>
     <p style="margin:0;color:#344054;font-size:14px;line-height:1.6;">

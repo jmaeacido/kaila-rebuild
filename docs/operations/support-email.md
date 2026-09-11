@@ -81,11 +81,15 @@ Pasted emails without an account receive email only.
 ### Public early-access requests
 
 The marketing `#download` / `/download` form posts to
-`POST /api/v1/public/android-internal-test-requests` (throttled). That queues a
-KAILA-branded message **to** `support@kaila-app.com` with the requester’s name,
-Google account email, optional note, and Reply-To set to the requester. It does
-**not** auto-invite on Play Console—invite them from Admin → People after review.
-See ADR-0067.
+`POST /api/v1/public/android-internal-test-requests` (throttled). That:
+
+1. Persists the request in `android_internal_test_requests`
+2. Queues a KAILA-branded message **to** `support@kaila-app.com` (Reply-To = requester)
+3. Fans out an admin DurableNotification (`ops.android_test_access_request`)
+
+It does **not** auto-invite on Play Console. Review and invite from
+**Admin → Early access** (`/early-access`), or from People bulk invite.
+See ADR-0067 and ADR-0069.
 
 API env (optional overrides; defaults match production Play internal testing):
 

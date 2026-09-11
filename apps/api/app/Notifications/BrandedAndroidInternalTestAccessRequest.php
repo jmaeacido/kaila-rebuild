@@ -15,6 +15,7 @@ class BrandedAndroidInternalTestAccessRequest extends Notification implements Sh
         private readonly string $requesterName,
         private readonly string $requesterEmail,
         private readonly ?string $note = null,
+        private readonly ?string $requestId = null,
     ) {
         $this->afterCommit();
     }
@@ -27,13 +28,17 @@ class BrandedAndroidInternalTestAccessRequest extends Notification implements Sh
 
     public function toMail(object $notifiable): MailMessage
     {
-        $adminPeopleUrl = rtrim((string) config('app.admin_url'), '/').'/users';
+        $adminEarlyAccessUrl = rtrim((string) config('app.admin_url'), '/').'/early-access';
+        if (is_string($this->requestId) && $this->requestId !== '') {
+            $adminEarlyAccessUrl .= '?request='.rawurlencode($this->requestId);
+        }
+
         $data = [
             'requesterName' => $this->requesterName,
             'requesterEmail' => $this->requesterEmail,
             'note' => $this->note,
             'submittedAt' => now()->timezone(config('app.timezone'))->toDayDateTimeString(),
-            'adminPeopleUrl' => $adminPeopleUrl,
+            'adminEarlyAccessUrl' => $adminEarlyAccessUrl,
             'playTestUrl' => (string) config('kaila.android_internal_test_url'),
         ];
 

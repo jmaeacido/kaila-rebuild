@@ -11,6 +11,7 @@ describe("admin notification routing", () => {
     expect(adminNotificationRoute({ eventType: "dispute.opened", caseId: "case-4" })).toBe("/cases?case=case-4");
     expect(adminNotificationRoute({ eventType: "support.case.created", caseId: "case-8" })).toBe("/support?case=case-8");
     expect(adminNotificationRoute({ eventType: "support.message.created", caseId: "case-8", messageId: "42" })).toBe("/support?case=case-8&message=42");
+    expect(adminNotificationRoute({ eventType: "ops.android_test_access_request", resourceType: "android_internal_test_request", requestId: "req-1" })).toBe("/early-access?request=req-1");
   });
 
   it("rejects unsafe resource identifiers", () => {

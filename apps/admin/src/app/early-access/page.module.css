@@ -1,0 +1,136 @@
+.workspace {
+  overflow: hidden;
+  padding: 0;
+}
+
+.workspaceHeader {
+  display: grid;
+  gap: var(--spacing-16);
+  padding: var(--spacing-24);
+}
+
+.workspaceHeader h2 {
+  color: var(--color-ink);
+  font-size: var(--font-section-size);
+}
+
+.workspaceHeader p {
+  color: var(--color-text-secondary);
+  font-size: var(--font-small-size);
+  margin-top: var(--spacing-4);
+}
+
+.filters {
+  display: flex;
+  gap: var(--spacing-8);
+  overflow: auto;
+}
+
+.filters button {
+  align-items: center;
+  background: var(--color-surface);
+  border: var(--control-border-width) solid var(--color-border);
+  border-radius: var(--radius-button);
+  color: var(--color-text);
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  gap: var(--spacing-8);
+  justify-content: center;
+  min-height: var(--control-min-height);
+  padding: var(--spacing-8) var(--spacing-16);
+}
+
+.filters button[aria-pressed="true"] {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.message {
+  border-top: var(--control-border-width) solid var(--color-border);
+  color: var(--color-text-secondary);
+  font-size: var(--font-small-size);
+  margin: 0;
+  padding: var(--spacing-12) var(--spacing-24);
+}
+
+.list article {
+  align-items: flex-start;
+  border-top: var(--control-border-width) solid var(--color-border);
+  display: grid;
+  gap: var(--spacing-12);
+  grid-template-columns: auto minmax(0, 1fr);
+  padding: var(--spacing-16) var(--spacing-24);
+}
+
+.list article.focused {
+  background: color-mix(in srgb, var(--color-primary) 8%, transparent);
+}
+
+.pendingIcon,
+.doneIcon,
+.blockIcon {
+  align-items: center;
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+  border-radius: var(--radius-pill);
+  color: var(--color-primary);
+  display: flex;
+  height: var(--spacing-48);
+  justify-content: center;
+  width: var(--spacing-48);
+}
+
+.doneIcon {
+  background: var(--color-success-surface);
+  color: var(--color-success);
+}
+
+.blockIcon {
+  background: var(--color-warning-surface);
+  color: var(--color-warning);
+}
+
+.pendingIcon svg,
+.doneIcon svg,
+.blockIcon svg {
+  height: var(--spacing-24);
+  width: var(--spacing-24);
+}
+
+.copy {
+  display: grid;
+  gap: var(--spacing-8);
+  min-width: 0;
+}
+
+.copy h3 {
+  color: var(--color-ink);
+  font-size: var(--font-card-title-size);
+  margin: 0;
+}
+
+.copy p {
+  color: var(--color-text-secondary);
+  font-size: var(--font-small-size);
+  margin: 0;
+}
+
+.copy a {
+  color: var(--color-primary);
+}
+
+.note {
+  white-space: pre-wrap;
+}
+
+.meta {
+  font-size: var(--font-caption-size);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-8);
+  margin-top: var(--spacing-4);
+}

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AccountDeletionController;
 use App\Http\Controllers\AdminAccountDeletionController;
+use App\Http\Controllers\AdminAndroidInternalTestRequestController;
 use App\Http\Controllers\AdminDisputeController;
 use App\Http\Controllers\AdminIdentityVerificationController;
 use App\Http\Controllers\AdminMailController;
@@ -331,6 +332,9 @@ Route::middleware('auth')->group(function (): void {
         Route::post('/users/{user}/deactivate', [AdminUserController::class, 'deactivate']);
         Route::delete('/users/{user}', [AdminUserController::class, 'destroy']);
         Route::post('/mail/android-internal-test', [AdminMailController::class, 'sendAndroidInternalTestInvite']);
+        Route::get('/android-internal-test-requests', [AdminAndroidInternalTestRequestController::class, 'index']);
+        Route::post('/android-internal-test-requests/{androidInternalTestRequest}/invite', [AdminAndroidInternalTestRequestController::class, 'invite']);
+        Route::put('/android-internal-test-requests/{androidInternalTestRequest}', [AdminAndroidInternalTestRequestController::class, 'update']);
         Route::get('/support/cases', [AdminSupportCaseController::class, 'index']);
         Route::get('/support/cases/{supportCase}', [AdminSupportCaseController::class, 'show']);
         Route::put('/support/cases/{supportCase}', [AdminSupportCaseController::class, 'update']);

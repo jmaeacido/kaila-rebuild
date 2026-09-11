@@ -20,6 +20,7 @@ class BrandedAndroidInternalTestAccessRequestTest extends TestCase
             requesterName: 'Arlene Santos',
             requesterEmail: 'arlene@example.test',
             note: 'Happy to test provider flows.',
+            requestId: 'req-123',
         );
         $notifiable = (new AnonymousNotifiable)->route('mail', 'support@kaila-app.com');
         $mail = $notification->toMail($notifiable);
@@ -34,8 +35,8 @@ class BrandedAndroidInternalTestAccessRequestTest extends TestCase
         $this->assertStringContainsString('Arlene Santos', $html);
         $this->assertStringContainsString('arlene@example.test', $html);
         $this->assertStringContainsString('Happy to test provider flows.', $html);
-        $this->assertStringContainsString('Open Admin People', $html);
-        $this->assertStringContainsString('https://admin.kaila-app.com/users', $html);
+        $this->assertStringContainsString('Open Early Access queue', $html);
+        $this->assertStringContainsString('https://admin.kaila-app.com/early-access?request=req-123', $html);
         $this->assertStringContainsString('https://play.google.com/apps/internaltest/example', $html);
         $this->assertStringContainsString('kaila-bull-app-icon-v2.png', $html);
         $this->assertStringContainsString('kaila-wordmark.png', $html);
