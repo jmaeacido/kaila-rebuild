@@ -38,9 +38,9 @@ class AdminIdentityVerificationController extends Controller
 
     public function summary(Request $request): JsonResponse
     {
-        $this->mfa->assertCanAccessIdentityEvidence($this->user($request), $request);
+        $actor = $this->user($request);
 
-        return response()->json(['data' => ['pendingCount' => $this->pendingQuery($this->user($request))->count()]]);
+        return response()->json(['data' => ['pendingCount' => $this->pendingQuery($actor)->count()]]);
     }
 
     public function preview(Request $request, IdentityEvidence $identityEvidence): Response

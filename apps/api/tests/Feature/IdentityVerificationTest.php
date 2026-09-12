@@ -92,7 +92,12 @@ class IdentityVerificationTest extends TestCase
             'title' => 'Identity check needs review',
         ]);
 
-        // Pending summary requires MFA; configure and challenge first.
+        // The navigation badge is available to administrators before the
+        // separate MFA challenge that protects the review queue and evidence.
+        $this->actingAs($admin)->getJson('/api/v1/admin/marketplace/identity-verifications/summary')
+            ->assertOk()
+            ->assertJsonPath('data.pendingCount', 1);
+
         $totp = app(TotpService::class);
         $secret = $totp->generateSecret();
         $admin->forceFill(['mfa_secret' => encrypt($secret), 'mfa_confirmed_at' => now(), 'mfa_recovery_codes' => []])->save();
@@ -100,9 +105,6 @@ class IdentityVerificationTest extends TestCase
             'code' => $totp->codeAt($secret, (int) floor(time() / 30)),
         ])->assertOk();
 
-        $this->actingAs($admin)->getJson('/api/v1/admin/marketplace/identity-verifications/summary')
-            ->assertOk()
-            ->assertJsonPath('data.pendingCount', 1);
         $this->actingAs($admin)->getJson('/api/v1/admin/marketplace/identity-verifications')
             ->assertOk()
             ->assertJsonCount(1, 'data')
