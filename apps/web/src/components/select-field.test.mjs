@@ -27,3 +27,13 @@ test("SelectField optionally renders colorful service icons without changing gen
   assert.match(source, /placeholderServiceIcon\?: string/);
   assert.match(source, /<ServiceCategoryBadge icon=\{option\.serviceIcon\}/);
 });
+
+test("SelectField supports searchable triggers and nested option groups", () => {
+  assert.match(source, /searchable\?: boolean/);
+  assert.match(source, /SelectOptionGroup/);
+  assert.match(source, /filterGroups/);
+  assert.match(source, /type="search"/);
+  assert.match(source, /groupLabel/);
+  assert.match(styles, /\[data-searching="true"\]/);
+  assert.match(styles, /\.subgroupLabel/);
+});

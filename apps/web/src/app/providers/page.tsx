@@ -6,11 +6,70 @@ import Image from "next/image";
 import { ArrowLeft, BriefcaseBusiness, MapPin, Search, Star } from "lucide-react";
 import { Button, Feedback } from "@kaila/ui";
 import { IdentityVerifiedBadge } from "../../components/identity-verified-badge";
-import { SelectField } from "../../components/select-field";
+import { SelectField, type SelectOptionGroup } from "../../components/select-field";
 import { ServiceCategoryBadge } from "../../components/service-category-icon";
 import styles from "./providers.module.css";
 
 type Reference = { id: number; name: string; icon?: string; parent_id?: number | null; type?: string };
+
+function buildCityGroups(areas: Reference[]): SelectOptionGroup[] {
+  const byId = new Map(areas.map((area) => [area.id, area]));
+  const regionMap = new Map<
+    number,
+    {
+      label: string;
+      provinces: Map<number | "independent", { label: string; options: { value: string; label: string }[] }>;
+    }
+  >();
+
+  for (const area of areas) {
+    if (!["city", "municipality"].includes(area.type || "")) continue;
+    const parent = area.parent_id != null ? byId.get(area.parent_id) : undefined;
+    let region: Reference | undefined;
+    let provinceKey: number | "independent";
+    let provinceLabel: string;
+
+    if (parent?.type === "province") {
+      provinceKey = parent.id;
+      provinceLabel = parent.name;
+      region = parent.parent_id != null ? byId.get(parent.parent_id) : undefined;
+    } else if (parent?.type === "region") {
+      provinceKey = "independent";
+      provinceLabel = "Independent City";
+      region = parent;
+    } else {
+      continue;
+    }
+
+    if (!region || region.type !== "region") continue;
+
+    let regionEntry = regionMap.get(region.id);
+    if (!regionEntry) {
+      regionEntry = { label: region.name, provinces: new Map() };
+      regionMap.set(region.id, regionEntry);
+    }
+
+    let provinceEntry = regionEntry.provinces.get(provinceKey);
+    if (!provinceEntry) {
+      provinceEntry = { label: provinceLabel, options: [] };
+      regionEntry.provinces.set(provinceKey, provinceEntry);
+    }
+    provinceEntry.options.push({ value: String(area.id), label: area.name });
+  }
+
+  return [...regionMap.values()]
+    .sort((left, right) => left.label.localeCompare(right.label))
+    .map((region) => ({
+      label: region.label,
+      groups: [...region.provinces.values()]
+        .sort((left, right) => left.label.localeCompare(right.label))
+        .map((province) => ({
+          label: province.label,
+          options: province.options.sort((left, right) => left.label.localeCompare(right.label)),
+        })),
+    }));
+}
+
 type Provider = {
   id: number;
   displayName: string;
@@ -74,9 +133,7 @@ export default function FindProvidersPage() {
     return () => window.clearTimeout(timer);
   }, [providers, search, status]);
 
-  const areaOptions = references.areas
-    .filter((item) => ["city", "municipality"].includes(item.type || ""))
-    .map((item) => ({ value: String(item.id), label: item.name }));
+  const areaGroups = buildCityGroups(references.areas);
 
   return (
     <main className={styles.shell}>
@@ -109,7 +166,9 @@ export default function FindProvidersPage() {
             value={filters.areaId}
             onChange={(areaId) => setFilters((current) => ({ ...current, areaId }))}
             placeholder="All cities and municipalities"
-            options={areaOptions}
+            groups={areaGroups}
+            searchable
+            searchPlaceholder="Search city or municipality"
           />
         </label>
         <label>
