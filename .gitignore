@@ -14,6 +14,9 @@ dist/
 scripts/.cache/
 scripts/dev/runtime/
 
+# Generated Facebook marketing posts and related assets
+/output/marketing/facebook/
+
 # Local env and secret files
 **/.env
 **/.env.*
