@@ -127,6 +127,20 @@ export default function AdminHome() {
   const [rejectionTarget, setRejectionTarget] = useState<RejectionTarget | null>(null);
   const [focusQueue, setFocusQueue] = useState<"files" | "providers" | "credentials">("files");
 
+  useEffect(() => {
+    const focusNotificationTarget = () => {
+      const hash = window.location.hash.slice(1);
+      if (hash.startsWith("provider-")) setFocusQueue("providers");
+      else if (hash.startsWith("credential-")) setFocusQueue("credentials");
+      else if (hash.startsWith("asset-")) setFocusQueue("files");
+      else return;
+      window.setTimeout(() => document.getElementById(hash)?.scrollIntoView({ behavior: "smooth", block: "center" }), 0);
+    };
+    focusNotificationTarget();
+    window.addEventListener("hashchange", focusNotificationTarget);
+    return () => window.removeEventListener("hashchange", focusNotificationTarget);
+  }, [queue, state]);
+
   const requestQueue = useCallback(async (): Promise<QueueResult> => {
     const response = await fetch("/api/v1/admin/marketplace/review-queue", {
       credentials: "include",
@@ -269,7 +283,13 @@ export default function AdminHome() {
         notifyAdminSignedOut();
         return;
       }
-      if (!response.ok) throw new Error("Review request failed.");
+      if (!response.ok) {
+        const body = await response.json().catch(() => null) as {
+          message?: string;
+          error?: { message?: string };
+        } | null;
+        throw new Error(body?.error?.message ?? body?.message ?? "The decision could not be saved. Try again.");
+      }
 
       applyQueueResult(await requestQueue());
       setReviewMessage(
@@ -279,8 +299,8 @@ export default function AdminHome() {
             : "The file was rejected."
           : "The review decision was saved.",
       );
-    } catch {
-      setReviewError("The decision could not be saved. Try again.");
+    } catch (error) {
+      setReviewError(error instanceof Error ? error.message : "The decision could not be saved. Try again.");
     } finally {
       setReviewingId(null);
     }
@@ -469,7 +489,7 @@ export default function AdminHome() {
             title="File reviews"
           >
             {queue.assets.map((asset) => (
-              <article className={styles.assetCard} key={asset.id}>
+              <article className={styles.assetCard} id={`asset-${asset.id}`} key={asset.id}>
                 <div className={styles.assetPreview}>
                   {asset.mimeType.startsWith("image/") ? (
                     <Image
@@ -571,7 +591,7 @@ export default function AdminHome() {
             title="Provider profiles"
           >
             {queue.providers.map((provider) => (
-              <article className={styles.reviewCard} key={provider.id}>
+              <article className={styles.reviewCard} id={`provider-${provider.id}`} key={provider.id}>
                 <div className={styles.reviewCardHeading}>
                   <div><span>{provider.isUpdate ? "Profile update" : "Provider application"}</span><h3>{provider.displayName}</h3></div>
                   <small>{formatDate(provider.submittedAt)}</small>
@@ -636,7 +656,7 @@ export default function AdminHome() {
             title="Credentials"
           >
             {queue.credentials.map((credential) => (
-              <article className={styles.credentialCard} key={credential.id}>
+              <article className={styles.credentialCard} id={`credential-${credential.id}`} key={credential.id}>
                 <div className={styles.assetPreview}>
                   {credential.asset.mimeType.startsWith("image/") ? <Image alt={`Preview of ${credential.label}`} height={480} src={credential.asset.previewUrl} unoptimized width={640} /> : <a href={credential.asset.previewUrl} rel="noreferrer" target="_blank"><Eye aria-hidden="true" />Open credential</a>}
                 </div>

@@ -106,6 +106,13 @@ export default function IdentityVerificationQueue() {
   }, [load]);
   useAdminRealtimeRefresh(load);
 
+  useEffect(() => {
+    if (state !== "ready") return;
+    const hash = window.location.hash.slice(1);
+    if (!hash.startsWith("identity-")) return;
+    window.setTimeout(() => document.getElementById(hash)?.scrollIntoView({ behavior: "smooth", block: "center" }), 0);
+  }, [items, state]);
+
   async function beginMfaSetup() {
     setMfaBusy(true);
     setNotice(null);
@@ -348,7 +355,7 @@ export default function IdentityVerificationQueue() {
           const cleanCount = item.evidence.filter((evidence) => evidence.scanStatus === "clean").length;
           const pendingEvidence = item.evidence.filter((evidence) => evidence.scanStatus !== "clean");
           return (
-            <article className={styles.card} key={item.id}>
+            <article className={styles.card} id={`identity-${item.id}`} key={item.id}>
               <div>
                 <p className={styles.eyebrow}>{item.appealRequestedAt ? "APPEAL — DIFFERENT REVIEWER REQUIRED" : "IDENTITY CHECK"}</p>
                 <h2>{item.user.name}</h2>

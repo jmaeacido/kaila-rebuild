@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\ClientProfile;
 use App\Models\User;
 use App\Notifications\BrandedWelcome;
 use App\Support\AuditRecorder;
@@ -105,14 +106,21 @@ class SocialAuthenticationController extends Controller
                     return [$user, false];
                 }
 
-                return [User::query()->create($values + [
+                $user = User::query()->create($values + [
                     'name' => $profile['name'],
                     'email' => $profile['email'],
                     'password' => Str::random(64),
                     'terms_accepted_version' => (string) config('policies.terms_version'),
                     'privacy_accepted_version' => (string) config('policies.privacy_version'),
                     'provider_intent' => (bool) ($pending['provider_intent'] ?? false),
-                ]), true];
+                ]);
+                ClientProfile::query()->create([
+                    'user_id' => $user->id,
+                    'display_name' => $profile['name'],
+                    'area_id' => null,
+                ]);
+
+                return [$user, true];
             });
 
             if ($created) {

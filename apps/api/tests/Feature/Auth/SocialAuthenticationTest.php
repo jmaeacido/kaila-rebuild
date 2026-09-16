@@ -83,6 +83,11 @@ class SocialAuthenticationTest extends TestCase
         $this->assertSame('google:google-user-1', $user->auth_subject);
         $this->assertTrue($user->provider_intent);
         $this->assertSame(config('policies.terms_version'), $user->terms_accepted_version);
+        $this->assertDatabaseHas('client_profiles', [
+            'user_id' => $user->id,
+            'display_name' => 'Juan Dela Cruz',
+            'area_id' => null,
+        ]);
         $asset = ProfileAsset::query()->where('user_id', $user->getKey())->where('origin', 'social')->firstOrFail();
         $this->assertSame('clean', $asset->scan_status);
         $this->assertSame('image/webp', $asset->mime_type);

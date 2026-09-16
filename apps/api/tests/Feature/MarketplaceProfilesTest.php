@@ -355,6 +355,28 @@ class MarketplaceProfilesTest extends TestCase
             ->assertJsonPath('message', 'Approve the provider logo or profile picture before activating this profile.');
     }
 
+    public function test_provider_profile_approval_is_independent_from_identity_verification(): void
+    {
+        config()->set('identity_verification.enforcement_enabled', true);
+        [$category, $area] = $this->referenceData();
+        $user = User::factory()->create();
+        $admin = User::factory()->create(['is_admin' => true]);
+        $this->seedAvatar($user, 'clean');
+        $this->submitProviderProfile($user, $this->validProfile($category, $area))->assertOk();
+        $profile = ProviderProfile::query()->where('user_id', $user->id)->firstOrFail();
+
+        $this->actingAs($admin)
+            ->putJson("/api/v1/admin/marketplace/providers/{$profile->id}/status", ['status' => 'active'])
+            ->assertOk()
+            ->assertJsonPath('data.status', 'active');
+
+        $this->assertDatabaseHas('provider_profiles', [
+            'id' => $profile->id,
+            'status' => 'active',
+        ]);
+        $this->assertDatabaseMissing('identity_verifications', ['user_id' => $user->id]);
+    }
+
     public function test_approving_a_provider_creates_an_official_welcome_community_post_with_avatar(): void
     {
         [$category, $area] = $this->referenceData();

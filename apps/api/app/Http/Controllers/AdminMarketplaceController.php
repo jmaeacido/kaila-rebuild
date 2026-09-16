@@ -9,7 +9,6 @@ use App\Models\ProviderProfile;
 use App\Models\ServiceCategory;
 use App\Models\User;
 use App\Notifications\BrandedProviderProfileDecision;
-use App\Support\IdentityVerificationService;
 use App\Support\NotificationService;
 use App\Support\OpportunityMatchingService;
 use App\Support\OutboxRecorder;
@@ -32,7 +31,6 @@ class AdminMarketplaceController extends Controller
         private readonly OpportunityMatchingService $matching,
         private readonly ProviderOnboardingRequirements $providerRequirements,
         private readonly ProviderWelcomeCommunityPostService $providerWelcomePosts,
-        private readonly IdentityVerificationService $identityVerification,
     ) {}
 
     public function queue(): JsonResponse
@@ -143,7 +141,6 @@ class AdminMarketplaceController extends Controller
             $approved = $data['status'] === 'active';
             if ($approved) {
                 $this->providerRequirements->assertAvatarApproved($providerProfile);
-                $this->identityVerification->enforce(User::query()->findOrFail($providerProfile->user_id), 'activate_provider');
             }
             $providerProfile->update([
                 'status' => $data['status'],

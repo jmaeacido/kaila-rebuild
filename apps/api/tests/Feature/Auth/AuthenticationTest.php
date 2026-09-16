@@ -42,9 +42,15 @@ class AuthenticationTest extends TestCase
             'terms_accepted_version' => config('policies.terms_version'),
             'privacy_accepted_version' => config('policies.privacy_version'),
         ]);
+        $user = User::query()->where('email', 'juan@example.test')->firstOrFail();
+        $this->assertDatabaseHas('client_profiles', [
+            'user_id' => $user->id,
+            'display_name' => 'Juan Dela Cruz',
+            'area_id' => null,
+        ]);
         $this->assertDatabaseHas('audit_events', ['event_type' => 'auth.registered']);
         Notification::assertSentTo(
-            User::query()->where('email', 'juan@example.test')->firstOrFail(),
+            $user,
             BrandedWelcome::class,
         );
     }

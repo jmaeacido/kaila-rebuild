@@ -31,6 +31,7 @@ function routeFor(notification: AdminNotification): string {
     ...notification.data,
     eventType: notification.type,
     resourceType: notification.resourceType,
+    resourceId: notification.resourceId,
   });
 }
 
@@ -52,6 +53,7 @@ export function AdminNotificationCenter() {
   const [portalReady, setPortalReady] = useState(false);
   const [realtimeState, setRealtimeState] = useState<"connecting" | "live" | "offline">("connecting");
   const knownIds = useRef(new Set<string>());
+  const centerRef = useRef<HTMLDivElement>(null);
 
   const reconcile = useCallback(async (announceNew = false) => {
     const response = await fetch("/api/v1/notifications", {
@@ -144,25 +146,37 @@ export function AdminNotificationCenter() {
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") setOpen(false);
     };
+    const onPointerDown = (event: PointerEvent) => {
+      if (!centerRef.current?.contains(event.target as Node)) setOpen(false);
+    };
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    document.addEventListener("pointerdown", onPointerDown, true);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.removeEventListener("pointerdown", onPointerDown, true);
+    };
   }, [open]);
 
   const openNotification = async (notification: AdminNotification) => {
     setOpen(false);
     setToast(null);
-    router.push(routeFor(notification));
-    router.refresh();
     if (!notification.readAt) {
-      void csrfToken()
-        .then((token) => fetch(`/api/v1/notifications/${encodeURIComponent(notification.id)}/read`, {
+      const readAt = new Date().toISOString();
+      setItems((current) => current.map((item) => item.id === notification.id ? { ...item, readAt } : item));
+      setUnreadCount((current) => Math.max(0, current - 1));
+      try {
+        const token = await csrfToken();
+        const response = await fetch(`/api/v1/notifications/${encodeURIComponent(notification.id)}/read`, {
           method: "PUT",
           credentials: "include",
           headers: { Accept: "application/json", ...(token ? { "X-XSRF-TOKEN": token } : {}) },
-        }))
-        .then(() => reconcile())
-        .catch(() => undefined);
+        });
+        if (!response.ok) throw new Error();
+      } catch {
+        await reconcile();
+      }
     }
+    router.push(routeFor(notification));
   };
 
   const markAllRead = useCallback(async () => {
@@ -185,7 +199,7 @@ export function AdminNotificationCenter() {
   }, [reconcile, unreadCount]);
 
   return (
-    <div className={styles.center}>
+    <div className={styles.center} ref={centerRef}>
       <button
         className={styles.bell}
         type="button"

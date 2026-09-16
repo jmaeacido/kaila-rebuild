@@ -66,9 +66,9 @@
   box-shadow: var(--shadow-floating);
   max-height: min(32rem, 70vh);
   overflow: hidden;
-  position: absolute;
-  right: 0;
-  top: calc(100% + var(--spacing-8));
+  position: fixed;
+  right: var(--spacing-16);
+  top: calc(env(safe-area-inset-top, 0px) + 4.75rem);
   width: min(24rem, calc(100vw - var(--spacing-32)));
   z-index: var(--z-toast);
 }
@@ -242,7 +242,12 @@
 
 @media (max-width: 74.99rem) {
   .center { position: relative; }
-  .panel { right: calc((var(--control-min-height) + var(--spacing-8)) * -1); }
+  .panel {
+    left: var(--spacing-16);
+    max-height: calc(100dvh - env(safe-area-inset-top, 0px) - 5.5rem);
+    right: var(--spacing-16);
+    width: auto;
+  }
   .toast {
     bottom: calc(env(safe-area-inset-bottom, 0px) + var(--spacing-16) + var(--control-min-height) + var(--spacing-16));
     left: var(--spacing-16);
