@@ -20,6 +20,7 @@ export const PUBLIC_PATHS = new Set([
 
 const COMMUNITY_POST_PATH =
   /^\/community\/[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const PROVIDER_PROFILE_PATH = /^\/providers\/(?:[1-9][0-9]*|[a-z0-9]+(?:-[a-z0-9]+)+)$/;
 
 export function normalizePublicPath(pathname: string | null | undefined): string {
   if (!pathname) return "/";
@@ -36,5 +37,6 @@ export function isPublicPath(pathname: string | null | undefined): boolean {
   const normalized = normalizePublicPath(pathname);
   if (PUBLIC_PATHS.has(normalized)) return true;
   if (isPublicCommunityPostPath(normalized)) return true;
+  if (PROVIDER_PROFILE_PATH.test(normalized)) return true;
   return PUBLIC_PATH_PREFIXES.some((prefix) => normalized.startsWith(prefix));
 }

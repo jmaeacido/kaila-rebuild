@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import {
   ArrowLeft,
   BriefcaseBusiness,
@@ -27,6 +27,7 @@ type Item = { id: number; name: string; icon?: string | null; slug?: string | nu
 type PortfolioItem = ProviderPortfolioItem;
 type Provider = {
   id: number;
+  publicSlug: string;
   displayName: string;
   avatarUrl: string | null;
   bio: string;
@@ -53,6 +54,7 @@ function formatRating(provider: Provider): string {
 
 export default function ProviderProfilePage() {
   const { providerId } = useParams<{ providerId: string }>();
+  const router = useRouter();
   const [provider, setProvider] = useState<Provider | null>(null);
   const [portfolioItems, setPortfolioItems] = useState<ProviderPortfolioItem[]>([]);
   const [canLike, setCanLike] = useState(false);
@@ -61,13 +63,16 @@ export default function ProviderProfilePage() {
 
   useEffect(() => {
     void Promise.all([
-      fetch(`/api/v1/providers/${providerId}`, { cache: "no-store", credentials: "include" }),
+      fetch(`/api/v1/public/providers/${providerId}`, { cache: "no-store", credentials: "include" }),
       fetch("/api/v1/auth/session-status", { credentials: "include" }),
     ])
       .then(async ([providerResponse, sessionResponse]) => {
         if (!providerResponse.ok) throw new Error();
         const providerBody = (await providerResponse.json()) as { data: Provider };
         setProvider(providerBody.data);
+        if (providerId !== providerBody.data.publicSlug) {
+          router.replace(`/providers/${providerBody.data.publicSlug}`);
+        }
         setPortfolioItems(withDemoPortfolio(providerBody.data.portfolio));
         if (sessionResponse.ok) {
           const sessionBody = (await sessionResponse.json()) as { data: { authenticated?: boolean } };
@@ -75,7 +80,7 @@ export default function ProviderProfilePage() {
         }
       })
       .catch(() => setError(true));
-  }, [providerId]);
+  }, [providerId, router]);
 
   async function togglePortfolioLike(item: ProviderPortfolioItem) {
     if (item.demo) {

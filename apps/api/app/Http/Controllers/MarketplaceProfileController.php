@@ -144,8 +144,12 @@ class MarketplaceProfileController extends Controller
         return response()->json(['data' => $profiles->getCollection()->map(fn (ProviderProfile $profile) => $this->publicProvider($profile, $request->user())), 'meta' => ['currentPage' => $profiles->currentPage(), 'lastPage' => $profiles->lastPage()]]);
     }
 
-    public function publicProfile(Request $request, ProviderProfile $providerProfile): JsonResponse
+    public function publicProfile(Request $request, string $provider): JsonResponse
     {
+        $providerProfile = ProviderProfile::query()
+            ->where('public_slug', $provider)
+            ->when(ctype_digit($provider), fn ($query) => $query->orWhere('id', (int) $provider))
+            ->firstOrFail();
         abort_unless($providerProfile->status === 'active', 404);
 
         return response()->json(['data' => $this->publicProvider(
@@ -165,7 +169,9 @@ class MarketplaceProfileController extends Controller
         $reputation = DB::table('reputation_projections')
             ->where('user_id', $profile->user_id)
             ->first(['average_rating', 'published_review_count']);
-        $avatarUrl = app(ProfileAvatarResolver::class)->providerUrl((int) $profile->user_id);
+        $avatar = app(ProfileAvatarResolver::class)->approved((int) $profile->user_id, 'provider_avatar')
+            ?? app(ProfileAvatarResolver::class)->approved((int) $profile->user_id, 'avatar');
+        $avatarUrl = $avatar ? "/api/v1/public/profile-assets/{$avatar->getKey()}" : null;
         $completedJobs = $profile->completedJobsCount();
         $likedAssetIds = $viewer
             ? DB::table('profile_asset_reactions')
@@ -175,7 +181,7 @@ class MarketplaceProfileController extends Controller
                 ->all()
             : [];
 
-        return ['id' => $profile->id, 'displayName' => $profile->display_name, 'avatarUrl' => $avatarUrl, 'bio' => $profile->bio, 'yearsExperience' => $profile->years_experience,
+        return ['id' => $profile->id, 'publicSlug' => $profile->public_slug, 'displayName' => $profile->display_name, 'avatarUrl' => $avatarUrl, 'bio' => $profile->bio, 'yearsExperience' => $profile->years_experience,
             'rating' => $reputation?->average_rating !== null
                 ? (float) $reputation->average_rating
                 : ($profile->rating !== null ? (float) $profile->rating : null),
@@ -192,7 +198,7 @@ class MarketplaceProfileController extends Controller
             'portfolio' => $profile->portfolio->map(fn (ProfileAsset $asset) => [
                 'id' => $asset->id,
                 'caption' => $asset->caption,
-                'downloadPath' => "/api/v1/profile-assets/{$asset->id}",
+                'downloadPath' => "/api/v1/public/profile-assets/{$asset->id}",
                 'likeCount' => (int) $asset->like_count,
                 'liked' => in_array($asset->id, $likedAssetIds, true),
             ])];

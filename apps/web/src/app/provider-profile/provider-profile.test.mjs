@@ -9,6 +9,7 @@ const availabilityStyles = readFileSync(new URL("../../components/provider-avail
 const serviceStyles = readFileSync(new URL("../../components/service-category-multi-select.module.css", import.meta.url), "utf8");
 const bannerSource = readFileSync(new URL("../../components/area-mismatch-banner.tsx", import.meta.url), "utf8");
 const publicProfileSource = readFileSync(new URL("../providers/[providerId]/page.tsx", import.meta.url), "utf8");
+const publicProfileLayout = readFileSync(new URL("../providers/[providerId]/layout.tsx", import.meta.url), "utf8");
 const managerSource = readFileSync(new URL("../../components/provider-portfolio-manager.tsx", import.meta.url), "utf8");
 const gallerySource = readFileSync(new URL("../../components/provider-portfolio-gallery.tsx", import.meta.url), "utf8");
 const viewerSource = readFileSync(new URL("../../components/provider-portfolio-viewer.tsx", import.meta.url), "utf8");
@@ -80,6 +81,8 @@ test("Provider portfolio manager uploads and deletes through profile assets API"
 });
 
 test("Public provider profile renders portfolio gallery and conversion CTA", () => {
+  assert.match(publicProfileSource, /\/api\/v1\/public\/providers\/\$\{providerId\}/);
+  assert.match(publicProfileSource, /router\.replace\(`\/providers\/\$\{providerBody\.data\.publicSlug\}`\)/);
   assert.match(publicProfileSource, /provider\.portfolio/);
   assert.match(publicProfileSource, /ProviderPortfolioGallery/);
   assert.match(publicProfileSource, /togglePortfolioLike/);
@@ -93,6 +96,13 @@ test("Public provider profile renders portfolio gallery and conversion CTA", () 
   assert.match(publicProfileSource, /Manage Provider Profile/);
   assert.match(publicProfileSource, /mobileCtaBar/);
   assert.match(gallerySource, /Work photos/);
+});
+
+test("Public provider profile exposes provider-specific social metadata", () => {
+  assert.match(publicProfileLayout, /generateMetadata/);
+  assert.match(publicProfileLayout, /fetchPublicProvider/);
+  assert.match(publicProfileLayout, /`\/providers\/\$\{provider\.publicSlug\}`/);
+  assert.match(publicProfileLayout, /type: "profile"/);
 });
 
 test("Public provider availability uses a human-readable 12-hour schedule", () => {

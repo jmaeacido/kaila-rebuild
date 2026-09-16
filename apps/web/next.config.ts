@@ -16,7 +16,7 @@ const nextConfig: NextConfig = {
       "/opportunities/:path*",
       "/post-job/:path*",
       "/provider-profile/:path*",
-      "/providers/:path*",
+      "/providers",
       "/safety/:path*",
       "/settings/:path*",
       "/support/:path*",

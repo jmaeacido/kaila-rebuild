@@ -601,7 +601,7 @@ class PhaseNineModulesTest extends TestCase
             ->assertJsonPath('data.providers.area.name', 'Butuan City')
             ->assertJsonCount(1, 'data.providers.providers')
             ->assertJsonPath('data.providers.providers.0.displayName', 'Local Plumber')
-            ->assertJsonPath('data.providers.providers.0.href', "/providers/{$matching->id}")
+            ->assertJsonPath('data.providers.providers.0.href', "/providers/{$matching->public_slug}")
             ->assertJsonPath('data.action.href', "/providers?categoryId={$plumbing->id}&areaId={$area->id}");
 
         Http::assertSent(fn ($request) => str_contains((string) $request['messages'][0]['content'], 'provider_recommendation')

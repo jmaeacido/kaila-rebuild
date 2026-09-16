@@ -14,7 +14,6 @@ const disallowedPaths = [
   "/opportunities/",
   "/post-job/",
   "/provider-profile/",
-  "/providers/",
   "/safety/",
   "/settings/",
   "/support/",
@@ -24,6 +23,10 @@ const disallowedPaths = [
   "/reset-password",
   "/maintenance",
   "/status/",
+];
+const publicMediaPaths = [
+  "/api/v1/public/community-media/",
+  "/api/v1/public/profile-assets/",
 ];
 
 export default function robots(): MetadataRoute.Robots {
@@ -42,10 +45,12 @@ export default function robots(): MetadataRoute.Robots {
           "PerplexityBot",
           "Google-Extended",
         ],
+        allow: publicMediaPaths,
         disallow: disallowedPaths,
       },
       {
         userAgent: "*",
+        allow: publicMediaPaths,
         disallow: disallowedPaths,
       },
     ],

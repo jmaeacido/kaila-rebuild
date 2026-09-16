@@ -30,6 +30,14 @@ test("isPublicPath treats community feed and post pages as public", () => {
   assert.equal(isPublicPath("/community/550e8400-e29b-41d4-a716-446655440000/edit"), false);
 });
 
+test("isPublicPath exposes only numeric provider detail pages", () => {
+  assert.equal(isPublicPath("/providers/20"), true);
+  assert.equal(isPublicPath("/providers/zels-computer-store-k7m4p9x2qf"), true);
+  assert.equal(isPublicPath("/providers"), false);
+  assert.equal(isPublicPath("/providers/search"), false);
+  assert.equal(isPublicPath("/provider-profile"), false);
+});
+
 test("realtime skips ticket requests on shared public routes", () => {
   assert.match(realtimeProvider, /from "\.\/public-routes"/);
   assert.match(realtimeProvider, /isPublicPath\(normalizePublicPath\(pathname\)\)/);

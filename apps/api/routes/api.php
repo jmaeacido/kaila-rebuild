@@ -69,6 +69,8 @@ Route::get('/public/community', [PublicCommunityController::class, 'index']);
 Route::get('/public/community/feed', [PublicCommunityController::class, 'feed']);
 Route::get('/public/community/{communityPost}', [PublicCommunityController::class, 'show']);
 Route::get('/public/community-media/{communityPostMedia}', [PublicCommunityController::class, 'showMedia']);
+Route::get('/public/providers/{provider}', [MarketplaceProfileController::class, 'publicProfile']);
+Route::get('/public/profile-assets/{profileAsset}', [ProfileAssetController::class, 'show']);
 Route::middleware('throttle:android-test-request')->post(
     '/public/android-internal-test-requests',
     [AndroidInternalTestRequestController::class, 'store'],

@@ -67,7 +67,7 @@ class ProviderRecommendationService
                 'verified' => $provider->user?->identityVerification?->isApproved() === true,
                 'responseMinutes' => $provider->response_minutes,
                 'serviceAreas' => $provider->serviceAreas->pluck('name')->values()->all(),
-                'href' => "/providers/{$provider->id}",
+                'href' => "/providers/{$provider->public_slug}",
             ])->all(),
             'total' => $total,
         ];

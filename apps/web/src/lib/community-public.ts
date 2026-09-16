@@ -13,9 +13,10 @@ export type PublicCommunityPost = {
     userId: number;
     displayName: string;
     providerProfileId: number | null;
+    providerPublicSlug?: string | null;
     kind: "provider" | "client";
   } | null;
-  featuredProvider: { id: number; displayName: string } | null;
+  featuredProvider: { id: number; publicSlug: string; displayName: string } | null;
   helpfulCount: number;
   commentsCount: number;
   media: Array<{

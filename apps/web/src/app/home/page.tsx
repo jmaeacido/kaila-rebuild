@@ -75,6 +75,7 @@ type Opportunity = {
 };
 type Provider = {
   id: number;
+  publicSlug: string;
   displayName: string;
   avatarUrl: string | null;
   services: Reference[];
@@ -522,7 +523,7 @@ function ClientHome({
         {providers.length > 0 ? (
           <div className={styles.trustedGrid}>
             {providers.slice(0, 2).map((provider) => (
-              <Link className={styles.trustedCard} href={`/providers/${provider.id}`} key={provider.id}>
+              <Link className={styles.trustedCard} href={`/providers/${provider.publicSlug}`} key={provider.id}>
                 <span className={styles.providerAvatarWrap}>
                   <span className={styles.providerAvatar}>
                     {provider.avatarUrl ? (

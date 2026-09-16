@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 /**
  * @property int $id
@@ -32,6 +33,19 @@ use Illuminate\Support\Facades\DB;
 class ProviderProfile extends Model
 {
     protected $guarded = [];
+
+    protected static function booted(): void
+    {
+        static::creating(function (ProviderProfile $profile): void {
+            if ($profile->public_slug) {
+                return;
+            }
+
+            do {
+                $profile->public_slug = Str::slug((string) $profile->display_name).'-'.Str::lower(Str::random(10));
+            } while (self::query()->where('public_slug', $profile->public_slug)->exists());
+        });
+    }
 
     protected function casts(): array
     {

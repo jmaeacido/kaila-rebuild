@@ -72,6 +72,7 @@ function buildCityGroups(areas: Reference[]): SelectOptionGroup[] {
 
 type Provider = {
   id: number;
+  publicSlug: string;
   displayName: string;
   avatarUrl: string | null;
   services: Reference[];
@@ -275,7 +276,7 @@ export default function FindProvidersPage() {
                   </span>
                 </div>
 
-                <Link className={styles.profileLink} href={`/providers/${provider.id}`}>
+                <Link className={styles.profileLink} href={`/providers/${provider.publicSlug}`}>
                   View profile
                 </Link>
               </article>

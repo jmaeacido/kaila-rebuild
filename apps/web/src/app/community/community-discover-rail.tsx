@@ -67,7 +67,7 @@ export function CommunityDiscoverRail({ context, isProvider, ready }: CommunityD
                     {item.providerProfileId && item.providerDisplayName ? (
                       <strong>
                         Welcome{" "}
-                        <Link className={styles.featuredProviderLink} href={`/providers/${item.providerProfileId}`}>
+                        <Link className={styles.featuredProviderLink} href={`/providers/${item.providerPublicSlug ?? item.providerProfileId}`}>
                           {item.providerDisplayName}
                         </Link>
                         {" "}to KAILA

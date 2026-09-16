@@ -1,6 +1,6 @@
 export type CommunityMedia = { id: string; originalName: string; mimeType: string; scanStatus: string; url: string | null };
-export type CommunityFeaturedProvider = { id: number; displayName: string };
-export type CommunityMention = { userId: number; displayName: string; providerProfileId: number | null; kind: "provider" | "client" };
+export type CommunityFeaturedProvider = { id: number; publicSlug: string; displayName: string };
+export type CommunityMention = { userId: number; displayName: string; providerProfileId: number | null; providerPublicSlug?: string | null; kind: "provider" | "client" };
 export type CommunityAuthor = {
   id: number;
   name: string;
@@ -31,7 +31,7 @@ export type CommunityComment = { id: string; body: string; mention: CommunityMen
 export type CommunityFeedContext = {
   homeArea: { id: number; name: string } | null;
   trendingTags: Array<{ tag: string; count: number }>;
-  newProviders: Array<{ id: string; title: string; areaLabel: string | null; publishedAt: string | null; mediaUrl: string | null; providerProfileId: number | null; providerDisplayName: string | null }>;
+  newProviders: Array<{ id: string; title: string; areaLabel: string | null; publishedAt: string | null; mediaUrl: string | null; providerProfileId: number | null; providerPublicSlug: string | null; providerDisplayName: string | null }>;
 };
 
 type PublicCommunityPostInput = Omit<CommunityPost, "author" | "helpful" | "canManage"> & {

@@ -43,7 +43,7 @@ class CommunityMentionService
             ->when($needle !== '', fn ($builder) => $builder->where('display_name', 'like', '%'.$needle.'%'))
             ->orderBy('display_name')
             ->limit(6)
-            ->get(['id', 'user_id', 'display_name']);
+            ->get(['id', 'public_slug', 'user_id', 'display_name']);
 
         $providerUserIds = [];
         foreach ($providers as $profile) {
@@ -52,6 +52,7 @@ class CommunityMentionService
                 'userId' => (int) $profile->user_id,
                 'displayName' => (string) $profile->display_name,
                 'providerProfileId' => (int) $profile->id,
+                'providerPublicSlug' => (string) $profile->public_slug,
                 'kind' => 'provider',
                 'avatarUrl' => $this->avatarUrlForUser((int) $profile->user_id),
             ];
@@ -175,7 +176,7 @@ class CommunityMentionService
         $profile = ProviderProfile::query()
             ->whereKey($providerProfileId)
             ->where('status', 'active')
-            ->first(['id', 'user_id', 'display_name']);
+            ->first(['id', 'public_slug', 'user_id', 'display_name']);
         if (! $profile) {
             return null;
         }
@@ -184,6 +185,7 @@ class CommunityMentionService
             'userId' => (int) $profile->user_id,
             'displayName' => (string) $profile->display_name,
             'providerProfileId' => (int) $profile->id,
+            'providerPublicSlug' => (string) $profile->public_slug,
             'kind' => 'provider',
         ];
     }
@@ -201,12 +203,13 @@ class CommunityMentionService
                 ->whereKey($providerProfileId)
                 ->where('user_id', $userId)
                 ->where('status', 'active')
-                ->first(['id', 'display_name']);
+                ->first(['id', 'public_slug', 'display_name']);
             if ($profile) {
                 return [
                     'userId' => $userId,
                     'displayName' => (string) $profile->display_name,
                     'providerProfileId' => (int) $profile->id,
+                    'providerPublicSlug' => (string) $profile->public_slug,
                     'kind' => 'provider',
                 ];
             }
@@ -230,7 +233,7 @@ class CommunityMentionService
             return null;
         }
 
-        return ['id' => $mention['providerProfileId'], 'displayName' => $mention['displayName']];
+        return ['id' => $mention['providerProfileId'], 'publicSlug' => $mention['providerPublicSlug'], 'displayName' => $mention['displayName']];
     }
 
     private function avatarUrlForUser(int $userId): ?string

@@ -147,7 +147,7 @@ class CommunityFeedContextService
         $featuredByPostId = ProviderProfile::query()
             ->whereIn('welcome_community_post_id', $posts->pluck('id'))
             ->where('status', 'active')
-            ->get(['id', 'display_name', 'welcome_community_post_id'])
+            ->get(['id', 'public_slug', 'display_name', 'welcome_community_post_id'])
             ->keyBy('welcome_community_post_id');
 
         $items = [];
@@ -163,6 +163,7 @@ class CommunityFeedContextService
                 'publishedAt' => $post->published_at?->toIso8601String(),
                 'mediaUrl' => $thumb ? "/api/v1/community-media/{$thumb->id}" : null,
                 'providerProfileId' => $profile ? (int) $profile->id : null,
+                'providerPublicSlug' => $profile?->public_slug,
                 'providerDisplayName' => $profile?->display_name,
             ];
         }

@@ -95,12 +95,14 @@ test("community feed includes marketplace navigation with Community active", () 
 test("community welcome posts link the featured provider name to their public profile", () => {
   const welcome = readFileSync(new URL("./community-welcome-content.tsx", import.meta.url), "utf8");
   assert.match(welcome, /featuredProviderLink/);
-  assert.match(welcome, /\/providers\/\$\{provider\.id\}/);
+  assert.match(welcome, /\/providers\/\$\{provider\.publicSlug\}/);
   assert.match(welcome, /newprovider/);
   assert.match(feed, /CommunityWelcomeTitle/);
   assert.match(feed, /CommunityWelcomeBody/);
   assert.match(detail, /CommunityWelcomeTitle/);
   assert.match(detail, /CommunityWelcomeBody/);
+  assert.match(welcome, />Welcome<\/Link>\{\" \"\}/);
+  assert.match(welcome, /<\/Link>\{\" \"\}\s*<Link className=\{styles\.postTitleLink\} href=\{postHref\}>to KAILA/);
 });
 
 test("community notifications deep-link to the welcome post", () => {

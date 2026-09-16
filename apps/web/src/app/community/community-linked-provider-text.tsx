@@ -16,7 +16,7 @@ export function linkMentionDisplayName(text: string, mention: CommunityMention):
       {part}
       {index < parts.length - 1 ? (
         mention.providerProfileId ? (
-          <Link className={styles.featuredProviderLink} href={`/providers/${mention.providerProfileId}`}>
+          <Link className={styles.featuredProviderLink} href={`/providers/${mention.providerPublicSlug ?? mention.providerProfileId}`}>
             {mention.displayName}
           </Link>
         ) : (
@@ -51,10 +51,10 @@ export function CommunityLinkedProviderText({
   className,
 }: {
   text: string;
-  provider?: { id: number; displayName: string } | null;
+  provider?: { id: number; publicSlug: string; displayName: string } | null;
   mention?: CommunityMention | null;
   className?: string;
 }) {
-  const resolved = mention ?? (provider ? { userId: 0, displayName: provider.displayName, providerProfileId: provider.id, kind: "provider" as const } : null);
+  const resolved = mention ?? (provider ? { userId: 0, displayName: provider.displayName, providerProfileId: provider.id, providerPublicSlug: provider.publicSlug, kind: "provider" as const } : null);
   return <CommunityLinkedMentionText text={text} mention={resolved} className={className} />;
 }

@@ -29,11 +29,11 @@ export function CommunityWelcomeTitle({
 
   return (
     <Heading className={className}>
-      <Link className={styles.postTitleLink} href={postHref}>Welcome </Link>
-      <Link className={styles.featuredProviderLink} href={`/providers/${provider.id}`}>
+      <Link className={styles.postTitleLink} href={postHref}>Welcome</Link>{" "}
+      <Link className={styles.featuredProviderLink} href={`/providers/${provider.publicSlug}`}>
         {provider.displayName}
-      </Link>
-      <Link className={styles.postTitleLink} href={postHref}> to KAILA</Link>
+      </Link>{" "}
+      <Link className={styles.postTitleLink} href={postHref}>to KAILA</Link>
     </Heading>
   );
 }
@@ -48,7 +48,7 @@ export function CommunityWelcomeBody({
   className?: string;
 }) {
   const provider = post.featuredProvider;
-  const mention = post.mention ?? (provider ? { userId: 0, displayName: provider.displayName, providerProfileId: provider.id, kind: "provider" as const } : null);
+  const mention = post.mention ?? (provider ? { userId: 0, displayName: provider.displayName, providerProfileId: provider.id, providerPublicSlug: provider.publicSlug, kind: "provider" as const } : null);
   const body = maxLength && post.body.length > maxLength ? `${post.body.slice(0, maxLength)}…` : post.body;
   const bodyClassName = className ?? styles.body;
 

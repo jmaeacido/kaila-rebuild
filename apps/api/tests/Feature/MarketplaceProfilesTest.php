@@ -26,6 +26,39 @@ class MarketplaceProfilesTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_active_provider_profile_and_approved_media_are_public(): void
+    {
+        [$category, $area] = $this->referenceData();
+        $profile = $this->provider('Public Provider', 'active', $category, $area);
+        $avatar = ProfileAsset::query()
+            ->where('user_id', $profile->user_id)
+            ->where('purpose', 'provider_avatar')
+            ->firstOrFail();
+
+        $this->getJson("/api/v1/public/providers/{$profile->id}")
+            ->assertOk()
+            ->assertJsonPath('data.displayName', 'Public Provider')
+            ->assertJsonPath('data.publicSlug', $profile->public_slug)
+            ->assertJsonPath('data.avatarUrl', "/api/v1/public/profile-assets/{$avatar->id}")
+            ->assertJsonPath('data.isOwnProfile', false);
+
+        $this->getJson("/api/v1/public/providers/{$profile->public_slug}")
+            ->assertOk()
+            ->assertJsonPath('data.id', $profile->id);
+
+        $this->get("/api/v1/public/profile-assets/{$avatar->id}")
+            ->assertOk()
+            ->assertHeader('Content-Type', 'image/jpeg');
+    }
+
+    public function test_inactive_provider_profile_is_not_public(): void
+    {
+        [$category, $area] = $this->referenceData();
+        $profile = $this->provider('Pending Provider', 'pending_review', $category, $area);
+
+        $this->getJson("/api/v1/public/providers/{$profile->id}")->assertNotFound();
+    }
+
     public function test_current_user_can_see_their_unified_published_reputation(): void
     {
         $user = User::factory()->create();

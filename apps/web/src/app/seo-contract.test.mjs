@@ -72,7 +72,8 @@ test("search and AI crawlers can read public truth without reaching private work
     assert.match(robots, new RegExp(`"${path.replaceAll("/", "\\/")}"`));
   }
   assert.doesNotMatch(robots, /"\/account-deletion"/);
-  assert.doesNotMatch(robots, /\ballow: \[/);
+  assert.match(robots, /"\/api\/v1\/public\/community-media\/"/);
+  assert.match(robots, /"\/api\/v1\/public\/profile-assets\/"/);
   assert.match(llms, /Community feed/);
   assert.match(llms, /Request KAILA Android early access/);
   assert.match(llms, /KAILA is a marketplace platform, not a provider/);
