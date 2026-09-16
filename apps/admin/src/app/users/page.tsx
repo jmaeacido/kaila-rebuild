@@ -80,7 +80,7 @@ const boardColumns: AccountStatus[] = ["active", "deactivated", "restricted", "d
 export default function UsersDirectoryPage() {
   const [data, setData] = useState<Directory | null>(null);
   const [state, setState] = useState<"loading" | "ready" | "error">("loading");
-  const [view, setView] = useState<"table" | "board">("board");
+  const [view, setView] = useState<"table" | "board">("table");
   const [query, setQuery] = useState("");
   const [role, setRole] = useState<"all" | StaffRole>("all");
   const [status, setStatus] = useState<"all" | AccountStatus>("all");
