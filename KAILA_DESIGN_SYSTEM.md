@@ -332,6 +332,13 @@ Highlight only the current stage. Completed and upcoming stages should remain vi
 - Do not use stock photos as decorative illustrations.
 - Do not mix AI-generated people with vector illustration styles.
 
+### Campaign Posters
+
+- Every campaign poster must include both the approved KAILA wordmark and the Bull mascot.
+- Depict people and characters only as anime-like vector illustrations.
+- Never use photographs, photorealistic renders, or realistic depictions of people in campaign posters.
+- Preserve the approved wordmark and mascot artwork and follow all logo clear-space, contrast, and usage rules.
+
 ## 24. Images
 
 Use real user photos only for:
@@ -536,3 +543,4 @@ Before approving a screen, verify that:
 - It supports keyboard use, large text, dark mode, and minimum touch targets.
 - Its motion is subtle, purposeful, and between `150ms` and `250ms`.
 - It avoids dashboard-like density and unnecessary decoration.
+- Every campaign poster includes the approved KAILA wordmark and Bull mascot and uses only anime-like vector characters.
