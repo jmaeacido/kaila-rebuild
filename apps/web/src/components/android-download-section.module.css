@@ -243,6 +243,41 @@
   outline-offset: var(--spacing-4);
 }
 
+.apkFallback {
+  border-top: var(--control-border-width) solid var(--color-border);
+  color: var(--color-text-secondary);
+  font-size: var(--font-small-size);
+  line-height: var(--line-height-body);
+  margin: 0;
+  padding-top: var(--spacing-16);
+}
+
+.apkFallback a {
+  align-items: center;
+  color: var(--color-text-secondary);
+  display: inline-flex;
+  min-height: var(--control-min-height);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.18em;
+}
+
+.apkFallback a:hover {
+  color: var(--color-primary);
+}
+
+.apkFallback a:focus-visible {
+  border-radius: var(--radius-button);
+  color: var(--color-primary);
+  outline: var(--focus-ring-width) solid var(--color-focus);
+  outline-offset: var(--spacing-2);
+}
+
+.apkMeta {
+  color: var(--color-text-secondary);
+  opacity: 0.85;
+}
+
 .visual {
   display: none;
   gap: var(--spacing-24);

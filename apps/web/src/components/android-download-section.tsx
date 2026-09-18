@@ -4,6 +4,7 @@ import Image from "next/image";
 import { FormEvent, useState } from "react";
 import { CheckCircle2, Mail, ScanLine, Smartphone } from "lucide-react";
 import { prepareCsrf } from "../app/auth-client";
+import { ANDROID_APK_PATH, ANDROID_DOWNLOAD } from "../app/android-download";
 import { BrandWordmark } from "./brand-mark";
 import { AndroidDownloadQr } from "./android-download-qr";
 import styles from "./android-download-section.module.css";
@@ -223,6 +224,17 @@ export function AndroidDownloadSection({
               </button>
             </form>
           )}
+
+          <p className={styles.apkFallback}>
+            Not invited for closed testing yet?{" "}
+            <a href={ANDROID_APK_PATH} download={ANDROID_DOWNLOAD.fileName}>
+              Download the APK
+            </a>
+            <span className={styles.apkMeta}>
+              {" "}
+              · v{ANDROID_DOWNLOAD.versionName} · {ANDROID_DOWNLOAD.minAndroid}
+            </span>
+          </p>
         </div>
 
         <div className={styles.visual}>
