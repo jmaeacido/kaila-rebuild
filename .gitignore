@@ -17,6 +17,11 @@ scripts/dev/runtime/
 # Generated Facebook marketing posts and related assets
 /output/marketing/facebook/
 
+# Generated Facebook/Instagram Reel projects and exports
+/output/marketing/*reel*/
+/output/marketing/**/reel/
+/output/marketing/*reel*.zip
+
 # Local env and secret files
 **/.env
 **/.env.*
